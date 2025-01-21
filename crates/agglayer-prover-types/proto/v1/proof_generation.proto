@@ -15,6 +15,16 @@ message ProofGenerationResponse {
     bytes proof = 1;
 }
 
+enum ProofGenerationErrorType {
+    PROOF_GENERATION_ERROR_TYPE_UNSPECIFIED = 0;
+    UNABLE_TO_EXECUTE_PROVER = 1;
+    PROVER_FAILED = 2;
+    PROOF_VERIFICATION_FAILED = 3;
+    EXECUTOR_FAILED = 4;
+}
+
 message ProofGenerationError {
     bytes error = 1;
+    ProofGenerationErrorType error_type = 2;
 }
+

@@ -11,10 +11,48 @@ pub struct ProofGenerationResponse {
     #[prost(bytes = "vec", tag = "1")]
     pub proof: ::prost::alloc::vec::Vec<u8>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProofGenerationError {
     #[prost(bytes = "vec", tag = "1")]
     pub error: ::prost::alloc::vec::Vec<u8>,
+    #[prost(enumeration = "ProofGenerationErrorType", tag = "2")]
+    pub error_type: i32,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum ProofGenerationErrorType {
+    Unspecified = 0,
+    UnableToExecuteProver = 1,
+    ProverFailed = 2,
+    ProofVerificationFailed = 3,
+    ExecutorFailed = 4,
+}
+impl ProofGenerationErrorType {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Self::Unspecified => "PROOF_GENERATION_ERROR_TYPE_UNSPECIFIED",
+            Self::UnableToExecuteProver => "UNABLE_TO_EXECUTE_PROVER",
+            Self::ProverFailed => "PROVER_FAILED",
+            Self::ProofVerificationFailed => "PROOF_VERIFICATION_FAILED",
+            Self::ExecutorFailed => "EXECUTOR_FAILED",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "PROOF_GENERATION_ERROR_TYPE_UNSPECIFIED" => Some(Self::Unspecified),
+            "UNABLE_TO_EXECUTE_PROVER" => Some(Self::UnableToExecuteProver),
+            "PROVER_FAILED" => Some(Self::ProverFailed),
+            "PROOF_VERIFICATION_FAILED" => Some(Self::ProofVerificationFailed),
+            "EXECUTOR_FAILED" => Some(Self::ExecutorFailed),
+            _ => None,
+        }
+    }
 }
 /// Generated client implementations.
 pub mod proof_generation_service_client {

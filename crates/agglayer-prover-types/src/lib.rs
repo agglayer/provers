@@ -1,10 +1,12 @@
 use bincode::{
     config::{BigEndian, FixintEncoding, WithOtherEndian, WithOtherIntEncoding},
-    DefaultOptions, Options as _,
+    DefaultOptions, Options,
 };
 use pessimistic_proof::ProofError;
 use serde::{Deserialize, Serialize};
 use sp1_sdk::SP1VerificationError;
+use tonic::Status;
+use v1::{ProofGenerationError, ProofGenerationErrorType};
 
 pub const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("generated/agglayer.prover.bin");
 
@@ -33,6 +35,52 @@ pub enum Error {
 
     #[error("Prover executor failed: {0}")]
     ExecutorFailed(#[from] ProofError),
+}
+
+impl TryFrom<&Error> for Status {
+    type Error = bincode::Error;
+
+    fn try_from(value: &Error) -> Result<Self, Self::Error> {
+        let (code, message, details) = match value {
+            Error::UnableToExecuteProver => {
+                let details = default_bincode_options().serialize(&ProofGenerationError {
+                    error: vec![],
+                    error_type: ProofGenerationErrorType::UnableToExecuteProver.into(),
+                })?;
+
+                (
+                    tonic::Code::Internal,
+                    "Unable to execute prover".to_string(),
+                    details,
+                )
+            }
+            Error::ProverFailed(_) => {
+                let details = default_bincode_options().serialize(&ProofGenerationError {
+                    error: vec![],
+                    error_type: ProofGenerationErrorType::ProverFailed.into(),
+                })?;
+                (tonic::Code::Internal, value.to_string(), details)
+            }
+            Error::ProofVerificationFailed(ref proof_verification_error) => {
+                let details = default_bincode_options().serialize(&ProofGenerationError {
+                    error: default_bincode_options().serialize(&proof_verification_error)?,
+                    error_type: ProofGenerationErrorType::ProofVerificationFailed.into(),
+                })?;
+
+                (tonic::Code::InvalidArgument, value.to_string(), details)
+            }
+            Error::ExecutorFailed(ref proof_error) => {
+                let details = default_bincode_options().serialize(&ProofGenerationError {
+                    error: default_bincode_options().serialize(&proof_error)?,
+                    error_type: ProofGenerationErrorType::ProverFailed.into(),
+                })?;
+
+                (tonic::Code::InvalidArgument, value.to_string(), details)
+            }
+        };
+
+        Ok(Status::with_details(code, message, details.into()))
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, thiserror::Error, PartialEq, Eq)]

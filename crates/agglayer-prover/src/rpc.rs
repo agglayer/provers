@@ -1,6 +1,4 @@
-use agglayer_prover_types::{
-    default_bincode_options, v1::proof_generation_service_server::ProofGenerationService, Error,
-};
+use agglayer_prover_types::{v1::proof_generation_service_server::ProofGenerationService, Error};
 use agglayer_telemetry::prover::{
     PROVING_REQUEST_FAILED, PROVING_REQUEST_RECV, PROVING_REQUEST_SUCCEEDED,
 };
@@ -9,6 +7,7 @@ use pessimistic_proof::{
     local_exit_tree::hasher::Keccak256Hasher, multi_batch_header::MultiBatchHeader,
     LocalNetworkState,
 };
+use tonic::Status;
 use tower::{buffer::Buffer, util::BoxService, Service, ServiceExt};
 use tracing::{debug, error, warn};
 
@@ -76,39 +75,11 @@ impl ProofGenerationService for ProverRPC {
                 PROVING_REQUEST_FAILED.add(1, metrics_attrs);
                 if let Some(error) = error.downcast_ref::<Error>() {
                     error!("Failed to generate proof: {}", error);
-                    let response = match error {
-                        Error::UnableToExecuteProver => {
-                            tonic::Status::internal("Unable to execute prover")
-                        }
-                        Error::ExecutorFailed(inner_error) => {
-                            if let Ok(bytes_error) = default_bincode_options().serialize(&error) {
-                                tonic::Status::with_details(
-                                    tonic::Code::InvalidArgument,
-                                    error.to_string(),
-                                    bytes_error.into(),
-                                )
-                            } else {
-                                warn!("Unable to serialize Execution  error: {}", inner_error);
-                                tonic::Status::invalid_argument(error.to_string())
-                            }
-                        }
-                        Error::ProofVerificationFailed(inner_error) => {
-                            if let Ok(bytes_error) = default_bincode_options().serialize(&error) {
-                                tonic::Status::with_details(
-                                    tonic::Code::InvalidArgument,
-                                    error.to_string(),
-                                    bytes_error.into(),
-                                )
-                            } else {
-                                warn!(
-                                    "Unable to serialize SP1 verification error: {}",
-                                    inner_error
-                                );
-                                tonic::Status::invalid_argument(error.to_string())
-                            }
-                        }
-                        Error::ProverFailed(_) => tonic::Status::internal(error.to_string()),
-                    };
+
+                    let response: Status = error.try_into().unwrap_or_else(|inner_error| {
+                        warn!("Unable to serialize Execution  error: {}", inner_error);
+                        tonic::Status::invalid_argument(error.to_string())
+                    });
 
                     return Err(response);
                 } else {
