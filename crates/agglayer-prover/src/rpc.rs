@@ -1,4 +1,4 @@
-use agglayer_prover_types::{v1::proof_generation_service_server::ProofGenerationService, Error};
+use agglayer_prover_types::{v1::pessimistic_proof_service_server::PessimisticProofService, Error};
 use agglayer_telemetry::prover::{
     PROVING_REQUEST_FAILED, PROVING_REQUEST_RECV, PROVING_REQUEST_SUCCEEDED,
 };
@@ -24,11 +24,11 @@ impl ProverRPC {
 }
 
 #[tonic::async_trait]
-impl ProofGenerationService for ProverRPC {
+impl PessimisticProofService for ProverRPC {
     async fn generate_proof(
         &self,
-        request: tonic::Request<agglayer_prover_types::v1::ProofGenerationRequest>,
-    ) -> Result<tonic::Response<agglayer_prover_types::v1::ProofGenerationResponse>, tonic::Status>
+        request: tonic::Request<agglayer_prover_types::v1::GenerateProofRequest>,
+    ) -> Result<tonic::Response<agglayer_prover_types::v1::GenerateProofResponse>, tonic::Status>
     {
         let metrics_attrs = &[];
         PROVING_REQUEST_RECV.add(1, metrics_attrs);
@@ -60,7 +60,7 @@ impl ProofGenerationService for ProverRPC {
             .await
         {
             Ok(result) => {
-                let response = agglayer_prover_types::v1::ProofGenerationResponse {
+                let response = agglayer_prover_types::v1::GenerateProofResponse {
                     proof: agglayer_prover_types::default_bincode_options()
                         .serialize(&agglayer_types::Proof::SP1(result.proof))
                         .map_err(|_| {

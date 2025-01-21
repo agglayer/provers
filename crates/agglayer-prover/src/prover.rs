@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use agglayer_prover_config::ProverConfig;
-use agglayer_prover_types::v1::proof_generation_service_server::ProofGenerationServiceServer;
+use agglayer_prover_types::v1::pessimistic_proof_service_server::PessimisticProofServiceServer;
 use anyhow::Result;
 use tokio::join;
 use tokio_util::sync::CancellationToken;
@@ -17,7 +17,7 @@ pub struct Prover {
 
 #[buildstructor::buildstructor]
 impl Prover {
-    pub fn create_service(config: &ProverConfig) -> ProofGenerationServiceServer<ProverRPC> {
+    pub fn create_service(config: &ProverConfig) -> PessimisticProofServiceServer<ProverRPC> {
         let executor = tower::ServiceBuilder::new()
             .timeout(config.max_request_duration)
             .layer(ConcurrencyLimitLayer::new(config.max_concurrency_limit))
@@ -29,7 +29,7 @@ impl Prover {
 
         let rpc = ProverRPC::new(executor);
 
-        ProofGenerationServiceServer::new(rpc)
+        PessimisticProofServiceServer::new(rpc)
             .max_decoding_message_size(config.grpc.max_decoding_message_size)
             .max_encoding_message_size(config.grpc.max_encoding_message_size)
             .send_compressed(CompressionEncoding::Zstd)
@@ -57,7 +57,7 @@ impl Prover {
         let (mut health_reporter, health_service) = tonic_health::server::health_reporter();
 
         health_reporter
-            .set_serving::<ProofGenerationServiceServer<ProverRPC>>()
+            .set_serving::<PessimisticProofServiceServer<ProverRPC>>()
             .await;
 
         let reflection = tonic_reflection::server::Builder::configure()
