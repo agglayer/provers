@@ -8,7 +8,7 @@ use agglayer_prover_types::Error;
 use bincode::Options;
 use pessimistic_proof::local_exit_tree::hasher::Keccak256Hasher;
 use pessimistic_proof::multi_batch_header::MultiBatchHeader;
-use pessimistic_proof::LocalNetworkState;
+use pessimistic_proof::{LocalNetworkState, ELF};
 use sp1_sdk::{CpuProver, Prover as _, ProverClient};
 use tonic::codec::CompressionEncoding;
 use tonic::transport::Server;
@@ -17,7 +17,6 @@ use tracing::warn;
 use tracing::{debug, error};
 
 use crate::executor::Request;
-use crate::executor::ELF;
 
 pub struct FakeProver {
     prover: Arc<CpuProver>,
@@ -116,7 +115,7 @@ impl ProofGenerationService for FakeProver {
         match result {
             Ok(proof) => {
                 let proof = agglayer_prover_types::default_bincode_options()
-                    .serialize(&agglayer_types::Proof::SP1(proof))
+                    .serialize(&pessimistic_proof::Proof::SP1(proof))
                     .unwrap();
                 debug!("Proof generated successfully, size: {}B", proof.len());
                 Ok(tonic::Response::new(

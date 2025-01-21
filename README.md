@@ -8,7 +8,7 @@
 
 <br />
 
-<h1>Agglayer</h1>
+<h1>Agglayer provers</h1>
 
 <p align="center">
 The <b>Agglayer</b> (<i>Aggregation layer</i>) provides a common language for secure, atomic, interoperability among heterogeneous chains. (WIP)

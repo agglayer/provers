@@ -1,119 +1,86 @@
-//! Agglayer configuration.
-//!
-//! The agglayer is configured via its TOML configuration file, `agglayer.toml`
-//! by default, which is deserialized into the [`Config`] struct.
+use std::path::Path;
+use std::{
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    time::Duration,
+};
 
-use std::{collections::HashMap, path::Path};
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 
-use ethers::types::Address;
-use outbound::OutboundConfig;
-use serde::{de::DeserializeSeed, Deserialize, Serialize};
-use serde_with::DisplayFromStr;
-use shutdown::ShutdownConfig;
-use url::Url;
+pub use crate::{shutdown::ShutdownConfig, telemetry::TelemetryConfig};
 
-pub use self::telemetry::TelemetryConfig;
-
-pub mod prover;
-
-pub(crate) const DEFAULT_IP: std::net::Ipv4Addr = std::net::Ipv4Addr::new(0, 0, 0, 0);
-
-pub(crate) mod auth;
-pub mod certificate_orchestrator;
-pub mod epoch;
-pub(crate) mod l1;
-pub(crate) mod l2;
 pub mod log;
-pub mod outbound;
-pub mod rate_limiting;
-pub(crate) mod rpc;
 pub mod shutdown;
-pub mod storage;
 pub(crate) mod telemetry;
 mod with;
 
-pub use auth::{AuthConfig, GcpKmsConfig, LocalConfig, PrivateKey};
-pub use epoch::Epoch;
-pub use l1::L1;
-pub use l2::L2;
 pub use log::Log;
-use prover::default_prover_entrypoint;
-pub use rate_limiting::RateLimitingConfig;
-pub use rpc::RpcConfig;
 
-/// The Agglayer configuration.
-#[serde_with::serde_as]
-#[derive(Default, Deserialize, Serialize, Debug, PartialEq, Eq)]
+pub(crate) const DEFAULT_IP: std::net::Ipv4Addr = std::net::Ipv4Addr::new(0, 0, 0, 0);
+
+/// The Agglayer Prover configuration.
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
-#[serde(deny_unknown_fields)]
-#[serde(default)]
-pub struct Config {
-    /// A map of Zkevm node RPC endpoints for each rollup.
-    ///
-    /// The key is the rollup ID, and the value is the URL of the associated RPC
-    /// endpoint.
-    #[serde_as(as = "HashMap<DisplayFromStr, _>")]
-    pub full_node_rpcs: HashMap<u32, Url>,
+pub struct ProverConfig {
+    /// The gRPC endpoint used by the prover.
+    #[serde(default = "default_socket_addr")]
+    pub grpc_endpoint: SocketAddr,
 
-    #[serde(default)]
-    pub l2: L2,
+    #[serde(default, skip_serializing_if = "crate::default")]
+    pub grpc: GrpcConfig,
 
-    #[serde_as(as = "HashMap<DisplayFromStr, _>")]
-    #[serde(default)]
-    pub proof_signers: HashMap<u32, Address>,
     /// The log configuration.
-    #[serde(default)]
+    #[serde(default, alias = "Log")]
     pub log: Log,
-    /// The local RPC server configuration.
-    #[serde(default)]
-    pub rpc: RpcConfig,
-    /// Rate limiting configuration.
-    #[serde(default)]
-    pub rate_limiting: RateLimitingConfig,
-    /// The configuration for every outbound network component.
-    #[serde(default)]
-    pub outbound: OutboundConfig,
-    /// The L1 configuration.
-    #[serde(default)]
-    pub l1: L1,
-    /// The authentication configuration.
-    #[serde(default)]
-    pub auth: AuthConfig,
 
     /// Telemetry configuration.
-    #[serde(default)]
+    #[serde(default, alias = "Telemetry")]
     pub telemetry: TelemetryConfig,
-
-    /// The Epoch configuration.
-    #[serde(default)]
-    pub epoch: Epoch,
 
     /// The list of configuration options used during shutdown.
     #[serde(default)]
     pub shutdown: ShutdownConfig,
 
-    /// The certificate orchestrator configuration.
+    /// The maximum number of concurrent queries the prover can handle.
+    #[serde(default = "default_max_concurrency_limit")]
+    pub max_concurrency_limit: usize,
+
+    /// The maximum duration of a request.
+    #[serde(default = "default_max_request_duration")]
+    #[serde(with = "crate::with::HumanDuration")]
+    pub max_request_duration: Duration,
+
+    /// The maximum number of buffered queries.
+    #[serde(default = "default_max_buffered_queries")]
+    pub max_buffered_queries: usize,
+
+    /// The primary prover to be used for generation of the pessimistic proof
     #[serde(default)]
-    pub certificate_orchestrator: certificate_orchestrator::CertificateOrchestrator,
+    pub primary_prover: AgglayerProverType,
 
-    /// The storage configuration.
+    /// The fallback prover to be used for generation of the pessimistic proof
     #[serde(default)]
-    pub storage: storage::StorageConfig,
-
-    /// AggLayer prover entrypoint.
-    #[serde(default = "default_prover_entrypoint")]
-    #[serde(skip_serializing_if = "String::is_empty")]
-    pub prover_entrypoint: String,
-
-    #[serde(default, skip_serializing_if = "crate::default")]
-    pub prover: prover::ClientProverConfig,
-
-    #[serde(default)]
-    #[serde(skip_serializing_if = "is_false")]
-    pub debug_mode: bool,
+    pub fallback_prover: Option<AgglayerProverType>,
 }
 
-impl Config {
+impl Default for ProverConfig {
+    fn default() -> Self {
+        Self {
+            grpc_endpoint: default_socket_addr(),
+            log: Log::default(),
+            telemetry: TelemetryConfig::default(),
+            shutdown: ShutdownConfig::default(),
+            max_concurrency_limit: default_max_concurrency_limit(),
+            max_request_duration: default_max_request_duration(),
+            max_buffered_queries: default_max_buffered_queries(),
+            primary_prover: AgglayerProverType::NetworkProver(NetworkProverConfig::default()),
+            fallback_prover: None,
+            grpc: Default::default(),
+        }
+    }
+}
+
+impl ProverConfig {
     pub fn try_load(path: &Path) -> Result<Self, ConfigurationError> {
         let reader = std::fs::read_to_string(path).map_err(|source| {
             ConfigurationError::UnableToReadConfigFile {
@@ -122,63 +89,230 @@ impl Config {
             }
         })?;
 
-        let path = path
-            .parent()
-            .ok_or_else(|| ConfigurationError::UnableToReadConfigFile {
-                path: path.to_path_buf(),
-                source: std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "Unable to determine the parent folder of the configuration file",
-                ),
-            })?;
-
-        let config_with_path = ConfigDeserializer { path };
-
         let deserializer = toml::de::Deserializer::new(&reader);
-
-        config_with_path
-            .deserialize(deserializer)
+        serde::Deserialize::deserialize(deserializer)
             .map_err(ConfigurationError::DeserializationError)
     }
 }
 
-impl Config {
-    pub fn new(base_path: &Path) -> Self {
+/// Type of the prover to be used for generation of the pessimistic proof
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum AgglayerProverType {
+    NetworkProver(NetworkProverConfig),
+    CpuProver(CpuProverConfig),
+    GpuProver(GpuProverConfig),
+    MockProver(MockProverConfig),
+}
+
+impl Default for AgglayerProverType {
+    fn default() -> Self {
+        AgglayerProverType::NetworkProver(NetworkProverConfig::default())
+    }
+}
+
+#[serde_as]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub struct CpuProverConfig {
+    #[serde(default = "default_max_concurrency_limit")]
+    pub max_concurrency_limit: usize,
+
+    #[serde_as(as = "Option<crate::with::HumanDuration>")]
+    pub proving_request_timeout: Option<Duration>,
+
+    #[serde(default = "default_cpu_proving_timeout")]
+    #[serde(with = "crate::with::HumanDuration")]
+    pub proving_timeout: Duration,
+}
+
+impl CpuProverConfig {
+    // This constant represents the number of second added to the proving_timeout
+    pub const DEFAULT_PROVING_TIMEOUT_PADDING: Duration = Duration::from_secs(1);
+
+    pub fn get_proving_request_timeout(&self) -> Duration {
+        self.proving_request_timeout
+            .unwrap_or_else(|| self.proving_timeout + Self::DEFAULT_PROVING_TIMEOUT_PADDING)
+    }
+}
+
+impl Default for CpuProverConfig {
+    fn default() -> Self {
         Self {
-            storage: storage::StorageConfig::new_from_path(base_path),
-            full_node_rpcs: Default::default(),
-            proof_signers: Default::default(),
-            log: Default::default(),
-            rpc: Default::default(),
-            rate_limiting: Default::default(),
-            outbound: Default::default(),
-            l1: Default::default(),
-            l2: Default::default(),
-            auth: Default::default(),
-            telemetry: Default::default(),
-            epoch: Default::default(),
-            shutdown: Default::default(),
-            certificate_orchestrator: Default::default(),
-            prover_entrypoint: default_prover_entrypoint(),
-            prover: Default::default(),
-            debug_mode: false,
+            max_concurrency_limit: default_max_concurrency_limit(),
+            proving_request_timeout: None,
+            proving_timeout: default_cpu_proving_timeout(),
         }
     }
+}
 
-    /// Get the target RPC socket address from the configuration.
-    pub fn rpc_addr(&self) -> std::net::SocketAddr {
-        std::net::SocketAddr::from((self.rpc.host, self.rpc.port))
+#[serde_as]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub struct NetworkProverConfig {
+    #[serde_as(as = "Option<crate::with::HumanDuration>")]
+    pub proving_request_timeout: Option<Duration>,
+
+    #[serde(default = "default_network_proving_timeout")]
+    #[serde(with = "crate::with::HumanDuration")]
+    pub proving_timeout: Duration,
+}
+
+impl NetworkProverConfig {
+    // This constant represents the number of second added to the proving_timeout
+    pub const DEFAULT_PROVING_TIMEOUT_PADDING: Duration = Duration::from_secs(1);
+
+    pub fn get_proving_request_timeout(&self) -> Duration {
+        self.proving_request_timeout
+            .unwrap_or_else(|| self.proving_timeout + Self::DEFAULT_PROVING_TIMEOUT_PADDING)
     }
+}
 
-    pub fn path_contextualized(mut self, base_path: &Path) -> Self {
-        self.storage = self.storage.path_contextualized(base_path);
-
-        self
+impl Default for NetworkProverConfig {
+    fn default() -> Self {
+        Self {
+            proving_request_timeout: None,
+            proving_timeout: default_network_proving_timeout(),
+        }
     }
+}
 
-    pub(crate) fn validate(self) -> Result<Self, ConfigurationError> {
-        Ok(self)
+#[serde_as]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub struct GpuProverConfig {
+    #[serde(default = "default_max_concurrency_limit")]
+    pub max_concurrency_limit: usize,
+
+    #[serde_as(as = "Option<crate::with::HumanDuration>")]
+    pub proving_request_timeout: Option<Duration>,
+
+    #[serde(default = "default_cpu_proving_timeout")]
+    #[serde(with = "crate::with::HumanDuration")]
+    pub proving_timeout: Duration,
+}
+
+impl GpuProverConfig {
+    // This constant represents the number of second added to the proving_timeout
+    pub const DEFAULT_PROVING_TIMEOUT_PADDING: Duration = Duration::from_secs(1);
+
+    pub fn get_proving_request_timeout(&self) -> Duration {
+        self.proving_request_timeout
+            .unwrap_or_else(|| self.proving_timeout + Self::DEFAULT_PROVING_TIMEOUT_PADDING)
     }
+}
+
+impl Default for GpuProverConfig {
+    fn default() -> Self {
+        Self {
+            max_concurrency_limit: default_max_concurrency_limit(),
+            proving_request_timeout: None,
+            proving_timeout: default_cpu_proving_timeout(),
+        }
+    }
+}
+
+#[serde_as]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub struct MockProverConfig {
+    #[serde(default = "default_max_concurrency_limit")]
+    pub max_concurrency_limit: usize,
+
+    #[serde_as(as = "Option<crate::with::HumanDuration>")]
+    pub proving_request_timeout: Option<Duration>,
+
+    #[serde(default = "default_cpu_proving_timeout")]
+    #[serde(with = "crate::with::HumanDuration")]
+    pub proving_timeout: Duration,
+}
+
+impl MockProverConfig {
+    // This constant represents the number of second added to the proving_timeout
+    pub const DEFAULT_PROVING_TIMEOUT_PADDING: Duration = Duration::from_secs(1);
+
+    pub fn get_proving_request_timeout(&self) -> Duration {
+        self.proving_request_timeout
+            .unwrap_or_else(|| self.proving_timeout + Self::DEFAULT_PROVING_TIMEOUT_PADDING)
+    }
+}
+
+impl Default for MockProverConfig {
+    fn default() -> Self {
+        Self {
+            max_concurrency_limit: default_max_concurrency_limit(),
+            proving_request_timeout: None,
+            proving_timeout: default_cpu_proving_timeout(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub struct GrpcConfig {
+    #[serde(
+        skip_serializing_if = "same_as_default_max_decoding_message_size",
+        default = "default_max_decoding_message_size"
+    )]
+    pub max_decoding_message_size: usize,
+    #[serde(
+        skip_serializing_if = "same_as_default_max_encoding_message_size",
+        default = "default_max_encoding_message_size"
+    )]
+    pub max_encoding_message_size: usize,
+}
+
+impl Default for GrpcConfig {
+    fn default() -> Self {
+        Self {
+            max_decoding_message_size: default_max_decoding_message_size(),
+            max_encoding_message_size: default_max_encoding_message_size(),
+        }
+    }
+}
+
+#[derive(Default, Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub struct ClientProverConfig {
+    #[serde(default)]
+    pub grpc: GrpcConfig,
+}
+
+const fn default_max_decoding_message_size() -> usize {
+    4 * 1024 * 1024
+}
+fn same_as_default_max_decoding_message_size(value: &usize) -> bool {
+    *value == default_max_decoding_message_size()
+}
+const fn default_max_encoding_message_size() -> usize {
+    4 * 1024 * 1024
+}
+fn same_as_default_max_encoding_message_size(value: &usize) -> bool {
+    *value == default_max_encoding_message_size()
+}
+
+const fn default_socket_addr() -> SocketAddr {
+    SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080)
+}
+
+const fn default_max_concurrency_limit() -> usize {
+    100
+}
+
+const fn default_max_buffered_queries() -> usize {
+    100
+}
+
+const fn default_max_request_duration() -> Duration {
+    Duration::from_secs(60 * 5)
+}
+
+const fn default_cpu_proving_timeout() -> Duration {
+    Duration::from_secs(60 * 5)
+}
+
+const fn default_network_proving_timeout() -> Duration {
+    Duration::from_secs(60 * 5)
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -192,46 +326,6 @@ pub enum ConfigurationError {
 
     #[error("Failed to deserialize the configuration: {0}")]
     DeserializationError(#[from] toml::de::Error),
-}
-
-#[cfg(any(test, feature = "testutils"))]
-impl Config {
-    pub fn new_for_test() -> Self {
-        Config::new(Path::new("/tmp/agglayer"))
-    }
-}
-
-struct ConfigDeserializer<'a> {
-    path: &'a Path,
-}
-
-impl<'de> DeserializeSeed<'de> for ConfigDeserializer<'_> {
-    type Value = Config;
-
-    fn deserialize<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let mut config_candidate: Config = serde::Deserialize::deserialize(deserializer)?;
-
-        config_candidate.storage =
-            config_candidate
-                .storage
-                .path_contextualized(&self.path.canonicalize().map_err(|error| {
-                    serde::de::Error::custom(format!(
-                        "Unable to canonicalize the storage path: {}",
-                        error
-                    ))
-                })?);
-
-        config_candidate
-            .validate()
-            .map_err(|e| serde::de::Error::custom(e.to_string()))
-    }
-}
-
-fn is_false(b: &bool) -> bool {
-    !*b
 }
 
 pub(crate) fn default<T: Default + PartialEq>(t: &T) -> bool {

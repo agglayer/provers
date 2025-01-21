@@ -1,8 +1,7 @@
 [workspace]
 resolver = "2"
-default-members = ["crates/agglayer"]
-members = ["crates/*", "tests/integrations"]
-exclude = ["crates/pessimistic-proof-program"]
+default-members = ["crates/agglayer-prover"]
+members = ["crates/*"]
 
 [workspace.package]
 version = "0.1.0"
@@ -16,21 +15,16 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 
 [workspace.dependencies]
 # Project dependencies
-agglayer-aggregator-notifier = { path = "crates/agglayer-aggregator-notifier" }
-agglayer-certificate-orchestrator = { path = "crates/agglayer-certificate-orchestrator" }
-agglayer-clock = { path = "crates/agglayer-clock" }
-agglayer-config = { path = "crates/agglayer-config" }
-agglayer-contracts = { path = "crates/agglayer-contracts" }
-agglayer-node = { path = "crates/agglayer-node" }
-agglayer-primitives = { path = "crates/agglayer-primitives" }
 agglayer-prover = { path = "crates/agglayer-prover", features = ["testutils"] }
-agglayer-signer = { path = "crates/agglayer-signer" }
-agglayer-storage = { path = "crates/agglayer-storage" }
-agglayer-telemetry = { path = "crates/agglayer-telemetry" }
-agglayer-types = { path = "crates/agglayer-types" }
-pessimistic-proof = { path = "crates/pessimistic-proof" }
-pessimistic-proof-core = { path = "crates/pessimistic-proof-core" }
-pessimistic-proof-test-suite = { path = "crates/pessimistic-proof-test-suite" }
+agglayer-prover-types = { path = "crates/agglayer-prover-types" }
+agglayer-prover-config = { path = "crates/agglayer-prover-config" }
+prover-engine = { path = "crates/prover-engine" }
+
+agglayer-config = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
+agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
+agglayer-primitives = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
+agglayer-types = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
+pessimistic-proof = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
 
 # Core dependencies
 alloy = { version = "0.8.1", features = ["full"] }

@@ -1,0 +1,35 @@
+[package]
+name = "prover-engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+axum = { version = "0.8", features = [
+    "macros",
+    "tokio",
+    "http1",
+    "http2",
+    "json",
+    "matched-path",
+    "original-uri",
+    "form",
+    "query",
+    "ws",
+] }
+anyhow.workspace = true
+http = "1.2.0"
+tonic.workspace = true
+tonic-health = "0.12.3"
+tonic-reflection = "0.12.3"
+
+tracing.workspace = true
+tower.workspace = true
+tokio.workspace = true
+tokio-util = { workspace = true }
+http-body-util = "0.1.2"
+
+agglayer-telemetry.workspace = true
+
+[lints]
+workspace = true

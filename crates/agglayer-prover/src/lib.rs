@@ -1,6 +1,6 @@
 use std::{future::IntoFuture, path::PathBuf, sync::Arc};
 
-use agglayer_config::prover::ProverConfig;
+use agglayer_prover_config::ProverConfig;
 use agglayer_telemetry::ServerBuilder as MetricsBuilder;
 use anyhow::Result;
 use prover::Prover;
@@ -9,7 +9,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::info;
 
 // TODO: Mutualize with agglayer-node
-mod logging;
+pub mod logging;
 
 mod executor;
 #[cfg(feature = "testutils")]

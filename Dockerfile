@@ -51,7 +51,7 @@ RUN mkdir -p /root/.sp1/circuits/${CIRCUIT_TYPE}/${CIRCUIT_VERSION}
 RUN curl -s -o /tmp/circuits.tar.gz ${CIRCUIT_ARTIFACTS_URL_BASE}/${CIRCUIT_VERSION}-${CIRCUIT_TYPE}.tar.gz \
     && tar -Pxzf/tmp/circuits.tar.gz -C /root/.sp1/circuits/${CIRCUIT_TYPE}/${CIRCUIT_VERSION}
 
-RUN cargo build --release --bin agglayer
+RUN cargo build --release --bin aggkit-prover
 
 
 FROM --platform=${BUILDPLATFORM} debian:bullseye-slim
@@ -60,4 +60,4 @@ RUN apt-get update && apt-get install -y ca-certificates
 COPY --from=builder /app/target/release/agglayer /usr/local/bin/
 COPY --from=builder /root/.sp1/circuits /root/.sp1/circuits
 
-CMD ["/usr/local/bin/agglayer"]
+CMD ["/usr/local/bin/aggkit-prover"]
