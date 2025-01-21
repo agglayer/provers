@@ -23,14 +23,18 @@ tonic = { workspace = true, features = ["zstd"] }
 tonic-health = "0.12.3"
 tonic-reflection = "0.12.3"
 
-agglayer-config = { path = "../agglayer-config" }
-agglayer-prover-types = { path = "../agglayer-prover-types" }
-agglayer-telemetry = { path = "../agglayer-telemetry" }
-pessimistic-proof = { path = "../pessimistic-proof" }
+agglayer-prover-config.workspace = true
+agglayer-prover-types.workspace = true
+agglayer-telemetry.workspace = true
 agglayer-types.workspace = true
+pessimistic-proof.workspace = true
+prover-engine.workspace = true
 
 sp1-sdk = { workspace = true, features = ["native-gnark"] }
 sp1-prover = { workspace = true, features = ["native-gnark"] }
+
+[dev-dependencies]
+agglayer-types = { workspace = true, features = ["testutils"] }
 
 [features]
 default = []

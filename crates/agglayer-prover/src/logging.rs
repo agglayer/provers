@@ -1,7 +1,7 @@
-use agglayer_config::log::LogFormat;
+use agglayer_prover_config::log::LogFormat;
 use tracing_subscriber::{prelude::*, util::SubscriberInitExt, EnvFilter};
 
-pub(crate) fn tracing(config: &agglayer_config::Log) {
+pub fn tracing(config: &agglayer_prover_config::Log) {
     // TODO: Support multiple outputs.
     let writer = config.outputs.first().cloned().unwrap_or_default();
 

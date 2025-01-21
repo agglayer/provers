@@ -16,8 +16,8 @@ tonic = { workspace = true, default-features = false, features = [
     "transport",
 ] }
 
+pessimistic-proof.workspace = true
 agglayer-types.workspace = true
-pessimistic-proof = { path = "../pessimistic-proof" }
 
 [build-dependencies]
 tonic-build = { version = "0.12", default-features = false, features = [

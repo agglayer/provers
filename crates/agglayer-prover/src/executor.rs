@@ -5,9 +5,10 @@ use std::{
     time::Duration,
 };
 
-use agglayer_config::prover::{AgglayerProverType, NetworkProverConfig, ProverConfig};
+use agglayer_prover_config::{AgglayerProverType, NetworkProverConfig, ProverConfig};
 use agglayer_prover_types::Error;
 use futures::{Future, TryFutureExt};
+use pessimistic_proof::ELF;
 use pessimistic_proof::{
     local_exit_tree::hasher::Keccak256Hasher, multi_batch_header::MultiBatchHeader,
     LocalNetworkState,
@@ -26,10 +27,6 @@ use tracing::{debug, error, info};
 
 #[cfg(test)]
 mod tests;
-
-/// ELF of the pessimistic proof program
-pub(crate) const ELF: &[u8] =
-    include_bytes!("../../pessimistic-proof-program/elf/riscv32im-succinct-zkvm-elf");
 
 #[derive(Clone)]
 pub struct Executor {

@@ -1,22 +1,41 @@
 use std::sync::Arc;
 
-use agglayer_config::prover::ProverConfig;
+use agglayer_prover_config::ProverConfig;
 use agglayer_prover_types::v1::proof_generation_service_server::ProofGenerationServiceServer;
 use anyhow::Result;
 use tokio::join;
 use tokio_util::sync::CancellationToken;
 use tonic::{codec::CompressionEncoding, transport::Server};
 use tower::{limit::ConcurrencyLimitLayer, ServiceExt as _};
-use tracing::{debug, error, info};
+use tracing::{debug, error};
 
 use crate::{executor::Executor, rpc::ProverRPC};
 
-pub(crate) struct Prover {
+pub struct Prover {
     handle: tokio::task::JoinHandle<Result<(), tonic::transport::Error>>,
 }
 
 #[buildstructor::buildstructor]
 impl Prover {
+    pub fn create_service(config: &ProverConfig) -> ProofGenerationServiceServer<ProverRPC> {
+        let executor = tower::ServiceBuilder::new()
+            .timeout(config.max_request_duration)
+            .layer(ConcurrencyLimitLayer::new(config.max_concurrency_limit))
+            .service(Executor::new(config))
+            .into_inner()
+            .boxed();
+
+        let executor = tower::buffer::Buffer::new(executor, config.max_buffered_queries);
+
+        let rpc = ProverRPC::new(executor);
+
+        ProofGenerationServiceServer::new(rpc)
+            .max_decoding_message_size(config.grpc.max_decoding_message_size)
+            .max_encoding_message_size(config.grpc.max_encoding_message_size)
+            .send_compressed(CompressionEncoding::Zstd)
+            .accept_compressed(CompressionEncoding::Zstd)
+    }
+
     /// Function that setups and starts the Agglayer Prover.
     ///
     /// The available methods are:
@@ -34,23 +53,7 @@ impl Prover {
         config: Arc<ProverConfig>,
         cancellation_token: CancellationToken,
     ) -> Result<Self> {
-        let executor = tower::ServiceBuilder::new()
-            .timeout(config.max_request_duration)
-            .layer(ConcurrencyLimitLayer::new(config.max_concurrency_limit))
-            .service(Executor::new(config.as_ref()))
-            .into_inner()
-            .boxed();
-
-        let executor = tower::buffer::Buffer::new(executor, config.max_buffered_queries);
-
-        let rpc = ProverRPC::new(executor);
-
-        let svc = ProofGenerationServiceServer::new(rpc)
-            .max_decoding_message_size(config.grpc.max_decoding_message_size)
-            .max_encoding_message_size(config.grpc.max_encoding_message_size)
-            .send_compressed(CompressionEncoding::Zstd)
-            .accept_compressed(CompressionEncoding::Zstd);
-
+        let svc = Self::create_service(&config);
         let (mut health_reporter, health_service) = tonic_health::server::health_reporter();
 
         health_reporter
@@ -63,7 +66,6 @@ impl Prover {
             .expect("Cannot build gRPC because of FILE_DESCRIPTOR_SET error");
         let layer = tower::ServiceBuilder::new().into_inner();
 
-        info!("Starting Agglayer Prover on {}", config.grpc_endpoint);
         let handle = tokio::spawn(async move {
             if let Err(error) = Server::builder()
                 .layer(layer)
