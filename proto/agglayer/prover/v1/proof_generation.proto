@@ -43,3 +43,31 @@ message GenerateProofError {
   // The kind of error that occurred.
   ErrorKind error_type = 2;
 }
+
+// Service for fetching auth proof.
+service AuthProofService {
+  // Fetches a auth-proof for a given start_block.
+  rpc FetchAuthProof(FetchAuthProofRequest) returns (FetchAuthProofResponse);
+}
+
+message FetchAuthProofRequest {
+  // The start block for which the auth proof is requested.
+  uint64 start_block = 1;
+}
+
+message FetchAuthProofResponse {
+  // The auth proof.
+  // TODO - Define the type of auth proof.
+  bytes auth_proof = 1;
+  uint64 start_block = 2;
+  uint64 end_block = 3;
+}
+
+// Error message returned when an error occurs during auth proof request.
+message FetchAuthProofError {
+  // The error message as bytes.
+  bytes error = 1;
+  // The kind of error that occurred.
+  // TODO - Define what kind of errors can occur.
+  ErrorKind error_type = 2;
+}
