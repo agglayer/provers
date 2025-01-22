@@ -1,11 +1,14 @@
+use std::sync::Arc;
 use std::time::Duration;
 
+use agglayer_prover_config::MockProverConfig;
 use agglayer_types::{Address, Certificate, LocalNetworkStateData, Proof};
-use pessimistic_proof::LocalNetworkState;
+use pessimistic_proof::{LocalNetworkState, ELF};
+use sp1_sdk::{CpuProver, Prover};
 use tower::timeout::TimeoutLayer;
 use tower::{service_fn, Service, ServiceBuilder, ServiceExt};
 
-use crate::executor::{Executor, Request, Response};
+use crate::executor::{Executor, LocalExecutor, Request, Response};
 
 #[tokio::test]
 async fn executor_normal_behavior() {
@@ -303,4 +306,47 @@ async fn executor_fails_because_of_concurrency_cpu() {
         })
         .await;
     assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn executor_normal_behavior_mock_prover() {
+    let prover = Arc::new(CpuProver::mock());
+    let (proving_key, verification_key) = prover.setup(ELF);
+
+    let mock_prover_config = MockProverConfig::default();
+    let mut executor = Executor::build_local_service(
+        mock_prover_config.proving_timeout,
+        mock_prover_config.max_concurrency_limit,
+        LocalExecutor {
+            prover: prover.clone(),
+            proving_key,
+            verification_key: verification_key.clone(),
+        },
+    );
+
+    let mut state = LocalNetworkStateData::default();
+    let certificate = Certificate::new_for_test(0.into(), 0);
+    let signer = certificate.get_signer();
+
+    let batch_header = state
+        .apply_certificate(
+            &certificate,
+            signer,
+            certificate.l1_info_root().unwrap().unwrap_or_default(),
+        )
+        .unwrap();
+
+    let executor = executor.ready().await.expect("valid executor");
+
+    let result = executor
+        .call(Request {
+            initial_state: LocalNetworkState::default(),
+            batch_header,
+        })
+        .await;
+
+    assert!(result.is_ok());
+    assert!(prover
+        .verify(&result.unwrap().proof, &verification_key)
+        .is_ok());
 }

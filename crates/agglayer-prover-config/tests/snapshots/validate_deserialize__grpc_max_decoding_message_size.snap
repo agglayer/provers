@@ -7,9 +7,6 @@ max-concurrency-limit = 100
 max-request-duration = "5m"
 max-buffered-queries = 100
 
-[grpc]
-max-decoding-message-size = 104857600
-
 [log]
 level = "info"
 outputs = []
