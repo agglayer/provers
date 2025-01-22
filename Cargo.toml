@@ -20,9 +20,7 @@ agglayer-prover-types = { path = "crates/agglayer-prover-types" }
 agglayer-prover-config = { path = "crates/agglayer-prover-config" }
 prover-engine = { path = "crates/prover-engine" }
 
-agglayer-config = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
 agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
-agglayer-primitives = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
 agglayer-types = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
 pessimistic-proof = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
 
