@@ -1,31 +1,14 @@
-use bincode::{
-    config::{BigEndian, FixintEncoding, WithOtherEndian, WithOtherIntEncoding},
-    DefaultOptions, Options,
-};
-<<<<<<< HEAD
+use bincode::Options as _;
 use pessimistic_proof::ProofError;
 use serde::{Deserialize, Serialize};
 use sp1_sdk::SP1VerificationError;
 use tonic::Status;
-use v1::{ErrorKind, GenerateProofError};
 
-=======
->>>>>>> d5d23b9b973ce5c680bba31b58b9dec671475e1f
-pub const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("generated/agglayer.prover.bin");
+use crate::{
+    default_bincode_options,
+    v1::{ErrorKind, GenerateProofError},
+};
 
-#[path = "generated/agglayer.prover.v1.rs"]
-#[rustfmt::skip]
-#[allow(warnings)]
-pub mod v1;
-
-pub fn default_bincode_options(
-) -> WithOtherIntEncoding<WithOtherEndian<DefaultOptions, BigEndian>, FixintEncoding> {
-    DefaultOptions::new()
-        .with_big_endian()
-        .with_fixint_encoding()
-}
-
-<<<<<<< HEAD
 #[derive(Debug, Serialize, Deserialize, thiserror::Error)]
 pub enum Error {
     #[error("Unable to execute prover")]
@@ -76,7 +59,7 @@ impl TryFrom<&Error> for Status {
             Error::ExecutorFailed(ref proof_error) => {
                 let details = default_bincode_options().serialize(&GenerateProofError {
                     error: default_bincode_options().serialize(&proof_error)?,
-                    error_type: ErrorKind::ProverFailed.into(),
+                    error_type: ErrorKind::ExecutorFailed.into(),
                 })?;
 
                 (tonic::Code::InvalidArgument, value.to_string(), details)
@@ -123,7 +106,3 @@ impl From<SP1VerificationError> for ProofVerificationError {
         }
     }
 }
-=======
-pub mod error;
-pub use error::Error;
->>>>>>> d5d23b9b973ce5c680bba31b58b9dec671475e1f

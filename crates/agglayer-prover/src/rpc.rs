@@ -77,7 +77,7 @@ impl PessimisticProofService for ProverRPC {
                     error!("Failed to generate proof: {}", error);
 
                     let response: Status = error.try_into().unwrap_or_else(|inner_error| {
-                        warn!("Unable to serialize Execution  error: {}", inner_error);
+                        warn!("Unable to serialize the prover error: {}", inner_error);
                         tonic::Status::invalid_argument(error.to_string())
                     });
 

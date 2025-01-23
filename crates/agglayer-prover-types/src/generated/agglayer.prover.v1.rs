@@ -27,6 +27,7 @@ pub struct GenerateProofError {
     #[prost(enumeration = "ErrorKind", tag = "2")]
     pub error_type: i32,
 }
+<<<<<<< HEAD
 #[derive(Clone, Copy, PartialEq, ::prost::Message)]
 pub struct FetchAuthProofRequest {
     /// The start block for which the auth proof is requested.
@@ -55,6 +56,8 @@ pub struct FetchAuthProofError {
     #[prost(enumeration = "ErrorKind", tag = "2")]
     pub error_type: i32,
 }
+=======
+>>>>>>> d5d23b9b973ce5c680bba31b58b9dec671475e1f
 /// The kind of error that occurred and that are reported by the service.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
@@ -190,7 +193,11 @@ pub mod pessimistic_proof_service_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
+<<<<<<< HEAD
         /// Triggers a pessimsitic-proof generation for a given batch header and initial state.
+=======
+        /// Triggers a pessimistic-proof generation for a given batch header and initial state.
+>>>>>>> d5d23b9b973ce5c680bba31b58b9dec671475e1f
         pub async fn generate_proof(
             &mut self,
             request: impl tonic::IntoRequest<super::GenerateProofRequest>,
@@ -222,8 +229,13 @@ pub mod pessimistic_proof_service_client {
         }
     }
 }
+<<<<<<< HEAD
 /// Generated client implementations.
 pub mod auth_proof_service_client {
+=======
+/// Generated server implementations.
+pub mod pessimistic_proof_service_server {
+>>>>>>> d5d23b9b973ce5c680bba31b58b9dec671475e1f
     #![allow(
         unused_variables,
         dead_code,
@@ -232,6 +244,7 @@ pub mod auth_proof_service_client {
         clippy::let_unit_value,
     )]
     use tonic::codegen::*;
+<<<<<<< HEAD
     use tonic::codegen::http::Uri;
     /// Service for fetching auth proof.
     #[derive(Debug, Clone)]
@@ -360,6 +373,12 @@ pub mod pessimistic_proof_service_server {
     #[async_trait]
     pub trait PessimisticProofService: std::marker::Send + std::marker::Sync + 'static {
         /// Triggers a pessimsitic-proof generation for a given batch header and initial state.
+=======
+    /// Generated trait containing gRPC methods that should be implemented for use with PessimisticProofServiceServer.
+    #[async_trait]
+    pub trait PessimisticProofService: std::marker::Send + std::marker::Sync + 'static {
+        /// Triggers a pessimistic-proof generation for a given batch header and initial state.
+>>>>>>> d5d23b9b973ce5c680bba31b58b9dec671475e1f
         async fn generate_proof(
             &self,
             request: tonic::Request<super::GenerateProofRequest>,
@@ -530,6 +549,7 @@ pub mod pessimistic_proof_service_server {
     /// Generated gRPC service name
     pub const SERVICE_NAME: &str = "agglayer.prover.v1.PessimisticProofService";
     impl<T> tonic::server::NamedService for PessimisticProofServiceServer<T> {
+<<<<<<< HEAD
         const NAME: &'static str = SERVICE_NAME;
     }
 }
@@ -713,6 +733,8 @@ pub mod auth_proof_service_server {
     /// Generated gRPC service name
     pub const SERVICE_NAME: &str = "agglayer.prover.v1.AuthProofService";
     impl<T> tonic::server::NamedService for AuthProofServiceServer<T> {
+=======
+>>>>>>> d5d23b9b973ce5c680bba31b58b9dec671475e1f
         const NAME: &'static str = SERVICE_NAME;
     }
 }

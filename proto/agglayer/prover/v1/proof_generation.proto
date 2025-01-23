@@ -4,7 +4,7 @@ package agglayer.prover.v1;
 
 // Service for generating pessimistic proof.
 service PessimisticProofService {
-  // Triggers a pessimsitic-proof generation for a given batch header and initial state.
+  // Triggers a pessimistic-proof generation for a given batch header and initial state.
   rpc GenerateProof(GenerateProofRequest) returns (GenerateProofResponse);
 }
 
@@ -53,6 +53,7 @@ service AuthProofService {
 message FetchAuthProofRequest {
   // The start block for which the auth proof is requested.
   uint64 start_block = 1;
+  uint64 max_end_block = 2;
 }
 
 message FetchAuthProofResponse {
