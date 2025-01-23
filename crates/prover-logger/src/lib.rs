@@ -1,7 +1,18 @@
-use agglayer_prover_config::log::LogFormat;
+use log::Log;
+use serde::{Deserialize, Serialize};
 use tracing_subscriber::{prelude::*, util::SubscriberInitExt, EnvFilter};
 
-pub fn tracing(config: &agglayer_prover_config::Log) {
+pub mod log;
+
+/// The log format.
+#[derive(Serialize, Deserialize, Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum LogFormat {
+    #[default]
+    Pretty,
+    Json,
+}
+pub fn tracing(config: &Log) {
     // TODO: Support multiple outputs.
     let writer = config.outputs.first().cloned().unwrap_or_default();
 

@@ -1,0 +1,27 @@
+[package]
+name = "aggkit-prover"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace = true
+bincode.workspace = true
+futures.workspace = true
+tokio = { workspace = true, features = ["full"] }
+tokio-util.workspace = true
+tracing.workspace = true
+tower = { workspace = true, features = ["timeout"] }
+http = "1.2.0"
+tonic = { workspace = true, features = ["zstd"] }
+
+aggkit-prover-config.workspace = true
+prover-engine.workspace = true
+prover-logger.workspace = true
+
+[features]
+default = []
+testutils = []

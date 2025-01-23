@@ -50,6 +50,48 @@ dependencies = [
 ]
 
 [[package]]
+name = "aggkit-prover"
+version = "0.1.0"
+dependencies = [
+ "aggkit-prover-config",
+ "anyhow",
+ "bincode",
+ "futures",
+ "http 1.2.0",
+ "prover-engine",
+ "prover-logger",
+ "tokio",
+ "tokio-util",
+ "tonic",
+ "tower 0.4.13",
+ "tracing",
+]
+
+[[package]]
+name = "aggkit-prover-config"
+version = "0.1.0"
+dependencies = [
+ "dirs",
+ "ethers",
+ "humantime-serde",
+ "insta",
+ "jsonrpsee",
+ "pretty_assertions",
+ "prover-config",
+ "prover-logger",
+ "prover-utils",
+ "rstest",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "thiserror 2.0.11",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+]
+
+[[package]]
 name = "agglayer-primitives"
 version = "0.2.1"
 source = "git+https://github.com/agglayer/agglayer.git?branch=release%2F0.2.1#581768e9a82b1cf20fac6536d86d1cfbd37641fb"
@@ -73,6 +115,8 @@ dependencies = [
  "futures",
  "pessimistic-proof",
  "prover-engine",
+ "prover-executor",
+ "prover-logger",
  "sp1-prover",
  "sp1-sdk",
  "thiserror 2.0.11",
@@ -97,6 +141,9 @@ dependencies = [
  "insta",
  "jsonrpsee",
  "pretty_assertions",
+ "prover-config",
+ "prover-logger",
+ "prover-utils",
  "rstest",
  "serde",
  "serde_json",
@@ -104,7 +151,6 @@ dependencies = [
  "thiserror 2.0.11",
  "toml",
  "tracing",
- "tracing-appender",
  "tracing-subscriber",
  "url",
 ]
@@ -5100,6 +5146,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "106dd99e98437432fed6519dedecfade6a06a73bb7b2a1e019fdd2bee5778d94"
 
 [[package]]
+name = "prover-config"
+version = "0.1.0"
+dependencies = [
+ "insta",
+ "pretty_assertions",
+ "prover-utils",
+ "rstest",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "toml",
+]
+
+[[package]]
 name = "prover-engine"
 version = "0.1.0"
 dependencies = [
@@ -5115,6 +5175,57 @@ dependencies = [
  "tonic-reflection",
  "tower 0.4.13",
  "tracing",
+]
+
+[[package]]
+name = "prover-executor"
+version = "0.1.0"
+dependencies = [
+ "agglayer-prover-config",
+ "agglayer-prover-types",
+ "agglayer-telemetry",
+ "agglayer-types",
+ "anyhow",
+ "bincode",
+ "buildstructor",
+ "futures",
+ "pessimistic-proof",
+ "prover-config",
+ "prover-engine",
+ "prover-logger",
+ "serde",
+ "sp1-prover",
+ "sp1-sdk",
+ "thiserror 2.0.11",
+ "tokio",
+ "tokio-util",
+ "toml",
+ "tonic",
+ "tonic-health",
+ "tonic-reflection",
+ "tower 0.4.13",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "prover-logger"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "tracing",
+ "tracing-appender",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "prover-utils"
+version = "0.1.0"
+dependencies = [
+ "humantime-serde",
+ "serde",
+ "serde_with",
+ "toml",
 ]
 
 [[package]]

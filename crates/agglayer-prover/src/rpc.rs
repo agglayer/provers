@@ -7,11 +7,10 @@ use pessimistic_proof::{
     local_exit_tree::hasher::Keccak256Hasher, multi_batch_header::MultiBatchHeader,
     LocalNetworkState,
 };
+use prover_executor::{Request, Response};
 use tonic::Status;
 use tower::{buffer::Buffer, util::BoxService, Service, ServiceExt};
 use tracing::{debug, error, warn};
-
-use crate::executor::{Request, Response};
 
 pub struct ProverRPC {
     executor: Buffer<BoxService<Request, Response, Error>, Request>,

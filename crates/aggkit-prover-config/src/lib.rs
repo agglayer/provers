@@ -1,10 +1,7 @@
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::Path;
-use std::{
-    net::{IpAddr, Ipv4Addr, SocketAddr},
-    time::Duration,
-};
 
-use prover_config::{default_max_concurrency_limit, NetworkProverConfig, ProverType};
+use prover_config::{NetworkProverConfig, ProverType};
 use prover_logger::log::Log;
 use prover_utils::with;
 use serde::{Deserialize, Serialize};
@@ -16,7 +13,7 @@ pub(crate) mod telemetry;
 
 pub(crate) const DEFAULT_IP: std::net::Ipv4Addr = std::net::Ipv4Addr::new(0, 0, 0, 0);
 
-/// The Agglayer Prover configuration.
+/// The Aggkit Prover configuration.
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub struct ProverConfig {
@@ -28,29 +25,16 @@ pub struct ProverConfig {
     pub grpc: GrpcConfig,
 
     /// The log configuration.
-    #[serde(default, alias = "Log")]
+    #[serde(default)]
     pub log: Log,
 
     /// Telemetry configuration.
-    #[serde(default, alias = "Telemetry")]
+    #[serde(default)]
     pub telemetry: TelemetryConfig,
 
     /// The list of configuration options used during shutdown.
     #[serde(default)]
     pub shutdown: ShutdownConfig,
-
-    /// The maximum number of concurrent queries the prover can handle.
-    #[serde(default = "default_max_concurrency_limit")]
-    pub max_concurrency_limit: usize,
-
-    /// The maximum duration of a request.
-    #[serde(default = "default_max_request_duration")]
-    #[serde(with = "crate::with::HumanDuration")]
-    pub max_request_duration: Duration,
-
-    /// The maximum number of buffered queries.
-    #[serde(default = "default_max_buffered_queries")]
-    pub max_buffered_queries: usize,
 
     /// The primary prover to be used for generation of the pessimistic proof
     #[serde(default)]
@@ -68,9 +52,6 @@ impl Default for ProverConfig {
             log: Log::default(),
             telemetry: TelemetryConfig::default(),
             shutdown: ShutdownConfig::default(),
-            max_concurrency_limit: default_max_concurrency_limit(),
-            max_request_duration: default_max_request_duration(),
-            max_buffered_queries: default_max_buffered_queries(),
             primary_prover: ProverType::NetworkProver(NetworkProverConfig::default()),
             fallback_prover: None,
             grpc: Default::default(),
@@ -127,26 +108,21 @@ pub struct ClientProverConfig {
 const fn default_max_decoding_message_size() -> usize {
     4 * 1024 * 1024
 }
+
 fn same_as_default_max_decoding_message_size(value: &usize) -> bool {
     *value == default_max_decoding_message_size()
 }
+
 const fn default_max_encoding_message_size() -> usize {
     4 * 1024 * 1024
 }
+
 fn same_as_default_max_encoding_message_size(value: &usize) -> bool {
     *value == default_max_encoding_message_size()
 }
 
 const fn default_socket_addr() -> SocketAddr {
-    SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080)
-}
-
-const fn default_max_buffered_queries() -> usize {
-    100
-}
-
-const fn default_max_request_duration() -> Duration {
-    Duration::from_secs(60 * 5)
+    SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8081)
 }
 
 #[derive(Debug, thiserror::Error)]
