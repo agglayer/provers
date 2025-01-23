@@ -16,7 +16,7 @@ pub(crate) mod telemetry;
 
 pub(crate) const DEFAULT_IP: std::net::Ipv4Addr = std::net::Ipv4Addr::new(0, 0, 0, 0);
 
-/// The Agglayer Prover configuration.
+/// The Aggkit Prover configuration.
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub struct ProverConfig {
