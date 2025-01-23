@@ -1,14 +1,14 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use agglayer_prover_config::MockProverConfig;
 use agglayer_types::{Address, Certificate, LocalNetworkStateData, Proof};
 use pessimistic_proof::{LocalNetworkState, ELF};
+use prover_config::MockProverConfig;
 use sp1_sdk::{CpuProver, Prover};
 use tower::timeout::TimeoutLayer;
 use tower::{service_fn, Service, ServiceBuilder, ServiceExt};
 
-use crate::executor::{Executor, LocalExecutor, Request, Response};
+use crate::{Executor, LocalExecutor, Request, Response};
 
 #[tokio::test]
 async fn executor_normal_behavior() {
@@ -95,9 +95,7 @@ async fn executor_normal_behavior_only_network() {
 async fn executor_fallback_behavior_cpu() {
     let network = Executor::build_network_service(
         Duration::from_secs(1),
-        service_fn(|_: Request| async {
-            Err(crate::executor::Error::ProverFailed("failure".to_string()))
-        }),
+        service_fn(|_: Request| async { Err(crate::Error::ProverFailed("failure".to_string())) }),
     );
 
     let local = Executor::build_local_service(

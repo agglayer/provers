@@ -1,0 +1,14 @@
+[package]
+name = "prover-config"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+serde_with.workspace = true
+
+prover-utils.workspace = true
+
+[lints]
+workspace = true

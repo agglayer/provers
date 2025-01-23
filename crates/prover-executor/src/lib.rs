@@ -5,7 +5,7 @@ use std::{
     time::Duration,
 };
 
-use agglayer_prover_config::{AgglayerProverType, ProverConfig};
+use agglayer_prover_config::ProverConfig;
 use agglayer_prover_types::Error;
 use futures::{Future, TryFutureExt};
 use pessimistic_proof::ELF;
@@ -13,6 +13,7 @@ use pessimistic_proof::{
     local_exit_tree::hasher::Keccak256Hasher, multi_batch_header::MultiBatchHeader,
     LocalNetworkState,
 };
+use prover_config::ProverType;
 use sp1_sdk::{
     network::{prover::NetworkProver, FulfillmentStrategy},
     CpuProver, Prover, ProverClient, SP1ProofWithPublicValues, SP1ProvingKey, SP1Stdin,
@@ -91,13 +92,14 @@ impl Executor {
     }
 
     fn create_prover(
-        prover_type: &AgglayerProverType,
+        prover_type: &ProverType,
+        program: &[u8],
     ) -> BoxCloneService<Request, Response, Error> {
         match prover_type {
-            AgglayerProverType::NetworkProver(network_prover_config) => {
+            ProverType::NetworkProver(network_prover_config) => {
                 debug!("Creating network prover executor...");
                 let network_prover = ProverClient::builder().network().build();
-                let (proving_key, verification_key) = network_prover.setup(ELF);
+                let (proving_key, verification_key) = network_prover.setup(program);
                 Self::build_network_service(
                     network_prover_config.get_proving_request_timeout(),
                     NetworkExecutor {
@@ -108,10 +110,10 @@ impl Executor {
                     },
                 )
             }
-            AgglayerProverType::CpuProver(cpu_prover_config) => {
+            ProverType::CpuProver(cpu_prover_config) => {
                 debug!("Creating CPU prover executor...");
                 let prover = CpuProver::new();
-                let (proving_key, verification_key) = prover.setup(ELF);
+                let (proving_key, verification_key) = prover.setup(program);
 
                 Self::build_local_service(
                     cpu_prover_config.get_proving_request_timeout(),
@@ -123,10 +125,10 @@ impl Executor {
                     },
                 )
             }
-            AgglayerProverType::MockProver(mock_prover_config) => {
+            ProverType::MockProver(mock_prover_config) => {
                 debug!("Creating Mock prover executor...");
                 let prover = CpuProver::mock();
-                let (proving_key, verification_key) = prover.setup(ELF);
+                let (proving_key, verification_key) = prover.setup(program);
 
                 Self::build_local_service(
                     mock_prover_config.get_proving_request_timeout(),
@@ -138,22 +140,25 @@ impl Executor {
                     },
                 )
             }
-            AgglayerProverType::GpuProver(_) => todo!(),
+            ProverType::GpuProver(_) => todo!(),
         }
     }
 
-    pub fn new(config: &ProverConfig) -> Self {
+    pub fn new(config: &ProverConfig, program: &[u8]) -> Self {
         Self {
-            primary: Self::create_prover(&config.primary_prover),
-            fallback: config.fallback_prover.as_ref().map(Self::create_prover),
+            primary: Self::create_prover(&config.primary_prover, program),
+            fallback: config
+                .fallback_prover
+                .as_ref()
+                .map(|config| Self::create_prover(config, program)),
         }
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct Request {
-    pub(crate) initial_state: LocalNetworkState,
-    pub(crate) batch_header: MultiBatchHeader<Keccak256Hasher>,
+    pub initial_state: LocalNetworkState,
+    pub batch_header: MultiBatchHeader<Keccak256Hasher>,
 }
 
 impl From<Request> for SP1Stdin {
@@ -171,7 +176,7 @@ impl From<Request> for SP1Stdin {
 
 #[derive(Debug, Clone)]
 pub struct Response {
-    pub(crate) proof: SP1ProofWithPublicValues,
+    pub proof: SP1ProofWithPublicValues,
 }
 
 impl Service<Request> for Executor {
