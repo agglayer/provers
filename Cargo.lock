@@ -113,12 +113,12 @@ dependencies = [
 name = "agglayer-prover-types"
 version = "0.1.0"
 dependencies = [
- "agglayer-types",
  "anyhow",
  "bincode",
  "pessimistic-proof",
  "prost",
  "serde",
+ "sp1-sdk",
  "thiserror 2.0.11",
  "tonic",
  "tonic-build",

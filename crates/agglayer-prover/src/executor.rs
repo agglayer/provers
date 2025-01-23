@@ -5,7 +5,7 @@ use std::{
     time::Duration,
 };
 
-use agglayer_prover_config::{AgglayerProverType, NetworkProverConfig, ProverConfig};
+use agglayer_prover_config::{AgglayerProverType, ProverConfig};
 use agglayer_prover_types::Error;
 use futures::{Future, TryFutureExt};
 use pessimistic_proof::ELF;
@@ -99,12 +99,7 @@ impl Executor {
                 let network_prover = ProverClient::builder().network().build();
                 let (proving_key, verification_key) = network_prover.setup(ELF);
                 Self::build_network_service(
-                    network_prover_config
-                        .proving_request_timeout
-                        .unwrap_or_else(|| {
-                            network_prover_config.proving_timeout
-                                + NetworkProverConfig::DEFAULT_PROVING_TIMEOUT_PADDING
-                        }),
+                    network_prover_config.get_proving_request_timeout(),
                     NetworkExecutor {
                         prover: Arc::new(network_prover),
                         proving_key,
@@ -148,15 +143,9 @@ impl Executor {
     }
 
     pub fn new(config: &ProverConfig) -> Self {
-        let primary = Self::create_prover(&config.primary_prover);
-        if let Some(fallback_prover) = &config.fallback_prover {
-            let fallback = Some(Self::create_prover(fallback_prover));
-            Self { primary, fallback }
-        } else {
-            Self {
-                primary,
-                fallback: None,
-            }
+        Self {
+            primary: Self::create_prover(&config.primary_prover),
+            fallback: config.fallback_prover.as_ref().map(Self::create_prover),
         }
     }
 }

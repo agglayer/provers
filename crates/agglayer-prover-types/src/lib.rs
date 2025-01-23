@@ -1,11 +1,7 @@
-use agglayer_types::ProofVerificationError;
 use bincode::{
     config::{BigEndian, FixintEncoding, WithOtherEndian, WithOtherIntEncoding},
-    DefaultOptions, Options as _,
+    DefaultOptions, Options,
 };
-use pessimistic_proof::ProofError;
-use serde::{Deserialize, Serialize};
-
 pub const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("generated/agglayer.prover.bin");
 
 #[path = "generated/agglayer.prover.v1.rs"]
@@ -20,17 +16,5 @@ pub fn default_bincode_options(
         .with_fixint_encoding()
 }
 
-#[derive(Debug, Serialize, Deserialize, thiserror::Error)]
-pub enum Error {
-    #[error("Unable to execute prover")]
-    UnableToExecuteProver,
-
-    #[error("Prover failed: {0}")]
-    ProverFailed(String),
-
-    #[error("Prover verification failed: {0}")]
-    ProofVerificationFailed(#[from] ProofVerificationError),
-
-    #[error("Prover executor failed: {0}")]
-    ExecutorFailed(#[from] ProofError),
-}
+pub mod error;
+pub use error::Error;

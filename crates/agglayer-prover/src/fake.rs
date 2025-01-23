@@ -1,8 +1,8 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use agglayer_prover_types::v1::proof_generation_service_server::{
-    ProofGenerationService, ProofGenerationServiceServer,
+use agglayer_prover_types::v1::pessimistic_proof_service_server::{
+    PessimisticProofService, PessimisticProofServiceServer,
 };
 use agglayer_prover_types::Error;
 use bincode::Options;
@@ -41,14 +41,14 @@ impl FakeProver {
         endpoint: SocketAddr,
         cancellation_token: tokio_util::sync::CancellationToken,
     ) -> Result<tokio::task::JoinHandle<Result<(), tonic::transport::Error>>, ()> {
-        let svc = ProofGenerationServiceServer::new(fake_prover)
+        let svc = PessimisticProofServiceServer::new(fake_prover)
             .send_compressed(CompressionEncoding::Zstd)
             .accept_compressed(CompressionEncoding::Zstd);
 
         let (mut health_reporter, health_service) = tonic_health::server::health_reporter();
 
         health_reporter
-            .set_serving::<ProofGenerationServiceServer<FakeProver>>()
+            .set_serving::<PessimisticProofServiceServer<FakeProver>>()
             .await;
 
         let reflection = tonic_reflection::server::Builder::configure()
@@ -81,11 +81,11 @@ impl FakeProver {
 }
 
 #[tonic::async_trait]
-impl ProofGenerationService for FakeProver {
+impl PessimisticProofService for FakeProver {
     async fn generate_proof(
         &self,
-        request: tonic::Request<agglayer_prover_types::v1::ProofGenerationRequest>,
-    ) -> Result<tonic::Response<agglayer_prover_types::v1::ProofGenerationResponse>, tonic::Status>
+        request: tonic::Request<agglayer_prover_types::v1::GenerateProofRequest>,
+    ) -> Result<tonic::Response<agglayer_prover_types::v1::GenerateProofResponse>, tonic::Status>
     {
         debug!("Received proof generation request");
         let request = request.into_inner();
@@ -119,7 +119,7 @@ impl ProofGenerationService for FakeProver {
                     .unwrap();
                 debug!("Proof generated successfully, size: {}B", proof.len());
                 Ok(tonic::Response::new(
-                    agglayer_prover_types::v1::ProofGenerationResponse { proof },
+                    agglayer_prover_types::v1::GenerateProofResponse { proof },
                 ))
             }
             Err(error) => {
