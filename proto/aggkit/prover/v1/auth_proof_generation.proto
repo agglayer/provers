@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package aggkit.prover.v1;
+
+// Service for fetching auth proof.
+service AuthProofService {
+    // Fetches a auth-proof for a given start_block.
+    rpc FetchAuthProof(FetchAuthProofRequest) returns (FetchAuthProofResponse);
+  }
+  
+  message FetchAuthProofRequest {
+    // The start block for which the auth proof is requested.
+    uint64 start_block = 1;
+    // The max end block for which the auth proof is requested.
+    uint64 max_end_block = 2;
+  }
+  
+  message FetchAuthProofResponse {
+    // The auth proof.
+    // TODO - Define the type of auth proof.
+    bytes auth_proof = 1;
+    uint64 start_block = 2;
+    uint64 end_block = 3;
+  }
+  
+  // Error message returned when an error occurs during auth proof request.
+  message FetchAuthProofError {
+    // The error message as bytes.
+    bytes error = 1;
+    // The kind of error that occurred.
+    // TODO - Define what kind of errors can occur.
+    ErrorKind error_type = 2;
+  }
+
+// The kind of error that occurred and that are reported by the service.
+enum ErrorKind {
+  // Unspecified error.
+  ERROR_KIND_UNSPECIFIED = 0;
+  // The prover was unable to execute.
+  ERROR_KIND_UNABLE_TO_EXECUTE_PROVER = 1;
+  // The prover failed to generate the proof
+  ERROR_KIND_PROVER_FAILED = 2;
+  // The generated proof failed to be verified.
+  ERROR_KIND_PROOF_VERIFICATION_FAILED = 3;
+  // The executor failed during the proof generation.
+  ERROR_KIND_EXECUTOR_FAILED = 4;
+}
