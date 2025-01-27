@@ -6,7 +6,7 @@ use tonic::Status;
 
 use crate::{
     default_bincode_options,
-    v1::{ErrorKind, FetchAuthProofError},
+    v1::{ErrorKind, FetchAggchainProofError},
 };
 
 #[derive(Debug, Serialize, Deserialize, thiserror::Error)]
@@ -30,7 +30,7 @@ impl TryFrom<&Error> for Status {
     fn try_from(value: &Error) -> Result<Self, Self::Error> {
         let (code, message, details) = match value {
             Error::UnableToExecuteProver => {
-                let details = default_bincode_options().serialize(&FetchAuthProofError {
+                let details = default_bincode_options().serialize(&FetchAggchainProofError {
                     error: vec![],
                     error_type: ErrorKind::UnableToExecuteProver.into(),
                 })?;
@@ -42,14 +42,14 @@ impl TryFrom<&Error> for Status {
                 )
             }
             Error::ProverFailed(_) => {
-                let details = default_bincode_options().serialize(&FetchAuthProofError {
+                let details = default_bincode_options().serialize(&FetchAggchainProofError {
                     error: vec![],
                     error_type: ErrorKind::ProverFailed.into(),
                 })?;
                 (tonic::Code::Internal, value.to_string(), details)
             }
             Error::ProofVerificationFailed(ref proof_verification_error) => {
-                let details = default_bincode_options().serialize(&FetchAuthProofError {
+                let details = default_bincode_options().serialize(&FetchAggchainProofError {
                     error: default_bincode_options().serialize(&proof_verification_error)?,
                     error_type: ErrorKind::ProofVerificationFailed.into(),
                 })?;
@@ -57,7 +57,7 @@ impl TryFrom<&Error> for Status {
                 (tonic::Code::InvalidArgument, value.to_string(), details)
             }
             Error::ExecutorFailed(ref proof_error) => {
-                let details = default_bincode_options().serialize(&FetchAuthProofError {
+                let details = default_bincode_options().serialize(&FetchAggchainProofError {
                     error: default_bincode_options().serialize(&proof_error)?,
                     error_type: ErrorKind::ExecutorFailed.into(),
                 })?;
