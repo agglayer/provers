@@ -1,0 +1,22 @@
+[package]
+name = "prover-config"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+serde_with.workspace = true
+
+prover-utils.workspace = true
+
+[dev-dependencies]
+insta.workspace = true
+pretty_assertions = "1.4.0"
+rstest.workspace = true
+serde_json = { workspace = true }
+toml.workspace = true
+
+
+[lints]
+workspace = true

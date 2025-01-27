@@ -1,13 +1,12 @@
 [package]
-name = "agglayer-prover"
+name = "prover-executor"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
-[lints]
-workspace = true
-
 [dependencies]
+serde.workspace = true
+
 anyhow.workspace = true
 bincode.workspace = true
 buildstructor.workspace = true
@@ -29,8 +28,8 @@ agglayer-telemetry.workspace = true
 agglayer-types.workspace = true
 pessimistic-proof.workspace = true
 prover-engine.workspace = true
-prover-executor.workspace = true
 prover-logger.workspace = true
+prover-config.workspace = true
 
 sp1-sdk = { workspace = true, features = ["native-gnark"] }
 sp1-prover = { workspace = true, features = ["native-gnark"] }
@@ -38,7 +37,11 @@ sp1-prover = { workspace = true, features = ["native-gnark"] }
 [dev-dependencies]
 agglayer-types = { workspace = true, features = ["testutils"] }
 
+[lints]
+workspace = true
+
 [features]
-default = []
+default = ["config"]
+config = []
 testutils = []
 gpu = ["sp1-sdk/cuda"]

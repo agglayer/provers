@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use pessimistic_proof::ELF;
 use prover_engine::ProverEngine;
 use tokio_util::sync::CancellationToken;
 use tracing::info;
@@ -8,7 +9,7 @@ fn main() -> anyhow::Result<()> {
     let config = Arc::new(agglayer_prover_config::ProverConfig::default());
 
     // Initialize the logger
-    agglayer_prover::logging::tracing(&config.log);
+    prover_logger::tracing(&config.log);
 
     let global_cancellation_token = CancellationToken::new();
 
@@ -25,8 +26,8 @@ fn main() -> anyhow::Result<()> {
         .enable_all()
         .build()?;
 
-    let pp_service =
-        prover_runtime.block_on(async { agglayer_prover::prover::Prover::create_service(&config) });
+    let pp_service = prover_runtime
+        .block_on(async { agglayer_prover::prover::Prover::create_service(&config, ELF) });
 
     _ = ProverEngine::builder()
         .add_rpc_service(pp_service)

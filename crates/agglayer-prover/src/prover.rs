@@ -3,13 +3,14 @@ use std::sync::Arc;
 use agglayer_prover_config::ProverConfig;
 use agglayer_prover_types::v1::pessimistic_proof_service_server::PessimisticProofServiceServer;
 use anyhow::Result;
+use prover_executor::Executor;
 use tokio::join;
 use tokio_util::sync::CancellationToken;
 use tonic::{codec::CompressionEncoding, transport::Server};
 use tower::{limit::ConcurrencyLimitLayer, ServiceExt as _};
 use tracing::{debug, error};
 
-use crate::{executor::Executor, rpc::ProverRPC};
+use crate::rpc::ProverRPC;
 
 pub struct Prover {
     handle: tokio::task::JoinHandle<Result<(), tonic::transport::Error>>,
@@ -17,11 +18,14 @@ pub struct Prover {
 
 #[buildstructor::buildstructor]
 impl Prover {
-    pub fn create_service(config: &ProverConfig) -> PessimisticProofServiceServer<ProverRPC> {
+    pub fn create_service(
+        config: &ProverConfig,
+        program: &[u8],
+    ) -> PessimisticProofServiceServer<ProverRPC> {
         let executor = tower::ServiceBuilder::new()
             .timeout(config.max_request_duration)
             .layer(ConcurrencyLimitLayer::new(config.max_concurrency_limit))
-            .service(Executor::new(config))
+            .service(Executor::new(config, program))
             .into_inner()
             .boxed();
 
@@ -52,8 +56,9 @@ impl Prover {
     pub(crate) async fn start(
         config: Arc<ProverConfig>,
         cancellation_token: CancellationToken,
+        program: &'static [u8],
     ) -> Result<Self> {
-        let svc = Self::create_service(&config);
+        let svc = Self::create_service(&config, program);
         let (mut health_reporter, health_service) = tonic_health::server::health_reporter();
 
         health_reporter

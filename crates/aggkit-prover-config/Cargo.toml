@@ -1,5 +1,5 @@
 [package]
-name = "agglayer-prover-config"
+name = "aggkit-prover-config"
 version.workspace = true
 edition.workspace = true
 
