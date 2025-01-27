@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+// Note: just a placeholder proto.
+// Final proposer API is still under development.
+
+package aggkit.proposer.v1;
+
+// Service for retrieval of full execution proofs
+service ProposerService {
+  // Retrieves the full execution proofs for the requested range
+  rpc GetProofs(GetProofsRequest) returns (GetProofsResponse);
+}
+
+// Type used to request a array of full execution proofs
+message GetProofsRequest {
+  // Start block for which full execution proof is requested
+  int32 start_block = 1;
+  // End block (inclusive) for which full execution proof is requested
+  int32 end_block = 2;
+}
+
+// Type used as response to a pessimistic proof generation.
+message GetProofsResponse {
+  // The proof retrieved from the proposer
+  bytes proof = 1;
+}
+
+// The kind of error that occurred and that are reported by the service.
+enum ErrorKind {
+  // Unspecified error.
+  ERROR_KIND_UNSPECIFIED = 0;
+  // The proposer was unable to execute.
+  ERROR_KIND_UNABLE_TO_EXECUTE_PROPOSER = 1;
+  // The proposer failed to retrieve the proof
+  ERROR_KIND_PROVER_FAILED = 2;
+}
