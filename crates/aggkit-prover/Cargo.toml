@@ -23,7 +23,8 @@ tracing.workspace = true
 aggchain-proof-builder.workspace = true
 aggkit-prover-config.workspace = true
 aggkit-prover-types.workspace = true
-proposer-service = { path = "../proposer-service" }
+proposer-client.workspace = true
+proposer-service.workspace = true
 prover-engine.workspace = true
 prover-logger.workspace = true
 

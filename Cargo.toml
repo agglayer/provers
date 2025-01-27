@@ -23,6 +23,8 @@ aggkit-prover-types = { path = "crates/aggkit-prover-types" }
 agglayer-prover = { path = "crates/agglayer-prover" }
 agglayer-prover-config = { path = "crates/agglayer-prover-config" }
 agglayer-prover-types = { path = "crates/agglayer-prover-types" }
+proposer-client = { path = "crates/proposer-client" }
+proposer-service = { path = "crates/proposer-service" }
 prover-config = { path = "crates/prover-config" }
 prover-engine = { path = "crates/prover-engine" }
 prover-executor = { path = "crates/prover-executor" }
@@ -51,6 +53,8 @@ hyper = "1.5.2"
 jsonrpsee = { version = "0.24.7", features = ["full"] }
 lazy_static = "1.5.0"
 parking_lot = "0.12.3"
+prost = "0.13.4"
+reqwest = "0.12"
 serde = { version = "1.0.216", features = ["derive"] }
 serde_json = "1.0.133"
 serde_with = "3.11.0"
