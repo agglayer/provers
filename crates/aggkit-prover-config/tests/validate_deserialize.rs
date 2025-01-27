@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use agglayer_prover_config::ProverConfig as Config;
+use aggkit_prover_config::ProverConfig as Config;
 use insta::assert_toml_snapshot;
 use pretty_assertions::assert_eq;
 

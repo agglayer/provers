@@ -3,6 +3,8 @@ use std::{fmt::Display, path::PathBuf};
 use serde::{Deserialize, Deserializer, Serialize};
 use tracing_subscriber::{fmt::writer::BoxMakeWriter, EnvFilter};
 
+use crate::LogFormat;
+
 /// The log configuration.
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -15,15 +17,6 @@ pub struct Log {
     pub outputs: Vec<LogOutput>,
     #[serde(default)]
     pub format: LogFormat,
-}
-
-/// The log format.
-#[derive(Serialize, Deserialize, Debug, Default, Clone, Copy, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
-pub enum LogFormat {
-    #[default]
-    Pretty,
-    Json,
 }
 
 /// The log level.

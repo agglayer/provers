@@ -3,15 +3,12 @@ use std::{future::IntoFuture, path::PathBuf, sync::Arc};
 use agglayer_prover_config::ProverConfig;
 use agglayer_telemetry::ServerBuilder as MetricsBuilder;
 use anyhow::Result;
+use pessimistic_proof::ELF;
 use prover::Prover;
 use sp1_sdk::HashableKey;
 use tokio_util::sync::CancellationToken;
 use tracing::info;
 
-// TODO: Mutualize with agglayer-node
-pub mod logging;
-
-mod executor;
 #[cfg(feature = "testutils")]
 pub mod fake;
 pub mod prover;
@@ -32,7 +29,7 @@ pub fn main(cfg: PathBuf, version: &str) -> Result<()> {
     let global_cancellation_token = CancellationToken::new();
 
     // Initialize the logger
-    logging::tracing(&config.log);
+    prover_logger::tracing(&config.log);
 
     info!("Starting agglayer prover version info: {}", version);
 
@@ -70,6 +67,7 @@ pub fn main(cfg: PathBuf, version: &str) -> Result<()> {
     let node = node_runtime.block_on(
         Prover::builder()
             .config(config.clone())
+            .program(ELF)
             .cancellation_token(global_cancellation_token.clone())
             .start(),
     )?;
@@ -114,7 +112,7 @@ pub fn main(cfg: PathBuf, version: &str) -> Result<()> {
 }
 
 pub fn get_vkey() -> String {
-    let vkey = executor::Executor::get_vkey();
+    let vkey = prover_executor::Executor::get_vkey();
     vkey.bytes32().to_string()
 }
 
