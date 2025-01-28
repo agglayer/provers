@@ -52,6 +52,15 @@ dependencies = [
 [[package]]
 name = "aggkit-proposer-client"
 version = "0.1.0"
+dependencies = [
+ "prost",
+ "prover-utils",
+ "serde",
+ "thiserror 2.0.11",
+ "tonic",
+ "tonic-build",
+ "tracing",
+]
 
 [[package]]
 name = "aggkit-prover"

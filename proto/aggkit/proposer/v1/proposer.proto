@@ -14,9 +14,9 @@ service ProposerService {
 // Type used to request a array of full execution proofs
 message GetProofsRequest {
   // Start block for which full execution proof is requested
-  int32 start_block = 1;
+  uint64 start_block = 1;
   // End block (inclusive) for which full execution proof is requested
-  int32 end_block = 2;
+  uint64 end_block = 2;
 }
 
 // Type used as response to a pessimistic proof generation.
