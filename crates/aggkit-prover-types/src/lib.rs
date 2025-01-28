@@ -15,6 +15,3 @@ pub fn default_bincode_options(
         .with_big_endian()
         .with_fixint_encoding()
 }
-
-pub mod error;
-pub use error::Error;

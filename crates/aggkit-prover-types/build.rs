@@ -11,10 +11,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let proof_generation_proto = proto_path.join("v1/aggchain_proof_generation.proto");
 
     tonic_build::configure()
-        .type_attribute(
-            "FetchAggchainProofError",
-            "#[derive(serde::Serialize, serde::Deserialize)]",
-        )
         .file_descriptor_set_path(descriptor_path)
         .out_dir("src/generated")
         .compile_protos(&[proof_generation_proto], &[proto_path])?;
