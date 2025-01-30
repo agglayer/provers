@@ -16,6 +16,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 [workspace.dependencies]
 # Project dependencies
 aggkit-prover = { path = "crates/aggkit-prover" }
+aggkit-prover-types = { path = "crates/aggkit-prover-types" }
 aggkit-prover-config = { path = "crates/aggkit-prover-config" }
 agglayer-prover = { path = "crates/agglayer-prover" }
 agglayer-prover-types = { path = "crates/agglayer-prover-types" }
