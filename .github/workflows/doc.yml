@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - "**"
 
 jobs:
   build:
@@ -33,8 +36,7 @@ jobs:
   deploy:
     name: Deploy documentation
     needs: build
-    # disabled until we find a GH token solution
-    if: false
+    if: github.ref == 'refs/heads/main'
     permissions:
       pages: write
       id-token: write
