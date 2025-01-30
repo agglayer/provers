@@ -9,14 +9,13 @@ use bincode::Options;
 use pessimistic_proof::local_exit_tree::hasher::Keccak256Hasher;
 use pessimistic_proof::multi_batch_header::MultiBatchHeader;
 use pessimistic_proof::{LocalNetworkState, ELF};
+use prover_executor::{Request, Response};
 use sp1_sdk::{CpuProver, Prover as _, ProverClient};
 use tonic::codec::CompressionEncoding;
 use tonic::transport::Server;
 use tracing::info;
 use tracing::warn;
 use tracing::{debug, error};
-
-use crate::executor::Request;
 
 pub struct FakeProver {
     prover: Arc<CpuProver>,
