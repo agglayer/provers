@@ -8,8 +8,10 @@ license.workspace = true
 workspace = true
 
 [dependencies]
+hex.workspace = true
 prover-utils.workspace = true
 prost.workspace = true
+reqwest = { workspace = true, features = ["json"]}
 serde.workspace = true
 thiserror.workspace = true
 tonic = { workspace = true, default-features = false, features = [
