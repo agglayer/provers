@@ -63,7 +63,7 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tonic",
- "tower 0.4.13",
+ "tower 0.5.2",
  "tracing",
 ]
 
@@ -139,7 +139,7 @@ dependencies = [
  "tonic",
  "tonic-health",
  "tonic-reflection",
- "tower 0.4.13",
+ "tower 0.5.2",
  "tracing",
  "tracing-subscriber",
 ]
@@ -898,7 +898,7 @@ dependencies = [
  "http 1.2.0",
  "http-body 1.0.1",
  "http-body-util",
- "hyper 1.5.2",
+ "hyper 1.6.0",
  "hyper-util",
  "itoa",
  "matchit 0.7.3",
@@ -934,7 +934,7 @@ dependencies = [
  "http 1.2.0",
  "http-body 1.0.1",
  "http-body-util",
- "hyper 1.5.2",
+ "hyper 1.6.0",
  "hyper-util",
  "itoa",
  "matchit 0.8.4",
@@ -3093,9 +3093,9 @@ dependencies = [
 
 [[package]]
 name = "hyper"
-version = "1.5.2"
+version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "256fb8d4bd6413123cc9d91832d78325c48ff41677595be797d90f42969beae0"
+checksum = "cc2b571658e38e0c01b1fdca3bbbe93c00d3d71693ff2770043f8c29bc7d6f80"
 dependencies = [
  "bytes",
  "futures-channel",
@@ -3134,7 +3134,7 @@ checksum = "2d191583f3da1305256f22463b9bb0471acad48a4e534a5218b9963e9c1f59b2"
 dependencies = [
  "futures-util",
  "http 1.2.0",
- "hyper 1.5.2",
+ "hyper 1.6.0",
  "hyper-util",
  "log",
  "rustls 0.23.21",
@@ -3151,7 +3151,7 @@ version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b90d566bffbce6a75bd8b09a05aa8c2cb1fabb6cb348f8840c9e4c90a0d83b0"
 dependencies = [
- "hyper 1.5.2",
+ "hyper 1.6.0",
  "hyper-util",
  "pin-project-lite",
  "tokio",
@@ -3169,7 +3169,7 @@ dependencies = [
  "futures-util",
  "http 1.2.0",
  "http-body 1.0.1",
- "hyper 1.5.2",
+ "hyper 1.6.0",
  "pin-project-lite",
  "socket2",
  "tokio",
@@ -3630,7 +3630,7 @@ dependencies = [
  "async-trait",
  "base64 0.22.1",
  "http-body 1.0.1",
- "hyper 1.5.2",
+ "hyper 1.6.0",
  "hyper-rustls 0.27.5",
  "hyper-util",
  "jsonrpsee-core",
@@ -3669,7 +3669,7 @@ dependencies = [
  "http 1.2.0",
  "http-body 1.0.1",
  "http-body-util",
- "hyper 1.5.2",
+ "hyper 1.6.0",
  "hyper-util",
  "jsonrpsee-core",
  "jsonrpsee-types",
@@ -3847,7 +3847,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc2f4eb4bc735547cfed7c0a4922cbd04a4655978c09b54f1f7b228750664c34"
 dependencies = [
  "cfg-if",
- "windows-targets 0.52.6",
+ "windows-targets 0.48.5",
 ]
 
 [[package]]
@@ -5208,7 +5208,7 @@ dependencies = [
  "tonic",
  "tonic-health",
  "tonic-reflection",
- "tower 0.4.13",
+ "tower 0.5.2",
  "tracing",
 ]
 
@@ -5238,7 +5238,7 @@ dependencies = [
  "tonic",
  "tonic-health",
  "tonic-reflection",
- "tower 0.4.13",
+ "tower 0.5.2",
  "tracing",
  "tracing-subscriber",
 ]
@@ -5529,7 +5529,7 @@ dependencies = [
  "http 1.2.0",
  "http-body 1.0.1",
  "http-body-util",
- "hyper 1.5.2",
+ "hyper 1.6.0",
  "hyper-rustls 0.27.5",
  "hyper-util",
  "ipnet",
@@ -6138,9 +6138,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.137"
+version = "1.0.138"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "930cfb6e6abf99298aaad7d29abbef7a9999a9a8806a40088f55f0dcec03146b"
+checksum = "d434192e7da787e94a6ea7e9670b26a036d0ca41e0b7efb2676dd32bae872949"
 dependencies = [
  "itoa",
  "memchr",
@@ -7398,7 +7398,7 @@ dependencies = [
  "http 1.2.0",
  "http-body 1.0.1",
  "http-body-util",
- "hyper 1.5.2",
+ "hyper 1.6.0",
  "hyper-timeout",
  "hyper-util",
  "percent-encoding",
@@ -7690,7 +7690,7 @@ dependencies = [
  "futures",
  "http 1.2.0",
  "http-body-util",
- "hyper 1.5.2",
+ "hyper 1.6.0",
  "prost",
  "reqwest 0.12.12",
  "serde",
