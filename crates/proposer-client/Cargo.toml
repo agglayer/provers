@@ -1,5 +1,5 @@
 [package]
-name = "aggkit-proposer-client"
+name = "proposer-client"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,7 +10,6 @@ workspace = true
 [dependencies]
 hex.workspace = true
 prover-utils.workspace = true
-prost.workspace = true
 reqwest = { workspace = true, features = ["json"]}
 serde.workspace = true
 thiserror.workspace = true
@@ -23,7 +22,6 @@ tokio.workspace = true
 tracing.workspace = true
 
 sp1-sdk = { workspace = true, features = ["native-gnark"] }
-prover-config.workspace = true
 
 
 [features]

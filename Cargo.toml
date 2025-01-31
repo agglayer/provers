@@ -16,7 +16,6 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 
 [workspace.dependencies]
 # Project dependencies
-aggkit-proposer-client = { path = "crates/proposer-client" }
 aggkit-prover = { path = "crates/aggkit-prover" }
 aggkit-prover-types = { path = "crates/aggkit-prover-types" }
 aggkit-prover-config = { path = "crates/aggkit-prover-config" }
@@ -28,6 +27,7 @@ prover-logger = { path = "crates/prover-logger" }
 prover-executor = { path = "crates/prover-executor" }
 prover-config = { path = "crates/prover-config" }
 prover-utils = { path = "crates/prover-utils" }
+proposer-client = { path = "crates/proposer-client" }
 
 agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
 agglayer-types = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }

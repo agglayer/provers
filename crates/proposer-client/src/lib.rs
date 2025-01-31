@@ -9,9 +9,9 @@ use sp1_sdk::{NetworkProver, ProverClient, SP1ProofWithPublicValues};
 
 use crate::config::ProposerClientConfig;
 use crate::error::Error;
-use crate::rpc::{ProofStatus, ProposerRpcClient};
+use crate::rpc::{ProposerProofStatus, ProposerRpcClient};
 
-const LOOP_DURATION_STEP: Duration = Duration::from_secs(10);
+const CLUSTER_POLL_DURATION_STEP: Duration = Duration::from_secs(10);
 
 mod config;
 mod error;
@@ -43,21 +43,21 @@ impl ProposerClient {
         })
     }
 
-    pub async fn request_proofs(&mut self, request: Request) -> Result<ProofId, error::Error> {
+    pub async fn request_span_proof(&mut self, request: Request) -> Result<ProofId, Error> {
         self.rpc
             .request_span_proof(request.into())
             .await
             .map(Into::into)
     }
 
-    pub async fn check_status(&mut self, proof_id: &ProofId) -> Result<ProofStatus, error::Error> {
+    pub async fn check_status(&mut self, proof_id: &ProofId) -> Result<ProposerProofStatus, Error> {
         self.rpc.check_status(proof_id).await
     }
 
     pub async fn wait_for_proof(
         &mut self,
         proof_id: ProofId,
-    ) -> Result<Option<SP1ProofWithPublicValues>, error::Error> {
+    ) -> Result<Option<SP1ProofWithPublicValues>, Error> {
         if proof_id.0.len() != 32 {
             return Err(Error::InvalidProofId(proof_id));
         }
@@ -78,9 +78,9 @@ impl ProposerClient {
                     return Err(Error::ProofRequestUnfullfilable(proof_id));
                 }
                 _ => {
-                    tokio::time::sleep(LOOP_DURATION_STEP).await;
+                    tokio::time::sleep(CLUSTER_POLL_DURATION_STEP).await;
                     remaining_timeout = remaining_timeout
-                        .checked_sub(LOOP_DURATION_STEP)
+                        .checked_sub(CLUSTER_POLL_DURATION_STEP)
                         .unwrap_or_default();
                 }
             }

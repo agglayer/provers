@@ -5,7 +5,7 @@ use tracing::{debug, info};
 
 use crate::{error::Error, ProofId, Request};
 
-pub struct ProposerRpcClient {
+pub(crate) struct ProposerRpcClient {
     client: reqwest::Client,
     url: String,
 }
@@ -24,15 +24,15 @@ impl ProposerRpcClient {
 
     pub async fn request_span_proof(
         &self,
-        request: SpanProofRequest,
-    ) -> Result<ProofResponse, Error> {
+        request: ProposerSpanProofRequest,
+    ) -> Result<ProposerProofResponse, Error> {
         let proof_response = self
             .client
             .post(format!("{}/request_span_proof", self.url.as_str()))
             .json(&request)
             .send()
             .await?
-            .json::<ProofResponse>()
+            .json::<ProposerProofResponse>()
             .await?;
 
         info!(
@@ -43,14 +43,14 @@ impl ProposerRpcClient {
         Ok(proof_response)
     }
 
-    pub async fn check_status(&self, proof_id: &ProofId) -> Result<ProofStatus, Error> {
+    pub async fn check_status(&self, proof_id: &ProofId) -> Result<ProposerProofStatus, Error> {
         let proof_id_str = hex::encode(&proof_id.0);
         let proof_status = self
             .client
-            .get(format!("{}/status/{}", self.url.as_str(), &proof_id_str,))
+            .get(format!("{}/status/{}", self.url.as_str(), &proof_id_str))
             .send()
             .await?
-            .json::<ProofStatus>()
+            .json::<ProposerProofStatus>()
             .await?;
 
         debug!(proof_id = proof_id_str, "status: {:?}", proof_status);
@@ -59,16 +59,15 @@ impl ProposerRpcClient {
     }
 }
 
-// Proposer structures
-
+/// Request format for the proposer `request_span_proof`
 #[derive(Deserialize, Serialize, Debug)]
-pub struct SpanProofRequest {
+pub struct ProposerSpanProofRequest {
     pub start: u64,
     pub end: u64,
 }
 
-impl From<SpanProofRequest> for Request {
-    fn from(request: SpanProofRequest) -> Self {
+impl From<ProposerSpanProofRequest> for Request {
+    fn from(request: ProposerSpanProofRequest) -> Self {
         Request {
             start_block: request.start,
             end_block: request.end,
@@ -76,35 +75,36 @@ impl From<SpanProofRequest> for Request {
     }
 }
 
-impl From<Request> for SpanProofRequest {
+impl From<Request> for ProposerSpanProofRequest {
     fn from(request: Request) -> Self {
-        SpanProofRequest {
+        ProposerSpanProofRequest {
             start: request.start_block,
             end: request.end_block,
         }
     }
 }
 
+/// Response for the proposer `request_span_proof`
 #[derive(Serialize, Deserialize, Debug)]
-pub struct ProofResponse {
+pub struct ProposerProofResponse {
     pub proof_id: Vec<u8>,
 }
 
-impl Display for ProofResponse {
+impl Display for ProposerProofResponse {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", hex::encode(&self.proof_id))
     }
 }
 
-impl From<ProofResponse> for ProofId {
-    fn from(proof_response: ProofResponse) -> Self {
+impl From<ProposerProofResponse> for ProofId {
+    fn from(proof_response: ProposerProofResponse) -> Self {
         ProofId(proof_response.proof_id)
     }
 }
 
-impl From<ProofId> for ProofResponse {
+impl From<ProofId> for ProposerProofResponse {
     fn from(proof_id: ProofId) -> Self {
-        ProofResponse {
+        ProposerProofResponse {
             proof_id: proof_id.0,
         }
     }
@@ -112,7 +112,7 @@ impl From<ProofId> for ProofResponse {
 
 #[derive(Serialize, Deserialize, Debug)]
 /// The status of a proof request.
-pub struct ProofStatus {
+pub struct ProposerProofStatus {
     pub fulfillment_status: i32,
     pub execution_status: i32,
     pub proof: Vec<u8>,
