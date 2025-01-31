@@ -19,8 +19,11 @@ tonic = { workspace = true, default-features = false, features = [
     "codegen",
     "transport",
 ] }
+tokio.workspace = true
 tracing.workspace = true
 
+sp1-sdk = { workspace = true, features = ["native-gnark"] }
+prover-config.workspace = true
 
 
 [features]
