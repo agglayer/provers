@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
-default-members = ["crates/agglayer-prover"]
+default-members = ["crates/agglayer-prover",
+    "crates/proposer-client"]
 members = ["crates/*"]
 
 [workspace.package]
@@ -26,6 +27,7 @@ prover-logger = { path = "crates/prover-logger" }
 prover-executor = { path = "crates/prover-executor" }
 prover-config = { path = "crates/prover-config" }
 prover-utils = { path = "crates/prover-utils" }
+proposer-client = { path = "crates/proposer-client" }
 
 agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
 agglayer-types = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
@@ -51,6 +53,8 @@ hyper = "1.5.2"
 jsonrpsee = { version = "0.24.7", features = ["full"] }
 lazy_static = "1.5.0"
 parking_lot = "0.12.3"
+prost = "0.13.4"
+reqwest = "0.12"
 serde = { version = "1.0.216", features = ["derive"] }
 serde_json = "1.0.133"
 serde_with = "3.11.0"
