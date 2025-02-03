@@ -9,7 +9,7 @@ use tonic::{
     server::NamedService,
 };
 use tower::{Service, ServiceExt};
-use tracing::info;
+use tracing::{debug, info, warn};
 
 pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
@@ -26,7 +26,7 @@ impl ProverEngine {
     pub fn builder() -> Self {
         Self {
             rpc_server: axum::Router::new(),
-            reflection: vec![],
+            reflection: vec![tonic_health::pb::FILE_DESCRIPTOR_SET],
             healthy_service: vec![],
             rpc_runtime: None,
             metrics_runtime: None,
@@ -53,6 +53,11 @@ impl ProverEngine {
         self
     }
 
+    pub fn add_rpc_reflection(mut self, reflection: &'static [u8]) -> Self {
+        self.reflection.push(reflection);
+
+        self
+    }
     pub fn add_rpc_service<S>(mut self, rpc_service: S) -> Self
     where
         S: Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
@@ -77,6 +82,7 @@ impl ProverEngine {
     }
 
     pub fn start(mut self) -> anyhow::Result<()> {
+        warn!("Starting the prover engine");
         let cancellation_token = self.cancellation_token.take().unwrap_or_default();
 
         let metrics_runtime = self
@@ -101,6 +107,7 @@ impl ProverEngine {
         let addr: SocketAddr = "[::1]:10000".parse().unwrap();
         let telemetry_addr: SocketAddr = "[::1]:3400".parse().unwrap();
 
+        debug!("Starting the metrics server..");
         // Create the metrics server.
         let metric_server = metrics_runtime.block_on(
             MetricsBuilder::builder()
@@ -136,16 +143,20 @@ impl ProverEngine {
             },
         );
 
-        let reflection_v1 = reflection_v1
-            .register_encoded_file_descriptor_set(tonic_health::pb::FILE_DESCRIPTOR_SET)
-            .build_v1()
-            .unwrap();
+        let (reflection_v1, reflection_v1alpha) = self.reflection.iter().fold(
+            (reflection_v1, reflection_v1alpha),
+            |(reflection_v1, reflection_v1alpha), descriptor| {
+                (
+                    reflection_v1.register_encoded_file_descriptor_set(descriptor),
+                    reflection_v1alpha.register_encoded_file_descriptor_set(descriptor),
+                )
+            },
+        );
 
-        let reflection_v1alpha = reflection_v1alpha
-            .register_encoded_file_descriptor_set(tonic_health::pb::FILE_DESCRIPTOR_SET)
-            .build_v1alpha()
-            .unwrap();
+        let reflection_v1 = reflection_v1.build_v1().unwrap();
+        let reflection_v1alpha = reflection_v1alpha.build_v1alpha().unwrap();
 
+        debug!("Setting the health status of the services to healthy");
         prover_runtime.block_on(async {
             for service_name in self.healthy_service.iter() {
                 health_reporter
@@ -154,6 +165,7 @@ impl ProverEngine {
             }
         });
 
+        debug!("Adding the reflection and health services to the RPC server");
         // Adding the reflection and health services to the RPC server
         let rpc_server = add_rpc_service(self.rpc_server, reflection_v1);
         let rpc_server = add_rpc_service(rpc_server, reflection_v1alpha);
@@ -166,6 +178,8 @@ impl ProverEngine {
                 .into_future(),
         );
 
+        info!("Metrics server started on {}", telemetry_addr);
+        info!("RPC server started on {}", addr);
         let terminate_signal = async {
             tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
                 .expect("Fail to setup SIGTERM signal")
@@ -218,7 +232,7 @@ where
     S::Error: Into<BoxError> + Send,
 {
     rpc_server.route_service(
-        &format!("/{}/*rest", S::NAME),
+        &format!("/{}/{{*rest}}", S::NAME),
         rpc_service.map_request(|r: Request<axum::body::Body>| r.map(boxed)),
     )
 }

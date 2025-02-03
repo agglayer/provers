@@ -1,13 +1,9 @@
-use std::{convert::Infallible, sync::Arc, task::Poll};
+use std::sync::Arc;
 
-use http::{Request, Response};
+use aggkit_prover::aggchain_proof::GrpcService;
+use aggkit_prover_types::v1::aggchain_proof_service_server::AggchainProofServiceServer;
 use prover_engine::ProverEngine;
 use tokio_util::sync::CancellationToken;
-use tonic::{
-    body::{empty_body, BoxBody},
-    server::NamedService,
-};
-use tower::Service;
 use tracing::info;
 
 fn main() -> anyhow::Result<()> {
@@ -31,39 +27,16 @@ fn main() -> anyhow::Result<()> {
         .enable_all()
         .build()?;
 
-    // TODO: implement the auth-proof service
-    let auth_proof_service = AuthProofService;
+    // TODO: implement the aggchain-proof service
+    let aggchain_proof_service = AggchainProofServiceServer::new(GrpcService::default());
 
     _ = ProverEngine::builder()
-        .add_rpc_service(auth_proof_service)
+        .add_rpc_service(aggchain_proof_service)
+        .add_reflection_service(aggkit_prover_types::FILE_DESCRIPTOR_SET)
         .set_rpc_runtime(prover_runtime)
         .set_metrics_runtime(metrics_runtime)
         .set_cancellation_token(global_cancellation_token)
         .start();
 
     Ok(())
-}
-
-#[derive(Clone, Copy)]
-struct AuthProofService;
-
-impl NamedService for AuthProofService {
-    const NAME: &'static str = "auth-proof-service";
-}
-
-impl Service<Request<BoxBody>> for AuthProofService {
-    type Response = Response<BoxBody>;
-
-    type Error = Infallible;
-
-    type Future = futures::future::Ready<Result<Self::Response, Self::Error>>;
-
-    fn poll_ready(&mut self, _cx: &mut std::task::Context<'_>) -> Poll<Result<(), Self::Error>> {
-        Poll::Ready(Ok(()))
-    }
-
-    fn call(&mut self, request: Request<BoxBody>) -> Self::Future {
-        info!("Received request: {:?}", request);
-        futures::future::ok(Response::new(empty_body()))
-    }
 }
