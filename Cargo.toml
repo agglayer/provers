@@ -2,6 +2,7 @@
 resolver = "2"
 default-members = ["crates/agglayer-prover"]
 members = ["crates/*"]
+exclude = ["crates/prover-dummy-program"]
 
 [workspace.package]
 version = "0.1.0"
@@ -28,8 +29,6 @@ prover-config = { path = "crates/prover-config" }
 prover-utils = { path = "crates/prover-utils" }
 
 agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
-agglayer-types = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
-pessimistic-proof = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
 
 # Core dependencies
 alloy = { version = "0.8.1", features = ["full"] }
