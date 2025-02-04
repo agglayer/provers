@@ -8,11 +8,6 @@ use std::{
 use agglayer_prover_config::ProverConfig;
 use agglayer_prover_types::Error;
 use futures::{Future, TryFutureExt};
-use pessimistic_proof::ELF;
-use pessimistic_proof::{
-    local_exit_tree::hasher::Keccak256Hasher, multi_batch_header::MultiBatchHeader,
-    LocalNetworkState,
-};
 use prover_config::ProverType;
 use sp1_sdk::{
     network::{prover::NetworkProver, FulfillmentStrategy},
@@ -36,9 +31,9 @@ pub struct Executor {
 }
 
 impl Executor {
-    pub fn get_vkey() -> SP1VerifyingKey {
+    pub fn get_vkey(elf: &[u8]) -> SP1VerifyingKey {
         let prover = CpuProver::new();
-        let (_proving_key, verification_key) = prover.setup(ELF);
+        let (_proving_key, verification_key) = prover.setup(elf);
 
         verification_key
     }
@@ -157,21 +152,7 @@ impl Executor {
 
 #[derive(Debug, Clone)]
 pub struct Request {
-    pub initial_state: LocalNetworkState,
-    pub batch_header: MultiBatchHeader<Keccak256Hasher>,
-}
-
-impl From<Request> for SP1Stdin {
-    fn from(request: Request) -> Self {
-        let mut stdin = SP1Stdin::new();
-
-        let initial_state = pessimistic_proof::NetworkState::from(request.initial_state);
-
-        stdin.write(&initial_state);
-        stdin.write(&request.batch_header);
-
-        stdin
-    }
+    pub stdin: SP1Stdin,
 }
 
 #[derive(Debug, Clone)]
@@ -232,7 +213,7 @@ impl Service<Request> for LocalExecutor {
 
     fn call(&mut self, req: Request) -> Self::Future {
         let prover = self.prover.clone();
-        let stdin = req.into();
+        let stdin = req.stdin;
 
         let proving_key = self.proving_key.clone();
         let verification_key = self.verification_key.clone();
@@ -283,7 +264,7 @@ impl Service<Request> for NetworkExecutor {
 
     fn call(&mut self, req: Request) -> Self::Future {
         let prover = self.prover.clone();
-        let stdin = req.into();
+        let stdin = req.stdin;
 
         let verification_key = self.verification_key.clone();
         let proving_key = self.proving_key.clone();
