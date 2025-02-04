@@ -9,7 +9,7 @@ use tonic::{
     server::NamedService,
 };
 use tower::{Service, ServiceExt};
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
@@ -82,7 +82,7 @@ impl ProverEngine {
     }
 
     pub fn start(mut self) -> anyhow::Result<()> {
-        warn!("Starting the prover engine");
+        info!("Starting the prover engine");
         let cancellation_token = self.cancellation_token.take().unwrap_or_default();
 
         let metrics_runtime = self
