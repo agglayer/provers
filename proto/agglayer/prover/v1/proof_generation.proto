@@ -4,8 +4,7 @@ package agglayer.prover.v1;
 
 // Service for generating pessimistic proof.
 service PessimisticProofService {
-  // Triggers a pessimistic-proof generation for a given batch header and
-  // initial state.
+  // Triggers a pessimistic-proof generation.
   rpc GenerateProof(GenerateProofRequest) returns (GenerateProofResponse);
 }
 

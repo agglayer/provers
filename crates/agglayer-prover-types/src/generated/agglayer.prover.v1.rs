@@ -169,8 +169,7 @@ pub mod pessimistic_proof_service_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        /// Triggers a pessimistic-proof generation for a given batch header and
-        /// initial state.
+        /// Triggers a pessimistic-proof generation.
         pub async fn generate_proof(
             &mut self,
             request: impl tonic::IntoRequest<super::GenerateProofRequest>,
@@ -215,8 +214,7 @@ pub mod pessimistic_proof_service_server {
     /// Generated trait containing gRPC methods that should be implemented for use with PessimisticProofServiceServer.
     #[async_trait]
     pub trait PessimisticProofService: std::marker::Send + std::marker::Sync + 'static {
-        /// Triggers a pessimistic-proof generation for a given batch header and
-        /// initial state.
+        /// Triggers a pessimistic-proof generation.
         async fn generate_proof(
             &self,
             request: tonic::Request<super::GenerateProofRequest>,
