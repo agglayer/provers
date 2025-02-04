@@ -4,16 +4,18 @@ package agglayer.prover.v1;
 
 // Service for generating pessimistic proof.
 service PessimisticProofService {
-  // Triggers a pessimistic-proof generation for a given batch header and initial state.
+  // Triggers a pessimistic-proof generation for a given batch header and
+  // initial state.
   rpc GenerateProof(GenerateProofRequest) returns (GenerateProofResponse);
 }
 
 // Type used to request a pessimistic proof generation.
 message GenerateProofRequest {
-  // The initial state of the network used to generate the pessimistic proof.
-  bytes initial_state = 1;
-  // The batch header for which the proof is generated.
-  bytes batch_header = 2;
+  // Represents the type of stdin of the request
+  oneof stdin {
+    // STDIN using sp1 format
+    bytes sp1_stdin = 1;
+  }
 }
 
 // Type used as response to a pessimistic proof generation.

@@ -26,17 +26,12 @@ tonic-reflection = "0.12.3"
 agglayer-prover-config.workspace = true
 agglayer-prover-types.workspace = true
 agglayer-telemetry.workspace = true
-agglayer-types.workspace = true
-pessimistic-proof.workspace = true
 prover-engine.workspace = true
 prover-executor.workspace = true
 prover-logger.workspace = true
 
 sp1-sdk = { workspace = true, features = ["native-gnark"] }
 sp1-prover = { workspace = true, features = ["native-gnark"] }
-
-[dev-dependencies]
-agglayer-types = { workspace = true, features = ["testutils"] }
 
 [features]
 default = []

@@ -4,12 +4,9 @@ use std::sync::Arc;
 use agglayer_prover_types::v1::pessimistic_proof_service_server::{
     PessimisticProofService, PessimisticProofServiceServer,
 };
-use agglayer_prover_types::Error;
+use agglayer_prover_types::{v1::generate_proof_request::Stdin, Error};
 use bincode::Options;
-use pessimistic_proof::local_exit_tree::hasher::Keccak256Hasher;
-use pessimistic_proof::multi_batch_header::MultiBatchHeader;
-use pessimistic_proof::{LocalNetworkState, ELF};
-use prover_executor::{Request, Response};
+use sp1_sdk::SP1Stdin;
 use sp1_sdk::{CpuProver, Prover as _, ProverClient};
 use tonic::codec::CompressionEncoding;
 use tonic::transport::Server;
@@ -22,10 +19,10 @@ pub struct FakeProver {
     proving_key: sp1_sdk::SP1ProvingKey,
 }
 
-impl Default for FakeProver {
-    fn default() -> Self {
+impl FakeProver {
+    pub fn new(elf: &[u8]) -> Self {
         let prover = ProverClient::builder().mock().build();
-        let (proving_key, _verifying_key) = prover.setup(ELF);
+        let (proving_key, _verifying_key) = prover.setup(elf);
 
         Self {
             proving_key,
@@ -87,23 +84,15 @@ impl PessimisticProofService for FakeProver {
     ) -> Result<tonic::Response<agglayer_prover_types::v1::GenerateProofResponse>, tonic::Status>
     {
         debug!("Received proof generation request");
-        let request = request.into_inner();
-        let initial_state: LocalNetworkState = agglayer_prover_types::default_bincode_options()
-            .deserialize(&request.initial_state)
-            .map_err(|_| tonic::Status::invalid_argument("Unable to deserialize initial state"))?;
-
-        let batch_header: MultiBatchHeader<Keccak256Hasher> =
-            agglayer_prover_types::default_bincode_options()
-                .deserialize(&request.batch_header)
-                .map_err(|_| {
-                    tonic::Status::invalid_argument("Unable to deserialize batch header")
-                })?;
-
-        let request = Request {
-            initial_state,
-            batch_header,
+        let request_inner = request.into_inner();
+        let stdin: SP1Stdin = match request_inner.stdin {
+            Some(Stdin::Sp1Stdin(stdin)) => agglayer_prover_types::default_bincode_options()
+                .deserialize(&stdin)
+                .map_err(|_| tonic::Status::invalid_argument("Unable to deserialize stdin"))?,
+            None => {
+                return Err(tonic::Status::invalid_argument("stdin is required"));
+            }
         };
-        let stdin = request.into();
 
         let result = self
             .prover
@@ -114,7 +103,7 @@ impl PessimisticProofService for FakeProver {
         match result {
             Ok(proof) => {
                 let proof = agglayer_prover_types::default_bincode_options()
-                    .serialize(&agglayer_types::Proof::SP1(proof))
+                    .serialize(&agglayer_prover_types::Proof::SP1(proof))
                     .unwrap();
                 debug!("Proof generated successfully, size: {}B", proof.len());
                 Ok(tonic::Response::new(
