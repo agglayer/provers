@@ -18,6 +18,7 @@ aggkit-prover-types.workspace = true
 proposer-client.workspace = true
 prover-engine.workspace = true
 prover-logger.workspace = true
+url = "2.5.4"
 
 [lints]
 workspace = true

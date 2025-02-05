@@ -9,7 +9,7 @@ use tonic_types::StatusExt;
 use tower::{service_fn, Service};
 
 use crate::aggchain_proof::{
-    service::{AggchainProofService, ProofRequest},
+    service::{AggchainProofService, AggchainProofServiceRequest},
     GrpcService,
 };
 
@@ -21,7 +21,7 @@ async fn service_can_be_called() {
         "0xaabbccddff000000000000000000000000000000000000000000000000000000",
     );
     let mut service = AggchainProofService::default();
-    let request = ProofRequest {
+    let request = AggchainProofServiceRequest {
         start_block: 0,
         max_block: 100,
     };

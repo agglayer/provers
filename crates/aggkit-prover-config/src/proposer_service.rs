@@ -1,8 +1,15 @@
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Default)]
+#[serde(rename_all = "kebab-case")]
+pub struct ProposerServiceConfig {
+    pub client: ProposerClientConfig,
+}
+
 use std::str::FromStr;
 use std::time::Duration;
 
 use prover_utils::from_env_or_default;
-use serde::{Deserialize, Serialize};
 use url::Url;
 
 /// The default proposer service endpoint
