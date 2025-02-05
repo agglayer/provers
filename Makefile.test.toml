@@ -5,18 +5,18 @@ SP1_TOOLCHAIN_HASH_aarch64 = "68bc4a29237e2eb862da36324d19cf835bb93f45106ad206ba
 SP1_TOOLCHAIN_HASH_x86_64 = "f8b978b44fdedfd9f3dfea127ee11f13ee2fdaaffdea2619489dff7bbe791cce"
 SP1_ARCH = "x86_64"
 
-[tasks.pp-elf]
-description = "Install pessimistic proof ELF file"
-dependencies = ["pp-elf-build"]
-cwd = "crates/pessimistic-proof-program"
+[tasks.dummy-elf]
+description = "Install dummy-program ELF file"
+dependencies = ["dummy-elf-build"]
+cwd = "crates/prover-dummy-program"
 command = "cp"
 args = [
-    "target/riscv32im-succinct-zkvm-elf/release/pessimistic-proof-program",
+    "target/riscv32im-succinct-zkvm-elf/release/prover-dummy-program",
     "elf/riscv32im-succinct-zkvm-elf",
 ]
 
-[tasks.pp-elf-build]
-description = "Compile pessimistic proof ELF file"
+[tasks.dummy-elf-build]
+description = "Compile dummy program ELF file"
 dependencies = ["sp1-toolchain-image"]
 command = "docker"
 args = [
@@ -26,7 +26,7 @@ args = [
     "--env",
     "CARGO_ENCODED_RUSTFLAGS=-C\u001fpasses=loweratomic\u001f-C\u001flink-arg=-Ttext=0x00200800\u001f-C\u001fpanic=abort",
     "-v${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}:/sp1/source",
-    "-w/sp1/source/crates/pessimistic-proof-program",
+    "-w/sp1/source/crates/prover-dummy-program",
     "sp1:ppbuild",
     "cargo",
     "build",

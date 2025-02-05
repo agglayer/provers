@@ -16,5 +16,13 @@ pub fn default_bincode_options(
         .with_fixint_encoding()
 }
 
+/// Proof is a wrapper around all the different types of proofs that can be
+/// generated
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Proof {
+    SP1(SP1ProofWithPublicValues),
+}
 pub mod error;
 pub use error::Error;
+use serde::{Deserialize, Serialize};
+use sp1_sdk::SP1ProofWithPublicValues;

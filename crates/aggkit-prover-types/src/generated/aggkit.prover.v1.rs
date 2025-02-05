@@ -8,15 +8,17 @@ pub struct GenerateAggchainProofRequest {
     /// The max end block for which the aggchain proof is requested.
     #[prost(uint64, tag = "2")]
     pub max_end_block: u64,
-    /// L1 Info tree hash.
+    /// L1 Info tree root. (hash)
     #[prost(bytes = "vec", tag = "3")]
-    pub l1_info_tree_hash: ::prost::alloc::vec::Vec<u8>,
-    /// L1 Info tree leaf.
+    pub l1_info_tree_root_hash: ::prost::alloc::vec::Vec<u8>,
+    /// L1 Info tree leaf. (hash)
     #[prost(bytes = "vec", tag = "4")]
-    pub l1_info_tree_leaf: ::prost::alloc::vec::Vec<u8>,
-    /// L1 Info tree proof.
+    pub l1_info_tree_leaf_hash: ::prost::alloc::vec::Vec<u8>,
+    /// L1 Info tree proof. (\[32\]hash)
     #[prost(bytes = "vec", repeated, tag = "5")]
-    pub l1_info_tree_proof: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
+    pub l1_info_tree_merkle_proof: ::prost::alloc::vec::Vec<
+        ::prost::alloc::vec::Vec<u8>,
+    >,
 }
 /// The aggchain proof response message.
 #[derive(Clone, PartialEq, ::prost::Message)]

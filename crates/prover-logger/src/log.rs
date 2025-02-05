@@ -49,7 +49,9 @@ impl Display for LogLevel {
 
 impl From<LogLevel> for EnvFilter {
     fn from(value: LogLevel) -> Self {
-        EnvFilter::new(format!("warn,agglayer={value},pessimistic_proof={value}"))
+        EnvFilter::new(format!(
+            "warn,prover={value},aggkit={value},agglayer={value},pessimistic_proof={value}"
+        ))
     }
 }
 

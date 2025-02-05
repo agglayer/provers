@@ -2,12 +2,19 @@
 /// Type used to request a pessimistic proof generation.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenerateProofRequest {
-    /// The initial state of the network used to generate the pessimistic proof.
-    #[prost(bytes = "vec", tag = "1")]
-    pub initial_state: ::prost::alloc::vec::Vec<u8>,
-    /// The batch header for which the proof is generated.
-    #[prost(bytes = "vec", tag = "2")]
-    pub batch_header: ::prost::alloc::vec::Vec<u8>,
+    /// Represents the type of stdin of the request
+    #[prost(oneof = "generate_proof_request::Stdin", tags = "1")]
+    pub stdin: ::core::option::Option<generate_proof_request::Stdin>,
+}
+/// Nested message and enum types in `GenerateProofRequest`.
+pub mod generate_proof_request {
+    /// Represents the type of stdin of the request
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Stdin {
+        /// STDIN using sp1 format
+        #[prost(bytes, tag = "1")]
+        Sp1Stdin(::prost::alloc::vec::Vec<u8>),
+    }
 }
 /// Type used as response to a pessimistic proof generation.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -162,7 +169,7 @@ pub mod pessimistic_proof_service_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        /// Triggers a pessimistic-proof generation for a given batch header and initial state.
+        /// Triggers a pessimistic-proof generation.
         pub async fn generate_proof(
             &mut self,
             request: impl tonic::IntoRequest<super::GenerateProofRequest>,
@@ -207,7 +214,7 @@ pub mod pessimistic_proof_service_server {
     /// Generated trait containing gRPC methods that should be implemented for use with PessimisticProofServiceServer.
     #[async_trait]
     pub trait PessimisticProofService: std::marker::Send + std::marker::Sync + 'static {
-        /// Triggers a pessimistic-proof generation for a given batch header and initial state.
+        /// Triggers a pessimistic-proof generation.
         async fn generate_proof(
             &self,
             request: tonic::Request<super::GenerateProofRequest>,

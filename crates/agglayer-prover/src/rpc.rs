@@ -1,13 +1,15 @@
-use agglayer_prover_types::{v1::pessimistic_proof_service_server::PessimisticProofService, Error};
+use agglayer_prover_types::{
+    v1::{
+        generate_proof_request::Stdin, pessimistic_proof_service_server::PessimisticProofService,
+    },
+    Error,
+};
 use agglayer_telemetry::prover::{
     PROVING_REQUEST_FAILED, PROVING_REQUEST_RECV, PROVING_REQUEST_SUCCEEDED,
 };
 use bincode::Options;
-use pessimistic_proof::{
-    local_exit_tree::hasher::Keccak256Hasher, multi_batch_header::MultiBatchHeader,
-    LocalNetworkState,
-};
 use prover_executor::{Request, Response};
+use sp1_sdk::SP1Stdin;
 use tonic::Status;
 use tower::{buffer::Buffer, util::BoxService, Service, ServiceExt};
 use tracing::{debug, error, warn};
@@ -34,16 +36,14 @@ impl PessimisticProofService for ProverRPC {
         debug!("Got a request from {:?}", request.remote_addr());
 
         let request_inner = request.into_inner();
-        let initial_state: LocalNetworkState = agglayer_prover_types::default_bincode_options()
-            .deserialize(&request_inner.initial_state)
-            .map_err(|_| tonic::Status::invalid_argument("Unable to deserialize initial state"))?;
-
-        let batch_header: MultiBatchHeader<Keccak256Hasher> =
-            agglayer_prover_types::default_bincode_options()
-                .deserialize(&request_inner.batch_header)
-                .map_err(|_| {
-                    tonic::Status::invalid_argument("Unable to deserialize batch header")
-                })?;
+        let stdin: SP1Stdin = match request_inner.stdin {
+            Some(Stdin::Sp1Stdin(stdin)) => agglayer_prover_types::default_bincode_options()
+                .deserialize(&stdin)
+                .map_err(|_| tonic::Status::invalid_argument("Unable to deserialize stdin"))?,
+            None => {
+                return Err(tonic::Status::invalid_argument("stdin is required"));
+            }
+        };
 
         let mut executor = self.executor.clone();
         let executor = executor
@@ -51,17 +51,11 @@ impl PessimisticProofService for ProverRPC {
             .await
             .map_err(|_error| tonic::Status::internal("Unable to get proof executor"))?;
 
-        match executor
-            .call(Request {
-                initial_state,
-                batch_header,
-            })
-            .await
-        {
+        match executor.call(Request { stdin }).await {
             Ok(result) => {
                 let response = agglayer_prover_types::v1::GenerateProofResponse {
                     proof: agglayer_prover_types::default_bincode_options()
-                        .serialize(&agglayer_types::Proof::SP1(result.proof))
+                        .serialize(&agglayer_prover_types::Proof::SP1(result.proof))
                         .map_err(|_| {
                             tonic::Status::internal("Unable to serialize generated proof")
                         })?,

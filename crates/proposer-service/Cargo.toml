@@ -1,36 +1,25 @@
 [package]
-name = "aggkit-prover"
+name = "proposer-service"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-
-[lints]
-workspace = true
 
 [dependencies]
 anyhow.workspace = true
 bincode.workspace = true
 futures.workspace = true
 http = "1.2.0"
-thiserror.workspace = true
 tokio = { workspace = true, features = ["full"] }
 tokio-util.workspace = true
 tonic = { workspace = true, features = ["zstd"] }
-tonic-types = { workspace = true }
 tower = { workspace = true, features = ["timeout"] }
+thiserror.workspace = true
 tracing.workspace = true
 
-aggchain-proof-builder.workspace = true
 aggkit-prover-config.workspace = true
 aggkit-prover-types.workspace = true
-proposer-service = { path = "../proposer-service" }
 prover-engine.workspace = true
 prover-logger.workspace = true
 
-[dev-dependencies]
-hyper-util = "0.1.10"
-tokio-stream = { workspace = true, features = ["sync"] }
-
-[features]
-default = []
-testutils = []
+[lints]
+workspace = true

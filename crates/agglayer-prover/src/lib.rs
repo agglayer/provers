@@ -1,13 +1,7 @@
-use std::{future::IntoFuture, path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc};
 
-use agglayer_prover_config::ProverConfig;
-use agglayer_telemetry::ServerBuilder as MetricsBuilder;
-use anyhow::Result;
-use pessimistic_proof::ELF;
-use prover::Prover;
+use prover_engine::ProverEngine;
 use sp1_sdk::HashableKey;
-use tokio_util::sync::CancellationToken;
-use tracing::info;
 
 #[cfg(feature = "testutils")]
 pub mod fake;
@@ -22,18 +16,17 @@ mod rpc;
 ///
 /// This function returns on fatal error or after graceful shutdown has
 /// completed.
-pub fn main(cfg: PathBuf, version: &str) -> Result<()> {
-    // Load the configuration file
-    let config: Arc<ProverConfig> = Arc::new(toml::from_str(&std::fs::read_to_string(cfg)?)?);
-
-    let global_cancellation_token = CancellationToken::new();
+pub fn main(cfg: PathBuf, version: &str, program: &'static [u8]) -> anyhow::Result<()> {
+    let config = Arc::new(agglayer_prover_config::ProverConfig::try_load(&cfg)?);
 
     // Initialize the logger
     prover_logger::tracing(&config.log);
 
+    let global_cancellation_token = CancellationToken::new();
+
     info!("Starting agglayer prover version info: {}", version);
 
-    let node_runtime = tokio::runtime::Builder::new_multi_thread()
+    let prover_runtime = tokio::runtime::Builder::new_multi_thread()
         .thread_name("agglayer-prover-runtime")
         .enable_all()
         .build()?;
@@ -44,86 +37,50 @@ pub fn main(cfg: PathBuf, version: &str) -> Result<()> {
         .enable_all()
         .build()?;
 
-    // Create the metrics server.
-    let metric_server = metrics_runtime.block_on(
-        MetricsBuilder::builder()
-            .addr(config.telemetry.addr)
-            .cancellation_token(global_cancellation_token.clone())
-            .build(),
-    )?;
+    let pp_service =
+        prover_runtime.block_on(async { crate::prover::Prover::create_service(&config, program) });
 
-    // Spawn the metrics server into the metrics runtime.
-    let metrics_handle = {
-        // This guard is used to ensure that the metrics runtime is entered
-        // before the server is spawned. This is necessary because the `into_future`
-        // of `WithGracefulShutdown` is spawning various tasks before returning the
-        // actual server instance to spawn.
-        let _guard = metrics_runtime.enter();
-        // Spawn the metrics server
-        metrics_runtime.spawn(metric_server.into_future())
-    };
-
-    // Spawn the node.
-    let node = node_runtime.block_on(
-        Prover::builder()
-            .config(config.clone())
-            .program(ELF)
-            .cancellation_token(global_cancellation_token.clone())
-            .start(),
-    )?;
-
-    let terminate_signal = async {
-        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
-            .expect("Fail to setup SIGTERM signal")
-            .recv()
-            .await;
-    };
-
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(async {
-            tokio::select! {
-                _ = terminate_signal => {
-                    info!("Received SIGTERM, shutting down...");
-                    // Cancel the global cancellation token to start the shutdown process.
-                    global_cancellation_token.cancel();
-                    // Wait for the node to shutdown.
-                    node.await_shutdown().await;
-                    // Wait for the metrics server to shutdown.
-                    _ = metrics_handle.await;
-                }
-                _ = tokio::signal::ctrl_c() => {
-                    info!("Received SIGINT (ctrl-c), shutting down...");
-                    // Cancel the global cancellation token to start the shutdown process.
-                    global_cancellation_token.cancel();
-                    // Wait for the node to shutdown.
-                    node.await_shutdown().await;
-                    // Wait for the metrics server to shutdown.
-                    _ = metrics_handle.await;
-                }
-            }
-        });
-
-    node_runtime.shutdown_timeout(config.shutdown.runtime_timeout);
-    metrics_runtime.shutdown_timeout(config.shutdown.runtime_timeout);
+    _ = ProverEngine::builder()
+        .add_rpc_service(pp_service)
+        .set_rpc_runtime(prover_runtime)
+        .set_metrics_runtime(metrics_runtime)
+        .set_cancellation_token(global_cancellation_token)
+        .start();
 
     Ok(())
 }
-
-pub fn get_vkey() -> String {
-    let vkey = prover_executor::Executor::get_vkey();
+pub fn get_vkey(program: &'static [u8]) -> String {
+    let vkey = prover_executor::Executor::get_vkey(program);
     vkey.bytes32().to_string()
 }
 
 #[cfg(feature = "testutils")]
-#[tokio::main]
-pub async fn start_prover(config: Arc<ProverConfig>, global_cancellation_token: CancellationToken) {
-    let prover = Prover::builder()
-        .config(config)
-        .cancellation_token(global_cancellation_token)
-        .start()
-        .await
-        .unwrap();
-    prover.await_shutdown().await;
+mod testutils {
+    use std::sync::Arc;
+
+    use agglayer_prover_config::ProverConfig;
+    use tokio_util::sync::CancellationToken;
+
+    use super::prover::Prover;
+
+    #[tokio::main]
+    pub async fn start_prover(
+        config: Arc<ProverConfig>,
+        global_cancellation_token: CancellationToken,
+        program: &'static [u8],
+    ) {
+        let prover = Prover::builder()
+            .config(config)
+            .cancellation_token(global_cancellation_token)
+            .program(program)
+            .start()
+            .await
+            .unwrap();
+        prover.await_shutdown().await;
+    }
 }
+
+#[cfg(feature = "testutils")]
+pub use testutils::start_prover;
+use tokio_util::sync::CancellationToken;
+use tracing::info;

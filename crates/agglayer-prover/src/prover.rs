@@ -53,7 +53,7 @@ impl Prover {
     /// This function will return an error if:
     /// - The gRPC server failed to start.
     #[builder(entry = "builder", exit = "start", visibility = "pub(crate)")]
-    pub(crate) async fn start(
+    pub async fn start(
         config: Arc<ProverConfig>,
         cancellation_token: CancellationToken,
         program: &'static [u8],
@@ -90,7 +90,7 @@ impl Prover {
         Ok(Self { handle })
     }
 
-    pub(crate) async fn await_shutdown(self) {
+    pub async fn await_shutdown(self) {
         debug!("Node shutdown started.");
         _ = join!(self.handle);
         debug!("Node shutdown completed.");

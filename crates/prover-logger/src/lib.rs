@@ -1,6 +1,6 @@
 use log::Log;
 use serde::{Deserialize, Serialize};
-use tracing_subscriber::{prelude::*, util::SubscriberInitExt, EnvFilter};
+use tracing_subscriber::{prelude::*, EnvFilter};
 
 pub mod log;
 

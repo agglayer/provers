@@ -1,5 +1,4 @@
 use bincode::Options as _;
-use pessimistic_proof::ProofError;
 use serde::{Deserialize, Serialize};
 use sp1_sdk::SP1VerificationError;
 use tonic::Status;
@@ -20,8 +19,8 @@ pub enum Error {
     #[error("Prover verification failed: {0}")]
     ProofVerificationFailed(#[from] ProofVerificationError),
 
-    #[error("Prover executor failed: {0}")]
-    ExecutorFailed(#[from] ProofError),
+    #[error("Prover executor failed")]
+    ExecutorFailed(Vec<u8>),
 }
 
 impl TryFrom<&Error> for Status {
