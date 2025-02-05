@@ -42,19 +42,13 @@ impl ProposerClient {
     }
 
     pub async fn request_agg_proof(&mut self, request: Request) -> Result<ProofId, Error> {
-        self.rpc
-            .request_agg_proof(request.into())
-            .await
-            .map(Into::into)
+        self.rpc.request_agg_proof(request.into()).await?.try_into()
     }
 
     pub async fn wait_for_proof(
         &mut self,
         proof_id: ProofId,
     ) -> Result<SP1ProofWithPublicValues, Error> {
-        if !proof_id.is_valid() {
-            return Err(Error::InvalidProofId(proof_id));
-        }
         let request_id = B256::from_slice(proof_id.0.as_slice());
 
         self.prover_client
@@ -78,16 +72,10 @@ pub struct Response {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct ProofId(Vec<u8>);
-
-impl ProofId {
-    pub fn is_valid(&self) -> bool {
-        self.0.len() == 32
-    }
-}
+pub struct ProofId([u8; 32]);
 
 impl Display for ProofId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", hex::encode(&self.0))
+        write!(f, "{}", hex::encode(self.0))
     }
 }

@@ -87,16 +87,23 @@ impl Display for ProposerProofResponse {
     }
 }
 
-impl From<ProposerProofResponse> for ProofId {
-    fn from(proof_response: ProposerProofResponse) -> Self {
-        ProofId(proof_response.proof_id)
+impl TryFrom<ProposerProofResponse> for ProofId {
+    type Error = crate::Error;
+
+    fn try_from(proof_response: ProposerProofResponse) -> Result<Self, Error> {
+        let bytes: [u8; 32] = proof_response
+            .proof_id
+            .as_slice()
+            .try_into()
+            .map_err(|_| Error::InvalidProofId(proof_response.proof_id))?;
+        Ok(ProofId(bytes))
     }
 }
 
 impl From<ProofId> for ProposerProofResponse {
     fn from(proof_id: ProofId) -> Self {
         ProposerProofResponse {
-            proof_id: proof_id.0,
+            proof_id: proof_id.0.to_vec(),
         }
     }
 }
