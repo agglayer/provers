@@ -11,8 +11,8 @@ pub enum Error {
     #[error("Proof request with proof_id: {0} timeout")]
     Timeout(ProofId),
 
-    #[error("Proof request with proof_id: {0} is unfullfilable")]
-    ProofRequestUnfullfilable(ProofId),
+    #[error("Proof request with proof_id: {0} is unfulfillable")]
+    ProofRequestUnfulfillable(ProofId),
 
     #[error("Proof request with proof_id {0} error: {1:?}")]
     Proving(ProofId, String),
