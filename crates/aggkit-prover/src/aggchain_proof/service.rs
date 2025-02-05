@@ -4,19 +4,35 @@ use std::{
     task::{Context, Poll},
 };
 
-use aggchain_proof_builder::{AggchainProofBuilderService, Request as ProofBuilderRequest};
+use aggchain_proof_builder::{
+    AggchainProofBuilderService, AgghcainProofBuilderRequest as ProofBuilderRequest,
+};
+use aggkit_prover_config::aggchain_proof::AggchainProofServiceConfig;
+use aggkit_prover_types::{AggchainProof, Hash};
 use proposer_service::{ProposerService, Request as ProposerRequest};
 
 use super::error::Error;
 
+/// Request to the AggchainProofService to generate the
+/// aggchain proof for the range of blocks.
+#[derive(Default, Clone, Debug)]
 pub struct ProofRequest {
-    #[allow(dead_code)]
+    /// Aggchain proof starting block
     pub start_block: u64,
-    #[allow(dead_code)]
+    /// Max number of blocks that the aggchain proof could contain
     pub max_block: u64,
+    /// L1 Info tree root hash.
+    pub l1_info_tree_root: Hash,
+    /// L1 Info tree leaf hash.
+    pub l1_info_tree_leaf: Hash,
+    /// L1 Info tree proof.
+    pub l1_info_tree_proof: [Hash; 32],
 }
 
-pub struct ProofResponse {}
+/// Resulting generated Aggchain proof
+pub struct ProofResponse {
+    proof: AggchainProof,
+}
 
 /// The Aggchain proof service is responsible for orchestrating an Aggchain
 /// proof generation.
@@ -30,12 +46,9 @@ pub(crate) struct AggchainProofService {
     pub(crate) aggchain_proof_builder: AggchainProofBuilderService,
 }
 
-impl Default for AggchainProofService {
-    fn default() -> Self {
-        Self {
-            proposer_service: ProposerService { client: () },
-            aggchain_proof_builder: AggchainProofBuilderService {},
-        }
+impl AggchainProofService {
+    pub fn new(_config: AggchainProofServiceConfig) -> Result<Self, Error> {
+        todo!()
     }
 }
 
@@ -70,7 +83,9 @@ impl tower::Service<ProofRequest> for AggchainProofService {
             proof_builder.call(ProofBuilderRequest {}).await.unwrap();
             // Generate Aggchain proof
 
-            Ok(ProofResponse {})
+            Ok(ProofResponse {
+                proof: AggchainProof::default(),
+            })
         };
 
         Box::pin(fut)

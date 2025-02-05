@@ -1,21 +1,55 @@
+mod provider;
+
+use std::sync::Arc;
 use std::task::{Context, Poll};
 
+use aggkit_prover_config::aggchain_proof::{
+    AggchainProofBuilderConfig, HTTP_RPC_NODE_BACKOFF_MAX_RETRIES, HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
+};
 use futures::{future::BoxFuture, FutureExt};
 
-pub struct Request {}
+use crate::provider::json_rpc::{build_http_retry_provider, AlloyProvider};
+
+pub struct AgghcainProofBuilderRequest {}
 pub struct Response {}
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error("Noop")]
-    Noop,
+    #[error("Alloy error: {0}")]
+    AlloyProviderError(String),
 }
 
 /// This service is responsible for building an Aggchain proof.
-#[derive(Default, Clone)]
-pub struct AggchainProofBuilderService {}
+#[derive(Debug, Clone)]
+pub struct AggchainProofBuilderService {
+    l1_client: Arc<AlloyProvider>,
+    l2_client: Arc<AlloyProvider>,
+}
 
-impl tower::Service<Request> for AggchainProofBuilderService {
+impl AggchainProofBuilderService {
+    pub fn new(config: AggchainProofBuilderConfig) -> Result<Self, Error> {
+        Ok(AggchainProofBuilderService {
+            l1_client: Arc::new(
+                build_http_retry_provider(
+                    config.l1_rpc_endpoint,
+                    HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
+                    HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
+                )
+                .map_err(|e| Error::AlloyProviderError(e.to_string()))?,
+            ),
+            l2_client: Arc::new(
+                build_http_retry_provider(
+                    config.l2_rpc_endpoint,
+                    HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
+                    HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
+                )
+                .map_err(|e| Error::AlloyProviderError(e.to_string()))?,
+            ),
+        })
+    }
+}
+
+impl tower::Service<AgghcainProofBuilderRequest> for AggchainProofBuilderService {
     type Response = Response;
 
     type Error = Error;
@@ -26,7 +60,7 @@ impl tower::Service<Request> for AggchainProofBuilderService {
         todo!()
     }
 
-    fn call(&mut self, _req: Request) -> Self::Future {
+    fn call(&mut self, _req: AgghcainProofBuilderRequest) -> Self::Future {
         async move { Ok(Response {}) }.boxed()
     }
 }

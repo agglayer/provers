@@ -2,6 +2,8 @@ use bincode::{
     config::{BigEndian, FixintEncoding, WithOtherEndian, WithOtherIntEncoding},
     DefaultOptions, Options,
 };
+use serde::{Deserialize, Serialize};
+
 pub const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("generated/aggkit.prover.bin");
 
 #[path = "generated/aggkit.prover.v1.rs"]
@@ -14,4 +16,13 @@ pub fn default_bincode_options(
     DefaultOptions::new()
         .with_big_endian()
         .with_fixint_encoding()
+}
+
+pub type Hash = [u8; 32];
+
+/// Agghcain proof is generated from FEP proof and additional
+/// bridge inputs
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Default)]
+pub struct AggchainProof {
+    proof: Vec<u8>,
 }

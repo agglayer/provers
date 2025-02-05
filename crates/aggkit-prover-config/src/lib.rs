@@ -3,10 +3,15 @@ use std::path::Path;
 
 use prover_config::{NetworkProverConfig, ProverType};
 use prover_logger::log::Log;
-use prover_utils::with;
 use serde::{Deserialize, Serialize};
 
-pub use crate::{shutdown::ShutdownConfig, telemetry::TelemetryConfig};
+use crate::aggchain_proof::AggchainProofServiceConfig;
+pub use crate::{
+    aggchain_proof::AggchainProofBuilderConfig, shutdown::ShutdownConfig,
+    telemetry::TelemetryConfig,
+};
+
+pub mod aggchain_proof;
 
 pub mod shutdown;
 pub(crate) mod telemetry;
@@ -14,7 +19,7 @@ pub(crate) mod telemetry;
 pub(crate) const DEFAULT_IP: std::net::Ipv4Addr = std::net::Ipv4Addr::new(0, 0, 0, 0);
 
 /// The Aggkit Prover configuration.
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct ProverConfig {
     /// The gRPC endpoint used by the prover.
@@ -36,6 +41,9 @@ pub struct ProverConfig {
     #[serde(default)]
     pub shutdown: ShutdownConfig,
 
+    /// Aggchain proof service configuration
+    pub aggchain_proof_service: AggchainProofServiceConfig,
+
     /// The primary prover to be used for generation of the pessimistic proof
     #[serde(default)]
     pub primary_prover: ProverType,
@@ -52,6 +60,7 @@ impl Default for ProverConfig {
             log: Log::default(),
             telemetry: TelemetryConfig::default(),
             shutdown: ShutdownConfig::default(),
+            aggchain_proof_service: AggchainProofServiceConfig::default(),
             primary_prover: ProverType::NetworkProver(NetworkProverConfig::default()),
             fallback_prover: None,
             grpc: Default::default(),
@@ -74,7 +83,7 @@ impl ProverConfig {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct GrpcConfig {
     #[serde(

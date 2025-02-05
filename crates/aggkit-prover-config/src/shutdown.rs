@@ -7,7 +7,7 @@ use serde::Serialize;
 #[serde(rename_all = "kebab-case")]
 pub struct ShutdownConfig {
     #[serde(default = "default_shutdown_runtime_timeout")]
-    #[serde(with = "crate::with::HumanDuration")]
+    #[serde(with = "prover_utils::with::HumanDuration")]
     pub runtime_timeout: Duration,
 }
 

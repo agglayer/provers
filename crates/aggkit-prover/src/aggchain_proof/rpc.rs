@@ -1,3 +1,4 @@
+use aggkit_prover_config::aggchain_proof::AggchainProofServiceConfig;
 use aggkit_prover_types::v1::{
     aggchain_proof_service_server::AggchainProofService as AggchainProofGrpcService,
     GenerateAggchainProofRequest, GenerateAggchainProofResponse,
@@ -9,9 +10,15 @@ use tracing::instrument;
 
 use super::service::{AggchainProofService, ProofRequest};
 
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct GrpcService {
     service: AggchainProofService,
+}
+
+impl GrpcService {
+    pub fn new(_config: &AggchainProofServiceConfig) -> Self {
+        todo!()
+    }
 }
 
 #[tonic::async_trait]
@@ -38,6 +45,8 @@ impl AggchainProofGrpcService for GrpcService {
         let proof_request = ProofRequest {
             start_block: request.start_block,
             max_block: request.max_end_block,
+            // TODO: FIX
+            ..Default::default()
         };
 
         let mut service = self.service.clone();
