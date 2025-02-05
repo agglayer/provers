@@ -50,19 +50,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "aggchain-proof-builder"
+version = "0.1.0"
+dependencies = [
+ "futures",
+ "thiserror 2.0.11",
+ "tower 0.4.13",
+ "tracing",
+]
+
+[[package]]
 name = "aggkit-prover"
 version = "0.1.0"
 dependencies = [
+ "aggchain-proof-builder",
  "aggkit-prover-config",
+ "aggkit-prover-types",
  "anyhow",
  "bincode",
  "futures",
  "http 1.2.0",
+ "hyper-util",
+ "proposer-service",
  "prover-engine",
  "prover-logger",
+ "thiserror 2.0.11",
  "tokio",
+ "tokio-stream",
  "tokio-util",
  "tonic",
+ "tonic-types",
  "tower 0.4.13",
  "tracing",
 ]
@@ -5032,6 +5049,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "proposer-service"
+version = "0.1.0"
+dependencies = [
+ "aggkit-prover-config",
+ "aggkit-prover-types",
+ "anyhow",
+ "bincode",
+ "futures",
+ "http 1.2.0",
+ "prover-engine",
+ "prover-logger",
+ "thiserror 2.0.11",
+ "tokio",
+ "tokio-util",
+ "tonic",
+ "tower 0.4.13",
+ "tracing",
+]
+
+[[package]]
 name = "proptest"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7372,6 +7409,17 @@ dependencies = [
  "prost-types",
  "tokio",
  "tokio-stream",
+ "tonic",
+]
+
+[[package]]
+name = "tonic-types"
+version = "0.12.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0081d8ee0847d01271392a5aebe960a4600f5d4da6c67648a6382a0940f8b367"
+dependencies = [
+ "prost",
+ "prost-types",
  "tonic",
 ]
 
