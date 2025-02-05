@@ -45,6 +45,8 @@ pub fn main(cfg: PathBuf, version: &str, program: &'static [u8]) -> anyhow::Resu
         .set_rpc_runtime(prover_runtime)
         .set_metrics_runtime(metrics_runtime)
         .set_cancellation_token(global_cancellation_token)
+        .set_rpc_socket_addr(config.grpc_endpoint)
+        .set_metric_socket_addr(config.telemetry.addr)
         .start();
 
     Ok(())
