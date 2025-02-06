@@ -20,6 +20,8 @@ pub struct ProverEngine {
     reflection: Vec<&'static [u8]>,
     healthy_service: Vec<&'static str>,
     cancellation_token: Option<CancellationToken>,
+    metric_socket_addr: Option<SocketAddr>,
+    rpc_socket_addr: Option<SocketAddr>,
 }
 
 impl ProverEngine {
@@ -31,6 +33,8 @@ impl ProverEngine {
             rpc_runtime: None,
             metrics_runtime: None,
             cancellation_token: None,
+            metric_socket_addr: None,
+            rpc_socket_addr: None,
         }
     }
 
@@ -45,9 +49,19 @@ impl ProverEngine {
 
         self
     }
-}
 
-impl ProverEngine {
+    pub fn set_metric_socket_addr(mut self, metric_socket_addr: SocketAddr) -> Self {
+        self.metric_socket_addr = Some(metric_socket_addr);
+
+        self
+    }
+
+    pub fn set_rpc_socket_addr(mut self, rpc_socket_addr: SocketAddr) -> Self {
+        self.rpc_socket_addr = Some(rpc_socket_addr);
+
+        self
+    }
+
     pub fn set_cancellation_token(mut self, cancellation_token: CancellationToken) -> Self {
         self.cancellation_token = Some(cancellation_token);
         self
@@ -104,8 +118,16 @@ impl ProverEngine {
                 .build()
         })?;
 
-        let addr: SocketAddr = "[::1]:10000".parse().unwrap();
-        let telemetry_addr: SocketAddr = "[::1]:3400".parse().unwrap();
+        let addr = self.rpc_socket_addr.take().unwrap_or_else(|| {
+            "[::1]:10000"
+                .parse()
+                .expect("Unable to parse the RPC socket address")
+        });
+        let telemetry_addr = self.metric_socket_addr.take().unwrap_or_else(|| {
+            "[::1]:10001"
+                .parse()
+                .expect("Unable to parse the telemetry socket address")
+        });
 
         debug!("Starting the metrics server..");
         // Create the metrics server.
