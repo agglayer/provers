@@ -1,12 +1,25 @@
 use std::task::{Context, Poll};
 
 use futures::{future::BoxFuture, FutureExt};
+use proposer_client::ProposerClient;
 
-type ProposerClient = ();
+use crate::config::ProposerServiceConfig;
+
+pub mod config;
+
+pub mod error;
 
 #[derive(Clone)]
 pub struct ProposerService {
     pub client: ProposerClient,
+}
+
+impl ProposerService {
+    pub fn new(config: ProposerServiceConfig) -> Result<Self, crate::error::Error> {
+        Ok(Self {
+            client: ProposerClient::new(config.client)?,
+        })
+    }
 }
 
 pub struct Request {}
