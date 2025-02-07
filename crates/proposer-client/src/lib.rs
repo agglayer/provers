@@ -34,7 +34,7 @@ where
     proving_timeout: Option<Duration>,
 }
 
-impl<AggProofProposerT: AggProofProposerT, AggProofProverT: AggProofProver>
+impl<AggProofProposerT: AggProofProposer, AggProofProverT: AggProofProver>
     ProposerClient<AggProofProposerT, AggProofProverT>
 {
     pub fn new(
