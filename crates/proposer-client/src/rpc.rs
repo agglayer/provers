@@ -5,7 +5,18 @@ use tracing::info;
 
 use crate::{error::Error, ProofId, Request};
 
-pub(crate) struct ProposerRpcClient {
+/// Proposer client that requests the generation
+/// of the AggProof from the proposer and gets
+/// proof_id in response.
+#[tonic::async_trait]
+pub trait ProposerAggProofClient {
+    async fn request_agg_proof(
+        &self,
+        request: ProposerAggProofRequest,
+    ) -> Result<ProposerProofResponse, Error>;
+}
+
+pub struct ProposerRpcClient {
     client: reqwest::Client,
     url: String,
 }
@@ -21,8 +32,11 @@ impl ProposerRpcClient {
             url: rpc_endpoint.to_owned(),
         })
     }
+}
 
-    pub async fn request_agg_proof(
+#[tonic::async_trait]
+impl ProposerAggProofClient for ProposerRpcClient {
+    async fn request_agg_proof(
         &self,
         request: ProposerAggProofRequest,
     ) -> Result<ProposerProofResponse, Error> {
@@ -78,12 +92,12 @@ impl From<Request> for ProposerAggProofRequest {
 /// Response for the proposer `request_span_proof`
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ProposerProofResponse {
-    pub proof_id: Vec<u8>,
+    pub proof_id: alloy_primitives::B256,
 }
 
 impl Display for ProposerProofResponse {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", hex::encode(&self.proof_id))
+        write!(f, "{}", self.proof_id)
     }
 }
 
@@ -91,11 +105,11 @@ impl TryFrom<ProposerProofResponse> for ProofId {
     type Error = crate::Error;
 
     fn try_from(proof_response: ProposerProofResponse) -> Result<Self, Error> {
-        let bytes: [u8; 32] = proof_response
+        let bytes = proof_response
             .proof_id
             .as_slice()
             .try_into()
-            .map_err(|_| Error::InvalidProofId(proof_response.proof_id))?;
+            .map_err(|_| Error::InvalidProofId(proof_response.proof_id.to_string()))?;
         Ok(ProofId(bytes))
     }
 }
@@ -103,7 +117,7 @@ impl TryFrom<ProposerProofResponse> for ProofId {
 impl From<ProofId> for ProposerProofResponse {
     fn from(proof_id: ProofId) -> Self {
         ProposerProofResponse {
-            proof_id: proof_id.0.to_vec(),
+            proof_id: proof_id.0,
         }
     }
 }

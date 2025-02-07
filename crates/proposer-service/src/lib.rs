@@ -1,7 +1,11 @@
+use std::sync::Arc;
 use std::task::{Context, Poll};
 
 use futures::{future::BoxFuture, FutureExt};
+use proposer_client::network_prover::new_network_prover;
+use proposer_client::rpc::ProposerRpcClient;
 use proposer_client::ProposerClient;
+use sp1_sdk::NetworkProver;
 
 use crate::config::ProposerServiceConfig;
 
@@ -11,13 +15,19 @@ pub mod error;
 
 #[derive(Clone)]
 pub struct ProposerService {
-    pub client: ProposerClient,
+    pub client: Arc<ProposerClient<ProposerRpcClient, NetworkProver>>,
 }
 
 impl ProposerService {
     pub fn new(config: ProposerServiceConfig) -> Result<Self, crate::error::Error> {
+        let proposer_client = ProposerRpcClient::new(config.client.proposer_endpoint.as_str())?;
+        let network_prover = new_network_prover(config.client.sp1_cluster_endpoint.as_str());
         Ok(Self {
-            client: ProposerClient::new(config.client)?,
+            client: Arc::new(ProposerClient::new(
+                proposer_client,
+                network_prover,
+                Some(config.client.proving_timeout),
+            )?),
         })
     }
 }

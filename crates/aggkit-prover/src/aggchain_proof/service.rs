@@ -5,7 +5,6 @@ use std::{
 };
 
 use aggchain_proof_builder::{AggchainProofBuilderService, Request as ProofBuilderRequest};
-use proposer_client::{config::ProposerClientConfig, ProposerClient};
 use proposer_service::{ProposerService, Request as ProposerRequest};
 
 use super::error::Error;
@@ -33,12 +32,8 @@ pub(crate) struct AggchainProofService {
 
 impl Default for AggchainProofService {
     fn default() -> Self {
-        Self {
-            proposer_service: ProposerService {
-                client: ProposerClient::new(ProposerClientConfig::default()).unwrap(),
-            },
-            aggchain_proof_builder: AggchainProofBuilderService {},
-        }
+        // Implement new function and remove this default
+        todo!()
     }
 }
 

@@ -6,7 +6,7 @@ pub enum Error {
     Reqwest(#[from] reqwest::Error),
 
     #[error("Invalid proof_id: {0:?}")]
-    InvalidProofId(Vec<u8>),
+    InvalidProofId(String),
 
     #[error("Proof request with proof_id: {0} timeout")]
     Timeout(ProofId),

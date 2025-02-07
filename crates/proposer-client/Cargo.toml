@@ -8,18 +8,16 @@ license.workspace = true
 workspace = true
 
 [dependencies]
+anyhow.workspace = true
+alloy-primitives.workspace = true
 hex.workspace = true
 prover-utils.workspace = true
 reqwest = { workspace = true, features = ["json"]}
 serde.workspace = true
 thiserror.workspace = true
-tonic = { workspace = true, default-features = false, features = [
-    "prost",
-    "codegen",
-    "transport",
-] }
-tokio.workspace = true
 tracing.workspace = true
+tonic.workspace = true
+url.workspace = true
 
 sp1-sdk = { workspace = true, features = ["native-gnark"] }
 
