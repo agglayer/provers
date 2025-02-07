@@ -24,13 +24,13 @@ pub mod rpc;
 /// and directly communicates with the SP1 cluster using NetworkProver
 /// to retrieve the generated proof.
 #[derive(Clone)]
-pub struct ProposerClient<ProposerAggProofClientT, NetworkProverT>
+pub struct ProposerClient<AggProofProposerT, AggProofProverT>
 where
-    ProposerAggProofClientT: AggProofProposer,
-    NetworkProverT: AggProofProver,
+    AggProofProposerT: AggProofProposer,
+    AggProofProverT: AggProofProver,
 {
-    rpc: Arc<ProposerAggProofClientT>,
-    prover_client: Arc<NetworkProverT>,
+    proposer: Arc<AggProofProposerT>,
+    prover: Arc<AggProofProverT>,
     proving_timeout: Option<Duration>,
 }
 
@@ -38,19 +38,22 @@ impl<AggProofProposerT: AggProofProposer, AggProofProverT: AggProofProver>
     ProposerClient<AggProofProposerT, AggProofProverT>
 {
     pub fn new(
-        proposer_client: AggProofProposerT,
-        network_prover: AggProofProverT,
+        proposer: AggProofProposerT,
+        prover: AggProofProverT,
         timeout: Option<Duration>,
     ) -> Result<Self, error::Error> {
         Ok(ProposerClient {
-            rpc: Arc::new(proposer_client),
-            prover_client: Arc::new(network_prover),
+            proposer: Arc::new(proposer),
+            prover: Arc::new(prover),
             proving_timeout: timeout,
         })
     }
 
     pub async fn request_agg_proof(&mut self, request: Request) -> Result<ProofId, Error> {
-        self.rpc.request_agg_proof(request.into()).await?.try_into()
+        self.proposer
+            .request_agg_proof(request.into())
+            .await?
+            .try_into()
     }
 
     pub async fn wait_for_proof(
@@ -59,7 +62,7 @@ impl<AggProofProposerT: AggProofProposer, AggProofProverT: AggProofProver>
     ) -> Result<SP1ProofWithPublicValues, Error> {
         let request_id = proof_id.0;
 
-        self.prover_client
+        self.prover
             .wait_for_proof(request_id, self.proving_timeout)
             .await
             .map_err(|e| Error::Proving(proof_id, e.to_string()))
