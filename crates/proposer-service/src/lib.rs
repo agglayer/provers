@@ -20,11 +20,11 @@ pub struct ProposerService {
 
 impl ProposerService {
     pub fn new(config: ProposerServiceConfig) -> Result<Self, crate::error::Error> {
-        let proposer_client = ProposerRpcClient::new(config.client.proposer_endpoint.as_str())?;
+        let proposer_rpc_client = ProposerRpcClient::new(config.client.proposer_endpoint.as_str())?;
         let network_prover = new_network_prover(config.client.sp1_cluster_endpoint.as_str());
         Ok(Self {
             client: Arc::new(ProposerClient::new(
-                proposer_client,
+                proposer_rpc_client,
                 network_prover,
                 Some(config.client.proving_timeout),
             )?),

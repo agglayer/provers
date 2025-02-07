@@ -5,7 +5,7 @@ use anyhow::Error;
 use sp1_sdk::{NetworkProver, SP1ProofWithPublicValues};
 
 /// This prover waits for the SP1 cluster generated
-/// AggProof based on the request id.
+/// AggProof based on the proof id.
 #[tonic::async_trait]
 pub trait NetworkAggProofProver {
     async fn wait_for_proof(
