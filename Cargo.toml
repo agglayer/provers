@@ -2,7 +2,7 @@
 resolver = "2"
 default-members = ["crates/agglayer-prover", "crates/aggkit-prover"]
 members = ["crates/*"]
-exclude = ["crates/prover-dummy-program"]
+exclude = ["crates/prover-dummy-program", "crates/aggchain-proof-program"]
 
 [workspace.package]
 version = "0.1.0"
@@ -17,6 +17,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 [workspace.dependencies]
 # Project dependencies
 aggchain-proof-builder = { path = "crates/aggchain-proof-builder" }
+aggchain-proof-core = { path = "crates/aggchain-proof-core" }
 aggkit-prover = { path = "crates/aggkit-prover" }
 aggkit-prover-config = { path = "crates/aggkit-prover-config" }
 aggkit-prover-types = { path = "crates/aggkit-prover-types" }
