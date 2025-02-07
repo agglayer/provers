@@ -7,8 +7,8 @@ use sp1_sdk::SP1ProofWithPublicValues;
 
 pub use crate::config::ProposerClientConfig;
 pub use crate::error::Error;
-use crate::network_prover::NetworkAggProofProver;
-use crate::rpc::ProposerAggProofClient;
+use crate::network_prover::AggProofProver;
+use crate::rpc::AggProofProposer;
 
 pub mod config;
 pub mod error;
@@ -26,20 +26,20 @@ pub mod rpc;
 #[derive(Clone)]
 pub struct ProposerClient<ProposerAggProofClientT, NetworkProverT>
 where
-    ProposerAggProofClientT: ProposerAggProofClient,
-    NetworkProverT: NetworkAggProofProver,
+    ProposerAggProofClientT: AggProofProposer,
+    NetworkProverT: AggProofProver,
 {
     rpc: Arc<ProposerAggProofClientT>,
     prover_client: Arc<NetworkProverT>,
     proving_timeout: Option<Duration>,
 }
 
-impl<ProposerRpcClientT: ProposerAggProofClient, NetworkProverT: NetworkAggProofProver>
-    ProposerClient<ProposerRpcClientT, NetworkProverT>
+impl<AggProofProposerT: AggProofProposerT, AggProofProverT: AggProofProver>
+    ProposerClient<AggProofProposerT, AggProofProverT>
 {
     pub fn new(
-        proposer_client: ProposerRpcClientT,
-        network_prover: NetworkProverT,
+        proposer_client: AggProofProposerT,
+        network_prover: AggProofProverT,
         timeout: Option<Duration>,
     ) -> Result<Self, error::Error> {
         Ok(ProposerClient {
