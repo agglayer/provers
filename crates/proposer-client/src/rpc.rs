@@ -9,11 +9,11 @@ use crate::{error::Error, ProofId, Request};
 /// of the AggProof from the proposer and gets
 /// proof_id in response.
 #[tonic::async_trait]
-pub trait AggProofProposer {
+pub trait AggSpanProofProposer {
     async fn request_agg_proof(
         &self,
-        request: AggProofProposerRequest,
-    ) -> Result<AggProofProposerResponse, Error>;
+        request: AggSpanProofProposerRequest,
+    ) -> Result<AggSpanProofProposerResponse, Error>;
 }
 
 pub struct ProposerRpcClient {
@@ -35,18 +35,18 @@ impl ProposerRpcClient {
 }
 
 #[tonic::async_trait]
-impl AggProofProposer for ProposerRpcClient {
+impl AggSpanProofProposer for ProposerRpcClient {
     async fn request_agg_proof(
         &self,
-        request: AggProofProposerRequest,
-    ) -> Result<AggProofProposerResponse, Error> {
+        request: AggSpanProofProposerRequest,
+    ) -> Result<AggSpanProofProposerResponse, Error> {
         let proof_response = self
             .client
             .post(format!("{}/request_agg_proof", self.url.as_str()))
             .json(&request)
             .send()
             .await?
-            .json::<AggProofProposerResponse>()
+            .json::<AggSpanProofProposerResponse>()
             .await?;
 
         info!(
@@ -60,15 +60,15 @@ impl AggProofProposer for ProposerRpcClient {
 
 /// Request format for the proposer `request_agg_proof`
 #[derive(Deserialize, Serialize, Debug)]
-pub struct AggProofProposerRequest {
+pub struct AggSpanProofProposerRequest {
     pub start: u64,
     pub end: u64,
     pub l1_block_number: u64,
     pub l1_block_hash: Vec<u8>,
 }
 
-impl From<AggProofProposerRequest> for Request {
-    fn from(request: AggProofProposerRequest) -> Self {
+impl From<AggSpanProofProposerRequest> for Request {
+    fn from(request: AggSpanProofProposerRequest) -> Self {
         Request {
             start_block: request.start,
             max_block: request.end,
@@ -78,9 +78,9 @@ impl From<AggProofProposerRequest> for Request {
     }
 }
 
-impl From<Request> for AggProofProposerRequest {
+impl From<Request> for AggSpanProofProposerRequest {
     fn from(request: Request) -> Self {
-        AggProofProposerRequest {
+        AggSpanProofProposerRequest {
             start: request.start_block,
             end: request.max_block,
             l1_block_number: request.l1_block_number,
@@ -91,20 +91,20 @@ impl From<Request> for AggProofProposerRequest {
 
 /// Response for the proposer `request_span_proof`
 #[derive(Serialize, Deserialize, Debug)]
-pub struct AggProofProposerResponse {
+pub struct AggSpanProofProposerResponse {
     pub proof_id: alloy_primitives::B256,
 }
 
-impl Display for AggProofProposerResponse {
+impl Display for AggSpanProofProposerResponse {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.proof_id)
     }
 }
 
-impl TryFrom<AggProofProposerResponse> for ProofId {
+impl TryFrom<AggSpanProofProposerResponse> for ProofId {
     type Error = crate::Error;
 
-    fn try_from(proof_response: AggProofProposerResponse) -> Result<Self, Error> {
+    fn try_from(proof_response: AggSpanProofProposerResponse) -> Result<Self, Error> {
         let bytes = proof_response
             .proof_id
             .as_slice()
@@ -114,9 +114,9 @@ impl TryFrom<AggProofProposerResponse> for ProofId {
     }
 }
 
-impl From<ProofId> for AggProofProposerResponse {
+impl From<ProofId> for AggSpanProofProposerResponse {
     fn from(proof_id: ProofId) -> Self {
-        AggProofProposerResponse {
+        AggSpanProofProposerResponse {
             proof_id: proof_id.0,
         }
     }

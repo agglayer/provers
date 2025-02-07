@@ -7,7 +7,7 @@ use sp1_sdk::{NetworkProver, SP1ProofWithPublicValues};
 /// This prover waits for the SP1 cluster generated
 /// AggProof based on the proof id.
 #[tonic::async_trait]
-pub trait AggProofProver {
+pub trait AggSpanProofProver {
     async fn wait_for_proof(
         &self,
         request_id: B256,
@@ -16,7 +16,7 @@ pub trait AggProofProver {
 }
 
 #[tonic::async_trait]
-impl AggProofProver for NetworkProver {
+impl AggSpanProofProver for NetworkProver {
     async fn wait_for_proof(
         &self,
         request_id: B256,
