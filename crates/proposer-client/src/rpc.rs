@@ -13,7 +13,7 @@ pub trait ProposerAggProofClient {
     async fn request_agg_proof(
         &self,
         request: ProposerAggProofRequest,
-    ) -> Result<ProposerProofResponse, Error>;
+    ) -> Result<ProposerAggProofResponse, Error>;
 }
 
 pub struct ProposerRpcClient {
@@ -39,14 +39,14 @@ impl ProposerAggProofClient for ProposerRpcClient {
     async fn request_agg_proof(
         &self,
         request: ProposerAggProofRequest,
-    ) -> Result<ProposerProofResponse, Error> {
+    ) -> Result<ProposerAggProofResponse, Error> {
         let proof_response = self
             .client
             .post(format!("{}/request_agg_proof", self.url.as_str()))
             .json(&request)
             .send()
             .await?
-            .json::<ProposerProofResponse>()
+            .json::<ProposerAggProofResponse>()
             .await?;
 
         info!(
@@ -91,20 +91,20 @@ impl From<Request> for ProposerAggProofRequest {
 
 /// Response for the proposer `request_span_proof`
 #[derive(Serialize, Deserialize, Debug)]
-pub struct ProposerProofResponse {
+pub struct ProposerAggProofResponse {
     pub proof_id: alloy_primitives::B256,
 }
 
-impl Display for ProposerProofResponse {
+impl Display for ProposerAggProofResponse {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.proof_id)
     }
 }
 
-impl TryFrom<ProposerProofResponse> for ProofId {
+impl TryFrom<ProposerAggProofResponse> for ProofId {
     type Error = crate::Error;
 
-    fn try_from(proof_response: ProposerProofResponse) -> Result<Self, Error> {
+    fn try_from(proof_response: ProposerAggProofResponse) -> Result<Self, Error> {
         let bytes = proof_response
             .proof_id
             .as_slice()
@@ -114,9 +114,9 @@ impl TryFrom<ProposerProofResponse> for ProofId {
     }
 }
 
-impl From<ProofId> for ProposerProofResponse {
+impl From<ProofId> for ProposerAggProofResponse {
     fn from(proof_id: ProofId) -> Self {
-        ProposerProofResponse {
+        ProposerAggProofResponse {
             proof_id: proof_id.0,
         }
     }
