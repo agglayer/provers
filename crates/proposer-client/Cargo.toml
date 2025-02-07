@@ -1,0 +1,27 @@
+[package]
+name = "proposer-client"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace = true
+alloy-primitives.workspace = true
+hex.workspace = true
+prover-utils.workspace = true
+reqwest = { workspace = true, features = ["json"]}
+serde.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+tonic.workspace = true
+url.workspace = true
+
+sp1-sdk = { workspace = true, features = ["native-gnark"] }
+
+
+[features]
+default = []
+testutils = []

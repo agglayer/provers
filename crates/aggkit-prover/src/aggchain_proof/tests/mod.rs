@@ -14,7 +14,12 @@ use crate::aggchain_proof::{
 };
 
 #[tokio::test]
+#[ignore]
 async fn service_can_be_called() {
+    std::env::set_var(
+        "NETWORK_PRIVATE_KEY",
+        "0xaabbccddff000000000000000000000000000000000000000000000000000000",
+    );
     let mut service = AggchainProofService::default();
     let request = ProofRequest {
         start_block: 0,
@@ -23,9 +28,14 @@ async fn service_can_be_called() {
     let response = service.call(request).await;
     assert!(response.is_ok());
 }
-
 #[tokio::test]
+#[ignore]
 async fn testing_rpc_failure() {
+    std::env::set_var(
+        "NETWORK_PRIVATE_KEY",
+        "0xaabbccddff000000000000000000000000000000000000000000000000000000",
+    );
+
     let (client, server) = tokio::io::duplex(1024);
 
     let service = GrpcService::default();

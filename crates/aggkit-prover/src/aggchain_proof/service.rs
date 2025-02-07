@@ -32,10 +32,8 @@ pub(crate) struct AggchainProofService {
 
 impl Default for AggchainProofService {
     fn default() -> Self {
-        Self {
-            proposer_service: ProposerService { client: () },
-            aggchain_proof_builder: AggchainProofBuilderService {},
-        }
+        // Implement new function and remove this default
+        todo!()
     }
 }
 
