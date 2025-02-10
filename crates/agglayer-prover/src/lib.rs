@@ -2,6 +2,10 @@ use std::{path::PathBuf, sync::Arc};
 
 use prover_engine::ProverEngine;
 use sp1_sdk::HashableKey;
+#[cfg(feature = "testutils")]
+pub use testutils::start_prover;
+use tokio_util::sync::CancellationToken;
+use tracing::info;
 
 #[cfg(feature = "testutils")]
 pub mod fake;
@@ -75,14 +79,11 @@ mod testutils {
             .config(config)
             .cancellation_token(global_cancellation_token)
             .program(program)
+            .set_rpc_socket_addr(config.grpc_endpoint)
+            .set_metric_socket_addr(config.telemetry.addr)
             .start()
             .await
             .unwrap();
         prover.await_shutdown().await;
     }
 }
-
-#[cfg(feature = "testutils")]
-pub use testutils::start_prover;
-use tokio_util::sync::CancellationToken;
-use tracing::info;
