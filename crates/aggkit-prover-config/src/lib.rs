@@ -43,7 +43,7 @@ pub struct ProverConfig {
     #[serde(default)]
     pub shutdown: ShutdownConfig,
 
-    /// Aggchain proof service configuration
+    #[serde(default)]
     pub aggchain_proof_service: AggchainProofServiceConfig,
 
     /// The primary prover to be used for generation of the pessimistic proof

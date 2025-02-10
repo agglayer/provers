@@ -15,5 +15,19 @@ prometheus-addr = "0.0.0.0:3001"
 [shutdown]
 runtime-timeout = "5s"
 
+[aggchain-proof-service.aggchain-proof-builder-config]
+l1-rpc-endpoint = "http://127.0.0.1:8545/"
+l2-rpc-endpoint = "http://127.0.0.1:8546/"
+rollup-id = 0
+
+[aggchain-proof-service.proposer-service-config.client]
+proposer-endpoint = "http://127.0.0.1:3000/"
+sp1-cluster-endpoint = "http://127.0.0.1:5432/"
+prover-program = []
+
+[aggchain-proof-service.proposer-service-config.client.proving-timeout]
+secs = 3600
+nanos = 0
+
 [primary-prover.network-prover]
 proving-timeout = "5m"

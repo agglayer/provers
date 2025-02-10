@@ -8,18 +8,27 @@ use aggkit_prover_config::aggchain_proof_service::{
     HTTP_RPC_NODE_BACKOFF_MAX_RETRIES, HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
 };
 use aggkit_prover_config::AggchainProofBuilderConfig;
-use aggkit_prover_types::AggchainProof;
 use alloy::eips::{BlockId, BlockNumberOrTag};
 use alloy::network::primitives::BlockTransactionsKind;
 use alloy::primitives::B256;
 use alloy::providers::Provider;
 use alloy::transports::{RpcError, TransportErrorKind};
 use futures::{future::BoxFuture, FutureExt};
+use serde::{Deserialize, Serialize};
 use sp1_sdk::SP1ProofWithPublicValues;
 
 use crate::provider::json_rpc::{build_http_retry_provider, AlloyProvider};
 
-pub struct AgghcainProofBuilderRequest {
+/// Agghchain proof is generated from FEP proof and additional
+/// bridge inputs.
+/// Resulting work of the aggchain proof builder.
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct AggchainProof {
+    //pub proof: SP1ProofWithPublicValues,
+    //TODO add all necessary fields
+}
+
+pub struct AggchainProofBuilderRequest {
     pub agg_span_proof: SP1ProofWithPublicValues,
     // TODO add rest of the fields
 }
@@ -32,13 +41,13 @@ pub struct AgghcainProofBuilderResponse {
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("Alloy error: {0}")]
-    AlloyProviderError(String),
+    AlloyProviderError(anyhow::Error),
 
     #[error("Alloy transport rpc error: {0:?}")]
-    AlloyRpcTransportError(RpcError<TransportErrorKind>),
+    AlloyRpcTransportError(#[from] RpcError<TransportErrorKind>),
 
-    #[error("Proof generation error: {0:?}")]
-    ProofGenerationError(aggchain_proof_core::error::ProofError),
+    #[error(transparent)]
+    ProofGenerationError(#[from] aggchain_proof_core::error::ProofError),
 }
 
 /// This service is responsible for building an Aggchain proof.
@@ -58,7 +67,7 @@ impl AggchainProofBuilder {
                     HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
                     HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
                 )
-                .map_err(|e| Error::AlloyProviderError(e.to_string()))?,
+                .map_err(Error::AlloyProviderError)?,
             ),
             l2_client: Arc::new(
                 build_http_retry_provider(
@@ -66,7 +75,7 @@ impl AggchainProofBuilder {
                     HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
                     HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
                 )
-                .map_err(|e| Error::AlloyProviderError(e.to_string()))?,
+                .map_err(Error::AlloyProviderError)?,
             ),
         })
     }
@@ -80,7 +89,7 @@ impl AggchainProofBuilder {
             )
             .await
             .map_err(Error::AlloyRpcTransportError)?
-            .ok_or(Error::AlloyProviderError(format!(
+            .ok_or(Error::AlloyProviderError(anyhow::anyhow!(
                 "target block {block_num} does not exist"
             )))?;
 
@@ -103,7 +112,7 @@ impl AggchainProofBuilder {
     }
 }
 
-impl tower::Service<AgghcainProofBuilderRequest> for AggchainProofBuilder {
+impl tower::Service<AggchainProofBuilderRequest> for AggchainProofBuilder {
     type Response = AgghcainProofBuilderResponse;
 
     type Error = Error;
@@ -114,7 +123,7 @@ impl tower::Service<AgghcainProofBuilderRequest> for AggchainProofBuilder {
         todo!()
     }
 
-    fn call(&mut self, _req: AgghcainProofBuilderRequest) -> Self::Future {
+    fn call(&mut self, _req: AggchainProofBuilderRequest) -> Self::Future {
         async move {
             //TODO implement
 

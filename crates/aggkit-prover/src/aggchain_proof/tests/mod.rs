@@ -1,3 +1,4 @@
+use aggkit_prover_config::aggchain_proof_service::AggchainProofServiceConfig;
 use aggkit_prover_types::v1::{
     aggchain_proof_service_client::AggchainProofServiceClient,
     aggchain_proof_service_server::AggchainProofServiceServer, GenerateAggchainProofRequest,
@@ -20,10 +21,12 @@ async fn service_can_be_called() {
         "NETWORK_PRIVATE_KEY",
         "0xaabbccddff000000000000000000000000000000000000000000000000000000",
     );
-    let mut service = AggchainProofService::default();
+    let mut service = AggchainProofService::new(&AggchainProofServiceConfig::default())
+        .expect("create aggchain proof");
     let request = AggchainProofServiceRequest {
         start_block: 0,
         max_block: 100,
+        ..Default::default()
     };
     let response = service.call(request).await;
     assert!(response.is_ok());
@@ -38,7 +41,8 @@ async fn testing_rpc_failure() {
 
     let (client, server) = tokio::io::duplex(1024);
 
-    let service = GrpcService::default();
+    let service =
+        GrpcService::new(&AggchainProofServiceConfig::default()).expect("create grpc service");
 
     tokio::spawn(async move {
         Server::builder()

@@ -5,10 +5,10 @@ use std::{
 };
 
 use aggchain_proof_builder::{
-    AggchainProofBuilder, AgghcainProofBuilderRequest as ProofBuilderRequest,
+    AggchainProof, AggchainProofBuilder, AggchainProofBuilderRequest as ProofBuilderRequest,
 };
 use aggkit_prover_config::aggchain_proof_service::AggchainProofServiceConfig;
-use aggkit_prover_types::{AggchainProof, Hash};
+use aggkit_prover_types::Hash;
 use proposer_service::{ProposerRequest, ProposerService};
 use tracing::debug;
 
@@ -23,11 +23,8 @@ pub struct AggchainProofServiceRequest {
     pub start_block: u64,
     /// Max number of blocks that the aggchain proof could contain
     pub max_block: u64,
-    /// L1 Info tree root hash.
     pub l1_info_tree_root_hash: Hash,
-    /// L1 Info tree leaf hash.
     pub l1_info_tree_leaf_hash: Hash,
-    /// L1 Info tree proof.
     pub l1_info_tree_merkle_proof: [Hash; 32],
 }
 
@@ -67,11 +64,7 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        match self.proposer_service.poll_ready(cx) {
-            Poll::Ready(Ok(())) => (),
-            Poll::Ready(Err(e)) => return Poll::Ready(Err(e.into())),
-            Poll::Pending => return Poll::Pending,
-        };
+        std::task::ready!(self.proposer_service.poll_ready(cx)?);
 
         self.aggchain_proof_builder
             .poll_ready(cx)

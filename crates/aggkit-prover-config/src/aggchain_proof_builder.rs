@@ -9,9 +9,11 @@ use url::Url;
 #[serde(rename_all = "kebab-case")]
 pub struct AggchainProofBuilderConfig {
     /// Json rpc endpoint of the l1 node.
+    #[serde(default = "default_l1_url")]
     pub l1_rpc_endpoint: Url,
 
     /// Json rpc endpoint of the l2 rollup node.
+    #[serde(default = "default_l2_url")]
     pub l2_rpc_endpoint: Url,
 
     /// Id of the rollup chain
@@ -29,9 +31,9 @@ impl Default for AggchainProofBuilderConfig {
 }
 
 fn default_l1_url() -> Url {
-    Url::from_str("127.0.0.1::8545").unwrap()
+    Url::from_str("http://127.0.0.1:8545").unwrap()
 }
 
 fn default_l2_url() -> Url {
-    Url::from_str("127.0.0.1::8546").unwrap()
+    Url::from_str("http://127.0.0.1:8546").unwrap()
 }
