@@ -42,8 +42,11 @@ jobs:
         run: /home/runner/.sp1/bin/sp1up
         shell: bash
 
-      - uses: taiki-e/install-action@nextest
-      - uses: taiki-e/install-action@protoc
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: nextest,protoc,cargo-hack
+
+      - run: cargo hack --each-feature --all check
 
       - name: Install Anvil
         uses: foundry-rs/foundry-toolchain@v1
