@@ -11,20 +11,26 @@ pub struct GenerateAggchainProofRequest {
     /// L1 Info tree root. (hash)
     #[prost(bytes = "vec", tag = "3")]
     pub l1_info_tree_root_hash: ::prost::alloc::vec::Vec<u8>,
-    /// L1 Info tree leaf. (hash)
-    #[prost(bytes = "vec", tag = "4")]
-    pub l1_info_tree_leaf_hash: ::prost::alloc::vec::Vec<u8>,
+    /// L1 Info tree leaf
+    #[prost(message, optional, tag = "4")]
+    pub l1_info_tree_leaf: ::core::option::Option<L1InfoTreeLeaf>,
     /// L1 Info tree proof. (\[32\]hash)
     #[prost(bytes = "vec", repeated, tag = "5")]
     pub l1_info_tree_merkle_proof: ::prost::alloc::vec::Vec<
         ::prost::alloc::vec::Vec<u8>,
+    >,
+    /// Map of the GER with their inclusion proof. Note: the GER (string) is a base64 encoded string of the GER digest.
+    #[prost(map = "string, message", tag = "6")]
+    pub ger_inclusion_proofs: ::std::collections::HashMap<
+        ::prost::alloc::string::String,
+        InclusionProof,
     >,
 }
 /// The aggchain proof response message.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenerateAggchainProofResponse {
     /// TODO - Define the type of aggchain proof.
-    /// The start block of the aggchain proof.
+    /// Aggchain proof.
     #[prost(bytes = "vec", tag = "1")]
     pub aggchain_proof: ::prost::alloc::vec::Vec<u8>,
     /// The start block of the aggchain proof.
@@ -33,6 +39,36 @@ pub struct GenerateAggchainProofResponse {
     /// The end block of the aggchain proof.
     #[prost(uint64, tag = "3")]
     pub end_block: u64,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct InclusionProof {
+    /// Siblings.
+    #[prost(bytes = "vec", repeated, tag = "1")]
+    pub siblings: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct L1InfoTreeLeaf {
+    /// previous block hash of leaf
+    #[prost(bytes = "vec", tag = "1")]
+    pub previous_block_hash: ::prost::alloc::vec::Vec<u8>,
+    /// block number timestamp
+    #[prost(uint64, tag = "2")]
+    pub timestamp: u64,
+    /// mainnet exit root hash
+    #[prost(bytes = "vec", tag = "3")]
+    pub mainnet_exit_root_hash: ::prost::alloc::vec::Vec<u8>,
+    /// rollup exit root hash
+    #[prost(bytes = "vec", tag = "4")]
+    pub rollup_exit_root_hash: ::prost::alloc::vec::Vec<u8>,
+    /// global exit root hash
+    #[prost(bytes = "vec", tag = "5")]
+    pub global_exit_root_hash: ::prost::alloc::vec::Vec<u8>,
+    /// leaf hash
+    #[prost(bytes = "vec", tag = "6")]
+    pub leaf_hash: ::prost::alloc::vec::Vec<u8>,
+    /// leaf index
+    #[prost(uint32, tag = "7")]
+    pub l1_info_tree_index: u32,
 }
 /// Generated client implementations.
 pub mod aggchain_proof_service_client {
