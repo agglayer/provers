@@ -19,12 +19,18 @@ pub struct GenerateAggchainProofRequest {
     pub l1_info_tree_merkle_proof: ::prost::alloc::vec::Vec<
         ::prost::alloc::vec::Vec<u8>,
     >,
+    /// Map of the GER with their inclusion proof. Note: the GER (string) is a base64 encoded string of the GER digest.
+    #[prost(map = "string, message", tag = "6")]
+    pub ger_inclusion_proofs: ::std::collections::HashMap<
+        ::prost::alloc::string::String,
+        InclusionProof,
+    >,
 }
 /// The aggchain proof response message.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenerateAggchainProofResponse {
     /// TODO - Define the type of aggchain proof.
-    /// The start block of the aggchain proof.
+    /// Aggchain proof.
     #[prost(bytes = "vec", tag = "1")]
     pub aggchain_proof: ::prost::alloc::vec::Vec<u8>,
     /// The start block of the aggchain proof.
@@ -33,6 +39,12 @@ pub struct GenerateAggchainProofResponse {
     /// The end block of the aggchain proof.
     #[prost(uint64, tag = "3")]
     pub end_block: u64,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct InclusionProof {
+    /// Siblings.
+    #[prost(bytes = "vec", repeated, tag = "1")]
+    pub siblings: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
 /// Generated client implementations.
 pub mod aggchain_proof_service_client {

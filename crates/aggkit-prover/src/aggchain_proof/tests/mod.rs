@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use aggkit_prover_types::v1::{
     aggchain_proof_service_client::AggchainProofServiceClient,
     aggchain_proof_service_server::AggchainProofServiceServer, GenerateAggchainProofRequest,
@@ -74,6 +76,7 @@ async fn testing_rpc_failure() {
         l1_info_tree_root_hash: vec![],
         l1_info_tree_leaf_hash: vec![],
         l1_info_tree_merkle_proof: vec![],
+        ger_inclusion_proofs: HashMap::new(),
     });
 
     let response = client.generate_aggchain_proof(request).await;
