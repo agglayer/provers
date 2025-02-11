@@ -43,7 +43,7 @@ pub struct ProverConfig {
     #[serde(default)]
     pub shutdown: ShutdownConfig,
 
-    #[serde(default)]
+    #[serde(default = "AggchainProofServiceConfig::default_for_test")]
     pub aggchain_proof_service: AggchainProofServiceConfig,
 
     /// The primary prover to be used for generation of the pessimistic proof
@@ -62,7 +62,7 @@ impl Default for ProverConfig {
             log: Log::default(),
             telemetry: TelemetryConfig::default(),
             shutdown: ShutdownConfig::default(),
-            aggchain_proof_service: AggchainProofServiceConfig::default(),
+            aggchain_proof_service: AggchainProofServiceConfig::default_for_test(),
             primary_prover: ProverType::NetworkProver(NetworkProverConfig::default()),
             fallback_prover: None,
             grpc: Default::default(),

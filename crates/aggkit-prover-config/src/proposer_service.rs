@@ -1,9 +1,17 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct ProposerServiceConfig {
     pub client: ProposerClientConfig,
+}
+
+impl ProposerServiceConfig {
+    pub fn default_for_test() -> Self {
+        Self {
+            client: ProposerClientConfig::default_for_test(),
+        }
+    }
 }
 
 use std::str::FromStr;
@@ -34,8 +42,8 @@ pub struct ProposerClientConfig {
     pub proving_timeout: Duration,
 }
 
-impl Default for ProposerClientConfig {
-    fn default() -> Self {
+impl ProposerClientConfig {
+    pub fn default_for_test() -> Self {
         Self {
             proposer_endpoint: default_proposer_service_endpoint(),
             sp1_cluster_endpoint: default_sp1_cluster_endpoint(),

@@ -19,7 +19,7 @@ use sp1_sdk::SP1ProofWithPublicValues;
 
 use crate::provider::json_rpc::{build_http_retry_provider, AlloyProvider};
 
-/// Agghchain proof is generated from FEP proof and additional
+/// Aggchain proof is generated from FEP proof and additional
 /// bridge inputs.
 /// Resulting work of the aggchain proof builder.
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -34,7 +34,7 @@ pub struct AggchainProofBuilderRequest {
 }
 
 #[derive(Clone, Debug)]
-pub struct AgghcainProofBuilderResponse {
+pub struct AggchainProofBuilderResponse {
     pub proof: AggchainProof,
 }
 
@@ -54,8 +54,8 @@ pub enum Error {
 #[derive(Debug, Clone)]
 pub struct AggchainProofBuilder {
     l1_client: Arc<AlloyProvider>,
-    #[allow(unused)]
-    l2_client: Arc<AlloyProvider>,
+
+    _l2_client: Arc<AlloyProvider>,
 }
 
 impl AggchainProofBuilder {
@@ -69,7 +69,7 @@ impl AggchainProofBuilder {
                 )
                 .map_err(Error::AlloyProviderError)?,
             ),
-            l2_client: Arc::new(
+            _l2_client: Arc::new(
                 build_http_retry_provider(
                     &config.l2_rpc_endpoint,
                     HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
@@ -113,7 +113,7 @@ impl AggchainProofBuilder {
 }
 
 impl tower::Service<AggchainProofBuilderRequest> for AggchainProofBuilder {
-    type Response = AgghcainProofBuilderResponse;
+    type Response = AggchainProofBuilderResponse;
 
     type Error = Error;
 
@@ -133,7 +133,7 @@ impl tower::Service<AggchainProofBuilderRequest> for AggchainProofBuilder {
             // Generate proof
             //self.generate_aggchain_proof().await?;
 
-            Ok(AgghcainProofBuilderResponse {
+            Ok(AggchainProofBuilderResponse {
                 proof: Default::default(),
             })
         }

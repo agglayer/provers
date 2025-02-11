@@ -14,14 +14,14 @@ use tracing::debug;
 
 use super::error::Error;
 
-/// Request to the AggchainProofService to generate the
+/// A request for the AggchainProofService to generate the
 /// aggchain proof for the range of blocks.
 #[derive(Default, Clone, Debug)]
 #[allow(unused)]
 pub struct AggchainProofServiceRequest {
     /// Aggchain proof starting block
     pub start_block: u64,
-    /// Max number of blocks that the aggchain proof could contain
+    /// Max number of blocks that the aggchain proof is allowed to contain
     pub max_block: u64,
     pub l1_info_tree_root_hash: Hash,
     pub l1_info_tree_leaf_hash: Hash,

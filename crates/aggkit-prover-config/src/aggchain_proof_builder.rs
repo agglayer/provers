@@ -20,8 +20,8 @@ pub struct AggchainProofBuilderConfig {
     pub rollup_id: u32,
 }
 
-impl Default for AggchainProofBuilderConfig {
-    fn default() -> Self {
+impl AggchainProofBuilderConfig {
+    pub fn default_for_test() -> Self {
         AggchainProofBuilderConfig {
             l1_rpc_endpoint: default_l1_url(),
             l2_rpc_endpoint: default_l2_url(),
