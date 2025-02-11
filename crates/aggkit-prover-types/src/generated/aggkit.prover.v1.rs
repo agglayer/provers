@@ -25,11 +25,13 @@ pub struct GenerateAggchainProofRequest {
         ::prost::alloc::string::String,
         InclusionProof,
     >,
+    /// bridge exits
+    #[prost(message, repeated, tag = "7")]
+    pub imported_bridge_exits: ::prost::alloc::vec::Vec<ImportedBridgeExit>,
 }
 /// The aggchain proof response message.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenerateAggchainProofResponse {
-    /// TODO - Define the type of aggchain proof.
     /// Aggchain proof.
     #[prost(bytes = "vec", tag = "1")]
     pub aggchain_proof: ::prost::alloc::vec::Vec<u8>,
@@ -69,6 +71,100 @@ pub struct L1InfoTreeLeaf {
     /// leaf index
     #[prost(uint32, tag = "7")]
     pub l1_info_tree_index: u32,
+}
+/// Represents a token bridge exit originating on another network but claimed on
+/// the current network.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ImportedBridgeExit {
+    /// / The bridge exit initiated on another network, called the "sending"
+    /// / network. Need to verify that the destination network matches the
+    /// / current network, and that the bridge exit is included in an imported
+    /// / LER
+    #[prost(message, optional, tag = "1")]
+    pub bridge_exit: ::core::option::Option<BridgeExit>,
+    /// / The global index of the imported bridge exit.
+    #[prost(message, optional, tag = "2")]
+    pub global_index: ::core::option::Option<GlobalIndex>,
+}
+/// Represents a token bridge exit from the network.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct BridgeExit {
+    /// The type of the leaf.
+    #[prost(enumeration = "LeafType", tag = "1")]
+    pub leaf_type: i32,
+    /// Unique ID for the token being transferred.
+    #[prost(message, optional, tag = "2")]
+    pub token_info: ::core::option::Option<TokenInfo>,
+    /// Network which the token is transferred to
+    #[prost(uint32, tag = "3")]
+    pub destination_network: u32,
+    /// Address which will own the received token
+    #[prost(bytes = "vec", tag = "4")]
+    pub destination_address: ::prost::alloc::vec::Vec<u8>,
+    /// Token amount sent
+    #[prost(string, tag = "5")]
+    pub amount: ::prost::alloc::string::String,
+    /// is metadata hashed
+    #[prost(bool, tag = "6")]
+    pub is_metadata_hashed: bool,
+    /// Metadata for the bridge exit
+    #[prost(bytes = "vec", tag = "7")]
+    pub metadata: ::prost::alloc::vec::Vec<u8>,
+}
+#[derive(Clone, Copy, PartialEq, ::prost::Message)]
+pub struct GlobalIndex {
+    /// mainnet flag
+    #[prost(bool, tag = "1")]
+    pub mainnet_flag: bool,
+    /// rollup index
+    #[prost(uint32, tag = "2")]
+    pub rollup_index: u32,
+    /// leaf index
+    #[prost(uint32, tag = "3")]
+    pub leaf_index: u32,
+}
+/// Encapsulates the information to uniquely identify a token on the origin
+/// network.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TokenInfo {
+    /// Network which the token originates from
+    #[prost(uint32, tag = "1")]
+    pub origin_network: u32,
+    /// The address of the token on the origin network
+    #[prost(bytes = "vec", tag = "2")]
+    pub origin_token_address: ::prost::alloc::vec::Vec<u8>,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum LeafType {
+    /// Unspecified leaf type.
+    Unspecified = 0,
+    /// Transfer leaf type.
+    Transfer = 1,
+    /// Message leaf type.
+    Message = 2,
+}
+impl LeafType {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            Self::Unspecified => "LEAF_TYPE_UNSPECIFIED",
+            Self::Transfer => "LEAF_TYPE_TRANSFER",
+            Self::Message => "LEAF_TYPE_MESSAGE",
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "LEAF_TYPE_UNSPECIFIED" => Some(Self::Unspecified),
+            "LEAF_TYPE_TRANSFER" => Some(Self::Transfer),
+            "LEAF_TYPE_MESSAGE" => Some(Self::Message),
+            _ => None,
+        }
+    }
 }
 /// Generated client implementations.
 pub mod aggchain_proof_service_client {

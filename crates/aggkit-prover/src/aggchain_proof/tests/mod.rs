@@ -77,6 +77,7 @@ async fn testing_rpc_failure() {
         l1_info_tree_leaf: None,
         l1_info_tree_merkle_proof: vec![],
         ger_inclusion_proofs: HashMap::new(),
+        imported_bridge_exits: vec![],
     });
 
     let response = client.generate_aggchain_proof(request).await;
