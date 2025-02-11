@@ -56,7 +56,7 @@ impl AggchainProofWitness {
 }
 
 /// Public values of the SP1 aggchain proof.
-#[derive(Serialize, Deserialize, Default, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AggchainProofPublicValues {
     /// Previous local exit root.
     pub prev_local_exit_root: Digest,
