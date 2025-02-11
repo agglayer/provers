@@ -36,7 +36,7 @@ agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", branch 
 
 # Core dependencies
 alloy = { version = '0.11.0', features = ["full"] }
-alloy-primitives = "0.8.1"
+alloy-primitives = { version = "0.8.15", features = ["serde", "k256"] }
 anyhow = "1.0.94"
 arc-swap = "1.7.1"
 async-trait = "0.1.82"
