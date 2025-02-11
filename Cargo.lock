@@ -75,9 +75,11 @@ dependencies = [
  "alloy-sol-macro",
  "alloy-sol-types",
  "alloy-transport",
+ "dotenvy",
  "hex",
  "k256",
  "serde",
+ "serde-big-array",
  "serde_with",
  "sha2 0.10.8 (git+https://github.com/sp1-patches/RustCrypto-hashes.git?tag=patch-sha2-0.10.8-sp1-4.0.0)",
  "sp1-cc-client-executor",
@@ -85,6 +87,8 @@ dependencies = [
  "sp1-zkvm",
  "thiserror 2.0.11",
  "tiny-keccak 2.0.2 (git+https://github.com/sp1-patches/tiny-keccak?tag=patch-2.0.2-sp1-4.0.0)",
+ "tokio",
+ "url",
 ]
 
 [[package]]
@@ -2441,6 +2445,12 @@ name = "doctest-file"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aac81fa3e28d21450aa4d2ac065992ba96a1d7303efbce51a95f4fd175b67562"
+
+[[package]]
+name = "dotenvy"
+version = "0.15.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1aaf95b3e5c8f23aa320147307562d361db0ae0d51242340f558153b4eb2439b"
 
 [[package]]
 name = "downcast"
@@ -6799,6 +6809,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e8dfc9d19bdbf6d17e22319da49161d5d0108e4188e8b680aef6299eed22df60"
 dependencies = [
  "serde_derive",
+]
+
+[[package]]
+name = "serde-big-array"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11fc7cc2c76d73e0f27ee52abbd64eec84d46f370c88371120433196934e4b7f"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

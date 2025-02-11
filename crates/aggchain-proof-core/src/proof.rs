@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    bridge::{BridgeInput, BridgeWitness},
+    bridge::{BridgeInput, BridgeWitness, L2_GER_ADDR},
     error::ProofError,
     full_execution_proof::FepWithPublicValues,
     keccak::digest::Digest,
@@ -42,15 +42,9 @@ impl AggchainProofWitness {
         self.fep.verify()?;
 
         // Verify the bridge constraints
-        BridgeInput::from(self).verify()?;
+        self.generate_bridge_input()?.verify()?;
 
         Ok(public_values)
-    }
-}
-
-impl From<&mut AggchainProofWitness> for BridgeInput {
-    fn from(_value: &mut AggchainProofWitness) -> Self {
-        todo!()
     }
 }
 
@@ -64,6 +58,21 @@ impl AggchainProofWitness {
             commit_imported_bridge_exits: self.commit_imported_bridge_exits,
             aggchain_params: self.fep.aggchain_params().into(),
         }
+    }
+}
+
+impl AggchainProofWitness {
+    pub fn generate_bridge_input(&mut self) -> Result<BridgeInput, ProofError> {
+        let (prev_blockhash, new_blockhash) = self.fep.get_block_hashes()?;
+
+        Ok(BridgeInput {
+            ger_addr: L2_GER_ADDR, // set as constant for now
+            prev_l2_block_hash: alloy_primitives::FixedBytes::from(prev_blockhash.0),
+            new_l2_block_hash: alloy_primitives::FixedBytes::from(new_blockhash.0),
+            new_local_exit_root: alloy_primitives::FixedBytes::from(self.new_local_exit_root.0),
+            l1_info_root: alloy_primitives::FixedBytes::from(self.l1_info_root.0),
+            bridge_witness: self.bridge_witness.clone(),
+        })
     }
 }
 
