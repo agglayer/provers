@@ -4,6 +4,8 @@ use std::fmt::Debug;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_with::serde_as;
 
+#[cfg(test)]
+use super::hasher::Keccak256Hasher;
 use crate::local_exit_tree::hasher::Hasher;
 
 #[serde_as]
@@ -15,6 +17,15 @@ where
 {
     #[serde_as(as = "[_; TREE_DEPTH]")]
     pub siblings: [H::Digest; TREE_DEPTH],
+}
+
+#[cfg(test)]
+impl Default for LETMerkleProof<Keccak256Hasher> {
+    fn default() -> Self {
+        Self {
+            siblings: Default::default(),
+        }
+    }
 }
 
 impl<H, const TREE_DEPTH: usize> LETMerkleProof<H, TREE_DEPTH>

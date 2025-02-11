@@ -19,20 +19,20 @@ impl L1InfoTreeLeaf {
 /// Contents of one leaf of the L1 Info Tree.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct L1InfoTreeLeaf {
-    pub global_exit_root: Digest,
-    pub block_hash: Digest,
-    pub timestamp: u64,
+    pub(crate) global_exit_root: Digest,
+    pub(crate) block_hash: Digest,
+    pub(crate) timestamp: u64,
 }
 
 /// Data to verify the legitimacy of one inserted GER.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InsertedGER {
     /// Merkle proof against one L1 info root.
-    proof: LETMerkleProof<Keccak256Hasher>,
+    pub(crate) proof: LETMerkleProof<Keccak256Hasher>,
     /// L1 info tree leaf to reconstruct the leaf hash.
-    l1_info_tree_leaf: L1InfoTreeLeaf,
+    pub(crate) l1_info_tree_leaf: L1InfoTreeLeaf,
     /// Index of the leaf in the L1 info tree.
-    l1_info_tree_index: u32,
+    pub(crate) l1_info_tree_index: u32,
 }
 
 impl InsertedGER {
