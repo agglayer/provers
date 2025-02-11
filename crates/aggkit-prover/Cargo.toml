@@ -12,6 +12,7 @@ anyhow.workspace = true
 bincode.workspace = true
 futures.workspace = true
 http = "1.2.0"
+sp1-sdk.workspace = true
 thiserror.workspace = true
 tokio = { workspace = true, features = ["full"] }
 tokio-util.workspace = true

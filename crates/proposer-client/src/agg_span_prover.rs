@@ -7,7 +7,7 @@ use sp1_sdk::{NetworkProver, SP1ProofWithPublicValues};
 /// This prover waits for the SP1 cluster generated
 /// AggSpanProof based on the proof id.
 #[tonic::async_trait]
-pub trait AggSpanProofProver {
+pub trait AggSpanProver {
     async fn wait_for_proof(
         &self,
         request_id: B256,
@@ -16,7 +16,7 @@ pub trait AggSpanProofProver {
 }
 
 #[tonic::async_trait]
-impl AggSpanProofProver for NetworkProver {
+impl AggSpanProver for NetworkProver {
     async fn wait_for_proof(
         &self,
         request_id: B256,
@@ -26,7 +26,7 @@ impl AggSpanProofProver for NetworkProver {
     }
 }
 
-pub fn new_network_prover(endpoint: &str) -> NetworkProver {
+pub fn new_agg_span_prover(endpoint: &str) -> NetworkProver {
     sp1_sdk::ProverClient::builder()
         .network()
         .rpc_url(endpoint)

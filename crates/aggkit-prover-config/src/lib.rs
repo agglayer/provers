@@ -1,9 +1,12 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::Path;
+use std::str::FromStr;
 
 use prover_config::{NetworkProverConfig, ProverType};
 use prover_logger::log::Log;
+use prover_utils::from_env_or_default;
 use serde::{Deserialize, Serialize};
+use url::Url;
 
 use crate::aggchain_proof_service::AggchainProofServiceConfig;
 pub use crate::{
@@ -19,6 +22,9 @@ pub mod shutdown;
 pub(crate) mod telemetry;
 
 pub(crate) const DEFAULT_IP: std::net::Ipv4Addr = std::net::Ipv4Addr::new(0, 0, 0, 0);
+
+/// The default url endpoint for the grpc cluster service
+const DEFAULT_SP1_CLUSTER_ENDPOINT: &str = "http://127.0.0.1:5432";
 
 /// The Aggkit Prover configuration.
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -151,4 +157,11 @@ pub enum ConfigurationError {
 
 pub(crate) fn default<T: Default + PartialEq>(t: &T) -> bool {
     *t == Default::default()
+}
+
+pub(crate) fn default_sp1_cluster_endpoint() -> Url {
+    from_env_or_default(
+        "SP1_CLUSTER_ENDPOINT",
+        Url::from_str(crate::DEFAULT_SP1_CLUSTER_ENDPOINT).unwrap(),
+    )
 }

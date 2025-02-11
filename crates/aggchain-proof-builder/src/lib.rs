@@ -1,5 +1,7 @@
 mod provider;
 
+pub mod aggchain_prover;
+
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
@@ -15,9 +17,13 @@ use alloy::providers::Provider;
 use alloy::transports::{RpcError, TransportErrorKind};
 use futures::{future::BoxFuture, FutureExt};
 use serde::{Deserialize, Serialize};
-use sp1_sdk::SP1ProofWithPublicValues;
+use sp1_sdk::{SP1ProofWithPublicValues, SP1VerifyingKey};
 
+use crate::aggchain_prover::AggChainProver;
 use crate::provider::json_rpc::{build_http_retry_provider, AlloyProvider};
+
+const ELF: &[u8] =
+    include_bytes!("../../../crates/aggchain-proof-program/elf/riscv32im-succinct-zkvm-elf");
 
 /// Agghchain proof is generated from FEP proof and additional
 /// bridge inputs.
@@ -29,8 +35,12 @@ pub struct AggchainProof {
 }
 
 pub struct AggchainProofBuilderRequest {
+    /// Aggregated full execution proof for the number of aggregated block spans
     pub agg_span_proof: SP1ProofWithPublicValues,
-    // TODO add rest of the fields
+    /// First block in the aggregated span
+    pub start_block: u64,
+    /// Last block in the aggregated span (inclusive)
+    pub end_block: u64,
 }
 
 #[derive(Clone, Debug)]
@@ -48,18 +58,32 @@ pub enum Error {
 
     #[error(transparent)]
     ProofGenerationError(#[from] aggchain_proof_core::error::ProofError),
+
+    #[error("Prover program error: {0}")]
+    ProverProgramError(#[from] std::io::Error),
 }
 
 /// This service is responsible for building an Aggchain proof.
-#[derive(Debug, Clone)]
-pub struct AggchainProofBuilder {
+#[derive(Clone)]
+#[allow(dead_code)]
+pub struct AggchainProofBuilder<Prover> {
     l1_client: Arc<AlloyProvider>,
-    #[allow(unused)]
+
     l2_client: Arc<AlloyProvider>,
+
+    prover: Arc<Prover>,
+
+    /// Rollup id of the l2 chain for which the proof is generated
+    rollup_id: u32,
+
+    /// Verification key for the aggchain proof
+    aggchain_proof_vkey: SP1VerifyingKey,
 }
 
-impl AggchainProofBuilder {
-    pub fn new(config: &AggchainProofBuilderConfig) -> Result<Self, Error> {
+impl<Prover: AggChainProver> AggchainProofBuilder<Prover> {
+    pub fn new(config: &AggchainProofBuilderConfig, prover: Arc<Prover>) -> Result<Self, Error> {
+        let (_aggchain_proof_pkey, aggchain_proof_vkey) = { prover.get_vkey(ELF) };
+
         Ok(AggchainProofBuilder {
             l1_client: Arc::new(
                 build_http_retry_provider(
@@ -77,6 +101,9 @@ impl AggchainProofBuilder {
                 )
                 .map_err(Error::AlloyProviderError)?,
             ),
+            prover,
+            rollup_id: config.rollup_id,
+            aggchain_proof_vkey,
         })
     }
 
@@ -112,7 +139,9 @@ impl AggchainProofBuilder {
     }
 }
 
-impl tower::Service<AggchainProofBuilderRequest> for AggchainProofBuilder {
+impl<Prover: AggChainProver> tower::Service<AggchainProofBuilderRequest>
+    for AggchainProofBuilder<Prover>
+{
     type Response = AgghcainProofBuilderResponse;
 
     type Error = Error;

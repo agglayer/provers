@@ -11,7 +11,7 @@ serde.workspace = true
 tower = { workspace = true, features = ["timeout"] }
 thiserror.workspace = true
 
-sp1-sdk = { workspace = true, features = ["native-gnark"] }
+sp1-sdk.workspace = true
 
 aggkit-prover-config.workspace = true
 aggkit-prover-types.workspace = true

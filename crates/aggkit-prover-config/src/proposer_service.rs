@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Default)]
@@ -12,11 +14,10 @@ use std::time::Duration;
 use prover_utils::from_env_or_default;
 use url::Url;
 
+use crate::default_sp1_cluster_endpoint;
+
 /// The default proposer service endpoint
 const DEFAULT_PROPOSER_SERVICE_ENDPOINT: &str = "http://127.0.0.1:3000";
-
-/// The default url endpoint for the grpc cluster service
-const DEFAULT_SP1_CLUSTER_ENDPOINT: &str = "http://127.0.0.1:5432";
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 #[serde(rename_all = "kebab-case")]
@@ -27,10 +28,10 @@ pub struct ProposerClientConfig {
     /// The sp1 proving cluster endpoint
     #[serde(default = "default_sp1_cluster_endpoint")]
     pub sp1_cluster_endpoint: Url,
-    /// Network prover program
-    pub prover_program: Vec<u8>,
+    /// Path to elf program for aggregating span proofs
+    pub agg_span_prover_program_elf: PathBuf,
     /// Proving timeout in seconds
-    #[serde(default = "default_timeout")]
+    #[serde(default = "default_agg_span_prover_timeout")]
     pub proving_timeout: Duration,
 }
 
@@ -39,8 +40,8 @@ impl Default for ProposerClientConfig {
         Self {
             proposer_endpoint: default_proposer_service_endpoint(),
             sp1_cluster_endpoint: default_sp1_cluster_endpoint(),
-            prover_program: vec![],
-            proving_timeout: default_timeout(),
+            agg_span_prover_program_elf: PathBuf::new(),
+            proving_timeout: default_agg_span_prover_timeout(),
         }
     }
 }
@@ -52,13 +53,6 @@ fn default_proposer_service_endpoint() -> Url {
     )
 }
 
-fn default_sp1_cluster_endpoint() -> Url {
-    from_env_or_default(
-        "SP1_CLUSTER_ENDPOINT",
-        Url::from_str(DEFAULT_SP1_CLUSTER_ENDPOINT).unwrap(),
-    )
-}
-
-fn default_timeout() -> Duration {
+fn default_agg_span_prover_timeout() -> Duration {
     Duration::from_secs(3600)
 }

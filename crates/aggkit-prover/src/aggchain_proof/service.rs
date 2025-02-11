@@ -1,9 +1,11 @@
+use std::sync::Arc;
 use std::{
     future::Future,
     pin::Pin,
     task::{Context, Poll},
 };
 
+use aggchain_proof_builder::aggchain_prover::AggChainNetworkProver;
 use aggchain_proof_builder::{
     AggchainProof, AggchainProofBuilder, AggchainProofBuilderRequest as ProofBuilderRequest,
 };
@@ -43,16 +45,24 @@ pub struct AggchainProofServiceResponse {
 /// Aggchain proof.
 #[derive(Clone)]
 pub(crate) struct AggchainProofService {
-    pub(crate) proposer_service: ProposerService,
-    pub(crate) aggchain_proof_builder: AggchainProofBuilder,
+    pub proposer_service: ProposerService,
+    pub aggchain_proof_builder: AggchainProofBuilder<AggChainNetworkProver>,
 }
 
 impl AggchainProofService {
     pub fn new(config: &AggchainProofServiceConfig) -> Result<Self, Error> {
+        let aggchain_network_prover = AggChainNetworkProver::new(
+            config
+                .aggchain_proof_builder_config
+                .sp1_cluster_endpoint
+                .as_str(),
+        );
+
         Ok(AggchainProofService {
             proposer_service: ProposerService::new(&config.proposer_service_config)?,
             aggchain_proof_builder: AggchainProofBuilder::new(
                 &config.aggchain_proof_builder_config,
+                Arc::new(aggchain_network_prover),
             )?,
         })
     }
@@ -94,6 +104,8 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
             let _aggchain_proof_builder_response = proof_builder
                 .call(ProofBuilderRequest {
                     agg_span_proof: agg_span_proof_response.agg_span_proof,
+                    start_block: agg_span_proof_response.start_block,
+                    end_block: agg_span_proof_response.end_block,
                 })
                 .await?;
 

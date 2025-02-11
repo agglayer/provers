@@ -8,6 +8,7 @@ license.workspace = true
 aggchain-proof-core.workspace = true
 aggkit-prover-config.workspace = true
 aggkit-prover-types.workspace = true
+
 alloy = { version = '0.11.0', default-features = false, features = [
     "consensus",
     "reqwest",
@@ -26,10 +27,11 @@ alloy = { version = '0.11.0', default-features = false, features = [
 anyhow.workspace = true
 futures.workspace = true
 thiserror.workspace = true
+tonic.workspace = true
 tower = { workspace = true, features = ["timeout"] }
 tracing.workspace = true
 serde = { workspace = true, features = ["derive"] }
-sp1-sdk = { workspace = true, features = ["native-gnark"] }
+sp1-sdk.workspace = true
 url = "2.5.4"
 
 [lints]

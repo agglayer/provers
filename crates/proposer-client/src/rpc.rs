@@ -4,7 +4,7 @@ use alloy_primitives::B256;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
-use crate::{error::Error, ProofId, ProposerRequest};
+use crate::{error::Error, ProposerRequest};
 
 /// Proposer client that requests the generation
 /// of the AggSpanProof from the proposer and gets
@@ -94,6 +94,8 @@ impl From<ProposerRequest> for AggSpanProofProposerRequest {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AggSpanProofProposerResponse {
     pub proof_id: alloy_primitives::B256,
+    pub start_block: u64,
+    pub end_block: u64,
 }
 
 impl Display for AggSpanProofProposerResponse {
@@ -102,23 +104,13 @@ impl Display for AggSpanProofProposerResponse {
     }
 }
 
-impl TryFrom<AggSpanProofProposerResponse> for ProofId {
-    type Error = crate::Error;
-
-    fn try_from(proof_response: AggSpanProofProposerResponse) -> Result<Self, Error> {
-        let bytes = proof_response
-            .proof_id
-            .as_slice()
-            .try_into()
-            .map_err(|_| Error::InvalidProofId(proof_response.proof_id.to_string()))?;
-        Ok(ProofId(bytes))
-    }
-}
-
-impl From<ProofId> for AggSpanProofProposerResponse {
-    fn from(proof_id: ProofId) -> Self {
-        AggSpanProofProposerResponse {
-            proof_id: proof_id.0,
-        }
-    }
-}
+// impl TryFrom<B256> for ProofId {
+//     type Error = crate::Error;
+//
+//     fn try_from(proof_id: &[u8]) -> Result<Self, Error> {
+//         let bytes = proof_id
+//             .try_into()
+//             .map_err(|_| Error::InvalidProofId(proof_id.to_string()))?;
+//         Ok(ProofId(bytes))
+//     }
+// }

@@ -14,12 +14,11 @@ hex.workspace = true
 aggkit-prover-config.workspace = true
 reqwest = { workspace = true, features = ["json"]}
 serde.workspace = true
+sp1-sdk.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
 tonic.workspace = true
 
-
-sp1-sdk = { workspace = true, features = ["native-gnark"] }
 
 
 [features]
