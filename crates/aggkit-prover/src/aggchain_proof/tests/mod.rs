@@ -1,8 +1,11 @@
+use std::collections::HashMap;
+
 use aggkit_prover_config::aggchain_proof_service::AggchainProofServiceConfig;
 use aggkit_prover_types::v1::{
     aggchain_proof_service_client::AggchainProofServiceClient,
     aggchain_proof_service_server::AggchainProofServiceServer, GenerateAggchainProofRequest,
 };
+
 use http::Uri;
 use hyper_util::rt::TokioIo;
 use tonic::transport::{Endpoint, Server};
@@ -76,8 +79,10 @@ async fn testing_rpc_failure() {
         start_block: 1000,
         max_end_block: 999,
         l1_info_tree_root_hash: vec![],
-        l1_info_tree_leaf_hash: vec![],
+        l1_info_tree_leaf: None,
         l1_info_tree_merkle_proof: vec![],
+        ger_inclusion_proofs: HashMap::new(),
+        imported_bridge_exits: vec![],
     });
 
     let response = client.generate_aggchain_proof(request).await;
