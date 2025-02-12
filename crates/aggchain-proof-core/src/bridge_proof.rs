@@ -1,10 +1,8 @@
 //! A program that verifies the bridge integrity
 use alloy_sol_types::SolCall;
 use alloy_sol_macro::sol;
-use alloy_primitives::{B256, address, Address, FixedBytes};
+use alloy_primitives::{B256, Address, FixedBytes};
 use sp1_cc_client_executor::{io::EVMStateSketch, ClientExecutor, ContractInput};
-
-pub const GER_ADDR: Address = address!("0000000000000000000000000000000000000000");
 
 use serde::{Deserialize, Serialize};
 
@@ -12,13 +10,13 @@ use serde::{Deserialize, Serialize};
 pub struct BridgeInput {
     pub new_local_exit_root: FixedBytes<32>,
     pub injected_gers: Vec<B256>,
+    pub ger_addr: Address,
     pub prev_hash_chain_sketch: EVMStateSketch,
     pub new_hash_chain_sketch: EVMStateSketch,
     pub new_ler_sketch: EVMStateSketch,
     pub prev_l2_block_hash: FixedBytes<32>,
     pub new_l2_block_hash: FixedBytes<32>,
 }
-
 
 // try what happens if the calls revert?¿
 sol! (
@@ -45,7 +43,7 @@ pub fn verify_bridge_state(bridge_input: BridgeInput) {
     ).unwrap();
 
     let hash_chain_calldata = GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {};
-    let get_prev_hash_chain_input = ContractInput::new_call(GER_ADDR, Address::default(), hash_chain_calldata.clone());
+    let get_prev_hash_chain_input = ContractInput::new_call(bridge_input.ger_addr, Address::default(), hash_chain_calldata.clone());
 
 
     // Execute the static call
@@ -64,7 +62,7 @@ pub fn verify_bridge_state(bridge_input: BridgeInput) {
     ).unwrap();
 
 
-    let get_new_hash_chain_contract_input: ContractInput = ContractInput::new_call(GER_ADDR, Address::default(), hash_chain_calldata);
+    let get_new_hash_chain_contract_input: ContractInput = ContractInput::new_call(bridge_input.ger_addr, Address::default(), hash_chain_calldata);
 
     // Execute the static call
     let new_hash_chain_call_output = executor_new_hash_chain.execute(
@@ -88,7 +86,7 @@ pub fn verify_bridge_state(bridge_input: BridgeInput) {
         bridge_input.new_ler_sketch
     ).unwrap();
 
-    let get_new_ler_contract_input: ContractInput = ContractInput::new_call(GER_ADDR, Address::default(), GlobalExitRootManagerL2SovereignChain::lastRollupExitRootCall {});
+    let get_new_ler_contract_input: ContractInput = ContractInput::new_call(bridge_input.ger_addr, Address::default(), GlobalExitRootManagerL2SovereignChain::lastRollupExitRootCall {});
 
     // Execute the static call
     let new_ler_call_output = executor_new_ler.execute(
