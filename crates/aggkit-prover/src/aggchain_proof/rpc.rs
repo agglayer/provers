@@ -52,6 +52,8 @@ impl AggchainProofGrpcService for GrpcService {
                 aggchain_proof: Vec::new(),
                 start_block: 0,
                 end_block: 0,
+                local_exit_root_hash: Vec::new(),
+                custom_chain_data: Vec::new(),
             })),
             Err(e) => Err(Status::internal(e.to_string())),
         }
