@@ -8,7 +8,7 @@ use url::Url;
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct AggchainProofBuilderConfig {
-    /// Json rpc endpoint of the l1 node.
+    /// JSON-RPC endpoint of the l1 node.
     #[serde(default = "default_l1_url")]
     pub l1_rpc_endpoint: Url,
 

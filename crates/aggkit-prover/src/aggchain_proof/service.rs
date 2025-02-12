@@ -98,7 +98,7 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
             // TODO Aggchain proof should be available here from the
             // `aggchain_proof_builder_response`
             let aggchain_proof = AggchainProof::default();
-            debug!("The proof is {:?}", aggchain_proof);
+            debug!(?aggchain_proof);
 
             Ok(AggchainProofServiceResponse {
                 proof: AggchainProof::default(),

@@ -40,10 +40,10 @@ pub struct AggchainProofBuilderResponse {
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error("Alloy error: {0}")]
+    #[error(transparent)]
     AlloyProviderError(anyhow::Error),
 
-    #[error("Alloy transport rpc error: {0:?}")]
+    #[error(transparent)]
     AlloyRpcTransportError(#[from] RpcError<TransportErrorKind>),
 
     #[error(transparent)]
