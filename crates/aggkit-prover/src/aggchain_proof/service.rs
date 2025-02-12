@@ -50,10 +50,8 @@ pub(crate) struct AggchainProofService {
 impl AggchainProofService {
     pub fn new(config: &AggchainProofServiceConfig) -> Result<Self, Error> {
         Ok(AggchainProofService {
-            proposer_service: ProposerService::new(&config.proposer_service_config)?,
-            aggchain_proof_builder: AggchainProofBuilder::new(
-                &config.aggchain_proof_builder_config,
-            )?,
+            proposer_service: ProposerService::new(&config.proposer_service)?,
+            aggchain_proof_builder: AggchainProofBuilder::new(&config.aggchain_proof_builder)?,
         })
     }
 }

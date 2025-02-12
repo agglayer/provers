@@ -5,7 +5,6 @@ use aggkit_prover_types::v1::{
     aggchain_proof_service_client::AggchainProofServiceClient,
     aggchain_proof_service_server::AggchainProofServiceServer, GenerateAggchainProofRequest,
 };
-
 use http::Uri;
 use hyper_util::rt::TokioIo;
 use tonic::transport::{Endpoint, Server};

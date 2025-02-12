@@ -13,15 +13,15 @@ pub const HTTP_RPC_NODE_BACKOFF_MAX_RETRIES: u32 = 64;
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct AggchainProofServiceConfig {
-    pub aggchain_proof_builder_config: AggchainProofBuilderConfig,
-    pub proposer_service_config: ProposerServiceConfig,
+    pub aggchain_proof_builder: AggchainProofBuilderConfig,
+    pub proposer_service: ProposerServiceConfig,
 }
 
 impl AggchainProofServiceConfig {
     pub fn default_for_test() -> Self {
         AggchainProofServiceConfig {
-            aggchain_proof_builder_config: AggchainProofBuilderConfig::default_for_test(),
-            proposer_service_config: ProposerServiceConfig::default_for_test(),
+            aggchain_proof_builder: AggchainProofBuilderConfig::default_for_test(),
+            proposer_service: ProposerServiceConfig::default_for_test(),
         }
     }
 }
