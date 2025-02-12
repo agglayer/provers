@@ -24,7 +24,7 @@ use url::Url;
 const DEFAULT_PROPOSER_SERVICE_ENDPOINT: &str = "http://127.0.0.1:3000";
 
 /// The default url endpoint for the grpc cluster service
-const DEFAULT_SP1_CLUSTER_ENDPOINT: &str = "http://127.0.0.1:5432";
+const DEFAULT_SP1_CLUSTER_ENDPOINT: &str = "https://rpc.production.succinct.xyz/";
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 #[serde(rename_all = "kebab-case")]
