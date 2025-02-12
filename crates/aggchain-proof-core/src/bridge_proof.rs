@@ -1,10 +1,9 @@
 //! A program that verifies the bridge integrity
-use alloy_sol_types::SolCall;
+use alloy_primitives::{Address, FixedBytes, B256};
 use alloy_sol_macro::sol;
-use alloy_primitives::{B256, Address, FixedBytes};
-use sp1_cc_client_executor::{io::EVMStateSketch, ClientExecutor, ContractInput};
-
+use alloy_sol_types::SolCall;
 use serde::{Deserialize, Serialize};
+use sp1_cc_client_executor::{io::EVMStateSketch, ClientExecutor, ContractInput};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BridgeInput {
@@ -26,8 +25,19 @@ sol! (
     }
 );
 
+/// Represents all the bridge contraints errors.
+#[derive(Clone, thiserror::Error, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub enum BridgeConstraintsError {
+    /// The previous nullifier root declared by the agglayer does not match the
+    /// one computed by the prover.
+    #[error("Block hash does not match: {left} != {right}")]
+    MismatchBlockHash {
+        left: FixedBytes<32>,
+        right: FixedBytes<32>,
+    },
+}
 
-pub fn verify_bridge_state(bridge_input: BridgeInput) {
+pub fn verify_bridge_state(bridge_input: BridgeInput) -> Result<(), BridgeConstraintsError> {
     // Read the bridge_input.
     // Todo explore other decodings for optimizing performance
     // let sbridge_input_bytes = sp1_zkvm::io::read::<Vec<u8>>();
@@ -95,12 +105,58 @@ pub fn verify_bridge_state(bridge_input: BridgeInput) {
 
 
     // Decode ger count from the result
-    let new_ler = GlobalExitRootManagerL2SovereignChain::lastRollupExitRootCall::abi_decode_returns(
-        &new_ler_call_output.contractOutput, true
-    ).unwrap().lastRollupExitRoot;
+    let new_ler =
+        GlobalExitRootManagerL2SovereignChain::lastRollupExitRootCall::abi_decode_returns(
+            &new_ler_call_output.contractOutput,
+            true,
+        )
+        .unwrap()
+        .lastRollupExitRoot;
 
-    // assert blockhashes   
-    assert!(bridge_input.prev_l2_block_hash == prev_hash_chain_call_output.blockHash, "block hash does not match");
-    assert!(bridge_input.new_l2_block_hash == new_hash_chain_call_output.blockHash, "block hash does not match");
-    assert!(bridge_input.new_l2_block_hash == new_ler_call_output.blockHash, "block hash does not match");
+    let check_block_hash = |left, right| {
+        if left != right {
+            Err(BridgeConstraintsError::MismatchBlockHash { left, right })
+        } else {
+            Ok(())
+        }
+    };
+
+    // assert blockhashes
+    check_block_hash(
+        bridge_input.prev_l2_block_hash,
+        prev_hash_chain_call_output.blockHash,
+    )?;
+
+    check_block_hash(
+        bridge_input.new_l2_block_hash,
+        new_hash_chain_call_output.blockHash,
+    )?;
+
+    check_block_hash(
+        bridge_input.new_l2_block_hash,
+        new_ler_call_output.blockHash,
+    )?;
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_bridge_contraints() {
+        let bridge_data_input = BridgeInput {
+            new_local_exit_root: todo!(),
+            injected_gers: todo!(),
+            ger_addr: todo!(),
+            prev_hash_chain_sketch: todo!(),
+            new_hash_chain_sketch: todo!(),
+            new_ler_sketch: todo!(),
+            prev_l2_block_hash: todo!(),
+            new_l2_block_hash: todo!(),
+        };
+
+        assert!(verify_bridge_state(bridge_data_input).is_ok())
+    }
 }
