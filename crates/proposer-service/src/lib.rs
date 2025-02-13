@@ -1,7 +1,6 @@
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
-use aggkit_prover_config::proposer_service::ProposerServiceConfig;
 use futures::{future::BoxFuture, FutureExt};
 use proposer_client::network_prover::new_network_prover;
 use proposer_client::rpc::ProposerRpcClient;
@@ -11,7 +10,11 @@ use sp1_sdk::NetworkProver;
 
 pub mod error;
 
+pub mod config;
+
 pub use error::Error;
+
+use crate::config::ProposerServiceConfig;
 
 #[derive(Clone)]
 pub struct ProposerService {

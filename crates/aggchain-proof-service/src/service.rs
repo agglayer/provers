@@ -7,12 +7,12 @@ use std::{
 use aggchain_proof_builder::{
     AggchainProof, AggchainProofBuilder, AggchainProofBuilderRequest as ProofBuilderRequest,
 };
-use aggkit_prover_config::aggchain_proof_service::AggchainProofServiceConfig;
 use aggkit_prover_types::Hash;
 use proposer_service::{ProposerRequest, ProposerService};
 use tracing::debug;
 
-use super::error::Error;
+use crate::config::AggchainProofServiceConfig;
+use crate::error::Error;
 
 /// A request for the AggchainProofService to generate the
 /// aggchain proof for the range of blocks.
@@ -42,7 +42,7 @@ pub struct AggchainProofServiceResponse {
 /// proposer service and the `aggchain-proof-builder` service to generate the
 /// Aggchain proof.
 #[derive(Clone)]
-pub(crate) struct AggchainProofService {
+pub struct AggchainProofService {
     pub(crate) proposer_service: ProposerService,
     pub(crate) aggchain_proof_builder: AggchainProofBuilder,
 }

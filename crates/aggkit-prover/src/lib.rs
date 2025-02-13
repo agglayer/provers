@@ -1,1 +1,3 @@
-pub mod aggchain_proof;
+pub mod rpc;
+#[cfg(test)]
+mod tests;

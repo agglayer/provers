@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use aggkit_prover_config::aggchain_proof_service::AggchainProofServiceConfig;
+use aggchain_proof_service::config::AggchainProofServiceConfig;
+use aggchain_proof_service::service::{AggchainProofService, AggchainProofServiceRequest};
 use aggkit_prover_types::v1::{
     aggchain_proof_service_client::AggchainProofServiceClient,
     aggchain_proof_service_server::AggchainProofServiceServer, GenerateAggchainProofRequest,
@@ -11,10 +12,7 @@ use tonic::transport::{Endpoint, Server};
 use tonic_types::StatusExt;
 use tower::{service_fn, Service};
 
-use crate::aggchain_proof::{
-    service::{AggchainProofService, AggchainProofServiceRequest},
-    GrpcService,
-};
+use crate::rpc::GrpcService;
 
 #[tokio::test]
 #[ignore]

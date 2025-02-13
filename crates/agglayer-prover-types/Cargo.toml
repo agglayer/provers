@@ -5,10 +5,10 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-anyhow.workspace = true
 bincode.workspace = true
 prost.workspace = true
 serde.workspace = true
+sp1-sdk.workspace = true
 thiserror.workspace = true
 tonic = { workspace = true, default-features = false, features = [
     "prost",
@@ -16,7 +16,7 @@ tonic = { workspace = true, default-features = false, features = [
     "transport",
 ] }
 
-sp1-sdk.workspace = true
+
 
 [build-dependencies]
 tonic-build = { version = "0.12", default-features = false, features = [

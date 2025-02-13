@@ -1,20 +1,13 @@
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::Path;
 
+use aggchain_proof_service::config::AggchainProofServiceConfig;
 use prover_config::{NetworkProverConfig, ProverType};
 use prover_logger::log::Log;
 use serde::{Deserialize, Serialize};
 
-use crate::aggchain_proof_service::AggchainProofServiceConfig;
-pub use crate::{
-    aggchain_proof_builder::AggchainProofBuilderConfig, shutdown::ShutdownConfig,
-    telemetry::TelemetryConfig,
-};
+pub use crate::{shutdown::ShutdownConfig, telemetry::TelemetryConfig};
 
-pub mod aggchain_proof_service;
-
-pub mod aggchain_proof_builder;
-pub mod proposer_service;
 pub mod shutdown;
 pub(crate) mod telemetry;
 
