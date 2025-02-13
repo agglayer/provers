@@ -11,11 +11,16 @@ use alloy::primitives::B256;
 use alloy::providers::Provider;
 use alloy::transports::{RpcError, TransportErrorKind};
 use futures::{future::BoxFuture, FutureExt};
+use prover_executor::{Executor, NetworkExecutor, Request, Response};
 use serde::{Deserialize, Serialize};
-use sp1_sdk::SP1ProofWithPublicValues;
+use sp1_sdk::{Prover, ProverClient, SP1ProofWithPublicValues, SP1VerifyingKey};
+use tower::util::BoxCloneService;
 
 use crate::config::AggchainProofBuilderConfig;
 use crate::provider::json_rpc::{build_http_retry_provider, AlloyProvider};
+
+const ELF: &[u8] =
+    include_bytes!("../../../crates/aggchain-proof-program/elf/riscv32im-succinct-zkvm-elf");
 
 /// Aggchain proof is generated from FEP proof and additional
 /// bridge inputs.
@@ -27,8 +32,12 @@ pub struct AggchainProof {
 }
 
 pub struct AggchainProofBuilderRequest {
+    /// Aggregated full execution proof for the number of aggregated block spans
     pub agg_span_proof: SP1ProofWithPublicValues,
-    // TODO add rest of the fields
+    /// First block in the aggregated span
+    pub start_block: u64,
+    /// Last block in the aggregated span (inclusive)
+    pub end_block: u64,
 }
 
 #[derive(Clone, Debug)]
@@ -49,15 +58,38 @@ pub enum Error {
 }
 
 /// This service is responsible for building an Aggchain proof.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
+#[allow(unused)]
 pub struct AggchainProofBuilder {
+    /// Mainnet node rpc client
     l1_client: Arc<AlloyProvider>,
 
-    _l2_client: Arc<AlloyProvider>,
+    /// L2 node rpc client
+    l2_client: Arc<AlloyProvider>,
+
+    /// Network id of the l2 chain for which the proof is generated
+    network_id: u32,
+
+    /// Prover client executor
+    prover: prover_executor::NetworkExecutor,
+
+    /// Verification key for the aggchain proof
+    aggchain_proof_vkey: SP1VerifyingKey,
 }
 
 impl AggchainProofBuilder {
     pub fn new(config: &AggchainProofBuilderConfig) -> Result<Self, Error> {
+        let network_prover = ProverClient::builder().network().build();
+        let (proving_key, verification_key) = network_prover.setup(ELF);
+        let network_executor =
+            NetworkExecutor {
+                prover: Arc::new(network_prover),
+                proving_key,
+                verification_key,
+                timeout: config.proving_timeout,
+            };
+        // let prover = Executor::create_prover(&config.primary_prover, ELF);
+        let aggchain_proof_vkey = Executor::get_vkey(ELF);
         Ok(AggchainProofBuilder {
             l1_client: Arc::new(
                 build_http_retry_provider(
@@ -67,7 +99,7 @@ impl AggchainProofBuilder {
                 )
                 .map_err(Error::AlloyProviderError)?,
             ),
-            _l2_client: Arc::new(
+            l2_client: Arc::new(
                 build_http_retry_provider(
                     &config.l2_rpc_endpoint,
                     config::HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
@@ -75,6 +107,9 @@ impl AggchainProofBuilder {
                 )
                 .map_err(Error::AlloyProviderError)?,
             ),
+            prover: network_executor,
+            network_id: config.network_id,
+            aggchain_proof_vkey,
         })
     }
 

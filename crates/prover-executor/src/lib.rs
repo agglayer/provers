@@ -5,7 +5,6 @@ use std::{
     time::Duration,
 };
 
-use agglayer_prover_config::ProverConfig;
 use agglayer_prover_types::Error;
 use futures::{Future, TryFutureExt};
 use prover_config::ProverType;
@@ -86,7 +85,7 @@ impl Executor {
         Self { primary, fallback }
     }
 
-    fn create_prover(
+    pub fn create_prover(
         prover_type: &ProverType,
         program: &[u8],
     ) -> BoxCloneService<Request, Response, Error> {
@@ -139,14 +138,12 @@ impl Executor {
         }
     }
 
-    pub fn new(config: &ProverConfig, program: &[u8]) -> Self {
-        Self {
-            primary: Self::create_prover(&config.primary_prover, program),
-            fallback: config
-                .fallback_prover
-                .as_ref()
-                .map(|config| Self::create_prover(config, program)),
-        }
+    pub fn new(primary: &ProverType, fallback: &Option<ProverType>, program: &[u8]) -> Self {
+        let primary = Self::create_prover(primary, program);
+        let fallback = fallback
+            .as_ref()
+            .map(|config| Self::create_prover(config, program));
+        Self { primary, fallback }
     }
 }
 
@@ -244,11 +241,11 @@ impl Service<Request> for LocalExecutor {
 }
 
 #[derive(Clone)]
-struct NetworkExecutor {
-    prover: Arc<NetworkProver>,
-    proving_key: SP1ProvingKey,
-    verification_key: SP1VerifyingKey,
-    timeout: Duration,
+pub struct NetworkExecutor {
+    pub prover: Arc<NetworkProver>,
+    pub proving_key: SP1ProvingKey,
+    pub verification_key: SP1VerifyingKey,
+    pub timeout: Duration,
 }
 
 impl Service<Request> for NetworkExecutor {
@@ -293,4 +290,12 @@ impl Service<Request> for NetworkExecutor {
 
         Box::pin(fut)
     }
+}
+
+
+#[derive(Clone)]
+pub struct SyncExecutor<P>
+where P: Service<Request, Response = Response, Error = Error> + Clone + Send + Sync + 'static,
+{
+    primary: P,
 }
