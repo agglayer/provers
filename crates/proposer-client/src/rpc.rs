@@ -74,18 +74,6 @@ impl From<AggSpanProofProposerRequest> for ProposerRequest {
             start_block: request.start,
             max_block: request.end,
             l1_block_number: request.l1_block_number,
-            l1_block_hash: request.l1_block_hash,
-        }
-    }
-}
-
-impl From<ProposerRequest> for AggSpanProofProposerRequest {
-    fn from(request: ProposerRequest) -> Self {
-        AggSpanProofProposerRequest {
-            start: request.start_block,
-            end: request.max_block,
-            l1_block_number: request.l1_block_number,
-            l1_block_hash: request.l1_block_hash,
         }
     }
 }

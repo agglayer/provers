@@ -5,7 +5,7 @@ use std::{
     time::Duration,
 };
 
-use agglayer_prover_types::Error;
+pub use error::Error;
 use futures::{Future, TryFutureExt};
 use prover_config::ProverType;
 use sp1_sdk::{
@@ -22,6 +22,8 @@ use tracing::{debug, error, info};
 
 #[cfg(test)]
 mod tests;
+
+mod error;
 
 #[derive(Clone)]
 pub struct Executor {
@@ -290,12 +292,4 @@ impl Service<Request> for NetworkExecutor {
 
         Box::pin(fut)
     }
-}
-
-
-#[derive(Clone)]
-pub struct SyncExecutor<P>
-where P: Service<Request, Response = Response, Error = Error> + Clone + Send + Sync + 'static,
-{
-    primary: P,
 }

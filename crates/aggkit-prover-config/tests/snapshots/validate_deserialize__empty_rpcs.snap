@@ -20,10 +20,19 @@ l1-rpc-endpoint = "http://anvil-mock-l1-rpc:8545/"
 l2-rpc-endpoint = "http://anvil-mock-l2-rpc:8545/"
 network-id = 0
 
+[aggchain-proof-service.aggchain-proof-builder.primary-prover.network-prover]
+proving-timeout = "5m"
+
+[aggchain-proof-service.aggchain-proof-builder.proving-timeout]
+secs = 3600
+nanos = 0
+
+[aggchain-proof-service.proposer-service]
+l1-rpc-endpoint = "http://anvil-mock-l1-rpc:8545/"
+
 [aggchain-proof-service.proposer-service.client]
 proposer-endpoint = "http://proposer-mock-rpc:3000/"
 sp1-cluster-endpoint = "https://rpc.production.succinct.xyz/"
-prover-program = []
 
 [aggchain-proof-service.proposer-service.client.proving-timeout]
 secs = 3600

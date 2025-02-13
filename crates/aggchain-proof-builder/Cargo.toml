@@ -17,6 +17,7 @@ url.workspace = true
 
 aggchain-proof-core.workspace = true
 agglayer-prover-types.workspace = true
+prover-alloy.workspace = true
 prover-config.workspace = true
 prover-executor.workspace = true
 

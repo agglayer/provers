@@ -27,6 +27,7 @@ agglayer-prover-config = { path = "crates/agglayer-prover-config" }
 agglayer-prover-types = { path = "crates/agglayer-prover-types" }
 proposer-client = { path = "crates/proposer-client" }
 proposer-service = { path = "crates/proposer-service" }
+prover-alloy = { path = "crates/prover-alloy" }
 prover-config = { path = "crates/prover-config" }
 prover-engine = { path = "crates/prover-engine" }
 prover-executor = { path = "crates/prover-executor" }

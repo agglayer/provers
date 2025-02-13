@@ -1,15 +1,8 @@
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Default)]
-#[serde(rename_all = "kebab-case")]
-pub struct ProposerServiceConfig {
-    pub client: ProposerClientConfig,
-}
-
 use std::str::FromStr;
 use std::time::Duration;
 
 use prover_utils::from_env_or_default;
+use serde::{Deserialize, Serialize};
 use url::Url;
 
 /// The default proposer service endpoint
@@ -17,6 +10,25 @@ const DEFAULT_PROPOSER_SERVICE_ENDPOINT: &str = "http://proposer-mock-rpc:3000";
 
 /// The default url endpoint for the grpc cluster service
 const DEFAULT_SP1_CLUSTER_ENDPOINT: &str = "https://rpc.production.succinct.xyz/";
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+#[serde(rename_all = "kebab-case")]
+pub struct ProposerServiceConfig {
+    pub client: ProposerClientConfig,
+
+    /// JSON-RPC endpoint of the l1 node.
+    #[serde(default = "prover_alloy::default_l1_url")]
+    pub l1_rpc_endpoint: Url,
+}
+
+impl Default for ProposerServiceConfig {
+    fn default() -> Self {
+        Self {
+            client: ProposerClientConfig::default(),
+            l1_rpc_endpoint: prover_alloy::default_l1_url(),
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 #[serde(rename_all = "kebab-case")]

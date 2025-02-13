@@ -8,12 +8,16 @@ use aggkit_prover_types::{default_bincode_options, Hash};
 use bincode::Options;
 use tonic::{Request, Response, Status};
 use tonic_types::{ErrorDetails, StatusExt};
+use tower::buffer::Buffer;
 use tower::{Service, ServiceExt};
 use tracing::instrument;
 
+const MAX_CONCURRENT_REQUESTS: usize = 100;
+
 #[derive(Clone)]
 pub struct GrpcService {
-    service: AggchainProofService,
+    service:
+        Buffer<AggchainProofService, aggchain_proof_service::service::AggchainProofServiceRequest>,
 }
 
 impl GrpcService {
@@ -21,7 +25,11 @@ impl GrpcService {
         config: &AggchainProofServiceConfig,
     ) -> Result<Self, aggchain_proof_service::error::Error> {
         Ok(GrpcService {
-            service: AggchainProofService::new(config)?,
+            service: tower::ServiceBuilder::new()
+                .buffer(MAX_CONCURRENT_REQUESTS)
+                .service(aggchain_proof_service::service::AggchainProofService::new(
+                    config,
+                )?),
         })
     }
 }
