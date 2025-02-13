@@ -41,6 +41,12 @@ pub struct GenerateAggchainProofResponse {
     /// The end block of the aggchain proof.
     #[prost(uint64, tag = "3")]
     pub end_block: u64,
+    /// Local exit root hash.
+    #[prost(bytes = "vec", tag = "4")]
+    pub local_exit_root_hash: ::prost::alloc::vec::Vec<u8>,
+    /// Custom chain data.
+    #[prost(bytes = "vec", tag = "5")]
+    pub custom_chain_data: ::prost::alloc::vec::Vec<u8>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct InclusionProof {
