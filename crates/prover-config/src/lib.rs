@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
 /// Type of the prover to be used for generation of the pessimistic proof
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub enum ProverType {
     NetworkProver(NetworkProverConfig),
@@ -21,7 +21,7 @@ impl Default for ProverType {
 }
 
 #[serde_as]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct CpuProverConfig {
     #[serde(default = "default_max_concurrency_limit")]
@@ -56,7 +56,7 @@ impl Default for CpuProverConfig {
 }
 
 #[serde_as]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct NetworkProverConfig {
     #[serde_as(as = "Option<crate::with::HumanDuration>")]
@@ -87,7 +87,7 @@ impl Default for NetworkProverConfig {
 }
 
 #[serde_as]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct GpuProverConfig {
     #[serde(default = "default_max_concurrency_limit")]
@@ -122,7 +122,7 @@ impl Default for GpuProverConfig {
 }
 
 #[serde_as]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct MockProverConfig {
     #[serde(default = "default_max_concurrency_limit")]

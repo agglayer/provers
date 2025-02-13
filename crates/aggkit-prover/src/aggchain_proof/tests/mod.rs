@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+
+use aggkit_prover_config::aggchain_proof_service::AggchainProofServiceConfig;
 use aggkit_prover_types::v1::{
     aggchain_proof_service_client::AggchainProofServiceClient,
     aggchain_proof_service_server::AggchainProofServiceServer, GenerateAggchainProofRequest,
@@ -9,7 +12,7 @@ use tonic_types::StatusExt;
 use tower::{service_fn, Service};
 
 use crate::aggchain_proof::{
-    service::{AggchainProofService, ProofRequest},
+    service::{AggchainProofService, AggchainProofServiceRequest},
     GrpcService,
 };
 
@@ -20,10 +23,12 @@ async fn service_can_be_called() {
         "NETWORK_PRIVATE_KEY",
         "0xaabbccddff000000000000000000000000000000000000000000000000000000",
     );
-    let mut service = AggchainProofService::default();
-    let request = ProofRequest {
+    let mut service = AggchainProofService::new(&AggchainProofServiceConfig::default())
+        .expect("create aggchain proof");
+    let request = AggchainProofServiceRequest {
         start_block: 0,
         max_block: 100,
+        ..Default::default()
     };
     let response = service.call(request).await;
     assert!(response.is_ok());
@@ -38,7 +43,8 @@ async fn testing_rpc_failure() {
 
     let (client, server) = tokio::io::duplex(1024);
 
-    let service = GrpcService::default();
+    let service =
+        GrpcService::new(&AggchainProofServiceConfig::default()).expect("create grpc service");
 
     tokio::spawn(async move {
         Server::builder()
@@ -72,8 +78,10 @@ async fn testing_rpc_failure() {
         start_block: 1000,
         max_end_block: 999,
         l1_info_tree_root_hash: vec![],
-        l1_info_tree_leaf_hash: vec![],
+        l1_info_tree_leaf: None,
         l1_info_tree_merkle_proof: vec![],
+        ger_inclusion_proofs: HashMap::new(),
+        imported_bridge_exits: vec![],
     });
 
     let response = client.generate_aggchain_proof(request).await;

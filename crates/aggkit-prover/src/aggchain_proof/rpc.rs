@@ -1,17 +1,30 @@
+use aggkit_prover_config::aggchain_proof_service::AggchainProofServiceConfig;
 use aggkit_prover_types::v1::{
     aggchain_proof_service_server::AggchainProofService as AggchainProofGrpcService,
     GenerateAggchainProofRequest, GenerateAggchainProofResponse,
 };
+use aggkit_prover_types::{default_bincode_options, Hash};
+use bincode::Options;
 use tonic::{Request, Response, Status};
 use tonic_types::{ErrorDetails, StatusExt};
 use tower::{Service, ServiceExt};
 use tracing::instrument;
 
-use super::service::{AggchainProofService, ProofRequest};
+use super::service::{AggchainProofService, AggchainProofServiceRequest};
 
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct GrpcService {
     service: AggchainProofService,
+}
+
+impl GrpcService {
+    pub fn new(
+        config: &AggchainProofServiceConfig,
+    ) -> Result<Self, crate::aggchain_proof::error::Error> {
+        Ok(GrpcService {
+            service: AggchainProofService::new(config)?,
+        })
+    }
 }
 
 #[tonic::async_trait]
@@ -35,9 +48,26 @@ impl AggchainProofGrpcService for GrpcService {
                 error,
             ));
         }
-        let proof_request = ProofRequest {
+
+        let l1_info_tree_root_hash: Hash =
+            request.l1_info_tree_root_hash.try_into().map_err(|_| {
+                let mut error_details = ErrorDetails::new();
+                error_details.add_bad_request_violation(
+                    "l1_info_tree_root_hash",
+                    "l1 info tree root hash must be non empty and 32 bytes long",
+                );
+                Status::with_error_details(
+                    tonic::Code::InvalidArgument,
+                    "Invalid l1 info tree root hash",
+                    error_details,
+                )
+            })?;
+
+        let proof_request = AggchainProofServiceRequest {
             start_block: request.start_block,
             max_block: request.max_end_block,
+            l1_info_tree_root_hash,
+            ..Default::default()
         };
 
         let mut service = self.service.clone();
@@ -48,11 +78,16 @@ impl AggchainProofGrpcService for GrpcService {
             .map_err(|_| Status::internal("Unable to get the service"))?;
 
         match service.call(proof_request).await {
-            Ok(_response) => Ok(Response::new(GenerateAggchainProofResponse {
-                aggchain_proof: Vec::new(),
-                start_block: 0,
-                end_block: 0,
-            })),
+            Ok(response) => {
+                let aggchain_proof = default_bincode_options()
+                    .serialize(&response.proof)
+                    .map_err(|e| Status::internal(format!("Unable to serialize proof: {e:?}")))?;
+                Ok(Response::new(GenerateAggchainProofResponse {
+                    aggchain_proof,
+                    start_block: response.start_block,
+                    end_block: response.end_block,
+                }))
+            }
             Err(e) => Err(Status::internal(e.to_string())),
         }
     }

@@ -6,6 +6,7 @@ license.workspace = true
 
 [dependencies]
 anyhow.workspace = true
+aggchain-proof-core.workspace = true
 bincode.workspace = true
 prost = "0.13.4"
 serde.workspace = true
