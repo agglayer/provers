@@ -1,12 +1,13 @@
 use std::fmt::Display;
 
+use alloy_primitives::B256;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
-use crate::{error::Error, ProofId, Request};
+use crate::{error::Error, ProofId, ProposerRequest};
 
 /// Proposer client that requests the generation
-/// of the AggProof from the proposer and gets
+/// of the AggSpanProof from the proposer and gets
 /// proof_id in response.
 #[tonic::async_trait]
 pub trait AggSpanProofProposer {
@@ -64,12 +65,12 @@ pub struct AggSpanProofProposerRequest {
     pub start: u64,
     pub end: u64,
     pub l1_block_number: u64,
-    pub l1_block_hash: Vec<u8>,
+    pub l1_block_hash: B256,
 }
 
-impl From<AggSpanProofProposerRequest> for Request {
+impl From<AggSpanProofProposerRequest> for ProposerRequest {
     fn from(request: AggSpanProofProposerRequest) -> Self {
-        Request {
+        ProposerRequest {
             start_block: request.start,
             max_block: request.end,
             l1_block_number: request.l1_block_number,
@@ -78,8 +79,8 @@ impl From<AggSpanProofProposerRequest> for Request {
     }
 }
 
-impl From<Request> for AggSpanProofProposerRequest {
-    fn from(request: Request) -> Self {
+impl From<ProposerRequest> for AggSpanProofProposerRequest {
+    fn from(request: ProposerRequest) -> Self {
         AggSpanProofProposerRequest {
             start: request.start_block,
             end: request.max_block,

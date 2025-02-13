@@ -2,25 +2,23 @@ use std::fmt::Display;
 use std::sync::Arc;
 use std::time::Duration;
 
+use alloy_primitives::B256;
 use serde::{Deserialize, Serialize};
 use sp1_sdk::SP1ProofWithPublicValues;
 
-pub use crate::config::ProposerClientConfig;
 pub use crate::error::Error;
 use crate::network_prover::AggSpanProofProver;
 use crate::rpc::AggSpanProofProposer;
-
-pub mod config;
 pub mod error;
 pub mod network_prover;
 pub mod rpc;
 
-/// The Proposer client is responsible for retrieval of the AggProof.
-/// AggProof is the aggregated proof of the multiple
+/// The Proposer client is responsible for retrieval of the AggSpanProof.
+/// AggSpanProof is the aggregated proof of the multiple
 /// block span full execution proofs.
 ///
 /// The proposer client communicates with the proposer API to
-/// request creation of the AggProof (getting the proof ID in return),
+/// request creation of the AggSpanProof (getting the proof ID in return),
 /// and directly communicates with the SP1 cluster using NetworkProver
 /// to retrieve the generated proof.
 #[derive(Clone)]
@@ -47,7 +45,7 @@ where
         })
     }
 
-    pub async fn request_agg_proof(&mut self, request: Request) -> Result<ProofId, Error> {
+    pub async fn request_agg_proof(&self, request: ProposerRequest) -> Result<ProofId, Error> {
         self.proposer
             .request_agg_proof(request.into())
             .await?
@@ -55,7 +53,7 @@ where
     }
 
     pub async fn wait_for_proof(
-        &mut self,
+        &self,
         proof_id: ProofId,
     ) -> Result<SP1ProofWithPublicValues, Error> {
         let request_id = proof_id.0;
@@ -68,16 +66,16 @@ where
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct Request {
+pub struct ProposerRequest {
     pub start_block: u64,
     pub max_block: u64,
     pub l1_block_number: u64,
-    pub l1_block_hash: Vec<u8>,
+    pub l1_block_hash: B256,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct Response {
-    proofs: Vec<u8>,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProposerResponse {
+    pub agg_span_proof: SP1ProofWithPublicValues,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

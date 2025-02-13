@@ -28,7 +28,8 @@ fn main() -> anyhow::Result<()> {
         .build()?;
 
     // TODO: implement the aggchain-proof service
-    let aggchain_proof_service = AggchainProofServiceServer::new(GrpcService::default());
+    let aggchain_proof_service =
+        AggchainProofServiceServer::new(GrpcService::new(&config.aggchain_proof_service)?);
 
     _ = ProverEngine::builder()
         .add_rpc_service(aggchain_proof_service)
