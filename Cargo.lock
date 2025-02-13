@@ -55,7 +55,6 @@ version = "0.1.0"
 dependencies = [
  "aggchain-proof-core",
  "aggkit-prover-config",
- "aggkit-prover-types",
  "alloy",
  "anyhow",
  "futures",
