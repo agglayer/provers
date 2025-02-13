@@ -87,5 +87,5 @@ test-log = "0.2.16"
 
 # SP1 dependencies
 sp1-core-machine = "=4.0.0"
-sp1-sdk = { version="4.0.0", features = ["native-gnark"] }
+sp1-sdk = { version="=4.0.0", features = ["native-gnark"] }
 sp1-prover = "=4.0.0"
