@@ -33,6 +33,7 @@ name = "aggchain-proof-builder"
 version = "0.1.0"
 dependencies = [
  "aggchain-proof-core",
+ "agglayer-prover-types",
  "alloy",
  "anyhow",
  "futures",

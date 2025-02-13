@@ -11,9 +11,10 @@ use alloy::primitives::B256;
 use alloy::providers::Provider;
 use alloy::transports::{RpcError, TransportErrorKind};
 use futures::{future::BoxFuture, FutureExt};
-use prover_executor::Executor;
+use prover_executor::{Executor, NetworkExecutor, Request, Response};
 use serde::{Deserialize, Serialize};
-use sp1_sdk::{SP1ProofWithPublicValues, SP1VerifyingKey};
+use sp1_sdk::{Prover, ProverClient, SP1ProofWithPublicValues, SP1VerifyingKey};
+use tower::util::BoxCloneService;
 
 use crate::config::AggchainProofBuilderConfig;
 use crate::provider::json_rpc::{build_http_retry_provider, AlloyProvider};
@@ -70,7 +71,7 @@ pub struct AggchainProofBuilder {
     network_id: u32,
 
     /// Prover client executor
-    prover: Arc<Executor>,
+    prover: prover_executor::NetworkExecutor,
 
     /// Verification key for the aggchain proof
     aggchain_proof_vkey: SP1VerifyingKey,
@@ -78,11 +79,16 @@ pub struct AggchainProofBuilder {
 
 impl AggchainProofBuilder {
     pub fn new(config: &AggchainProofBuilderConfig) -> Result<Self, Error> {
-        let prover_executor = Arc::new(Executor::new(
-            &config.primary_prover,
-            &config.fallback_prover,
-            ELF,
-        ));
+        let network_prover = ProverClient::builder().network().build();
+        let (proving_key, verification_key) = network_prover.setup(ELF);
+        let network_executor =
+            NetworkExecutor {
+                prover: Arc::new(network_prover),
+                proving_key,
+                verification_key,
+                timeout: config.proving_timeout,
+            };
+        // let prover = Executor::create_prover(&config.primary_prover, ELF);
         let aggchain_proof_vkey = Executor::get_vkey(ELF);
         Ok(AggchainProofBuilder {
             l1_client: Arc::new(
@@ -101,7 +107,7 @@ impl AggchainProofBuilder {
                 )
                 .map_err(Error::AlloyProviderError)?,
             ),
-            prover: prover_executor,
+            prover: network_executor,
             network_id: config.network_id,
             aggchain_proof_vkey,
         })
