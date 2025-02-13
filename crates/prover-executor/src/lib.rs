@@ -85,7 +85,7 @@ impl Executor {
         Self { primary, fallback }
     }
 
-    fn create_prover(
+    pub fn create_prover(
         prover_type: &ProverType,
         program: &[u8],
     ) -> BoxCloneService<Request, Response, Error> {
@@ -241,11 +241,11 @@ impl Service<Request> for LocalExecutor {
 }
 
 #[derive(Clone)]
-struct NetworkExecutor {
-    prover: Arc<NetworkProver>,
-    proving_key: SP1ProvingKey,
-    verification_key: SP1VerifyingKey,
-    timeout: Duration,
+pub struct NetworkExecutor {
+    pub prover: Arc<NetworkProver>,
+    pub proving_key: SP1ProvingKey,
+    pub verification_key: SP1VerifyingKey,
+    pub timeout: Duration,
 }
 
 impl Service<Request> for NetworkExecutor {
@@ -290,4 +290,12 @@ impl Service<Request> for NetworkExecutor {
 
         Box::pin(fut)
     }
+}
+
+
+#[derive(Clone)]
+pub struct SyncExecutor<P>
+where P: Service<Request, Response = Response, Error = Error> + Clone + Send + Sync + 'static,
+{
+    primary: P,
 }

@@ -88,32 +88,32 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
         let mut proof_builder = self.aggchain_proof_builder.clone();
 
         let fut = async move {
-            let l1_block_number = req.max_block;
-            let l1_block_hash = proof_builder.get_l1_block_hash(l1_block_number).await?;
-
-            let proposer_request = ProposerRequest {
-                start_block: req.start_block,
-                max_block: req.max_block,
-                l1_block_number,
-                l1_block_hash,
-            };
-
-            // Fetch Aggregated FEP
-            let agg_span_proof_response = proposer_service.call(proposer_request).await?;
-
-            // Fetch the private inputs for Aggchain proof
-            let _aggchain_proof_builder_response = proof_builder
-                .call(ProofBuilderRequest {
-                    agg_span_proof: agg_span_proof_response.agg_span_proof,
-                    start_block: agg_span_proof_response.start_block,
-                    end_block: agg_span_proof_response.end_block,
-                })
-                .await?;
-
-            // TODO Aggchain proof should be available here from the
-            // `aggchain_proof_builder_response`
-            let aggchain_proof = AggchainProof::default();
-            debug!(?aggchain_proof);
+            // let l1_block_number = req.max_block;
+            // let l1_block_hash = proof_builder.get_l1_block_hash(l1_block_number).await?;
+            //
+            // let proposer_request = ProposerRequest {
+            //     start_block: req.start_block,
+            //     max_block: req.max_block,
+            //     l1_block_number,
+            //     l1_block_hash,
+            // };
+            //
+            // // Fetch Aggregated FEP
+            // let agg_span_proof_response = proposer_service.call(proposer_request).await?;
+            //
+            // // Fetch the private inputs for Aggchain proof
+            // let _aggchain_proof_builder_response = proof_builder
+            //     .call(ProofBuilderRequest {
+            //         agg_span_proof: agg_span_proof_response.agg_span_proof,
+            //         start_block: agg_span_proof_response.start_block,
+            //         end_block: agg_span_proof_response.end_block,
+            //     })
+            //     .await?;
+            //
+            // // TODO Aggchain proof should be available here from the
+            // // `aggchain_proof_builder_response`
+            // let aggchain_proof = AggchainProof::default();
+            // debug!(?aggchain_proof);
 
             Ok(AggchainProofServiceResponse {
                 proof: AggchainProof::default(),
