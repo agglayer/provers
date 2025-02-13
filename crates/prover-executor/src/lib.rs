@@ -5,7 +5,6 @@ use std::{
     time::Duration,
 };
 
-use agglayer_prover_config::ProverConfig;
 use agglayer_prover_types::Error;
 use futures::{Future, TryFutureExt};
 use prover_config::ProverType;
@@ -139,14 +138,12 @@ impl Executor {
         }
     }
 
-    pub fn new(config: &ProverConfig, program: &[u8]) -> Self {
-        Self {
-            primary: Self::create_prover(&config.primary_prover, program),
-            fallback: config
-                .fallback_prover
-                .as_ref()
-                .map(|config| Self::create_prover(config, program)),
-        }
+    pub fn new(primary: &ProverType, fallback: &Option<ProverType>, program: &[u8]) -> Self {
+        let primary = Self::create_prover(primary, program);
+        let fallback = fallback
+            .as_ref()
+            .map(|config| Self::create_prover(config, program));
+        Self { primary, fallback }
     }
 }
 

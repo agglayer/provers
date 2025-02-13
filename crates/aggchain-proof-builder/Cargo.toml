@@ -9,12 +9,16 @@ alloy.workspace = true
 anyhow.workspace = true
 futures.workspace = true
 thiserror.workspace = true
+tonic.workspace = true
 tower = { workspace = true, features = ["timeout"] }
 serde = { workspace = true, features = ["derive"] }
 sp1-sdk.workspace = true
 url.workspace = true
 
 aggchain-proof-core.workspace = true
+prover-config.workspace = true
+prover-executor.workspace = true
+
 
 [lints]
 workspace = true
