@@ -8,7 +8,7 @@ license.workspace = true
 anyhow.workspace = true
 aggchain-proof-core.workspace = true
 bincode.workspace = true
-prost = "0.13.4"
+prost = "0.13.5"
 serde.workspace = true
 thiserror.workspace = true
 tonic = { workspace = true, default-features = false, features = [
