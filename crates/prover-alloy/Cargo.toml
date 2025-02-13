@@ -1,0 +1,13 @@
+[package]
+name = "prover-alloy"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+alloy.workspace = true
+anyhow.workspace = true
+url.workspace = true
+
+[lints]
+workspace = true

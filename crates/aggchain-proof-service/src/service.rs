@@ -1,15 +1,15 @@
 use std::{
     future::Future,
     pin::Pin,
+    sync::Arc,
     task::{Context, Poll},
 };
 
-use aggchain_proof_builder::{
-    AggchainProof, AggchainProofBuilder, AggchainProofBuilderRequest as ProofBuilderRequest,
-};
+use aggchain_proof_builder::{AggchainProof, AggchainProofBuilder};
 use aggkit_prover_types::Hash;
+use futures::{FutureExt as _, TryFutureExt};
 use proposer_service::{ProposerRequest, ProposerService};
-use tracing::debug;
+use tower::{util::BoxCloneService, ServiceExt as _};
 
 use crate::config::AggchainProofServiceConfig;
 use crate::error::Error;
@@ -57,15 +57,43 @@ pub struct AggchainProofServiceResponse {
 /// Aggchain proof.
 #[derive(Clone)]
 pub struct AggchainProofService {
-    pub(crate) proposer_service: ProposerService,
-    pub(crate) aggchain_proof_builder: AggchainProofBuilder,
+    pub(crate) proposer_service: BoxCloneService<
+        proposer_service::ProposerRequest,
+        proposer_service::ProposerResponse,
+        proposer_service::Error,
+    >,
+    pub(crate) aggchain_proof_builder: BoxCloneService<
+        aggchain_proof_builder::AggchainProofBuilderRequest,
+        aggchain_proof_builder::AggchainProofBuilderResponse,
+        aggchain_proof_builder::Error,
+    >,
 }
 
 impl AggchainProofService {
     pub fn new(config: &AggchainProofServiceConfig) -> Result<Self, Error> {
+        let l1_rpc_client = Arc::new(
+            prover_alloy::build_http_retry_provider(
+                &config.proposer_service.l1_rpc_endpoint,
+                prover_alloy::DEFAULT_HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
+                prover_alloy::DEFAULT_HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
+            )
+            .map_err(Error::AlloyProviderError)?,
+        );
+
+        let proposer_service = tower::ServiceBuilder::new()
+            .service(ProposerService::new(
+                &config.proposer_service,
+                l1_rpc_client.clone(),
+            )?)
+            .boxed_clone();
+
+        let aggchain_proof_builder = tower::ServiceBuilder::new()
+            .service(AggchainProofBuilder::new(&config.aggchain_proof_builder)?)
+            .boxed_clone();
+
         Ok(AggchainProofService {
-            proposer_service: ProposerService::new(&config.proposer_service)?,
-            aggchain_proof_builder: AggchainProofBuilder::new(&config.aggchain_proof_builder)?,
+            proposer_service,
+            aggchain_proof_builder,
         })
     }
 }
@@ -84,46 +112,40 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
     }
 
     fn call(&mut self, req: AggchainProofServiceRequest) -> Self::Future {
-        let mut proposer_service = self.proposer_service.clone();
-        let mut proof_builder = self.aggchain_proof_builder.clone();
+        let l1_block_number = req.max_block;
 
-        let fut = async move {
-            // let l1_block_number = req.max_block;
-            // let l1_block_hash = proof_builder.get_l1_block_hash(l1_block_number).await?;
-            //
-            // let proposer_request = ProposerRequest {
-            //     start_block: req.start_block,
-            //     max_block: req.max_block,
-            //     l1_block_number,
-            //     l1_block_hash,
-            // };
-            //
-            // // Fetch Aggregated FEP
-            // let agg_span_proof_response = proposer_service.call(proposer_request).await?;
-            //
-            // // Fetch the private inputs for Aggchain proof
-            // let _aggchain_proof_builder_response = proof_builder
-            //     .call(ProofBuilderRequest {
-            //         agg_span_proof: agg_span_proof_response.agg_span_proof,
-            //         start_block: agg_span_proof_response.start_block,
-            //         end_block: agg_span_proof_response.end_block,
-            //     })
-            //     .await?;
-            //
-            // // TODO Aggchain proof should be available here from the
-            // // `aggchain_proof_builder_response`
-            // let aggchain_proof = AggchainProof::default();
-            // debug!(?aggchain_proof);
-
-            Ok(AggchainProofServiceResponse {
-                proof: AggchainProof::default(),
-                start_block: Default::default(),
-                end_block: Default::default(),
-                local_exit_root_hash: Default::default(),
-                custom_chain_data: Default::default(),
-            })
+        let proposer_request = ProposerRequest {
+            start_block: req.start_block,
+            max_block: req.max_block,
+            l1_block_number,
         };
 
-        Box::pin(fut)
+        let mut proof_builder = self.aggchain_proof_builder.clone();
+
+        self.proposer_service
+            .call(proposer_request)
+            .map_err(Error::from)
+            .and_then(move |agg_span_proof_response| {
+                let aggchain_proof_builder_request =
+                    aggchain_proof_builder::AggchainProofBuilderRequest {
+                        agg_span_proof: agg_span_proof_response.agg_span_proof,
+                        start_block: agg_span_proof_response.start_block,
+                        end_block: agg_span_proof_response.end_block,
+                    };
+
+                proof_builder
+                    .call(aggchain_proof_builder_request)
+                    .map_err(Error::from)
+                    .map(move |_aggchain_proof_builder_response| {
+                        Ok(AggchainProofServiceResponse {
+                            proof: Default::default(),
+                            start_block: agg_span_proof_response.start_block,
+                            end_block: agg_span_proof_response.end_block,
+                            local_exit_root_hash: Default::default(),
+                            custom_chain_data: Default::default(),
+                        })
+                    })
+            })
+            .boxed()
     }
 }

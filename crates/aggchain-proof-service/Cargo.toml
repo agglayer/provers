@@ -8,6 +8,8 @@ license.workspace = true
 workspace = true
 
 [dependencies]
+anyhow = { workspace = true }
+futures.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 tower = { workspace = true, features = ["timeout"] }
@@ -16,3 +18,4 @@ tracing.workspace = true
 aggchain-proof-builder.workspace = true
 aggkit-prover-types.workspace = true
 proposer-service.workspace = true
+prover-alloy.workspace = true

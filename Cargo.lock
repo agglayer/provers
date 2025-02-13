@@ -37,6 +37,7 @@ dependencies = [
  "alloy",
  "anyhow",
  "futures",
+ "prover-alloy",
  "prover-config",
  "prover-executor",
  "serde",
@@ -66,7 +67,10 @@ version = "0.1.0"
 dependencies = [
  "aggchain-proof-builder",
  "aggkit-prover-types",
+ "anyhow",
+ "futures",
  "proposer-service",
+ "prover-alloy",
  "serde",
  "thiserror 2.0.11",
  "tower 0.4.13",
@@ -167,6 +171,7 @@ version = "0.1.0"
 dependencies = [
  "bincode",
  "prost",
+ "prover-executor",
  "serde",
  "sp1-sdk",
  "thiserror 2.0.11",
@@ -4556,8 +4561,10 @@ dependencies = [
 name = "proposer-service"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "futures",
  "proposer-client",
+ "prover-alloy",
  "prover-utils",
  "serde",
  "sp1-sdk",
@@ -4645,6 +4652,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "106dd99e98437432fed6519dedecfade6a06a73bb7b2a1e019fdd2bee5778d94"
 
 [[package]]
+name = "prover-alloy"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "anyhow",
+ "url",
+]
+
+[[package]]
 name = "prover-config"
 version = "0.1.0"
 dependencies = [
@@ -4680,9 +4696,6 @@ dependencies = [
 name = "prover-executor"
 version = "0.1.0"
 dependencies = [
- "agglayer-prover-config",
- "agglayer-prover-types",
- "agglayer-telemetry",
  "anyhow",
  "bincode",
  "buildstructor",
