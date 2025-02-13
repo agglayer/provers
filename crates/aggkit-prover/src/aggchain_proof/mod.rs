@@ -1,4 +1,4 @@
-pub(crate) mod error;
+pub mod error;
 pub(crate) mod rpc;
 pub(crate) mod service;
 

@@ -5,10 +5,18 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+alloy.workspace = true
+anyhow.workspace = true
 futures.workspace = true
 thiserror.workspace = true
 tower = { workspace = true, features = ["timeout"] }
 tracing.workspace = true
+serde = { workspace = true, features = ["derive"] }
+sp1-sdk = { workspace = true, features = ["native-gnark"] }
+url.workspace = true
+
+aggchain-proof-core.workspace = true
+aggkit-prover-config.workspace = true
 
 [lints]
 workspace = true
