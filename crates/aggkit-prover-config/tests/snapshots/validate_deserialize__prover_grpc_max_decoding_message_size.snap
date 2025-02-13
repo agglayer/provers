@@ -19,12 +19,12 @@ prometheus-addr = "0.0.0.0:3001"
 runtime-timeout = "5s"
 
 [aggchain-proof-service.aggchain-proof-builder]
-l1-rpc-endpoint = "http://127.0.0.1:8545/"
-l2-rpc-endpoint = "http://127.0.0.1:8546/"
-rollup-id = 0
+l1-rpc-endpoint = "http://anvil-mock-l1-rpc:8545/"
+l2-rpc-endpoint = "http://anvil-mock-l2-rpc:8545/"
+network-id = 0
 
 [aggchain-proof-service.proposer-service.client]
-proposer-endpoint = "http://127.0.0.1:3000/"
+proposer-endpoint = "http://proposer-mock-rpc:3000/"
 sp1-cluster-endpoint = "https://rpc.production.succinct.xyz/"
 prover-program = []
 
