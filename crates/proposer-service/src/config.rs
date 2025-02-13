@@ -27,8 +27,6 @@ pub struct ProposerClientConfig {
     /// The sp1 proving cluster endpoint
     #[serde(default = "default_sp1_cluster_endpoint")]
     pub sp1_cluster_endpoint: Url,
-    /// Network prover program
-    pub prover_program: Vec<u8>,
     /// Proving timeout in seconds
     #[serde(default = "default_timeout")]
     pub proving_timeout: Duration,
@@ -39,7 +37,6 @@ impl Default for ProposerClientConfig {
         Self {
             proposer_endpoint: default_proposer_service_endpoint(),
             sp1_cluster_endpoint: default_sp1_cluster_endpoint(),
-            prover_program: vec![],
             proving_timeout: default_timeout(),
         }
     }

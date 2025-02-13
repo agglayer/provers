@@ -36,9 +36,12 @@ dependencies = [
  "alloy",
  "anyhow",
  "futures",
+ "prover-config",
+ "prover-executor",
  "serde",
  "sp1-sdk",
  "thiserror 2.0.11",
+ "tonic",
  "tower 0.4.13",
  "url",
 ]
