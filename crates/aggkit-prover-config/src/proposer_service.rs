@@ -1,17 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Default)]
 #[serde(rename_all = "kebab-case")]
 pub struct ProposerServiceConfig {
     pub client: ProposerClientConfig,
-}
-
-impl ProposerServiceConfig {
-    pub fn default_for_test() -> Self {
-        Self {
-            client: ProposerClientConfig::default_for_test(),
-        }
-    }
 }
 
 use std::str::FromStr;
@@ -21,7 +13,7 @@ use prover_utils::from_env_or_default;
 use url::Url;
 
 /// The default proposer service endpoint
-const DEFAULT_PROPOSER_SERVICE_ENDPOINT: &str = "http://127.0.0.1:3000";
+const DEFAULT_PROPOSER_SERVICE_ENDPOINT: &str = "http://proposer-mock-rpc:3000";
 
 /// The default url endpoint for the grpc cluster service
 const DEFAULT_SP1_CLUSTER_ENDPOINT: &str = "https://rpc.production.succinct.xyz/";
@@ -42,8 +34,8 @@ pub struct ProposerClientConfig {
     pub proving_timeout: Duration,
 }
 
-impl ProposerClientConfig {
-    pub fn default_for_test() -> Self {
+impl Default for ProposerClientConfig {
+    fn default() -> Self {
         Self {
             proposer_endpoint: default_proposer_service_endpoint(),
             sp1_cluster_endpoint: default_sp1_cluster_endpoint(),

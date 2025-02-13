@@ -23,7 +23,7 @@ async fn service_can_be_called() {
         "NETWORK_PRIVATE_KEY",
         "0xaabbccddff000000000000000000000000000000000000000000000000000000",
     );
-    let mut service = AggchainProofService::new(&AggchainProofServiceConfig::default_for_test())
+    let mut service = AggchainProofService::new(&AggchainProofServiceConfig::default())
         .expect("create aggchain proof");
     let request = AggchainProofServiceRequest {
         start_block: 0,
@@ -43,8 +43,8 @@ async fn testing_rpc_failure() {
 
     let (client, server) = tokio::io::duplex(1024);
 
-    let service = GrpcService::new(&AggchainProofServiceConfig::default_for_test())
-        .expect("create grpc service");
+    let service =
+        GrpcService::new(&AggchainProofServiceConfig::default()).expect("create grpc service");
 
     tokio::spawn(async move {
         Server::builder()
