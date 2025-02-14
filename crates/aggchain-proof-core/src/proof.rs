@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{digest::Digest, error::ProofError, full_execution_proof::FepWithPublicValues};
 
-/// Aggchain proof is generated from FEP proof and additional
-/// bridge inputs.
+/// Aggchain proof is generated from the FEP proof and additional
+/// bridge information.
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct AggchainProof {
     //pub proof: SP1ProofWithPublicValues,
@@ -80,6 +80,7 @@ pub struct AggchainProofPublicValues {
     pub aggchain_params: Digest,
 }
 
+/// Leaf tree inclusion proof.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct InclusionProof {
     pub siblings: Vec<Digest>,

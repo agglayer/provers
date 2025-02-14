@@ -66,7 +66,7 @@ impl tower::Service<ProposerRequest> for ProposerService {
                 .await
                 .map_err(Error::AlloyProviderError)?;
 
-            // Request the AggSpanProof generation from the proposer
+            // Request the AggSpanProof generation from the proposer.
             let response = client
                 .request_agg_proof(AggSpanProofProposerRequest {
                     start: start_block,

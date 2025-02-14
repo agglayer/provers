@@ -243,11 +243,11 @@ impl Service<Request> for LocalExecutor {
 }
 
 #[derive(Clone)]
-pub struct NetworkExecutor {
-    pub prover: Arc<NetworkProver>,
-    pub proving_key: SP1ProvingKey,
-    pub verification_key: SP1VerifyingKey,
-    pub timeout: Duration,
+struct NetworkExecutor {
+    prover: Arc<NetworkProver>,
+    proving_key: SP1ProvingKey,
+    verification_key: SP1VerifyingKey,
+    timeout: Duration,
 }
 
 impl Service<Request> for NetworkExecutor {

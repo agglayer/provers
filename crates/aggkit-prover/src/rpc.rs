@@ -20,9 +20,7 @@ pub struct GrpcService {
 }
 
 impl GrpcService {
-    pub fn new(
-        config: &AggchainProofServiceConfig,
-    ) -> Result<Self, aggchain_proof_service::error::Error> {
+    pub fn new(config: &AggchainProofServiceConfig) -> Result<Self, aggchain_proof_service::Error> {
         Ok(GrpcService {
             service: tower::ServiceBuilder::new()
                 .buffer(MAX_CONCURRENT_REQUESTS)

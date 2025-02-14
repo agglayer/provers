@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use sp1_sdk::SP1VerificationError;
 
-#[derive(Debug, Serialize, Deserialize, thiserror::Error)]
+#[derive(Debug, Serialize, Deserialize, thiserror::Error, Clone)]
 pub enum Error {
     #[error("Unable to execute prover")]
     UnableToExecuteProver,
