@@ -9,6 +9,7 @@ use sp1_sdk::SP1ProofWithPublicValues;
 pub use crate::error::Error;
 use crate::network_prover::AggSpanProver;
 use crate::rpc::{AggSpanProofProposer, AggSpanProofProposerRequest, AggSpanProofProposerResponse};
+pub mod config;
 pub mod error;
 pub mod network_prover;
 pub mod rpc;

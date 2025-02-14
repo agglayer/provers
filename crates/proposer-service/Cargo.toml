@@ -15,7 +15,6 @@ url.workspace = true
 
 proposer-client.workspace = true
 prover-alloy.workspace = true
-prover-utils.workspace = true
 
 [lints]
 workspace = true

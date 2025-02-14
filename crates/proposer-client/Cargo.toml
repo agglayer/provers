@@ -17,6 +17,10 @@ sp1-sdk.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
 tonic.workspace = true
+url.workspace = true
+
+prover-utils.workspace = true
+
 
 
 

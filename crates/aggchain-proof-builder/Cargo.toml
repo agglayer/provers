@@ -9,7 +9,6 @@ alloy.workspace = true
 anyhow.workspace = true
 futures.workspace = true
 thiserror.workspace = true
-tonic.workspace = true
 tower = { workspace = true, features = ["timeout"] }
 serde = { workspace = true, features = ["derive"] }
 sp1-sdk.workspace = true

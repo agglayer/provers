@@ -43,7 +43,6 @@ dependencies = [
  "serde",
  "sp1-sdk",
  "thiserror 2.0.11",
- "tonic",
  "tower 0.4.13",
  "url",
 ]
@@ -4550,12 +4549,14 @@ dependencies = [
  "alloy-primitives",
  "anyhow",
  "hex",
+ "prover-utils",
  "reqwest",
  "serde",
  "sp1-sdk",
  "thiserror 2.0.11",
  "tonic",
  "tracing",
+ "url",
 ]
 
 [[package]]
@@ -4566,7 +4567,6 @@ dependencies = [
  "futures",
  "proposer-client",
  "prover-alloy",
- "prover-utils",
  "serde",
  "sp1-sdk",
  "thiserror 2.0.11",
