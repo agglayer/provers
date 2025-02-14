@@ -1,4 +1,5 @@
-use aggkit_prover_config::aggchain_proof_service::AggchainProofServiceConfig;
+use aggchain_proof_service::config::AggchainProofServiceConfig;
+use aggchain_proof_service::service::{AggchainProofService, AggchainProofServiceRequest};
 use aggkit_prover_types::v1::{
     aggchain_proof_service_server::AggchainProofService as AggchainProofGrpcService,
     GenerateAggchainProofRequest, GenerateAggchainProofResponse,
@@ -10,8 +11,6 @@ use tonic_types::{ErrorDetails, StatusExt};
 use tower::{Service, ServiceExt};
 use tracing::instrument;
 
-use super::service::{AggchainProofService, AggchainProofServiceRequest};
-
 #[derive(Clone)]
 pub struct GrpcService {
     service: AggchainProofService,
@@ -20,7 +19,7 @@ pub struct GrpcService {
 impl GrpcService {
     pub fn new(
         config: &AggchainProofServiceConfig,
-    ) -> Result<Self, crate::aggchain_proof::error::Error> {
+    ) -> Result<Self, aggchain_proof_service::error::Error> {
         Ok(GrpcService {
             service: AggchainProofService::new(config)?,
         })

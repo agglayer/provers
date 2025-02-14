@@ -1,8 +1,11 @@
 use std::str::FromStr;
 
-use jsonrpsee::core::Serialize;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use url::Url;
+
+pub(crate) const HTTP_RPC_NODE_INITIAL_BACKOFF_MS: u64 = 5000;
+
+pub(crate) const HTTP_RPC_NODE_BACKOFF_MAX_RETRIES: u32 = 64;
 
 /// The Aggchain proof builder configuration
 #[derive(Serialize, Deserialize, Clone, Debug)]

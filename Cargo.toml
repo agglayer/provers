@@ -18,6 +18,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 # Project dependencies
 aggchain-proof-builder = { path = "crates/aggchain-proof-builder" }
 aggchain-proof-core = { path = "crates/aggchain-proof-core" }
+aggchain-proof-service = { path = "crates/aggchain-proof-service" }
 aggkit-prover = { path = "crates/aggkit-prover" }
 aggkit-prover-config = { path = "crates/aggkit-prover-config" }
 aggkit-prover-types = { path = "crates/aggkit-prover-types" }
@@ -86,5 +87,5 @@ test-log = "0.2.16"
 
 # SP1 dependencies
 sp1-core-machine = "=4.0.0"
-sp1-sdk = "=4.0.0"
+sp1-sdk = { version="=4.0.0", features = ["native-gnark"] }
 sp1-prover = "=4.0.0"

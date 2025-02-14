@@ -7,16 +7,13 @@ license.workspace = true
 [dependencies]
 futures.workspace = true
 serde.workspace = true
-sp1-sdk = { workspace = true, features = ["native-gnark"] }
+sp1-sdk.workspace = true
 tower = { workspace = true, features = ["timeout"] }
 thiserror.workspace = true
 url.workspace = true
 
-aggkit-prover-config.workspace = true
-aggkit-prover-types.workspace = true
 proposer-client.workspace = true
-prover-engine.workspace = true
-prover-logger.workspace = true
+prover-utils.workspace = true
 
 [lints]
 workspace = true

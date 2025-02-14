@@ -1,13 +1,10 @@
+pub mod config;
 mod provider;
 
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
 use aggchain_proof_core::proof::AggchainProofWitness;
-use aggkit_prover_config::aggchain_proof_service::{
-    HTTP_RPC_NODE_BACKOFF_MAX_RETRIES, HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
-};
-use aggkit_prover_config::AggchainProofBuilderConfig;
 use alloy::eips::{BlockId, BlockNumberOrTag};
 use alloy::network::primitives::BlockTransactionsKind;
 use alloy::primitives::B256;
@@ -17,6 +14,7 @@ use futures::{future::BoxFuture, FutureExt};
 use serde::{Deserialize, Serialize};
 use sp1_sdk::SP1ProofWithPublicValues;
 
+use crate::config::AggchainProofBuilderConfig;
 use crate::provider::json_rpc::{build_http_retry_provider, AlloyProvider};
 
 /// Aggchain proof is generated from FEP proof and additional
@@ -64,16 +62,16 @@ impl AggchainProofBuilder {
             l1_client: Arc::new(
                 build_http_retry_provider(
                     &config.l1_rpc_endpoint,
-                    HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
-                    HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
+                    config::HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
+                    config::HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
                 )
                 .map_err(Error::AlloyProviderError)?,
             ),
             _l2_client: Arc::new(
                 build_http_retry_provider(
                     &config.l2_rpc_endpoint,
-                    HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
-                    HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
+                    config::HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
+                    config::HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
                 )
                 .map_err(Error::AlloyProviderError)?,
             ),
