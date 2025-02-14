@@ -8,7 +8,7 @@ use crate::{digest::keccak256_combine, digest::Digest, error::ProofError};
 type Vkey = [u32; 8];
 
 /// Public values to verify the FEP.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FepPublicValues {
     pub l1_head: Digest,
     pub l2_pre_root: Digest,
@@ -35,7 +35,7 @@ impl FepPublicValues {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FepWithPublicValues {
     public_values: FepPublicValues,
     aggregation_vkey: Vkey,

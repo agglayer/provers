@@ -2,7 +2,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::{digest::Digest, error::ProofError, full_execution_proof::FepWithPublicValues};
 
-#[derive(Serialize, Deserialize)]
+/// Aggchain proof is generated from FEP proof and additional
+/// bridge inputs.
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct AggchainProof {
+    //pub proof: SP1ProofWithPublicValues,
+    //TODO add all necessary fields
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AggchainProofWitness {
     /// Previous local exit root.
     pub prev_local_exit_root: Digest,
@@ -20,7 +28,7 @@ pub struct AggchainProofWitness {
     pub bridge: BridgeData,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BridgeData;
 
 impl BridgeData {
@@ -70,4 +78,29 @@ pub struct AggchainProofPublicValues {
     pub commit_imported_bridge_exits: Digest,
     /// Chain-specific commitment forwarded by the PP.
     pub aggchain_params: Digest,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct InclusionProof {
+    pub siblings: Vec<Digest>,
+}
+
+/// L1 info tree leaf, part of the
+/// L1 info tree.
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct L1InfoTreeLeaf {
+    /// Previous block hash of leaf.
+    pub previous_block_hash: Digest,
+    /// Block number timestamp.
+    pub timestamp: u64,
+    /// Mainnet exit root hash.
+    pub mainnet_exit_root_hash: Digest,
+    /// Rollup exit root hash.
+    pub rollup_exit_root_hash: Digest,
+    /// Global exit root hash.
+    pub global_exit_root_hash: Digest,
+    /// Leaf hash.
+    pub leaf_hash: Digest,
+    /// Leaf index.
+    pub l1_info_tree_index: u32,
 }

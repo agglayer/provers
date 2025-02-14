@@ -16,8 +16,7 @@ const MAX_CONCURRENT_REQUESTS: usize = 100;
 
 #[derive(Clone)]
 pub struct GrpcService {
-    service:
-        Buffer<AggchainProofService, aggchain_proof_service::service::AggchainProofServiceRequest>,
+    service: Buffer<AggchainProofService, AggchainProofServiceRequest>,
 }
 
 impl GrpcService {
@@ -27,9 +26,7 @@ impl GrpcService {
         Ok(GrpcService {
             service: tower::ServiceBuilder::new()
                 .buffer(MAX_CONCURRENT_REQUESTS)
-                .service(aggchain_proof_service::service::AggchainProofService::new(
-                    config,
-                )?),
+                .service(AggchainProofService::new(config)?),
         })
     }
 }

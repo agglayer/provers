@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::{
     future::Future,
     pin::Pin,
@@ -5,7 +6,8 @@ use std::{
     task::{Context, Poll},
 };
 
-use aggchain_proof_builder::{AggchainProof, AggchainProofBuilder};
+use aggchain_proof_builder::{AggchainProofBuilder, AggchainProofBuilderResponse};
+use aggchain_proof_core::proof::{AggchainProof, InclusionProof, L1InfoTreeLeaf};
 use aggkit_prover_types::Hash;
 use futures::{FutureExt as _, TryFutureExt};
 use proposer_service::{ProposerRequest, ProposerService};
@@ -23,9 +25,17 @@ pub struct AggchainProofServiceRequest {
     pub start_block: u64,
     /// Max number of blocks that the aggchain proof is allowed to contain
     pub max_block: u64,
+    /// Root hash of the L1 info tree.
     pub l1_info_tree_root_hash: Hash,
-    pub l1_info_tree_leaf_hash: Hash,
+    /// Particular leaf of the L1 info tree corresponding
+    /// to the max_block.
+    pub l1_info_tree_leaf: L1InfoTreeLeaf,
+    /// Inclusion proof of the l1 info tree leaf to the
+    /// l1 info tree root.
     pub l1_info_tree_merkle_proof: [Hash; 32],
+    /// Map of the Global Exit Roots with their inclusion proof.
+    /// Note: the GER (string) is a base64 encoded string of the GER digest.
+    pub ger_inclusion_proofs: HashMap<String, InclusionProof>,
 }
 
 /// Resulting generated Aggchain proof
@@ -131,14 +141,20 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
                         agg_span_proof: agg_span_proof_response.agg_span_proof,
                         start_block: agg_span_proof_response.start_block,
                         end_block: agg_span_proof_response.end_block,
+                        l1_info_tree_merkle_proof: req.l1_info_tree_merkle_proof,
+                        l1_info_tree_leaf: req.l1_info_tree_leaf,
+                        l1_info_tree_root_hash: req.l1_info_tree_root_hash,
+                        ger_inclusion_proofs: req.ger_inclusion_proofs,
                     };
 
                 proof_builder
                     .call(aggchain_proof_builder_request)
                     .map_err(Error::from)
-                    .map(move |_aggchain_proof_builder_response| {
+                    .map(move |aggchain_proof_builder_result| {
+                        let agg_span_proof_response: AggchainProofBuilderResponse =
+                            aggchain_proof_builder_result?;
                         Ok(AggchainProofServiceResponse {
-                            proof: Default::default(),
+                            proof: agg_span_proof_response.proof,
                             start_block: agg_span_proof_response.start_block,
                             end_block: agg_span_proof_response.end_block,
                             local_exit_root_hash: Default::default(),
