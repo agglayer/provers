@@ -6,8 +6,6 @@ use proposer_client::network_prover::new_network_prover;
 use proposer_client::rpc::{AggSpanProofProposerRequest, ProposerRpcClient};
 use proposer_client::{ProofId, ProposerClient};
 pub use proposer_client::{ProposerRequest, ProposerResponse};
-use prover_alloy::providers::Provider;
-use prover_alloy::rpc::types::BlockTransactionsKind;
 use prover_alloy::AlloyProvider;
 use sp1_sdk::NetworkProver;
 
@@ -64,19 +62,9 @@ impl tower::Service<ProposerRequest> for ProposerService {
 
         async move {
             let l1_block_hash = l1_rpc
-                .get_block_by_number(l1_block_number.into(), BlockTransactionsKind::Hashes)
+                .get_block_hash(l1_block_number)
                 .await
-                .map_err(|error| {
-                    Error::AlloyProviderError(anyhow::anyhow!(
-                        "Failed to get L1 block hash: {:?}",
-                        error
-                    ))
-                })?
-                .ok_or(Error::AlloyProviderError(anyhow::anyhow!(
-                    "target block {l1_block_number} does not exist"
-                )))?
-                .header
-                .hash;
+                .map_err(Error::AlloyProviderError)?;
 
             // Request the AggSpanProof generation from the proposer
             let response = client

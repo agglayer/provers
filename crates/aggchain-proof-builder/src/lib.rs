@@ -4,12 +4,9 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 
 use aggchain_proof_core::proof::AggchainProofWitness;
-use alloy::eips::{BlockId, BlockNumberOrTag};
-use alloy::network::primitives::BlockTransactionsKind;
-use alloy::primitives::B256;
 use alloy::transports::{RpcError, TransportErrorKind};
 use futures::{future::BoxFuture, FutureExt};
-use prover_alloy::{build_http_retry_provider, providers::Provider as _, AlloyProvider};
+use prover_alloy::AlloyProvider;
 use prover_executor::Executor;
 use serde::{Deserialize, Serialize};
 use sp1_sdk::{SP1ProofWithPublicValues, SP1VerifyingKey};
@@ -97,7 +94,7 @@ impl AggchainProofBuilder {
         let aggchain_proof_vkey = Executor::get_vkey(ELF);
         Ok(AggchainProofBuilder {
             l1_client: Arc::new(
-                build_http_retry_provider(
+                AlloyProvider::new(
                     &config.l1_rpc_endpoint,
                     prover_alloy::DEFAULT_HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
                     prover_alloy::DEFAULT_HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
@@ -105,7 +102,7 @@ impl AggchainProofBuilder {
                 .map_err(Error::AlloyProviderError)?,
             ),
             l2_client: Arc::new(
-                build_http_retry_provider(
+                AlloyProvider::new(
                     &config.l2_rpc_endpoint,
                     prover_alloy::DEFAULT_HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
                     prover_alloy::DEFAULT_HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
@@ -116,22 +113,6 @@ impl AggchainProofBuilder {
             network_id: config.network_id,
             aggchain_proof_vkey,
         })
-    }
-
-    pub async fn get_l1_block_hash(&self, block_num: u64) -> Result<B256, Error> {
-        let block = self
-            .l1_client
-            .get_block(
-                BlockId::Number(BlockNumberOrTag::Number(block_num)),
-                BlockTransactionsKind::Hashes,
-            )
-            .await
-            .map_err(Error::AlloyRpcTransportError)?
-            .ok_or(Error::AlloyProviderError(anyhow::anyhow!(
-                "target block {block_num} does not exist"
-            )))?;
-
-        Ok(block.header.hash)
     }
 
     // Retrieve l1 and l2 public data needed for aggchain proof generation
