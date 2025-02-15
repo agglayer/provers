@@ -7,8 +7,9 @@ use serde::{Deserialize, Serialize};
 use sp1_sdk::SP1ProofWithPublicValues;
 
 pub use crate::error::Error;
-use crate::network_prover::AggSpanProofProver;
-use crate::rpc::AggSpanProofProposer;
+use crate::network_prover::AggSpanProver;
+use crate::rpc::{AggSpanProofProposer, AggSpanProofProposerRequest, AggSpanProofProposerResponse};
+pub mod config;
 pub mod error;
 pub mod network_prover;
 pub mod rpc;
@@ -31,7 +32,7 @@ pub struct ProposerClient<Proposer, Prover> {
 impl<Proposer, Prover> ProposerClient<Proposer, Prover>
 where
     Proposer: AggSpanProofProposer,
-    Prover: AggSpanProofProver,
+    Prover: AggSpanProver,
 {
     pub fn new(
         proposer: Proposer,
@@ -45,11 +46,11 @@ where
         })
     }
 
-    pub async fn request_agg_proof(&self, request: ProposerRequest) -> Result<ProofId, Error> {
-        self.proposer
-            .request_agg_proof(request.into())
-            .await?
-            .try_into()
+    pub async fn request_agg_proof(
+        &self,
+        request: AggSpanProofProposerRequest,
+    ) -> Result<AggSpanProofProposerResponse, Error> {
+        self.proposer.request_agg_proof(request).await
     }
 
     pub async fn wait_for_proof(
@@ -70,16 +71,17 @@ pub struct ProposerRequest {
     pub start_block: u64,
     pub max_block: u64,
     pub l1_block_number: u64,
-    pub l1_block_hash: B256,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProposerResponse {
     pub agg_span_proof: SP1ProofWithPublicValues,
+    pub start_block: u64,
+    pub end_block: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct ProofId(alloy_primitives::B256);
+pub struct ProofId(pub B256);
 
 impl Display for ProofId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

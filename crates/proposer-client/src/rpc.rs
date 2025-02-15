@@ -4,7 +4,7 @@ use alloy_primitives::B256;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
-use crate::{error::Error, ProofId, ProposerRequest};
+use crate::{error::Error, ProposerRequest};
 
 /// Proposer client that requests the generation
 /// of the AggSpanProof from the proposer and gets
@@ -74,51 +74,20 @@ impl From<AggSpanProofProposerRequest> for ProposerRequest {
             start_block: request.start,
             max_block: request.end,
             l1_block_number: request.l1_block_number,
-            l1_block_hash: request.l1_block_hash,
         }
     }
 }
 
-impl From<ProposerRequest> for AggSpanProofProposerRequest {
-    fn from(request: ProposerRequest) -> Self {
-        AggSpanProofProposerRequest {
-            start: request.start_block,
-            end: request.max_block,
-            l1_block_number: request.l1_block_number,
-            l1_block_hash: request.l1_block_hash,
-        }
-    }
-}
-
-/// Response for the proposer `request_span_proof`
+/// Response for the external proposer `request_span_proof` call
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AggSpanProofProposerResponse {
-    pub proof_id: alloy_primitives::B256,
+    pub proof_id: B256,
+    pub start_block: u64,
+    pub end_block: u64,
 }
 
 impl Display for AggSpanProofProposerResponse {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.proof_id)
-    }
-}
-
-impl TryFrom<AggSpanProofProposerResponse> for ProofId {
-    type Error = crate::Error;
-
-    fn try_from(proof_response: AggSpanProofProposerResponse) -> Result<Self, Error> {
-        let bytes = proof_response
-            .proof_id
-            .as_slice()
-            .try_into()
-            .map_err(|_| Error::InvalidProofId(proof_response.proof_id.to_string()))?;
-        Ok(ProofId(bytes))
-    }
-}
-
-impl From<ProofId> for AggSpanProofProposerResponse {
-    fn from(proof_id: ProofId) -> Self {
-        AggSpanProofProposerResponse {
-            proof_id: proof_id.0,
-        }
     }
 }

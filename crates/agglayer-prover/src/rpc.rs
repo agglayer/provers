@@ -2,7 +2,7 @@ use agglayer_prover_types::{
     v1::{
         generate_proof_request::Stdin, pessimistic_proof_service_server::PessimisticProofService,
     },
-    Error,
+    ErrorWrapper,
 };
 use agglayer_telemetry::prover::{
     PROVING_REQUEST_FAILED, PROVING_REQUEST_RECV, PROVING_REQUEST_SUCCEEDED,
@@ -15,11 +15,13 @@ use tower::{buffer::Buffer, util::BoxService, Service, ServiceExt};
 use tracing::{debug, error, warn};
 
 pub struct ProverRPC {
-    executor: Buffer<BoxService<Request, Response, Error>, Request>,
+    executor: Buffer<BoxService<Request, Response, prover_executor::Error>, Request>,
 }
 
 impl ProverRPC {
-    pub fn new(executor: Buffer<BoxService<Request, Response, Error>, Request>) -> Self {
+    pub fn new(
+        executor: Buffer<BoxService<Request, Response, prover_executor::Error>, Request>,
+    ) -> Self {
         Self { executor }
     }
 }
@@ -66,13 +68,14 @@ impl PessimisticProofService for ProverRPC {
             }
             Err(error) => {
                 PROVING_REQUEST_FAILED.add(1, metrics_attrs);
-                if let Some(error) = error.downcast_ref::<Error>() {
+                if let Some(error) = error.downcast_ref::<prover_executor::Error>() {
                     error!("Failed to generate proof: {}", error);
 
-                    let response: Status = error.try_into().unwrap_or_else(|inner_error| {
-                        warn!("Unable to serialize the prover error: {}", inner_error);
-                        tonic::Status::invalid_argument(error.to_string())
-                    });
+                    let response: Status =
+                        ErrorWrapper::try_into_status(error).unwrap_or_else(|inner_error| {
+                            warn!("Unable to serialize the prover error: {}", inner_error);
+                            tonic::Status::invalid_argument(error.to_string())
+                        });
 
                     return Err(response);
                 } else {
