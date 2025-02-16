@@ -5,14 +5,13 @@ use alloy::network::Ethereum;
 use alloy::providers::fillers::{
     BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller,
 };
-use alloy::providers::{Identity, Provider};
+use alloy::providers::Identity;
 use alloy::transports::http::reqwest;
 use alloy::transports::layers::RetryBackoffLayer;
 pub use alloy::*;
-use alloy::{
-    providers::{ProviderBuilder, RootProvider},
-    rpc::client::ClientBuilder,
-};
+use alloy::{providers::RootProvider, rpc::client::ClientBuilder};
+pub use async_trait::async_trait;
+use providers::{Provider as _, ProviderBuilder};
 use url::Url;
 
 use crate::network::primitives::BlockTransactionsKind;
@@ -30,6 +29,15 @@ type AlloyFillProvider = FillProvider<
     RootProvider,
     Ethereum,
 >;
+
+#[async_trait]
+#[cfg_attr(feature = "testutils", mockall::automock)]
+pub trait Provider {
+    async fn get_block_hash(
+        &self,
+        block_number: u64,
+    ) -> Result<alloy::primitives::B256, anyhow::Error>;
+}
 
 /// Wrapper around alloy `Provider` client.
 /// Performs ETH node response data processing where needed but
@@ -57,16 +65,16 @@ impl AlloyProvider {
         let client = ClientBuilder::default()
             .layer(retry_policy)
             .transport(http, is_local);
+
         Ok(AlloyProvider {
             client: ProviderBuilder::new().on_client(client),
         })
     }
+}
 
-    pub fn provider(&self) -> &AlloyFillProvider {
-        &self.client
-    }
-
-    pub async fn get_block_hash(
+#[async_trait]
+impl Provider for AlloyProvider {
+    async fn get_block_hash(
         &self,
         block_number: u64,
     ) -> Result<alloy::primitives::B256, anyhow::Error> {
@@ -74,7 +82,13 @@ impl AlloyProvider {
             .client
             .get_block_by_number(block_number.into(), BlockTransactionsKind::Hashes)
             .await
-            .map_err(|error| anyhow::anyhow!("Failed to get L1 block hash: {:?}", error))?
+            .map_err(|error| {
+                anyhow::anyhow!(
+                    "Failed to get L1 block hash:
+        {:?}",
+                    error
+                )
+            })?
             .ok_or(anyhow::anyhow!(
                 "target block {block_number} does not exist"
             ))?

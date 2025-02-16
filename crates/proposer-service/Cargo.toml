@@ -16,5 +16,12 @@ url.workspace = true
 proposer-client.workspace = true
 prover-alloy.workspace = true
 
+[dev-dependencies]
+alloy-primitives = { workspace = true }
+mockall = { workspace = true }
+proposer-client = { workspace = true, features = ["testutils"] }
+prover-alloy = { workspace = true, features = ["testutils"] }
+tokio = { workspace = true }
+
 [lints]
 workspace = true

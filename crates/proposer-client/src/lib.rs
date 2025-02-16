@@ -14,6 +14,17 @@ pub mod error;
 pub mod network_prover;
 pub mod rpc;
 
+#[async_trait::async_trait]
+#[cfg_attr(feature = "testutils", mockall::automock)]
+pub trait ProposerClient {
+    async fn request_agg_proof(
+        &self,
+        request: AggSpanProofProposerRequest,
+    ) -> Result<AggSpanProofProposerResponse, Error>;
+
+    async fn wait_for_proof(&self, proof_id: ProofId) -> Result<SP1ProofWithPublicValues, Error>;
+}
+
 /// The Proposer client is responsible for retrieval of the AggSpanProof.
 /// AggSpanProof is the aggregated proof of the multiple
 /// block span full execution proofs.
@@ -23,13 +34,13 @@ pub mod rpc;
 /// and directly communicates with the SP1 cluster using NetworkProver
 /// to retrieve the generated proof.
 #[derive(Clone)]
-pub struct ProposerClient<Proposer, Prover> {
+pub struct Client<Proposer, Prover> {
     proposer: Arc<Proposer>,
     prover: Arc<Prover>,
     proving_timeout: Option<Duration>,
 }
 
-impl<Proposer, Prover> ProposerClient<Proposer, Prover>
+impl<Proposer, Prover> Client<Proposer, Prover>
 where
     Proposer: AggSpanProofProposer,
     Prover: AggSpanProver,
@@ -39,24 +50,28 @@ where
         prover: Prover,
         timeout: Option<Duration>,
     ) -> Result<Self, error::Error> {
-        Ok(ProposerClient {
+        Ok(Self {
             proposer: Arc::new(proposer),
             prover: Arc::new(prover),
             proving_timeout: timeout,
         })
     }
+}
 
-    pub async fn request_agg_proof(
+#[async_trait::async_trait]
+impl<Proposer, Prover> ProposerClient for Client<Proposer, Prover>
+where
+    Proposer: AggSpanProofProposer + Sync + Send,
+    Prover: AggSpanProver + Sync + Send,
+{
+    async fn request_agg_proof(
         &self,
         request: AggSpanProofProposerRequest,
     ) -> Result<AggSpanProofProposerResponse, Error> {
         self.proposer.request_agg_proof(request).await
     }
 
-    pub async fn wait_for_proof(
-        &self,
-        proof_id: ProofId,
-    ) -> Result<SP1ProofWithPublicValues, Error> {
+    async fn wait_for_proof(&self, proof_id: ProofId) -> Result<SP1ProofWithPublicValues, Error> {
         let request_id = proof_id.0;
 
         self.prover

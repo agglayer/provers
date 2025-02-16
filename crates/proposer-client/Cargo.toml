@@ -9,6 +9,7 @@ workspace = true
 
 [dependencies]
 anyhow.workspace = true
+async-trait = { workspace = true }
 alloy-primitives.workspace = true
 hex.workspace = true
 reqwest = { workspace = true, features = ["json"]}
@@ -21,6 +22,7 @@ url.workspace = true
 
 prover-utils.workspace = true
 
+mockall = { workspace = true, optional = true }
 
-
-
+[features]
+testutils = ["dep:mockall"]

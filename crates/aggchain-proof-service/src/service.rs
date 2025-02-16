@@ -81,19 +81,18 @@ pub struct AggchainProofService {
 
 impl AggchainProofService {
     pub fn new(config: &AggchainProofServiceConfig) -> Result<Self, Error> {
-        let l1_rpc_client = Arc::new(
-            prover_alloy::AlloyProvider::new(
-                &config.proposer_service.l1_rpc_endpoint,
-                prover_alloy::DEFAULT_HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
-                prover_alloy::DEFAULT_HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
-            )
-            .map_err(Error::AlloyProviderError)?,
-        );
+        let client = prover_alloy::AlloyProvider::new(
+            &config.proposer_service.l1_rpc_endpoint,
+            prover_alloy::DEFAULT_HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
+            prover_alloy::DEFAULT_HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
+        )
+        .map_err(Error::AlloyProviderError)?;
+        let l1_rpc_client = Arc::new(client);
 
         let proposer_service = tower::ServiceBuilder::new()
             .service(ProposerService::new(
                 &config.proposer_service,
-                l1_rpc_client.clone(),
+                l1_rpc_client,
             )?)
             .boxed_clone();
 

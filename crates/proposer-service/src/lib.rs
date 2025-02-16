@@ -1,35 +1,43 @@
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
+pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use proposer_client::network_prover::new_network_prover;
 use proposer_client::rpc::{AggSpanProofProposerRequest, ProposerRpcClient};
-use proposer_client::{ProofId, ProposerClient};
+use proposer_client::ProofId;
 pub use proposer_client::{ProposerRequest, ProposerResponse};
-use prover_alloy::AlloyProvider;
+use prover_alloy::Provider;
 use sp1_sdk::NetworkProver;
-
-pub mod error;
-
-pub mod config;
-
-pub use error::Error;
 
 use crate::config::ProposerServiceConfig;
 
-#[derive(Clone)]
-pub struct ProposerService {
-    pub client: Arc<ProposerClient<ProposerRpcClient, NetworkProver>>,
-    pub l1_rpc: Arc<AlloyProvider>,
+pub mod config;
+pub mod error;
+#[cfg(test)]
+mod tests;
+
+pub struct ProposerService<L1Rpc, ProposerClient> {
+    pub client: Arc<ProposerClient>,
+    pub l1_rpc: Arc<L1Rpc>,
 }
 
-impl ProposerService {
-    pub fn new(config: &ProposerServiceConfig, l1_rpc: Arc<AlloyProvider>) -> Result<Self, Error> {
+impl<L1Rpc, ProposerClient> Clone for ProposerService<L1Rpc, ProposerClient> {
+    fn clone(&self) -> Self {
+        Self {
+            client: self.client.clone(),
+            l1_rpc: self.l1_rpc.clone(),
+        }
+    }
+}
+
+impl<L1Rpc> ProposerService<L1Rpc, proposer_client::Client<ProposerRpcClient, NetworkProver>> {
+    pub fn new(config: &ProposerServiceConfig, l1_rpc: Arc<L1Rpc>) -> Result<Self, Error> {
         let proposer_rpc_client = ProposerRpcClient::new(config.client.proposer_endpoint.as_str())?;
         let network_prover = new_network_prover(config.client.sp1_cluster_endpoint.as_str());
         Ok(Self {
             l1_rpc,
-            client: Arc::new(ProposerClient::new(
+            client: Arc::new(proposer_client::Client::new(
                 proposer_rpc_client,
                 network_prover,
                 Some(config.client.proving_timeout),
@@ -38,7 +46,12 @@ impl ProposerService {
     }
 }
 
-impl tower::Service<ProposerRequest> for ProposerService {
+impl<L1Rpc, ProposerClient> tower::Service<ProposerRequest>
+    for ProposerService<L1Rpc, ProposerClient>
+where
+    L1Rpc: Provider + Send + Sync + 'static,
+    ProposerClient: proposer_client::ProposerClient + Send + Sync + 'static,
+{
     type Response = ProposerResponse;
 
     type Error = Error;
