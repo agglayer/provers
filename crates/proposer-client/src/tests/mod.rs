@@ -67,3 +67,22 @@ mod proposer_rpc {
     #[ignore = "to be implemented"]
     fn receive_an_end_block_higher_than_max_block() {}
 }
+
+mod prover_rpc {
+
+    #[test]
+    #[ignore = "to be implemented"]
+    fn request_a_proof_with_an_invalid_format() {}
+
+    #[test]
+    #[ignore = "to be implemented"]
+    fn request_a_proof_with_an_invalid_proof_id() {}
+
+    #[test]
+    #[ignore = "to be implemented"]
+    fn receive_a_proof_with_an_invalid_type() {}
+
+    #[test]
+    #[ignore = "to be implemented"]
+    fn prover_timeout() {}
+}
