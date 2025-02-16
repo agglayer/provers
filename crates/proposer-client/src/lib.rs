@@ -14,6 +14,9 @@ pub mod error;
 pub mod network_prover;
 pub mod rpc;
 
+#[cfg(test)]
+mod tests;
+
 #[async_trait::async_trait]
 #[cfg_attr(feature = "testutils", mockall::automock)]
 pub trait ProposerClient {
@@ -35,8 +38,8 @@ pub trait ProposerClient {
 /// to retrieve the generated proof.
 #[derive(Clone)]
 pub struct Client<Proposer, Prover> {
-    proposer: Arc<Proposer>,
-    prover: Arc<Prover>,
+    proposer_rpc: Arc<Proposer>,
+    prover_rpc: Arc<Prover>,
     proving_timeout: Option<Duration>,
 }
 
@@ -51,8 +54,8 @@ where
         timeout: Option<Duration>,
     ) -> Result<Self, error::Error> {
         Ok(Self {
-            proposer: Arc::new(proposer),
-            prover: Arc::new(prover),
+            proposer_rpc: Arc::new(proposer),
+            prover_rpc: Arc::new(prover),
             proving_timeout: timeout,
         })
     }
@@ -68,13 +71,13 @@ where
         &self,
         request: AggSpanProofProposerRequest,
     ) -> Result<AggSpanProofProposerResponse, Error> {
-        self.proposer.request_agg_proof(request).await
+        self.proposer_rpc.request_agg_proof(request).await
     }
 
     async fn wait_for_proof(&self, proof_id: ProofId) -> Result<SP1ProofWithPublicValues, Error> {
         let request_id = proof_id.0;
 
-        self.prover
+        self.prover_rpc
             .wait_for_proof(request_id, self.proving_timeout)
             .await
             .map_err(|e| Error::Proving(proof_id, e.to_string()))
