@@ -1,6 +1,9 @@
 use std::fmt::Display;
 
 use alloy_primitives::B256;
+use jsonrpsee::core::client::ClientT;
+use jsonrpsee::http_client::HttpClient;
+use jsonrpsee::rpc_params;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use serde_with::DisplayFromStr;
@@ -20,20 +23,16 @@ pub trait AggSpanProofProposer {
 }
 
 pub struct ProposerRpcClient {
-    client: reqwest::Client,
-    url: String,
+    client: HttpClient,
 }
 
 impl ProposerRpcClient {
     pub fn new(rpc_endpoint: &str) -> Result<Self, Error> {
-        let headers = reqwest::header::HeaderMap::new();
-        let client = reqwest::Client::builder()
-            .default_headers(headers)
-            .build()?;
-        Ok(ProposerRpcClient {
-            client,
-            url: rpc_endpoint.to_owned(),
-        })
+        let client = HttpClient::builder()
+            .build(rpc_endpoint)
+            .map_err(Error::UnableToCreateRPCClient)?;
+
+        Ok(ProposerRpcClient { client })
     }
 }
 
@@ -43,14 +42,17 @@ impl AggSpanProofProposer for ProposerRpcClient {
         &self,
         request: AggSpanProofProposerRequest,
     ) -> Result<AggSpanProofProposerResponse, Error> {
-        let proof_response = self
+        let params = rpc_params![
+            request.start,
+            request.end,
+            request.l1_block_number,
+            request.l1_block_hash
+        ];
+        let proof_response: AggSpanProofProposerResponse = self
             .client
-            .post(format!("{}/request_agg_proof", self.url.as_str()))
-            .json(&request)
-            .send()
-            .await?
-            .json::<AggSpanProofProposerResponse>()
-            .await?;
+            .request("proofs_requestAggProof", params)
+            .await
+            .map_err(Error::AggProofRequestFailed)?;
 
         info!(
             proof_id = proof_response.to_string(),

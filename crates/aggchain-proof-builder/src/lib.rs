@@ -5,15 +5,13 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
-use aggchain_proof_core::proof::{
-    AggchainProof, AggchainProofWitness, InclusionProof, L1InfoTreeLeaf,
-};
+use aggchain_proof_core::proof::{AggchainProofWitness, InclusionProof, L1InfoTreeLeaf};
 use aggkit_prover_types::Hash;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use prover_alloy::AlloyProvider;
 use prover_executor::Executor;
-use sp1_sdk::{SP1ProofWithPublicValues, SP1VerifyingKey};
+use sp1_sdk::{SP1Proof, SP1ProofWithPublicValues, SP1VerifyingKey};
 use tower::buffer::Buffer;
 use tower::util::BoxService;
 use tower::ServiceExt as _;
@@ -62,7 +60,7 @@ pub struct AggchainProofBuilderRequest {
 #[derive(Clone, Debug)]
 pub struct AggchainProofBuilderResponse {
     /// Generated aggchain proof for the block range.
-    pub proof: AggchainProof,
+    pub proof: SP1Proof,
     /// First block included in the aggchain proof.
     pub start_block: u64,
     /// Last block included in the aggchain proof.

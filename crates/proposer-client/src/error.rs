@@ -2,6 +2,12 @@ use crate::ProofId;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error("Unable to create RPC client")]
+    UnableToCreateRPCClient(#[source] jsonrpsee::core::client::Error),
+
+    #[error("An error occurred while requesting an aggregated proof")]
+    AggProofRequestFailed(#[source] jsonrpsee::core::client::Error),
+
     #[error("Reqwest http error: {0}")]
     Reqwest(#[from] reqwest::Error),
 

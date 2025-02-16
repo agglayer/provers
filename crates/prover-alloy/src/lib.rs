@@ -82,13 +82,7 @@ impl Provider for AlloyProvider {
             .client
             .get_block_by_number(block_number.into(), BlockTransactionsKind::Hashes)
             .await
-            .map_err(|error| {
-                anyhow::anyhow!(
-                    "Failed to get L1 block hash:
-        {:?}",
-                    error
-                )
-            })?
+            .map_err(|error| anyhow::anyhow!("Failed to get L1 block hash: {:?}", error))?
             .ok_or(anyhow::anyhow!(
                 "target block {block_number} does not exist"
             ))?
