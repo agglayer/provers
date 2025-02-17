@@ -17,6 +17,19 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  isolated-feature-checks:
+    name: 'isolated feature checks'
+    runs-on: ubuntu-latest-16-cores
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: protoc,cargo-hack
+      - run: cargo hack --each-feature --all check
   unit:
     name: Unit Tests
     runs-on: ubuntu-latest-16-cores
@@ -40,8 +53,9 @@ jobs:
         run: /home/runner/.sp1/bin/sp1up
         shell: bash
 
-      - uses: taiki-e/install-action@nextest
-      - uses: taiki-e/install-action@protoc
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: nextest,protoc
 
       - name: Install Anvil
         uses: foundry-rs/foundry-toolchain@v1
