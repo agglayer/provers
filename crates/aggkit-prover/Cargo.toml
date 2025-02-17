@@ -10,9 +10,7 @@ workspace = true
 [dependencies]
 anyhow.workspace = true
 bincode.workspace = true
-futures.workspace = true
 http = "1.2.0"
-thiserror.workspace = true
 tokio = { workspace = true, features = ["full"] }
 tokio-util.workspace = true
 tonic = { workspace = true, features = ["zstd"] }
@@ -20,11 +18,9 @@ tonic-types = { workspace = true }
 tower = { workspace = true, features = ["timeout"] }
 tracing.workspace = true
 
-aggchain-proof-builder.workspace = true
+aggchain-proof-service.workspace = true
 aggkit-prover-config.workspace = true
 aggkit-prover-types.workspace = true
-proposer-client.workspace = true
-proposer-service.workspace = true
 prover-engine.workspace = true
 prover-logger.workspace = true
 

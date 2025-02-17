@@ -1,28 +1,34 @@
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
-use aggkit_prover_config::proposer_service::ProposerServiceConfig;
 use futures::{future::BoxFuture, FutureExt};
 use proposer_client::network_prover::new_network_prover;
-use proposer_client::rpc::ProposerRpcClient;
-use proposer_client::ProposerClient;
+use proposer_client::rpc::{AggSpanProofProposerRequest, ProposerRpcClient};
+use proposer_client::{ProofId, ProposerClient};
 pub use proposer_client::{ProposerRequest, ProposerResponse};
+use prover_alloy::AlloyProvider;
 use sp1_sdk::NetworkProver;
 
 pub mod error;
 
+pub mod config;
+
 pub use error::Error;
+
+use crate::config::ProposerServiceConfig;
 
 #[derive(Clone)]
 pub struct ProposerService {
     pub client: Arc<ProposerClient<ProposerRpcClient, NetworkProver>>,
+    pub l1_rpc: Arc<AlloyProvider>,
 }
 
 impl ProposerService {
-    pub fn new(config: &ProposerServiceConfig) -> Result<Self, crate::error::Error> {
+    pub fn new(config: &ProposerServiceConfig, l1_rpc: Arc<AlloyProvider>) -> Result<Self, Error> {
         let proposer_rpc_client = ProposerRpcClient::new(config.client.proposer_endpoint.as_str())?;
         let network_prover = new_network_prover(config.client.sp1_cluster_endpoint.as_str());
         Ok(Self {
+            l1_rpc,
             client: Arc::new(ProposerClient::new(
                 proposer_rpc_client,
                 network_prover,
@@ -43,18 +49,41 @@ impl tower::Service<ProposerRequest> for ProposerService {
         Poll::Ready(Ok(()))
     }
 
-    fn call(&mut self, req: ProposerRequest) -> Self::Future {
+    fn call(
+        &mut self,
+        ProposerRequest {
+            start_block,
+            max_block,
+            l1_block_number,
+        }: ProposerRequest,
+    ) -> Self::Future {
         let client = self.client.clone();
+        let l1_rpc = self.l1_rpc.clone();
 
         async move {
-            // Request the AggSpanProof generation from the proposer
-            let proof_id = client.request_agg_proof(req).await?;
+            let l1_block_hash = l1_rpc
+                .get_block_hash(l1_block_number)
+                .await
+                .map_err(Error::AlloyProviderError)?;
+
+            // Request the AggSpanProof generation from the proposer.
+            let response = client
+                .request_agg_proof(AggSpanProofProposerRequest {
+                    start: start_block,
+                    end: max_block,
+                    l1_block_number,
+                    l1_block_hash,
+                })
+                .await?;
+            let proof_id = ProofId(response.proof_id);
 
             // Wait for the prover to finish aggregating span proofs
             let proofs = client.wait_for_proof(proof_id).await?;
 
             Ok(ProposerResponse {
                 agg_span_proof: proofs,
+                start_block: response.start_block,
+                end_block: response.end_block,
             })
         }
         .boxed()

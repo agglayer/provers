@@ -25,7 +25,11 @@ impl Prover {
         let executor = tower::ServiceBuilder::new()
             .timeout(config.max_request_duration)
             .layer(ConcurrencyLimitLayer::new(config.max_concurrency_limit))
-            .service(Executor::new(config, program))
+            .service(Executor::new(
+                &config.primary_prover,
+                &config.fallback_prover,
+                program,
+            ))
             .into_inner()
             .boxed();
 

@@ -1,15 +1,8 @@
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Default)]
-#[serde(rename_all = "kebab-case")]
-pub struct ProposerServiceConfig {
-    pub client: ProposerClientConfig,
-}
-
 use std::str::FromStr;
 use std::time::Duration;
 
 use prover_utils::from_env_or_default;
+use serde::{Deserialize, Serialize};
 use url::Url;
 
 /// The default proposer service endpoint
@@ -27,8 +20,6 @@ pub struct ProposerClientConfig {
     /// The sp1 proving cluster endpoint
     #[serde(default = "default_sp1_cluster_endpoint")]
     pub sp1_cluster_endpoint: Url,
-    /// Network prover program
-    pub prover_program: Vec<u8>,
     /// Proving timeout in seconds
     #[serde(default = "default_timeout")]
     pub proving_timeout: Duration,
@@ -39,7 +30,6 @@ impl Default for ProposerClientConfig {
         Self {
             proposer_endpoint: default_proposer_service_endpoint(),
             sp1_cluster_endpoint: default_sp1_cluster_endpoint(),
-            prover_program: vec![],
             proving_timeout: default_timeout(),
         }
     }
