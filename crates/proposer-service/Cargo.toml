@@ -5,6 +5,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+anyhow = { workspace = true }
 futures.workspace = true
 serde.workspace = true
 sp1-sdk.workspace = true
@@ -13,7 +14,7 @@ thiserror.workspace = true
 url.workspace = true
 
 proposer-client.workspace = true
-prover-utils.workspace = true
+prover-alloy.workspace = true
 
 [lints]
 workspace = true

@@ -1,111 +1,145 @@
 pub mod config;
-mod provider;
+mod error;
 
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
-use aggchain_proof_core::proof::AggchainProofWitness;
-use alloy::eips::{BlockId, BlockNumberOrTag};
-use alloy::network::primitives::BlockTransactionsKind;
-use alloy::primitives::B256;
-use alloy::providers::Provider;
-use alloy::transports::{RpcError, TransportErrorKind};
+use aggchain_proof_core::proof::{
+    AggchainProof, AggchainProofWitness, InclusionProof, L1InfoTreeLeaf,
+};
+use aggkit_prover_types::Hash;
+pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
-use serde::{Deserialize, Serialize};
-use sp1_sdk::SP1ProofWithPublicValues;
+use prover_alloy::AlloyProvider;
+use prover_executor::Executor;
+use sp1_sdk::{SP1ProofWithPublicValues, SP1VerifyingKey};
+use tower::buffer::Buffer;
+use tower::util::BoxService;
+use tower::ServiceExt as _;
 
 use crate::config::AggchainProofBuilderConfig;
-use crate::provider::json_rpc::{build_http_retry_provider, AlloyProvider};
 
-/// Aggchain proof is generated from FEP proof and additional
-/// bridge inputs.
-/// Resulting work of the aggchain proof builder.
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct AggchainProof {
-    //pub proof: SP1ProofWithPublicValues,
-    //TODO add all necessary fields
+const MAX_CONCURRENT_REQUESTS: usize = 100;
+const ELF: &[u8] =
+    include_bytes!("../../../crates/aggchain-proof-program/elf/riscv32im-succinct-zkvm-elf");
+
+pub(crate) type ProverService = Buffer<
+    BoxService<prover_executor::Request, prover_executor::Response, prover_executor::Error>,
+    prover_executor::Request,
+>;
+
+/// All the data `aggchain-proof-builder` needs for the agghchain
+/// proof generation. Collected from various sources.
+pub struct AggchainProverInputs {
+    pub proof_witness: AggchainProofWitness,
+    pub start_block: u64,
+    pub end_block: u64,
 }
 
 pub struct AggchainProofBuilderRequest {
+    /// Aggregated full execution proof for the number of aggregated block
+    /// spans.
     pub agg_span_proof: SP1ProofWithPublicValues,
-    // TODO add rest of the fields
+    /// First block in the aggregated span.
+    pub start_block: u64,
+    /// Last block in the aggregated span (inclusive).
+    pub end_block: u64,
+    /// Root hash of the l1 info tree, containing all relevant GER.
+    /// Provided by agg-sender.
+    pub l1_info_tree_root_hash: Hash,
+    /// Particular leaf of the l1 info tree corresponding
+    /// to the max_block.
+    pub l1_info_tree_leaf: L1InfoTreeLeaf,
+    /// Inclusion proof of the l1 info tree leaf to the
+    /// l1 info tree root
+    pub l1_info_tree_merkle_proof: [Hash; 32],
+    /// Map of the Global Exit Roots with their inclusion proof.
+    /// Note: the GER (string) is a base64 encoded string of the GER digest.
+    pub ger_inclusion_proofs: HashMap<String, InclusionProof>,
 }
 
 #[derive(Clone, Debug)]
 pub struct AggchainProofBuilderResponse {
+    /// Generated aggchain proof for the block range.
     pub proof: AggchainProof,
-}
-
-#[derive(thiserror::Error, Debug)]
-pub enum Error {
-    #[error(transparent)]
-    AlloyProviderError(anyhow::Error),
-
-    #[error(transparent)]
-    AlloyRpcTransportError(#[from] RpcError<TransportErrorKind>),
-
-    #[error(transparent)]
-    ProofGenerationError(#[from] aggchain_proof_core::error::ProofError),
+    /// First block included in the aggchain proof.
+    pub start_block: u64,
+    /// Last block included in the aggchain proof.
+    pub end_block: u64,
 }
 
 /// This service is responsible for building an Aggchain proof.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
+#[allow(unused)]
 pub struct AggchainProofBuilder {
+    /// Mainnet node rpc client.
     l1_client: Arc<AlloyProvider>,
 
-    _l2_client: Arc<AlloyProvider>,
+    /// L2 node rpc client.
+    l2_client: Arc<AlloyProvider>,
+
+    /// Network id of the l2 chain for which the proof is generated.
+    network_id: u32,
+
+    /// Prover client service.
+    prover: ProverService,
+
+    /// Verification key for the aggchain proof.
+    aggchain_proof_vkey: SP1VerifyingKey,
 }
 
 impl AggchainProofBuilder {
     pub fn new(config: &AggchainProofBuilderConfig) -> Result<Self, Error> {
+        let executor = tower::ServiceBuilder::new()
+            .service(Executor::new(
+                &config.primary_prover,
+                &config.fallback_prover,
+                ELF,
+            ))
+            .boxed();
+
+        let prover = Buffer::new(executor, MAX_CONCURRENT_REQUESTS);
+        let aggchain_proof_vkey = Executor::get_vkey(ELF);
+
         Ok(AggchainProofBuilder {
             l1_client: Arc::new(
-                build_http_retry_provider(
+                AlloyProvider::new(
                     &config.l1_rpc_endpoint,
-                    config::HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
-                    config::HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
+                    prover_alloy::DEFAULT_HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
+                    prover_alloy::DEFAULT_HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
                 )
                 .map_err(Error::AlloyProviderError)?,
             ),
-            _l2_client: Arc::new(
-                build_http_retry_provider(
+            l2_client: Arc::new(
+                AlloyProvider::new(
                     &config.l2_rpc_endpoint,
-                    config::HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
-                    config::HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
+                    prover_alloy::DEFAULT_HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
+                    prover_alloy::DEFAULT_HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
                 )
                 .map_err(Error::AlloyProviderError)?,
             ),
+            prover,
+            network_id: config.network_id,
+            aggchain_proof_vkey,
         })
     }
 
-    pub async fn get_l1_block_hash(&self, block_num: u64) -> Result<B256, Error> {
-        let block = self
-            .l1_client
-            .get_block(
-                BlockId::Number(BlockNumberOrTag::Number(block_num)),
-                BlockTransactionsKind::Hashes,
-            )
-            .await
-            .map_err(Error::AlloyRpcTransportError)?
-            .ok_or(Error::AlloyProviderError(anyhow::anyhow!(
-                "target block {block_num} does not exist"
-            )))?;
-
-        Ok(block.header.hash)
-    }
-
-    // Retrieve l1 and l2 public data needed for aggchain proof generation
-    pub async fn retrieve_chain_data(&self) -> Result<(), Error> {
-        //TODO decide output structure
+    /// Retrieve l1 and l2 public data needed for aggchain proof generation.
+    /// Combine with the rest of the inputs to form an `AggchainProverInputs`.
+    pub(crate) async fn retrieve_chain_data(
+        _l1_client: Arc<AlloyProvider>,
+        _l2_client: Arc<AlloyProvider>,
+        _request: AggchainProofBuilderRequest,
+    ) -> Result<AggchainProverInputs, Error> {
         todo!()
     }
 
-    // Generate aggchain proof
-    pub async fn generate_aggchain_proof(
-        &self,
-        mut _aggchain_proof_witness: AggchainProofWitness,
-    ) -> Result<AggchainProof, Error> {
-        //TODO implement
+    /// Generate aggchain proof
+    pub(crate) async fn generate_aggchain_proof(
+        mut _prover: ProverService,
+        _inputs: AggchainProverInputs,
+    ) -> Result<AggchainProofBuilderResponse, Error> {
         todo!()
     }
 }
@@ -117,23 +151,28 @@ impl tower::Service<AggchainProofBuilderRequest> for AggchainProofBuilder {
 
     type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
 
-    fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        todo!()
+    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.prover.poll_ready(cx).map_err(|e| {
+            if let Some(error) = e.downcast_ref::<prover_executor::Error>() {
+                Error::ProverExecutorError(error.clone())
+            } else {
+                Error::ProverServiceError(e.to_string())
+            }
+        })
     }
 
-    fn call(&mut self, _req: AggchainProofBuilderRequest) -> Self::Future {
+    fn call(&mut self, req: AggchainProofBuilderRequest) -> Self::Future {
+        let l1_client = self.l1_client.clone();
+        let l2_client = self.l2_client.clone();
+        let prover = self.prover.clone();
         async move {
-            //TODO implement
+            // Retrieve all the necessary public inputs. Combine with
+            // the data provided by the agg-sender in the request.
+            let aggchain_prover_inputs =
+                Self::retrieve_chain_data(l1_client, l2_client, req).await?;
 
-            // Call all necessary data retrieval
-            //self.retrieve_chain_data().await?;
-
-            // Generate proof
-            //self.generate_aggchain_proof().await?;
-
-            Ok(AggchainProofBuilderResponse {
-                proof: Default::default(),
-            })
+            // Generate aggchain proof.
+            Self::generate_aggchain_proof(prover, aggchain_prover_inputs).await
         }
         .boxed()
     }

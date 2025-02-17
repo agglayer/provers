@@ -16,7 +16,7 @@ tonic = { workspace = true, default-features = false, features = [
     "transport",
 ] }
 
-
+prover-executor.workspace = true
 
 [build-dependencies]
 tonic-build = { version = "0.12", default-features = false, features = [

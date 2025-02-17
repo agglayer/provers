@@ -5,8 +5,7 @@ use std::{
     time::Duration,
 };
 
-use agglayer_prover_config::ProverConfig;
-use agglayer_prover_types::Error;
+pub use error::Error;
 use futures::{Future, TryFutureExt};
 use prover_config::ProverType;
 use sp1_sdk::{
@@ -23,6 +22,8 @@ use tracing::{debug, error, info};
 
 #[cfg(test)]
 mod tests;
+
+mod error;
 
 #[derive(Clone)]
 pub struct Executor {
@@ -86,7 +87,7 @@ impl Executor {
         Self { primary, fallback }
     }
 
-    fn create_prover(
+    pub fn create_prover(
         prover_type: &ProverType,
         program: &[u8],
     ) -> BoxCloneService<Request, Response, Error> {
@@ -139,14 +140,12 @@ impl Executor {
         }
     }
 
-    pub fn new(config: &ProverConfig, program: &[u8]) -> Self {
-        Self {
-            primary: Self::create_prover(&config.primary_prover, program),
-            fallback: config
-                .fallback_prover
-                .as_ref()
-                .map(|config| Self::create_prover(config, program)),
-        }
+    pub fn new(primary: &ProverType, fallback: &Option<ProverType>, program: &[u8]) -> Self {
+        let primary = Self::create_prover(primary, program);
+        let fallback = fallback
+            .as_ref()
+            .map(|config| Self::create_prover(config, program));
+        Self { primary, fallback }
     }
 }
 
