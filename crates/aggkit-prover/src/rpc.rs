@@ -88,6 +88,8 @@ impl AggchainProofGrpcService for GrpcService {
                     aggchain_proof,
                     start_block: response.start_block,
                     end_block: response.end_block,
+                    local_exit_root_hash: Vec::new(),
+                    custom_chain_data: Vec::new(),
                 }))
             }
             Err(e) => Err(Status::internal(e.to_string())),
