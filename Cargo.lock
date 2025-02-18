@@ -43,7 +43,7 @@ dependencies = [
  "serde",
  "sp1-sdk",
  "thiserror 2.0.11",
- "tower 0.5.2",
+ "tower 0.4.13",
  "url",
 ]
 
@@ -73,7 +73,7 @@ dependencies = [
  "prover-alloy",
  "serde",
  "thiserror 2.0.11",
- "tower 0.5.2",
+ "tower 0.4.13",
  "tracing",
 ]
 
@@ -95,7 +95,7 @@ dependencies = [
  "tokio-util",
  "tonic",
  "tonic-types",
- "tower 0.5.2",
+ "tower 0.4.13",
  "tracing",
 ]
 
@@ -147,7 +147,7 @@ dependencies = [
  "tonic",
  "tonic-health",
  "tonic-reflection",
- "tower 0.5.2",
+ "tower 0.4.13",
  "tracing",
 ]
 
@@ -4625,7 +4625,7 @@ dependencies = [
  "serde",
  "sp1-sdk",
  "thiserror 2.0.11",
- "tower 0.5.2",
+ "tower 0.4.13",
  "url",
 ]
 
@@ -4744,7 +4744,7 @@ dependencies = [
  "tonic",
  "tonic-health",
  "tonic-reflection",
- "tower 0.5.2",
+ "tower 0.4.13",
  "tracing",
 ]
 
@@ -4769,7 +4769,7 @@ dependencies = [
  "tonic",
  "tonic-health",
  "tonic-reflection",
- "tower 0.5.2",
+ "tower 0.4.13",
  "tracing",
  "tracing-subscriber",
 ]
