@@ -51,6 +51,7 @@ mod proposer_rpc {
         mock.assert_async().await;
     }
 
+    // TODO: Implement this test in next iteration
     #[test]
     #[ignore = "to be implemented"]
     fn request_and_receive_an_error() {}
