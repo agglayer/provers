@@ -43,9 +43,11 @@ where
     H: Hasher,
     H::Digest: Copy + Default + Serialize + for<'a> Deserialize<'a>,
 {
+    #[allow(unused)]
     const MAX_NUM_LEAVES: u32 = ((1u64 << TREE_DEPTH) - 1) as u32;
 
     /// Appends a leaf to the tree.
+    #[allow(unused)]
     pub fn add_leaf(&mut self, leaf: H::Digest) -> Result<u32, LocalExitTreeError> {
         if self.leaf_count >= Self::MAX_NUM_LEAVES {
             return Err(LocalExitTreeError::LeafIndexOverflow);
@@ -78,6 +80,7 @@ where
     }
 
     /// Computes and returns the root of the tree.
+    #[allow(unused)]
     pub fn get_root(&self) -> H::Digest {
         // `root` is the hash of the node we’re going to fill next.
         // Here, we compute the root, starting from the next (yet unfilled) leaf hash.
@@ -99,6 +102,7 @@ where
 }
 
 /// Returns the bit value at index `bit_idx` in `target`
+#[allow(unused)]
 fn get_bit_at(target: u32, bit_idx: usize) -> u32 {
     (target >> bit_idx) & 1
 }
