@@ -37,8 +37,8 @@ impl FepPublicValues {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FepWithPublicValues {
-    public_values: FepPublicValues,
-    aggregation_vkey: Vkey,
+    pub(crate) public_values: FepPublicValues,
+    pub(crate) aggregation_vkey: Vkey,
 }
 
 impl FepWithPublicValues {
