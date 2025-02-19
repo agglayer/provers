@@ -31,6 +31,7 @@ async fn service_can_be_called() {
     let response = service.call(request).await;
     assert!(response.is_ok());
 }
+
 #[tokio::test]
 #[ignore]
 async fn testing_rpc_failure() {

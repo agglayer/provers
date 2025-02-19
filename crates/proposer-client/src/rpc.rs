@@ -1,7 +1,12 @@
 use std::fmt::Display;
 
 use alloy_primitives::B256;
+use jsonrpsee::core::client::ClientT;
+use jsonrpsee::http_client::HttpClient;
+use jsonrpsee::rpc_params;
 use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
+use serde_with::DisplayFromStr;
 use tracing::info;
 
 use crate::{error::Error, ProposerRequest};
@@ -18,20 +23,16 @@ pub trait AggSpanProofProposer {
 }
 
 pub struct ProposerRpcClient {
-    client: reqwest::Client,
-    url: String,
+    client: HttpClient,
 }
 
 impl ProposerRpcClient {
     pub fn new(rpc_endpoint: &str) -> Result<Self, Error> {
-        let headers = reqwest::header::HeaderMap::new();
-        let client = reqwest::Client::builder()
-            .default_headers(headers)
-            .build()?;
-        Ok(ProposerRpcClient {
-            client,
-            url: rpc_endpoint.to_owned(),
-        })
+        let client = HttpClient::builder()
+            .build(rpc_endpoint)
+            .map_err(Error::UnableToCreateRPCClient)?;
+
+        Ok(ProposerRpcClient { client })
     }
 }
 
@@ -41,14 +42,17 @@ impl AggSpanProofProposer for ProposerRpcClient {
         &self,
         request: AggSpanProofProposerRequest,
     ) -> Result<AggSpanProofProposerResponse, Error> {
-        let proof_response = self
+        let params = rpc_params![
+            request.start,
+            request.end,
+            request.l1_block_number,
+            request.l1_block_hash
+        ];
+        let proof_response: AggSpanProofProposerResponse = self
             .client
-            .post(format!("{}/request_agg_proof", self.url.as_str()))
-            .json(&request)
-            .send()
-            .await?
-            .json::<AggSpanProofProposerResponse>()
-            .await?;
+            .request("proofs_requestAggProof", params)
+            .await
+            .map_err(Error::AggProofRequestFailed)?;
 
         info!(
             proof_id = proof_response.to_string(),
@@ -60,11 +64,18 @@ impl AggSpanProofProposer for ProposerRpcClient {
 }
 
 /// Request format for the proposer `request_agg_proof`
+#[serde_as]
 #[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct AggSpanProofProposerRequest {
+    // Starting block number to request proof from
+    #[serde(rename = "startBlock")]
     pub start: u64,
+    // Maximum block number on which the proof needs to be aggregated
+    #[serde(rename = "maxBlock")]
     pub end: u64,
     pub l1_block_number: u64,
+    #[serde_as(as = "DisplayFromStr")]
     pub l1_block_hash: B256,
 }
 
@@ -81,6 +92,7 @@ impl From<AggSpanProofProposerRequest> for ProposerRequest {
 /// Response for the external proposer `request_span_proof` call
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AggSpanProofProposerResponse {
+    #[serde(rename = "proof_request_id")]
     pub proof_id: B256,
     pub start_block: u64,
     pub end_block: u64,
