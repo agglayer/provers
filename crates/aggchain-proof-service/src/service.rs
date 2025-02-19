@@ -87,7 +87,7 @@ impl AggchainProofService {
             prover_alloy::DEFAULT_HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
             prover_alloy::DEFAULT_HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
         )
-        .map_err(Error::AlloyProviderError)?;
+        .map_err(Error::AlloyProviderInitializationFailed)?;
         let l1_rpc_client = Arc::new(client);
 
         let proposer_service = tower::ServiceBuilder::new()

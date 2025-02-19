@@ -32,10 +32,10 @@ checksum = "512761e0bb2578dd7380c6baaa0f4ce03e84f95e960231d1dec8bf4d7d6e2627"
 name = "aggchain-proof-builder"
 version = "0.1.0"
 dependencies = [
+ "aggchain-proof-contracts",
  "aggchain-proof-core",
  "aggkit-prover-types",
  "alloy",
- "anyhow",
  "futures",
  "prover-alloy",
  "prover-config",
@@ -44,6 +44,19 @@ dependencies = [
  "sp1-sdk",
  "thiserror 2.0.11",
  "tower 0.4.13",
+ "url",
+]
+
+[[package]]
+name = "aggchain-proof-contracts"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "anyhow",
+ "futures",
+ "prover-alloy",
+ "serde_json",
+ "thiserror 2.0.11",
  "url",
 ]
 

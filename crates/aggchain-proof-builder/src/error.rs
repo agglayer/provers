@@ -2,8 +2,8 @@ use alloy::transports::{RpcError, TransportErrorKind};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error(transparent)]
-    AlloyProviderError(anyhow::Error),
+    #[error("Unable to create aggchain contracts client")]
+    ContractsClientInitializationFailed(#[source] aggchain_proof_contracts::Error),
 
     #[error(transparent)]
     AlloyRpcTransportError(#[from] RpcError<TransportErrorKind>),

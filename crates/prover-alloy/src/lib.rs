@@ -21,7 +21,7 @@ const HTTP_CLIENT_MAX_IDLE_CONNECTIONS_PER_HOST: usize = 64;
 pub const DEFAULT_HTTP_RPC_NODE_INITIAL_BACKOFF_MS: u64 = 5000;
 pub const DEFAULT_HTTP_RPC_NODE_BACKOFF_MAX_RETRIES: u32 = 64;
 
-type AlloyFillProvider = FillProvider<
+pub type AlloyFillProvider = FillProvider<
     JoinFill<
         Identity,
         JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>,

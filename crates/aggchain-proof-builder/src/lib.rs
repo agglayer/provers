@@ -5,11 +5,11 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
+use aggchain_proof_contracts::AggchainProofContractsClient;
 use aggchain_proof_core::proof::{AggchainProofWitness, InclusionProof, L1InfoTreeLeaf};
 use aggkit_prover_types::Hash;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
-use prover_alloy::AlloyProvider;
 use prover_executor::Executor;
 use sp1_sdk::{SP1Proof, SP1ProofWithPublicValues, SP1VerifyingKey};
 use tower::buffer::Buffer;
@@ -71,11 +71,7 @@ pub struct AggchainProofBuilderResponse {
 #[derive(Clone)]
 #[allow(unused)]
 pub struct AggchainProofBuilder {
-    /// Mainnet node rpc client.
-    l1_client: Arc<AlloyProvider>,
-
-    /// L2 node rpc client.
-    l2_client: Arc<AlloyProvider>,
+    contracts_client: Arc<AggchainProofContractsClient>,
 
     /// Network id of the l2 chain for which the proof is generated.
     network_id: u32,
@@ -101,21 +97,9 @@ impl AggchainProofBuilder {
         let aggchain_proof_vkey = Executor::get_vkey(ELF);
 
         Ok(AggchainProofBuilder {
-            l1_client: Arc::new(
-                AlloyProvider::new(
-                    &config.l1_rpc_endpoint,
-                    prover_alloy::DEFAULT_HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
-                    prover_alloy::DEFAULT_HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
-                )
-                .map_err(Error::AlloyProviderError)?,
-            ),
-            l2_client: Arc::new(
-                AlloyProvider::new(
-                    &config.l2_rpc_endpoint,
-                    prover_alloy::DEFAULT_HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
-                    prover_alloy::DEFAULT_HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
-                )
-                .map_err(Error::AlloyProviderError)?,
+            contracts_client: Arc::new(
+                AggchainProofContractsClient::new(&config.l1_rpc_endpoint, &config.l2_rpc_endpoint)
+                    .map_err(Error::ContractsClientInitializationFailed)?,
             ),
             prover,
             network_id: config.network_id,
@@ -126,8 +110,7 @@ impl AggchainProofBuilder {
     /// Retrieve l1 and l2 public data needed for aggchain proof generation.
     /// Combine with the rest of the inputs to form an `AggchainProverInputs`.
     pub(crate) async fn retrieve_chain_data(
-        _l1_client: Arc<AlloyProvider>,
-        _l2_client: Arc<AlloyProvider>,
+        _contracts_client: Arc<AggchainProofContractsClient>,
         _request: AggchainProofBuilderRequest,
     ) -> Result<AggchainProverInputs, Error> {
         todo!()
@@ -160,14 +143,12 @@ impl tower::Service<AggchainProofBuilderRequest> for AggchainProofBuilder {
     }
 
     fn call(&mut self, req: AggchainProofBuilderRequest) -> Self::Future {
-        let l1_client = self.l1_client.clone();
-        let l2_client = self.l2_client.clone();
+        let contracts_client = self.contracts_client.clone();
         let prover = self.prover.clone();
         async move {
             // Retrieve all the necessary public inputs. Combine with
             // the data provided by the agg-sender in the request.
-            let aggchain_prover_inputs =
-                Self::retrieve_chain_data(l1_client, l2_client, req).await?;
+            let aggchain_prover_inputs = Self::retrieve_chain_data(contracts_client, req).await?;
 
             // Generate aggchain proof.
             Self::generate_aggchain_proof(prover, aggchain_prover_inputs).await
