@@ -1,6 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{error::ProofError, full_execution_proof::FepWithPublicValues, keccak::digest::Digest};
+use crate::{
+    bridge::{BridgeInput, BridgeWitness},
+    error::ProofError,
+    full_execution_proof::FepWithPublicValues,
+    keccak::digest::Digest,
+};
 
 /// Aggchain proof is generated from the FEP proof and additional
 /// bridge information.
@@ -24,29 +29,28 @@ pub struct AggchainProofWitness {
     pub origin_network: u32,
     /// Full execution proof with its metadata.
     pub fep: FepWithPublicValues,
-    /// Bridge constraints related data
-    pub bridge: BridgeData,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct BridgeData;
-
-impl BridgeData {
-    pub fn verify(&mut self) -> Result<(), ProofError> {
-        todo!()
-    }
+    /// Bridge witness related data.
+    pub bridge_witness: BridgeWitness,
 }
 
 impl AggchainProofWitness {
     pub fn generate_aggchain_proof(&mut self) -> Result<AggchainProofPublicValues, ProofError> {
+        let public_values = self.public_values();
+
         // Verify the FEP exclusively within the SP1 VM
         #[cfg(target_os = "zkvm")]
         self.fep.verify()?;
 
         // Verify the bridge constraints
-        self.bridge.verify()?;
+        BridgeInput::from(self).verify()?;
 
-        Ok(self.public_values())
+        Ok(public_values)
+    }
+}
+
+impl From<&mut AggchainProofWitness> for BridgeInput {
+    fn from(_value: &mut AggchainProofWitness) -> Self {
+        todo!()
     }
 }
 
