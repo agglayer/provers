@@ -7,12 +7,13 @@ use alloy::primitives::Address;
 use alloy::primitives::{address, B256};
 use alloy::sol;
 use prover_alloy::{AlloyFillProvider, AlloyProvider};
+use tracing::info;
 use url::Url;
 
 pub use crate::error::Error;
 
-/// Address of the `GlobalExitRootManagerL2SovereignChain.sol` contract on the
-/// L2 chain is always fixed.
+/// Address of the `GlobalExitRootManagerL2SovereignChain.sol` contract
+/// on the L2 chain is always fixed.
 const GLOBAL_EXIT_ROOT_MANAGER_L2_SOVEREIGN_CHAIN_ADDRESS: Address =
     address!("0xa40D5f56745a118D0906a34E69aeC8C0Db1cB8fA");
 
@@ -32,18 +33,17 @@ sol!(
     "contracts/polygon-zkevm-bridge-v2.json"
 );
 
-type GlobalExitRootManager =
+type GlobalExitRootManagerClient =
     GlobalExitRootManagerL2SovereignChain::GlobalExitRootManagerL2SovereignChainInstance<
         (),
         AlloyFillProvider,
         Ethereum,
     >;
-type ZkevmBridge =
+type ZkevmBridgeClient =
     PolygonZkevmBridgeV2::PolygonZkevmBridgeV2Instance<(), AlloyFillProvider, Ethereum>;
 
-/// Wrapper around alloy `Provider` client.
-/// Performs ETH node response data processing where needed but
-/// allows direct use of the provider if necessary.
+/// `AggchainProofContractsClient` is a client for interacting with the
+/// smart contracts relevant for the aggchain prover.
 #[derive(Clone)]
 pub struct AggchainProofContractsClient {
     /// Mainnet node rpc client.
@@ -54,10 +54,10 @@ pub struct AggchainProofContractsClient {
 
     /// Global exit root manager for smart sovereign chain
     /// contract on the l2 network.
-    _global_exit_root_manager_l2: GlobalExitRootManager,
+    _global_exit_root_manager_l2: GlobalExitRootManagerClient,
 
     /// Polygon zkevm bridge contract on the l2 network.
-    _polygon_zkevm_bridge_v2: ZkevmBridge,
+    polygon_zkevm_bridge_v2: ZkevmBridgeClient,
 }
 
 impl AggchainProofContractsClient {
@@ -80,20 +80,21 @@ impl AggchainProofContractsClient {
             .map_err(Error::ProviderInitializationError)?,
         );
 
-        // Create client for global exit root manager smart contract
+        // Create client for global exit root manager smart contract.
         let global_exit_root_manager_l2 = GlobalExitRootManagerL2SovereignChain::new(
             GLOBAL_EXIT_ROOT_MANAGER_L2_SOVEREIGN_CHAIN_ADDRESS,
             l2_client.provider().clone(),
         );
 
         // Retrieve PolygonZkEVMBridgeV2 contract address from the global exit root
-        // manager contract
+        // manager contract.
         let polygon_zkevm_bridge_address = {
             let global_exit_root_manager_l2 = global_exit_root_manager_l2.clone();
             std::thread::spawn(move || {
-                futures::executor::block_on(async move {
+                let rt = tokio::runtime::Runtime::new().expect("valid runtime");
+                rt.block_on(async move {
                     // We need to retrieve PolygonZkEVMBridgeV2 contract address from the
-                    // global exit root manager contract
+                    // global exit root manager contract.
                     global_exit_root_manager_l2.bridgeAddress().call().await
                 })
             })
@@ -102,20 +103,39 @@ impl AggchainProofContractsClient {
         .expect("Couldn't join on the associated thread")
         .map_err(Error::BridgeAddressError)?;
 
-        // Create client for Polygon zkevm bridge v2 smart contract
+        // Create client for Polygon zkevm bridge v2 smart contract.
         let polygon_zkevm_bridge_v2 = PolygonZkevmBridgeV2::new(
             polygon_zkevm_bridge_address._0,
             l2_client.provider().clone(),
         );
 
+        info!(global_exit_root_manager_l2=%GLOBAL_EXIT_ROOT_MANAGER_L2_SOVEREIGN_CHAIN_ADDRESS,
+            polygon_zkevm_bridge_v2=%polygon_zkevm_bridge_v2.address(),
+            "Aggchain proof contracts client created successfully");
+
         Ok(Self {
             _l1_client: l1_client,
             _l2_client: l2_client,
             _global_exit_root_manager_l2: global_exit_root_manager_l2,
-            _polygon_zkevm_bridge_v2: polygon_zkevm_bridge_v2,
+            polygon_zkevm_bridge_v2,
         })
     }
-    
+
+    pub async fn get_l2_local_exit_root(&self, block_number: u64) -> Result<B256, Error> {
+        let bytes = self
+            .polygon_zkevm_bridge_v2
+            .getRoot()
+            .call_raw()
+            .block(block_number.into())
+            .await
+            .map_err(Error::LocalExitRootError)?;
+
+        let result = self
+            .polygon_zkevm_bridge_v2
+            .getRoot()
+            .decode_output(bytes, true)
+            .map_err(Error::LocalExitRootError)?;
+
+        Ok(result._0)
+    }
 }
-
-

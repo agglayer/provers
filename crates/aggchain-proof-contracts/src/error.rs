@@ -1,9 +1,9 @@
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error("Unable to create alloy provider")]
+    #[error("Unable to create alloy node provider")]
     ProviderInitializationError(#[source] anyhow::Error),
 
-    #[error("Error with contract ABI file")]
+    #[error("Error processing contract ABI file")]
     ContractAbiFileError(#[source] std::io::Error),
 
     #[error("Error processing contract ABI JSON")]
@@ -14,4 +14,7 @@ pub enum Error {
 
     #[error("Unable to retrieve bridge address from the global exit root manager contract")]
     BridgeAddressError(#[source] alloy::contract::Error),
+
+    #[error("Error retrieving local exit root")]
+    LocalExitRootError(#[source] alloy::contract::Error),
 }

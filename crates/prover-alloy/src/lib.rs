@@ -70,6 +70,10 @@ impl AlloyProvider {
             client: ProviderBuilder::new().on_client(client),
         })
     }
+
+    pub fn provider(&self) -> &AlloyFillProvider {
+        &self.client
+    }
 }
 
 #[async_trait]

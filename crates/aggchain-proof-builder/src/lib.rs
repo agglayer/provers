@@ -71,6 +71,8 @@ pub struct AggchainProofBuilderResponse {
 #[derive(Clone)]
 #[allow(unused)]
 pub struct AggchainProofBuilder {
+    /// Client for interacting with the smart contracts relevant for the
+    /// aggchain prover.
     contracts_client: Arc<AggchainProofContractsClient>,
 
     /// Network id of the l2 chain for which the proof is generated.
@@ -99,7 +101,7 @@ impl AggchainProofBuilder {
         Ok(AggchainProofBuilder {
             contracts_client: Arc::new(
                 AggchainProofContractsClient::new(&config.l1_rpc_endpoint, &config.l2_rpc_endpoint)
-                    .map_err(Error::ContractsClientInitializationFailed)?,
+                    .map_err(Error::ContractsClientInitFailed)?,
             ),
             prover,
             network_id: config.network_id,
@@ -110,9 +112,19 @@ impl AggchainProofBuilder {
     /// Retrieve l1 and l2 public data needed for aggchain proof generation.
     /// Combine with the rest of the inputs to form an `AggchainProverInputs`.
     pub(crate) async fn retrieve_chain_data(
-        _contracts_client: Arc<AggchainProofContractsClient>,
-        _request: AggchainProofBuilderRequest,
+        contracts_client: Arc<AggchainProofContractsClient>,
+        request: AggchainProofBuilderRequest,
     ) -> Result<AggchainProverInputs, Error> {
+        let _prev_local_exit_root = contracts_client
+            .get_l2_local_exit_root(request.start_block - 1)
+            .await
+            .map_err(Error::L2ChainDataRetrievalError)?;
+
+        let _new_local_exit_root = contracts_client
+            .get_l2_local_exit_root(request.end_block)
+            .await
+            .map_err(Error::L2ChainDataRetrievalError)?;
+
         todo!()
     }
 
