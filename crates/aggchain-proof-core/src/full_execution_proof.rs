@@ -60,7 +60,7 @@ impl FepWithPublicValues {
             words_to_bytes_le(&self.aggregation_vkey).as_slice(),
         ])
         .0
-    }
+    } 
 
     /// Verify the SP1 proof
     pub fn verify(&self) -> Result<(), ProofError> {
