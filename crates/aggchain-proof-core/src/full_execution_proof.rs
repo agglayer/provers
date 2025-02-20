@@ -1,6 +1,4 @@
-use alloy_primitives::keccak256;
 use serde::{Deserialize, Serialize};
-use serde_big_array::BigArray;
 #[cfg(target_os = "zkvm")]
 use sha2::{Digest as Sha256Digest, Sha256};
 use sp1_zkvm::lib::utils::words_to_bytes_le;

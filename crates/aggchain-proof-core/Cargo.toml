@@ -41,4 +41,3 @@ tokio = { version = "1.21", default-features = false, features = [
     "rt",
     "rt-multi-thread",
 ] }
-serde-big-array = "0.5.1"
