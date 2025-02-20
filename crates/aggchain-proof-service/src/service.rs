@@ -87,18 +87,21 @@ impl AggchainProofService {
             prover_alloy::DEFAULT_HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
             prover_alloy::DEFAULT_HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
         )
-        .map_err(Error::AlloyProviderError)?;
+        .map_err(Error::AlloyProviderInitializationFailed)?;
         let l1_rpc_client = Arc::new(client);
 
         let proposer_service = tower::ServiceBuilder::new()
-            .service(ProposerService::new(
-                &config.proposer_service,
-                l1_rpc_client,
-            )?)
+            .service(
+                ProposerService::new(&config.proposer_service, l1_rpc_client)
+                    .map_err(Error::ProposerServiceInitFailed)?,
+            )
             .boxed_clone();
 
         let aggchain_proof_builder = tower::ServiceBuilder::new()
-            .service(AggchainProofBuilder::new(&config.aggchain_proof_builder)?)
+            .service(
+                AggchainProofBuilder::new(&config.aggchain_proof_builder)
+                    .map_err(Error::AggchainProofBuilderInitFailed)?,
+            )
             .boxed_clone();
 
         Ok(AggchainProofService {
@@ -114,11 +117,14 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        std::task::ready!(self.proposer_service.poll_ready(cx)?);
+        std::task::ready!(self
+            .proposer_service
+            .poll_ready(cx)
+            .map_err(Error::ProposerServiceError)?);
 
         self.aggchain_proof_builder
             .poll_ready(cx)
-            .map_err(Error::from)
+            .map_err(Error::AggchainProofBuilderServiceError)
     }
 
     fn call(&mut self, req: AggchainProofServiceRequest) -> Self::Future {
@@ -134,7 +140,7 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
 
         self.proposer_service
             .call(proposer_request)
-            .map_err(Error::from)
+            .map_err(Error::ProposerServiceRequestFailed)
             .and_then(move |agg_span_proof_response| {
                 let aggchain_proof_builder_request =
                     aggchain_proof_builder::AggchainProofBuilderRequest {
@@ -149,7 +155,7 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
 
                 proof_builder
                     .call(aggchain_proof_builder_request)
-                    .map_err(Error::from)
+                    .map_err(Error::AggchainProofBuilderRequestFailed)
                     .map(move |aggchain_proof_builder_result| {
                         let agg_span_proof_response: AggchainProofBuilderResponse =
                             aggchain_proof_builder_result?;
