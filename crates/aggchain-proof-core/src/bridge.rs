@@ -1,13 +1,11 @@
 //! A program that verifies the bridge integrity
+use crate::inserted_ger::InsertedGER;
+use crate::keccak::keccak256_combine;
 use alloy_primitives::{address, Address, FixedBytes};
 use alloy_sol_macro::sol;
 use alloy_sol_types::SolCall;
 use serde::{Deserialize, Serialize};
 use sp1_cc_client_executor::{io::EVMStateSketch, ClientExecutor, ContractInput};
-
-use crate::inserted_ger::InsertedGER;
-use crate::keccak::keccak256_combine;
-
 // temporal solution, won't work with Outpost networks
 pub const L2_GER_ADDR: Address = address!("a40d5f56745a118d0906a34e69aec8c0db1cb8fa");
 
@@ -66,10 +64,6 @@ pub struct BridgeInput {
 impl BridgeInput {
     pub fn verify(&self) -> Result<(), BridgeConstraintsError> {
         // TODO: handle failed calls
-        // TODO: explore other decodings for optimizing performance
-        // let sbridge_input_bytes = sp1_zkvm::io::read::<Vec<u8>>();
-        // let input =
-        // bincode::deserialize::<BridgeInput>(&sbridge_input_bytes).unwrap();
 
         // Verify bridge state:
 
@@ -167,7 +161,6 @@ impl BridgeInput {
         }
 
         // 4.2 Check that the new local exit root returned from L2 matches the expected
-        // value in the input.
         if new_ler != self.new_local_exit_root {
             return Err(BridgeConstraintsError::MismatchLocalExitRoot {
                 retrieved: self.new_local_exit_root,
@@ -175,7 +168,7 @@ impl BridgeInput {
             });
         }
 
-        // 4.3 Check Gers are inside of L1InfoRoot TODO
+        // 4.3 Check Gers are inside of L1InfoRoot
         self.verify_inserted_gers()?;
 
         // 4.4. Check the block hashes of sketches matches the inputs
@@ -224,136 +217,187 @@ pub fn compute_ger_hash_chain(
 
 #[cfg(test)]
 mod tests {
-    use alloy_primitives::{address, hex};
+    use alloy_primitives::hex;
     use alloy_provider::RootProvider;
     use alloy_rpc_types::BlockNumberOrTag;
     use sp1_cc_host_executor::HostExecutor;
+    use std::str::FromStr;
     use url::Url;
 
     use super::*;
     use crate::inserted_ger::L1InfoTreeLeaf;
+    use crate::local_exit_tree::proof::LETMerkleProof;
 
     #[tokio::test(flavor = "multi_thread")]
-    #[ignore = "Unable to properly test with mock yet"]
+    //#[ignore = "Unable to properly test with mock yet"]
     async fn test_bridge_contraints() -> Result<(), Box<dyn std::error::Error>> {
+        use serde_json::Value;
+        use std::fs::File;
+        use std::io::BufReader;
+
         // Initialize the environment variables.
         dotenvy::dotenv().ok();
 
-        let bridge_data_input = {
-            const CHAIN_ID_L2: u64 = 11155111;
-            const PREV_BLOCK_NUMBER_L2: u64 = 7733215; // example value
-            const NEW_BLOCK_NUMBER_L2: u64 = 7733218; // example value
-            const GER_ADDR: Address = address!("877f8af6F04658769353ac51120283B0BF4A260D");
-            const IMPORTED_GERS: [&str; 2] = [
-                "0xa4b867dea490e3735bce8712e7c5071c4dca879b4f8eaff0f973d808a623e425",
-                "0x0bf1d0a5a680af4ea266ab7a8052735e1e3faf71fadfe8cfdeae70b1ab8f9d85",
-            ];
+        // Read and parse the JSON file
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("src/test_input/bridge_test.json");
+        let file = File::open(path)?;
+        let reader = BufReader::new(file);
+        let json_data: Value = serde_json::from_reader(reader)?;
 
-            // Convert the hex strings to FixedBytes by decoding each hex string.
-            let imported_gers: Vec<InsertedGER> = IMPORTED_GERS
-                .iter()
-                .map(|ger_hex| {
-                    let bytes = hex::decode(ger_hex).unwrap();
-                    let inserted_ger = alloy_primitives::FixedBytes::from_slice(&bytes);
+        // constant values
 
-                    // TODO: proper merkle proof
-                    InsertedGER {
-                        proof: Default::default(),
-                        l1_info_tree_leaf: L1InfoTreeLeaf {
-                            global_exit_root: inserted_ger.0.into(),
-                            block_hash: Default::default(),
-                            timestamp: Default::default(),
-                        },
-                        l1_info_tree_index: Default::default(),
-                    }
-                })
-                .collect();
+        // Extract values from JSON
+        let initial_block_number = json_data["initialBlockNumber"].as_u64().unwrap();
+        let final_block_number = json_data["finalBlockNumber"].as_u64().unwrap();
+        let ger_address =
+            Address::from_str(json_data["gerSovereignAddress"].as_str().unwrap()).unwrap();
+        let global_exit_roots = &json_data["globalExitRoots"];
+        let local_exit_root = json_data["localExitRoot"].as_str().unwrap();
+        let l1_info_root = json_data["l1InfoRoot"].as_str().unwrap();
+        let chain_id_l2: u64 = json_data["chainId"].as_u64().unwrap();
 
-            let rpc_url_l2 = std::env::var(format!("RPC_{}", CHAIN_ID_L2))
-                .expect("RPC URL must be defined")
-                .parse::<Url>()
-                .expect("Invalid URL format");
+        let imported_l1_info_tree_leafs: Vec<InsertedGER> = global_exit_roots
+            .as_array()
+            .unwrap()
+            .iter()
+            .enumerate()
+            .map(|(index, ger)| InsertedGER {
+                proof: LETMerkleProof {
+                    siblings: ger["proof"]
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .map(|p| {
+                            hex::decode(p.as_str().unwrap().trim_start_matches("0x"))
+                                .unwrap()
+                                .try_into()
+                                .unwrap()
+                        })
+                        .collect::<Vec<_>>()
+                        .try_into()
+                        .expect("Expected 32 siblings in proof"),
+                },
+                l1_info_tree_leaf: L1InfoTreeLeaf {
+                    global_exit_root: hex::decode(
+                        ger["globalExitRoot"]
+                            .as_str()
+                            .unwrap()
+                            .trim_start_matches("0x"),
+                    )
+                    .unwrap()
+                    .try_into()
+                    .unwrap(),
+                    block_hash: {
+                        let bytes = hex::decode(
+                            ger["blockHash"].as_str().unwrap().trim_start_matches("0x"),
+                        )
+                        .unwrap();
+                        let array: [u8; 32] =
+                            bytes.try_into().expect("Incorrect length for block hash");
+                        array.into()
+                    },
+                    timestamp: ger["timestamp"].as_u64().unwrap(),
+                },
+                l1_info_tree_index: index as u32,
+            })
+            .collect();
 
-            let block_number_initial = BlockNumberOrTag::Number(PREV_BLOCK_NUMBER_L2);
-            let block_number_final = BlockNumberOrTag::Number(NEW_BLOCK_NUMBER_L2);
+        let rpc_url_l2 = std::env::var(format!("RPC_{}", chain_id_l2))
+            .expect("RPC URL must be defined")
+            .parse::<Url>()
+            .expect("Invalid URL format");
 
-            // 1. Get the the prev hash chain of the previous block on L2
+        let block_number_initial = BlockNumberOrTag::Number(initial_block_number);
+        let block_number_final = BlockNumberOrTag::Number(final_block_number);
 
-            // Setup the provider and host executor for initial GER
-            let provider_l2: RootProvider<alloy::network::AnyNetwork> =
-                RootProvider::new_http(rpc_url_l2);
+        // 1. Get the the prev hash chain of the previous block on L2
 
-            let mut executor_prev_hash_chain =
-                HostExecutor::new(provider_l2.clone(), block_number_initial).await?;
+        // Setup the provider and host executor for initial GER
+        let provider_l2: RootProvider<alloy::network::AnyNetwork> =
+            RootProvider::new_http(rpc_url_l2);
 
-            let hash_chain_calldata =
-                GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {};
+        let mut executor_prev_hash_chain =
+            HostExecutor::new(provider_l2.clone(), block_number_initial).await?;
 
-            let _hash_chain = executor_prev_hash_chain
-                .execute(ContractInput::new_call(
-                    GER_ADDR,
-                    Address::default(),
-                    hash_chain_calldata.clone(),
-                ))
-                .await?;
+        let hash_chain_calldata =
+            GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {};
 
-            let _decoded_hash_chain =
+        let _hash_chain = executor_prev_hash_chain
+            .execute(ContractInput::new_call(
+                ger_address,
+                Address::default(),
+                hash_chain_calldata.clone(),
+            ))
+            .await?;
+
+        let _decoded_hash_chain =
             GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall::abi_decode_returns(
                 &_hash_chain,
                 true,
             )?
             .hashChain;
-            let executor_prev_hash_chain_sketch = executor_prev_hash_chain.finalize().await?;
+        let executor_prev_hash_chain_sketch = executor_prev_hash_chain.finalize().await?;
 
-            // 2. Get the new hash chain of the new block on L2
-            let mut executor_new_hash_chain =
-                HostExecutor::new(provider_l2.clone(), block_number_final).await?;
+        // 2. Get the new hash chain of the new block on L2
+        let mut executor_new_hash_chain =
+            HostExecutor::new(provider_l2.clone(), block_number_final).await?;
 
-            let _new_hash_chain = executor_new_hash_chain
-                .execute(ContractInput::new_call(
-                    GER_ADDR,
-                    Address::default(),
-                    GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
-                ))
-                .await?;
+        let _new_hash_chain = executor_new_hash_chain
+            .execute(ContractInput::new_call(
+                ger_address,
+                Address::default(),
+                GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
+            ))
+            .await?;
 
-            let executor_new_hash_chain = executor_new_hash_chain.finalize().await?;
+        let executor_new_hash_chain = executor_new_hash_chain.finalize().await?;
 
-            // 3. Get the new local exit root from the new L2 block
-            let mut executor_get_ler =
-                HostExecutor::new(provider_l2.clone(), block_number_final).await?;
+        // 3. Get the new local exit root from the new L2 block
+        let mut executor_get_ler =
+            HostExecutor::new(provider_l2.clone(), block_number_final).await?;
 
-            let new_ler_bytes = executor_get_ler
-                .execute(ContractInput::new_call(
-                    GER_ADDR,
-                    Address::default(),
-                    GlobalExitRootManagerL2SovereignChain::lastRollupExitRootCall {},
-                ))
-                .await?;
+        let new_ler_bytes = executor_get_ler
+            .execute(ContractInput::new_call(
+                ger_address,
+                Address::default(),
+                GlobalExitRootManagerL2SovereignChain::lastRollupExitRootCall {},
+            ))
+            .await?;
 
-            let new_ler =
-                GlobalExitRootManagerL2SovereignChain::lastRollupExitRootCall::abi_decode_returns(
-                    &new_ler_bytes,
-                    true,
-                )?
-                .lastRollupExitRoot;
+        let new_ler =
+            GlobalExitRootManagerL2SovereignChain::lastRollupExitRootCall::abi_decode_returns(
+                &new_ler_bytes,
+                true,
+            )?
+            .lastRollupExitRoot;
 
-            let executor_get_ler_sketch = executor_get_ler.finalize().await?;
+        let expected_new_ler: FixedBytes<32> = {
+            let bytes = hex::decode(local_exit_root.trim_start_matches("0x")).unwrap();
+            let arr: [u8; 32] = bytes.try_into().unwrap();
+            arr.into()
+        };
+        assert_eq!(new_ler, expected_new_ler);
 
-            // Commit the bridge proof.
-            BridgeInput {
-                ger_addr: GER_ADDR,
-                prev_l2_block_hash: executor_prev_hash_chain_sketch.header.hash_slow(),
-                new_l2_block_hash: executor_new_hash_chain.header.hash_slow(),
-                new_local_exit_root: new_ler,
-                l1_info_root: FixedBytes::default(),
-                bridge_witness: BridgeWitness {
-                    injected_gers: imported_gers,
-                    prev_hash_chain_sketch: executor_prev_hash_chain_sketch.clone(),
-                    new_hash_chain_sketch: executor_new_hash_chain.clone(),
-                    new_ler_sketch: executor_get_ler_sketch,
-                },
-            }
+        let executor_get_ler_sketch = executor_get_ler.finalize().await?;
+
+        // Commit the bridge proof.
+        let bridge_data_input = BridgeInput {
+            ger_addr: ger_address,
+            prev_l2_block_hash: executor_prev_hash_chain_sketch.header.hash_slow(),
+            new_l2_block_hash: executor_new_hash_chain.header.hash_slow(),
+            new_local_exit_root: expected_new_ler,
+            l1_info_root: {
+                let bytes = hex::decode(l1_info_root.trim_start_matches("0x")).unwrap();
+                let arr: [u8; 32] = bytes.try_into().unwrap();
+                arr.into()
+            },
+            bridge_witness: BridgeWitness {
+                injected_gers: imported_l1_info_tree_leafs,
+                prev_hash_chain_sketch: executor_prev_hash_chain_sketch.clone(),
+                new_hash_chain_sketch: executor_new_hash_chain.clone(),
+                new_ler_sketch: executor_get_ler_sketch,
+            },
         };
 
         assert!(bridge_data_input.verify().is_ok());
