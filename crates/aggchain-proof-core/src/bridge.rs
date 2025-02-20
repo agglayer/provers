@@ -64,7 +64,7 @@ pub struct BridgeInput {
 impl BridgeInput {
     pub fn verify(&self) -> Result<(), BridgeConstraintsError> {
         // TODO: handle failed calls
-        
+
         // Verify bridge state:
 
         // 1. Get the state of the hash chain of the previous block on L2
@@ -217,7 +217,7 @@ pub fn compute_ger_hash_chain(
 
 #[cfg(test)]
 mod tests {
-    use alloy_primitives::{address, hex};
+    use alloy_primitives::hex;
     use alloy_provider::RootProvider;
     use alloy_rpc_types::BlockNumberOrTag;
     use sp1_cc_host_executor::HostExecutor;
@@ -250,7 +250,8 @@ mod tests {
         // Extract values from JSON
         let initial_block_number = json_data["initialBlockNumber"].as_u64().unwrap();
         let final_block_number = json_data["finalBlockNumber"].as_u64().unwrap();
-        let ger_address = Address::from_str(json_data["gerSovereignAddress"].as_str().unwrap()).unwrap();
+        let ger_address =
+            Address::from_str(json_data["gerSovereignAddress"].as_str().unwrap()).unwrap();
         let global_exit_roots = &json_data["globalExitRoots"];
         let local_exit_root = json_data["localExitRoot"].as_str().unwrap();
         let l1_info_root = json_data["l1InfoRoot"].as_str().unwrap();
@@ -371,6 +372,13 @@ mod tests {
             )?
             .lastRollupExitRoot;
 
+        let expected_new_ler: FixedBytes<32> = {
+            let bytes = hex::decode(local_exit_root.trim_start_matches("0x")).unwrap();
+            let arr: [u8; 32] = bytes.try_into().unwrap();
+            arr.into()
+        };
+        assert_eq!(new_ler, expected_new_ler);
+
         let executor_get_ler_sketch = executor_get_ler.finalize().await?;
 
         // Commit the bridge proof.
@@ -378,11 +386,7 @@ mod tests {
             ger_addr: ger_address,
             prev_l2_block_hash: executor_prev_hash_chain_sketch.header.hash_slow(),
             new_l2_block_hash: executor_new_hash_chain.header.hash_slow(),
-            new_local_exit_root: {
-                let bytes = hex::decode(local_exit_root.trim_start_matches("0x")).unwrap();
-                let arr: [u8; 32] = bytes.try_into().unwrap();
-                arr.into()
-            },
+            new_local_exit_root: expected_new_ler,
             l1_info_root: {
                 let bytes = hex::decode(l1_info_root.trim_start_matches("0x")).unwrap();
                 let arr: [u8; 32] = bytes.try_into().unwrap();
