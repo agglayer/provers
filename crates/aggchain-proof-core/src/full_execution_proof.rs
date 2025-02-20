@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest as Sha256Digest, Sha256};
 use sp1_zkvm::lib::utils::words_to_bytes_le;
 
-use crate::{digest::keccak256_combine, digest::Digest, error::ProofError};
+use crate::{error::ProofError, keccak::digest::Digest, keccak::keccak256_combine};
 
 type Vkey = [u32; 8];
 
@@ -37,8 +37,8 @@ impl FepPublicValues {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FepWithPublicValues {
-    public_values: FepPublicValues,
-    aggregation_vkey: Vkey,
+    pub(crate) public_values: FepPublicValues,
+    pub(crate) aggregation_vkey: Vkey,
 }
 
 impl FepWithPublicValues {
@@ -53,6 +53,7 @@ impl FepWithPublicValues {
             self.public_values.range_vkey_commitment.as_slice(),
             words_to_bytes_le(&self.aggregation_vkey).as_slice(),
         ])
+        .0
     }
 
     /// Verify the SP1 proof
