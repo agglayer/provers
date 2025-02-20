@@ -1,6 +1,4 @@
-use alloy_primitives::keccak256;
 use serde::{Deserialize, Serialize};
-use serde_big_array::BigArray;
 #[cfg(target_os = "zkvm")]
 use sha2::{Digest as Sha256Digest, Sha256};
 use sp1_zkvm::lib::utils::words_to_bytes_le;
@@ -9,19 +7,22 @@ use crate::{error::ProofError, keccak::digest::Digest, keccak::keccak256_combine
 
 type Vkey = [u32; 8];
 
+// Hardcoded for now, might see if we might need it as input
+pub const OUTPUT_ROOT_VERSION: [u8; 32] = [0; 32];
+
 /// Public values to verify the FEP.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FepPublicValues {
     pub l1_head: Digest,
-    pub l2_pre_root: Digest,
-    pub claim_root: Digest,
     pub claim_block_num: u32,
     pub rollup_config_hash: Digest,
     pub range_vkey_commitment: Digest,
-    #[serde(with = "BigArray")]
-    pub l2_pre_root_bytes: [u8; 128],
-    #[serde(with = "BigArray")]
-    pub claim_root_bytes: [u8; 128],
+    pub prev_state_root: [u8; 32],
+    pub prev_withdrawal_storage_root: [u8; 32],
+    pub prev_block_hash: [u8; 32],
+    pub new_state_root: [u8; 32],
+    pub new_withdrawal_storage_root: [u8; 32],
+    pub new_block_hash: [u8; 32],
 }
 
 #[cfg(target_os = "zkvm")]
@@ -52,8 +53,8 @@ impl FepWithPublicValues {
     pub fn aggchain_params(&self) -> [u8; 32] {
         keccak256_combine([
             self.public_values.l1_head.as_slice(),
-            self.public_values.l2_pre_root.as_slice(),
-            self.public_values.claim_root.as_slice(),
+            self.compute_l2_pre_root_bytes().as_slice(),
+            self.computed_claim_root_bytes().as_slice(),
             &self.public_values.claim_block_num.to_be_bytes(),
             self.public_values.rollup_config_hash.as_slice(),
             self.public_values.range_vkey_commitment.as_slice(),
@@ -80,26 +81,28 @@ impl FepWithPublicValues {
 }
 
 impl FepWithPublicValues {
-    // return the blockhashes given the l2_pre_root and claim_root
     // Follow this encoding: https://github.com/op-rs/kona/blob/161547c73aa326a924b79cca5d811a202c5c45a0/crates/proof/executor/src/executor/mod.rs#L448-L453
-    pub fn get_block_hashes(&self) -> Result<(Digest, Digest), ProofError> {
-        let computed_l2_pre_root: alloy_primitives::FixedBytes<32> =
-            keccak256(self.public_values.l2_pre_root_bytes);
-        if computed_l2_pre_root != self.public_values.l2_pre_root.0 {
-            return Err(ProofError::InvalidBlockHash("l2_pre_root mismatch".into()));
-        }
-        let computed_claim_root = keccak256(self.public_values.claim_root_bytes);
-        if computed_claim_root != self.public_values.claim_root.0 {
-            return Err(ProofError::InvalidBlockHash("claim_root mismatch".into()));
-        }
+    pub fn compute_l2_pre_root_bytes(&self) -> [u8; 32] {
+        keccak256_combine([
+            OUTPUT_ROOT_VERSION,
+            self.public_values.prev_state_root,
+            self.public_values.prev_withdrawal_storage_root,
+            self.public_values.prev_block_hash,
+        ])
+        .0
+    }
 
-        let prev_block_hash: [u8; 32] = self.public_values.l2_pre_root_bytes[96..128]
-            .try_into()
-            .expect("slice with correct length");
-        let new_block_hash: [u8; 32] = self.public_values.claim_root_bytes[96..128]
-            .try_into()
-            .expect("slice with correct length");
+    pub fn computed_claim_root_bytes(&self) -> [u8; 32] {
+        keccak256_combine([
+            OUTPUT_ROOT_VERSION,
+            self.public_values.new_state_root,
+            self.public_values.new_withdrawal_storage_root,
+            self.public_values.new_block_hash,
+        ])
+        .0
+    }
 
-        Ok((prev_block_hash.into(), new_block_hash.into()))
+    pub fn get_block_hashes(&self) -> Result<([u8; 32], [u8; 32]), ProofError> {
+        Ok((self.public_values.prev_block_hash, self.public_values.new_block_hash))
     }
 }
