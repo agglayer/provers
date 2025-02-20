@@ -67,10 +67,10 @@ impl AggchainProofWitness {
 
         Ok(BridgeInput {
             ger_addr: L2_GER_ADDR, // set as constant for now
-            prev_l2_block_hash: alloy_primitives::FixedBytes::from(prev_blockhash.0),
-            new_l2_block_hash: alloy_primitives::FixedBytes::from(new_blockhash.0),
-            new_local_exit_root: alloy_primitives::FixedBytes::from(self.new_local_exit_root.0),
-            l1_info_root: alloy_primitives::FixedBytes::from(self.l1_info_root.0),
+            prev_l2_block_hash: alloy_primitives::FixedBytes::from(prev_blockhash),
+            new_l2_block_hash: alloy_primitives::FixedBytes::from(new_blockhash),
+            new_local_exit_root: alloy_primitives::FixedBytes::from(&self.new_local_exit_root.0),
+            l1_info_root: alloy_primitives::FixedBytes::from(&self.l1_info_root.0),
             bridge_witness: self.bridge_witness.clone(),
         })
     }
