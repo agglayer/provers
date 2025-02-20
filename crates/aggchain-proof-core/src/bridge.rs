@@ -255,13 +255,11 @@ mod tests {
         // Extract values from JSON
         let initial_block_number = json_data["initialBlockNumber"].as_u64().unwrap();
         let final_block_number = json_data["finalBlockNumber"].as_u64().unwrap();
-        let ger_sovereign_address = json_data["gerSovereignAddress"].as_str().unwrap();
+        let ger_address = Address::from_str(json_data["gerSovereignAddress"].as_str().unwrap()).unwrap();
         let global_exit_roots = &json_data["globalExitRoots"];
         let local_exit_root = json_data["localExitRoot"].as_str().unwrap();
         let l1_info_root = json_data["l1InfoRoot"].as_str().unwrap();
-        let ger_address = Address::from_str(ger_sovereign_address).unwrap();
         let chain_id_l2: u64 = json_data["chainId"].as_u64().unwrap();
-
 
         let imported_l1_info_tree_leafs: Vec<InsertedGER> = global_exit_roots
             .as_array()
