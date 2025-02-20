@@ -64,11 +64,7 @@ pub struct BridgeInput {
 impl BridgeInput {
     pub fn verify(&self) -> Result<(), BridgeConstraintsError> {
         // TODO: handle failed calls
-        // TODO: explore other decodings for optimizing performance
-        // let sbridge_input_bytes = sp1_zkvm::io::read::<Vec<u8>>();
-        // let input =
-        // bincode::deserialize::<BridgeInput>(&sbridge_input_bytes).unwrap();
-
+        
         // Verify bridge state:
 
         // 1. Get the state of the hash chain of the previous block on L2
@@ -165,7 +161,6 @@ impl BridgeInput {
         }
 
         // 4.2 Check that the new local exit root returned from L2 matches the expected
-        // value in the input.
         if new_ler != self.new_local_exit_root {
             return Err(BridgeConstraintsError::MismatchLocalExitRoot {
                 retrieved: self.new_local_exit_root,
@@ -173,7 +168,7 @@ impl BridgeInput {
             });
         }
 
-        // 4.3 Check Gers are inside of L1InfoRoot TODO
+        // 4.3 Check Gers are inside of L1InfoRoot
         self.verify_inserted_gers()?;
 
         // 4.4. Check the block hashes of sketches matches the inputs
