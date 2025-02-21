@@ -261,7 +261,7 @@ mod tests {
     use crate::local_exit_tree::proof::LETMerkleProof;
 
     #[tokio::test(flavor = "multi_thread")]
-    //#[ignore = "Unable to properly test with mock yet"]
+    #[ignore = "Unable to properly test with mock yet"]
     async fn test_bridge_contraints() -> Result<(), Box<dyn std::error::Error>> {
         use serde_json::Value;
         use std::fs::File;
