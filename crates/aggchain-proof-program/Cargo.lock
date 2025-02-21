@@ -1359,9 +1359,9 @@ dependencies = [
 
 [[package]]
 name = "sp1-zkvm"
-version = "4.1.1"
+version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f0acfbdacfeaad17367dd81e0019d7789fde3b5a9af94f0f20aed2d9dc9e4e2"
+checksum = "78c9380c49efdf34e6454a735922f794bb1d4b11114c302675087f110c207b56"
 dependencies = [
  "cfg-if",
  "getrandom 0.2.15",

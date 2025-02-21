@@ -13,4 +13,4 @@ tiny-keccak = { git = "https://github.com/sp1-patches/tiny-keccak", tag = "patch
     "keccak",
 ] }
 
-sp1-zkvm = { version = "4.1.0", features = ["verify"] }
+sp1-zkvm = { version = "=4.0.0", features = ["verify"] }
