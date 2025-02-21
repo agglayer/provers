@@ -58,6 +58,7 @@ hyper = "1.5.2"
 jsonrpsee = { version = "0.24.7", features = ["full"] }
 lazy_static = "1.5.0"
 parking_lot = "0.12.3"
+pbjson = "0.7.0"
 prost = "0.13.4"
 reqwest = "0.12"
 serde = { version = "1.0.216", features = ["derive"] }

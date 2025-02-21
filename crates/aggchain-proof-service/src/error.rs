@@ -6,6 +6,9 @@ pub enum Error {
     #[error("Unable to setup proposer service")]
     ProposerServiceInitFailed(#[source] proposer_service::Error),
 
+    #[error("Unable to setup custom chain data builder")]
+    CustomChainDataBuilderError(#[source] crate::service::customchaindata_builder::Error),
+
     #[error("Proposer service returned an error during operation")]
     ProposerServiceError(#[source] proposer_service::Error),
 

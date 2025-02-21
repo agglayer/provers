@@ -1,0 +1,1 @@
+pub const AGGCHAIN_PROOF_PROGRAM_VERSION: u16 = 0;

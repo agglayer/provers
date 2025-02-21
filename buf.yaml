@@ -2,6 +2,7 @@ version: v2
 
 modules:
   - path: proto
+  # - path: vendor
 
 lint:
   use:
@@ -11,3 +12,6 @@ lint:
 breaking:
   use:
     - FILE
+
+deps:
+  - buf.build/agglayer/agglayer

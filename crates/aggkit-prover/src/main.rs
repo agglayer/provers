@@ -36,7 +36,7 @@ fn main() -> anyhow::Result<()> {
 
     _ = ProverEngine::builder()
         .add_rpc_service(aggchain_proof_service)
-        .add_reflection_service(aggkit_prover_types::FILE_DESCRIPTOR_SET)
+        .add_reflection_service(aggkit_prover_types::v1::FILE_DESCRIPTOR_SET)
         .set_rpc_runtime(prover_runtime)
         .set_metrics_runtime(metrics_runtime)
         .set_cancellation_token(global_cancellation_token)

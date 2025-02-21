@@ -30,5 +30,6 @@ alloy.workspace = true
 dotenvy.workspace = true
 serde_json.workspace = true
 sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "c9bdace" }
+sp1-sdk = { workspace = true }
 tokio.workspace = true
 url.workspace = true
