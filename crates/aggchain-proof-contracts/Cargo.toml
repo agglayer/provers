@@ -7,14 +7,18 @@ license.workspace = true
 [dependencies]
 alloy.workspace = true
 anyhow.workspace = true
-futures.workspace = true
+async-trait.workspace = true
+jsonrpsee.workspace = true
+serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 tracing.workspace = true
 url.workspace = true
 
+aggchain-proof-core.workspace = true
 prover-alloy.workspace = true
+prover-utils.workspace = true
 
 [lints]
 workspace = true
