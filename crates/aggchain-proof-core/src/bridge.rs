@@ -164,13 +164,12 @@ impl BridgeInput {
             .unwrap();
 
         // Decode new local exit root from the result
-        let new_ler =
-        BridgeL2SovereignChain::getRootCall ::abi_decode_returns(
-                &new_ler_call_output.contractOutput,
-                true,
-            )
-            .unwrap()
-            .lastRollupExitRoot;
+        let new_ler = BridgeL2SovereignChain::getRootCall::abi_decode_returns(
+            &new_ler_call_output.contractOutput,
+            true,
+        )
+        .unwrap()
+        .lastRollupExitRoot;
 
         // 4. Check consistency of the calls
 
