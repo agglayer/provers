@@ -8,17 +8,12 @@ license.workspace = true
 anyhow.workspace = true
 aggchain-proof-core.workspace = true
 bincode.workspace = true
+pbjson.workspace = true
 prost = "0.13.4"
 serde.workspace = true
 thiserror.workspace = true
 tonic = { workspace = true, default-features = false, features = [
     "prost",
     "codegen",
-    "transport",
-] }
-
-[build-dependencies]
-tonic-build = { version = "0.12", default-features = false, features = [
-    "prost",
     "transport",
 ] }
