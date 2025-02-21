@@ -19,12 +19,9 @@ pub struct GenerateAggchainProofRequest {
     pub l1_info_tree_merkle_proof: ::prost::alloc::vec::Vec<
         ::prost::alloc::vec::Vec<u8>,
     >,
-    /// Map of the GER with their inclusion proof. Note: the GER (string) is a base64 encoded string of the GER digest.
+    /// Map of the GER with their ger leaf. Note: the GER (string) is a base64 encoded string of the GER digest.
     #[prost(map = "string, message", tag = "6")]
-    pub ger_inclusion_proofs: ::std::collections::HashMap<
-        ::prost::alloc::string::String,
-        InclusionProof,
-    >,
+    pub ger_leaves: ::std::collections::HashMap<::prost::alloc::string::String, GerLeaf>,
     /// bridge exits
     #[prost(message, repeated, tag = "7")]
     pub imported_bridge_exits: ::prost::alloc::vec::Vec<ImportedBridgeExit>,
@@ -49,6 +46,15 @@ pub struct GenerateAggchainProofResponse {
     pub custom_chain_data: ::prost::alloc::vec::Vec<u8>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GerLeaf {
+    /// leaf data
+    #[prost(message, optional, tag = "1")]
+    pub l1_info_tree_leaf: ::core::option::Option<L1InfoTreeLeaf>,
+    /// Inclusion proof
+    #[prost(message, optional, tag = "2")]
+    pub inclusion_proof: ::core::option::Option<InclusionProof>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct InclusionProof {
     /// Siblings.
     #[prost(bytes = "vec", repeated, tag = "1")]
@@ -63,17 +69,17 @@ pub struct L1InfoTreeLeaf {
     #[prost(uint64, tag = "2")]
     pub timestamp: u64,
     /// mainnet exit root hash
-    #[prost(bytes = "vec", tag = "3")]
-    pub mainnet_exit_root_hash: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", optional, tag = "3")]
+    pub mainnet_exit_root_hash: ::core::option::Option<::prost::alloc::vec::Vec<u8>>,
     /// rollup exit root hash
-    #[prost(bytes = "vec", tag = "4")]
-    pub rollup_exit_root_hash: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", optional, tag = "4")]
+    pub rollup_exit_root_hash: ::core::option::Option<::prost::alloc::vec::Vec<u8>>,
     /// global exit root hash
     #[prost(bytes = "vec", tag = "5")]
     pub global_exit_root_hash: ::prost::alloc::vec::Vec<u8>,
     /// leaf hash
-    #[prost(bytes = "vec", tag = "6")]
-    pub leaf_hash: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", optional, tag = "6")]
+    pub leaf_hash: ::core::option::Option<::prost::alloc::vec::Vec<u8>>,
     /// leaf index
     #[prost(uint32, tag = "7")]
     pub l1_info_tree_index: u32,
