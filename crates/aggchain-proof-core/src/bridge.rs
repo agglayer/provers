@@ -12,7 +12,13 @@ pub const L2_GER_ADDR: Address = address!("a40d5f56745a118d0906a34e69aec8c0db1cb
 sol! (
     interface GlobalExitRootManagerL2SovereignChain {
         function insertedGERHashChain() public view returns (bytes32 hashChain);
-        function lastRollupExitRoot() public view returns (bytes32 lastRollupExitRoot);
+        function bridgeAddress() public view returns (address bridgeAddress);
+    }
+);
+
+sol! (
+    interface BridgeL2SovereignChain {
+        function getRoot() public view returns (bytes32 lastRollupExitRoot);
     }
 );
 
@@ -48,6 +54,7 @@ pub struct BridgeWitness {
     pub injected_gers: Vec<InsertedGER>,
     pub prev_hash_chain_sketch: EVMStateSketch,
     pub new_hash_chain_sketch: EVMStateSketch,
+    pub get_bridge_address_sketch: EVMStateSketch,
     pub new_ler_sketch: EVMStateSketch,
 }
 
@@ -75,6 +82,7 @@ impl BridgeInput {
 
         let hash_chain_calldata =
             GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {};
+
         let get_prev_hash_chain_input = ContractInput::new_call(
             self.ger_addr,
             Address::default(),
@@ -116,14 +124,38 @@ impl BridgeInput {
             .unwrap()
             .hashChain;
 
-        // 3. Get the new local exit root
+        // 3.1 Get the new local exit root
+        let executor_get_bridge_address: ClientExecutor =
+            ClientExecutor::new(&self.bridge_witness.get_bridge_address_sketch).unwrap();
+
+        let get_bridge_address_contract_input: ContractInput = ContractInput::new_call(
+            self.ger_addr,
+            Address::default(),
+            GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
+        );
+
+        // Execute the static call
+        let get_bridge_address_call_output = executor_get_bridge_address
+            .execute(get_bridge_address_contract_input)
+            .unwrap();
+
+        // Decode new local exit root from the result
+        let bridge_address =
+            GlobalExitRootManagerL2SovereignChain::bridgeAddressCall::abi_decode_returns(
+                &get_bridge_address_call_output.contractOutput,
+                true,
+            )
+            .unwrap()
+            .bridgeAddress;
+
+        // 3.2 Get the new local exit root
         let executor_new_ler: ClientExecutor =
             ClientExecutor::new(&self.bridge_witness.new_ler_sketch).unwrap();
 
         let get_new_ler_contract_input: ContractInput = ContractInput::new_call(
-            self.ger_addr,
+            bridge_address,
             Address::default(),
-            GlobalExitRootManagerL2SovereignChain::lastRollupExitRootCall {},
+            BridgeL2SovereignChain::getRootCall {},
         );
 
         // Execute the static call
@@ -133,7 +165,7 @@ impl BridgeInput {
 
         // Decode new local exit root from the result
         let new_ler =
-            GlobalExitRootManagerL2SovereignChain::lastRollupExitRootCall::abi_decode_returns(
+        BridgeL2SovereignChain::getRootCall ::abi_decode_returns(
                 &new_ler_call_output.contractOutput,
                 true,
             )
@@ -353,24 +385,42 @@ mod tests {
 
         let executor_new_hash_chain = executor_new_hash_chain.finalize().await?;
 
-        // 3. Get the new local exit root from the new L2 block
+        // 3. Get the bridge address
+        let mut executor_get_bridge_address =
+            HostExecutor::new(provider_l2.clone(), block_number_final).await?;
+
+        let bridge_address_bytes = executor_get_bridge_address
+            .execute(ContractInput::new_call(
+                ger_address,
+                Address::default(),
+                GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
+            ))
+            .await?;
+
+        let bridge_address =
+            GlobalExitRootManagerL2SovereignChain::bridgeAddressCall::abi_decode_returns(
+                &bridge_address_bytes,
+                true,
+            )?
+            .bridgeAddress;
+
+        let executor_get_bridge_address_sketch = executor_get_bridge_address.finalize().await?;
+
+        // 4. Get the new local exit root from the bridge on the new L2 block
         let mut executor_get_ler =
             HostExecutor::new(provider_l2.clone(), block_number_final).await?;
 
         let new_ler_bytes = executor_get_ler
             .execute(ContractInput::new_call(
-                ger_address,
+                bridge_address,
                 Address::default(),
-                GlobalExitRootManagerL2SovereignChain::lastRollupExitRootCall {},
+                BridgeL2SovereignChain::getRootCall {},
             ))
             .await?;
 
         let new_ler =
-            GlobalExitRootManagerL2SovereignChain::lastRollupExitRootCall::abi_decode_returns(
-                &new_ler_bytes,
-                true,
-            )?
-            .lastRollupExitRoot;
+            BridgeL2SovereignChain::getRootCall::abi_decode_returns(&new_ler_bytes, true)?
+                .lastRollupExitRoot;
 
         let expected_new_ler: FixedBytes<32> = {
             let bytes = hex::decode(local_exit_root.trim_start_matches("0x")).unwrap();
@@ -396,6 +446,7 @@ mod tests {
                 injected_gers: imported_l1_info_tree_leafs,
                 prev_hash_chain_sketch: executor_prev_hash_chain_sketch.clone(),
                 new_hash_chain_sketch: executor_new_hash_chain.clone(),
+                get_bridge_address_sketch: executor_get_bridge_address_sketch,
                 new_ler_sketch: executor_get_ler_sketch,
             },
         };
