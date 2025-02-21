@@ -1,6 +1,7 @@
 extend = [
     { path = "Makefile.ci.toml" },
     { path = "Makefile.e2e.toml" },
+    { path = "Makefile.elf.toml" },
     { path = "Makefile.test.toml" },
 ]
 

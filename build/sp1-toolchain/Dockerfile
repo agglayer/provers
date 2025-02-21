@@ -1,4 +1,4 @@
-ARG RUST_VERSION=1.81.0
+ARG RUST_VERSION=1.82.0
 # Base image with rust compiler & tools
 FROM docker.io/library/rust:${RUST_VERSION}
 

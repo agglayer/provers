@@ -5,18 +5,18 @@ SP1_TOOLCHAIN_HASH_aarch64 = "68bc4a29237e2eb862da36324d19cf835bb93f45106ad206ba
 SP1_TOOLCHAIN_HASH_x86_64 = "a899ff54e43a1fdeaf6166bf97dace401e9c99b20842d3cf42cbe5c5dc35823e"
 SP1_ARCH = "x86_64"
 
-[tasks.dummy-elf]
-description = "Install dummy-program ELF file"
-dependencies = ["dummy-elf-build"]
-cwd = "crates/prover-dummy-program"
+[tasks.ap-elf]
+description = "Install aggchain proof ELF file"
+dependencies = ["ap-elf-build"]
+cwd = "crates/aggchain-proof-program"
 command = "cp"
 args = [
-    "target/riscv32im-succinct-zkvm-elf/release/prover-dummy-program",
+    "target/riscv32im-succinct-zkvm-elf/release/aggchain-proof-program",
     "elf/riscv32im-succinct-zkvm-elf",
 ]
 
-[tasks.dummy-elf-build]
-description = "Compile dummy program ELF file"
+[tasks.ap-elf-build]
+description = "Compile aggchain proof ELF file"
 dependencies = ["sp1-toolchain-image"]
 command = "docker"
 args = [
@@ -24,9 +24,9 @@ args = [
     "--platform=linux/amd64",
     "--rm",
     "--env",
-    "CARGO_ENCODED_RUSTFLAGS=-C\u001fpasses=loweratomic\u001f-C\u001flink-arg=-Ttext=0x00200800\u001f-C\u001fpanic=abort",
+    "CARGO_ENCODED_RUSTFLAGS=-C\u001fpasses=lower-atomic\u001f-C\u001flink-arg=-Ttext=0x00200800\u001f-C\u001fpanic=abort",
     "-v${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}:/sp1/source",
-    "-w/sp1/source/crates/prover-dummy-program",
+    "-w/sp1/source/crates/aggchain-proof-program",
     "sp1:apbuild",
     "cargo",
     "build",
