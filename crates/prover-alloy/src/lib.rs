@@ -100,6 +100,10 @@ pub fn default_l1_url() -> Url {
     Url::from_str("http://anvil-mock-l1-rpc:8545").unwrap()
 }
 
-pub fn default_l2_url() -> Url {
+pub fn default_l2_el_url() -> Url {
     Url::from_str("http://anvil-mock-l2-rpc:8545").unwrap()
+}
+
+pub fn default_l2_cl_url() -> Url {
+    Url::from_str("http://rollup-node-mock-l2-rpc:8545").unwrap()
 }

@@ -20,4 +20,16 @@ pub enum Error {
 
     #[error("Unable to setup async engine")]
     AsyncEngineSetupError(#[source] std::io::Error),
+
+    #[error("Unable to create HTTP RPC rollup node client")]
+    RollupNodeInitError(#[source] jsonrpsee::core::ClientError),
+
+    #[error("Error retrieving l2 output at block from the node")]
+    L2OutputAtBlockRetrievalError(#[source] jsonrpsee::core::ClientError),
+
+    #[error("L2 output at block value is missing, field {0}")]
+    L2OutputAtBlockValueMissing(String),
+
+    #[error("Invalid L2 output at block, field {0}")]
+    L2OutputAtBlockInvalidValue(String, #[source] alloy::hex::FromHexError),
 }
