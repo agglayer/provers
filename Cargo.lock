@@ -54,6 +54,7 @@ dependencies = [
  "alloy",
  "anyhow",
  "futures",
+ "jsonrpsee",
  "prover-alloy",
  "serde_json",
  "thiserror 2.0.11",

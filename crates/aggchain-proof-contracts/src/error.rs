@@ -17,4 +17,16 @@ pub enum Error {
 
     #[error("Error retrieving local exit root")]
     LocalExitRootError(#[source] alloy::contract::Error),
+
+    #[error("Unable to create HTTP RPC rollup node client")]
+    RollupNodeInitError(#[source] jsonrpsee::core::ClientError),
+
+    #[error("Error retrieving l2 output root from the node")]
+    L2OutputRootRetrievalError(#[source] jsonrpsee::core::ClientError),
+
+    #[error("L2 output root value is missing")]
+    L2OutputRootValueMissing,
+
+    #[error("Invalid L2 output root value")]
+    L2OutputRootInvalidValue(#[source] alloy::hex::FromHexError),
 }
