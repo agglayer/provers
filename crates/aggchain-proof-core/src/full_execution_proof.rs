@@ -30,8 +30,8 @@ impl FepPublicValues {
     pub fn hash(&self) -> [u8; 32] {
         let public_values = [
             self.l1_head.as_slice(),
-            self.l2_pre_root.as_slice(),
-            self.claim_root.as_slice(),
+            self.compute_l2_pre_root_bytes().as_slice(),
+            self.computed_claim_root_bytes().as_slice(),
             &self.claim_block_num.to_be_bytes(),
             self.rollup_config_hash.as_slice(),
             self.range_vkey_commitment.as_slice(),
