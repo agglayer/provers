@@ -1,11 +1,15 @@
 mod error;
 
+use std::str::FromStr;
 use std::sync::Arc;
 
 use alloy::network::Ethereum;
 use alloy::primitives::Address;
 use alloy::primitives::{address, B256};
 use alloy::sol;
+use jsonrpsee::core::client::ClientT;
+use jsonrpsee::http_client::HttpClient;
+use jsonrpsee::rpc_params;
 use prover_alloy::{AlloyFillProvider, AlloyProvider};
 use tracing::info;
 use url::Url;
@@ -49,8 +53,11 @@ pub struct AggchainProofContractsClient {
     /// Mainnet node rpc client.
     _l1_client: Arc<AlloyProvider>,
 
-    /// L2 node rpc client.
-    _l2_client: Arc<AlloyProvider>,
+    /// L2 rpc execution layer client.
+    _l2_el_client: Arc<AlloyProvider>,
+
+    /// L2 rpc consensus layer client (rollup node).
+    l2_cl_client: Arc<HttpClient>,
 
     /// Global exit root manager for smart sovereign chain
     /// contract on the l2 network.
@@ -61,7 +68,11 @@ pub struct AggchainProofContractsClient {
 }
 
 impl AggchainProofContractsClient {
-    pub fn new(l1_rpc_endpoint: &Url, l2_rpc_endpoint: &Url) -> Result<Self, crate::Error> {
+    pub fn new(
+        l1_rpc_endpoint: &Url,
+        l2_el_rpc_endpoint: &Url,
+        l2_cl_rpc_endpoint: &Url,
+    ) -> Result<Self, crate::Error> {
         let l1_client = Arc::new(
             AlloyProvider::new(
                 l1_rpc_endpoint,
@@ -71,19 +82,25 @@ impl AggchainProofContractsClient {
             .map_err(Error::ProviderInitializationError)?,
         );
 
-        let l2_client = Arc::new(
+        let l2_el_client = Arc::new(
             AlloyProvider::new(
-                l2_rpc_endpoint,
+                l2_el_rpc_endpoint,
                 prover_alloy::DEFAULT_HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
                 prover_alloy::DEFAULT_HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
             )
             .map_err(Error::ProviderInitializationError)?,
         );
 
+        let l2_cl_client = Arc::new(
+            HttpClient::builder()
+                .build(l2_cl_rpc_endpoint)
+                .map_err(Error::RollupNodeInitError)?,
+        );
+
         // Create client for global exit root manager smart contract.
         let global_exit_root_manager_l2 = GlobalExitRootManagerL2SovereignChain::new(
             GLOBAL_EXIT_ROOT_MANAGER_L2_SOVEREIGN_CHAIN_ADDRESS,
-            l2_client.provider().clone(),
+            l2_el_client.provider().clone(),
         );
 
         // Retrieve PolygonZkEVMBridgeV2 contract address from the global exit root
@@ -106,7 +123,7 @@ impl AggchainProofContractsClient {
         // Create client for Polygon zkevm bridge v2 smart contract.
         let polygon_zkevm_bridge_v2 = PolygonZkevmBridgeV2::new(
             polygon_zkevm_bridge_address._0,
-            l2_client.provider().clone(),
+            l2_el_client.provider().clone(),
         );
 
         info!(global_exit_root_manager_l2=%GLOBAL_EXIT_ROOT_MANAGER_L2_SOVEREIGN_CHAIN_ADDRESS,
@@ -115,7 +132,8 @@ impl AggchainProofContractsClient {
 
         Ok(Self {
             _l1_client: l1_client,
-            _l2_client: l2_client,
+            _l2_el_client: l2_el_client,
+            l2_cl_client,
             _global_exit_root_manager_l2: global_exit_root_manager_l2,
             polygon_zkevm_bridge_v2,
         })
@@ -137,5 +155,25 @@ impl AggchainProofContractsClient {
             .map_err(Error::LocalExitRootError)?;
 
         Ok(result._0)
+    }
+
+    pub async fn get_l2_output_root(&self, block_number: u64) -> Result<B256, Error> {
+        let params = rpc_params![format!("0x{block_number:x}")];
+        let json: serde_json::Value = self
+            .l2_cl_client
+            .request("optimism_outputAtBlock", params)
+            .await
+            .map_err(Error::L2OutputRootRetrievalError)?;
+
+        let output_root_str = json
+            .get("outputRoot")
+            .ok_or(Error::L2OutputRootValueMissing)?
+            .as_str()
+            .ok_or(Error::L2OutputRootValueMissing)?;
+
+        let output_root =
+            B256::from_str(output_root_str).map_err(Error::L2OutputRootInvalidValue)?;
+
+        Ok(output_root)
     }
 }
