@@ -1,8 +1,8 @@
 [env]
-RUST_VERSION = "1.81.0"
-SP1_VERSION = "v1.81.0"
+RUST_VERSION = "1.82.0"
+SP1_VERSION = "succinct-1.82.0"
 SP1_TOOLCHAIN_HASH_aarch64 = "68bc4a29237e2eb862da36324d19cf835bb93f45106ad206ba17836fb7862f32"
-SP1_TOOLCHAIN_HASH_x86_64 = "f8b978b44fdedfd9f3dfea127ee11f13ee2fdaaffdea2619489dff7bbe791cce"
+SP1_TOOLCHAIN_HASH_x86_64 = "a899ff54e43a1fdeaf6166bf97dace401e9c99b20842d3cf42cbe5c5dc35823e"
 SP1_ARCH = "x86_64"
 
 [tasks.ap-elf]
@@ -24,10 +24,10 @@ args = [
     "--platform=linux/amd64",
     "--rm",
     "--env",
-    "CARGO_ENCODED_RUSTFLAGS=-C\u001fpasses=loweratomic\u001f-C\u001flink-arg=-Ttext=0x00200800\u001f-C\u001fpanic=abort",
+    "CARGO_ENCODED_RUSTFLAGS=-C\u001fpasses=lower-atomic\u001f-C\u001flink-arg=-Ttext=0x00200800\u001f-C\u001fpanic=abort",
     "-v${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}:/sp1/source",
     "-w/sp1/source/crates/aggchain-proof-program",
-    "sp1:ppbuild",
+    "sp1:apbuild",
     "cargo",
     "build",
     "--target=riscv32im-succinct-zkvm-elf",
@@ -46,7 +46,7 @@ args = [
     "--rm",
     "-it",
     "-v${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}:/sp1/source",
-    "sp1:ppbuild",
+    "sp1:apbuild",
 ]
 
 [tasks.sp1-toolchain-image-config]
@@ -69,7 +69,7 @@ args = [
     "--build-arg=SP1_VERSION",
     "--build-arg=SP1_TOOLCHAIN_HASH",
     "--build-arg=SP1_ARCH",
-    "-tsp1:ppbuild",
+    "-tsp1:apbuild",
     "-f./build/sp1-toolchain/Dockerfile",
     "./build/sp1-toolchain",
 ]
