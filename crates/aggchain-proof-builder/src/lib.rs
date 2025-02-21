@@ -100,8 +100,12 @@ impl AggchainProofBuilder {
 
         Ok(AggchainProofBuilder {
             contracts_client: Arc::new(
-                AggchainProofContractsClient::new(&config.l1_rpc_endpoint, &config.l2_rpc_endpoint)
-                    .map_err(Error::ContractsClientInitFailed)?,
+                AggchainProofContractsClient::new(
+                    &config.l1_rpc_endpoint,
+                    &config.l2_el_rpc_endpoint,
+                    &config.l2_cl_rpc_endpoint,
+                )
+                .map_err(Error::ContractsClientInitFailed)?,
             ),
             prover,
             network_id: config.network_id,
@@ -122,6 +126,16 @@ impl AggchainProofBuilder {
 
         let _new_local_exit_root = contracts_client
             .get_l2_local_exit_root(request.end_block)
+            .await
+            .map_err(Error::L2ChainDataRetrievalError)?;
+
+        let _l2_pre_root_output_at_block = contracts_client
+            .get_l2_output_at_block(request.start_block - 1)
+            .await
+            .map_err(Error::L2ChainDataRetrievalError)?;
+
+        let _claim_root_output_at_block = contracts_client
+            .get_l2_output_at_block(request.end_block)
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 

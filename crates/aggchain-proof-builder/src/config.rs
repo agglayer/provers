@@ -12,9 +12,13 @@ pub struct AggchainProofBuilderConfig {
     #[serde(default = "prover_alloy::default_l1_url")]
     pub l1_rpc_endpoint: Url,
 
+    /// JSON-RPC endpoint of the l2 execution node.
+    #[serde(default = "prover_alloy::default_l2_el_url")]
+    pub l2_el_rpc_endpoint: Url,
+
     /// JSON-RPC endpoint of the l2 rollup node.
-    #[serde(default = "prover_alloy::default_l2_url")]
-    pub l2_rpc_endpoint: Url,
+    #[serde(default = "prover_alloy::default_l2_cl_url")]
+    pub l2_cl_rpc_endpoint: Url,
 
     /// ID of the network for which the proof is generated (rollup id).
     pub network_id: u32,
@@ -34,7 +38,8 @@ impl Default for AggchainProofBuilderConfig {
     fn default() -> Self {
         AggchainProofBuilderConfig {
             l1_rpc_endpoint: prover_alloy::default_l1_url(),
-            l2_rpc_endpoint: prover_alloy::default_l2_url(),
+            l2_el_rpc_endpoint: prover_alloy::default_l2_el_url(),
+            l2_cl_rpc_endpoint: prover_alloy::default_l2_cl_url(),
             network_id: 0,
             proving_timeout: default_aggchain_prover_timeout(),
             primary_prover: ProverType::NetworkProver(prover_config::NetworkProverConfig::default()),
