@@ -9,6 +9,9 @@ use std::{
 use aggchain_proof_builder::{AggchainProofBuilder, AggchainProofBuilderResponse};
 use aggchain_proof_core::proof::{InclusionProof, L1InfoTreeLeaf};
 use aggkit_prover_types::Hash;
+use customchaindata_builder::{
+    CustomChainDataBuilderRequest, CustomChainDataBuilderService, L1Rpc,
+};
 use futures::{FutureExt as _, TryFutureExt};
 use proposer_service::{ProposerRequest, ProposerService};
 use sp1_sdk::SP1Proof;
@@ -16,6 +19,8 @@ use tower::{util::BoxCloneService, ServiceExt as _};
 
 use crate::config::AggchainProofServiceConfig;
 use crate::error::Error;
+
+pub(crate) mod customchaindata_builder;
 
 /// A request for the AggchainProofService to generate the
 /// aggchain proof for the range of blocks.
@@ -68,6 +73,11 @@ pub struct AggchainProofServiceResponse {
 /// Aggchain proof.
 #[derive(Clone)]
 pub struct AggchainProofService {
+    pub(crate) customchaindata_builder: BoxCloneService<
+        customchaindata_builder::CustomChainDataBuilderRequest,
+        customchaindata_builder::CustomChainDataBuilderResponse,
+        customchaindata_builder::Error,
+    >,
     pub(crate) proposer_service: BoxCloneService<
         proposer_service::ProposerRequest,
         proposer_service::ProposerResponse,
@@ -90,6 +100,14 @@ impl AggchainProofService {
         .map_err(Error::AlloyProviderError)?;
         let l1_rpc_client = Arc::new(client);
 
+        let chain_l1_rpc = L1Rpc {};
+        let customchaindata_builder = tower::ServiceBuilder::new()
+            .service(CustomChainDataBuilderService::new(
+                Arc::new(chain_l1_rpc),
+                1,
+            ))
+            .boxed_clone();
+
         let proposer_service = tower::ServiceBuilder::new()
             .service(ProposerService::new(
                 &config.proposer_service,
@@ -102,6 +120,7 @@ impl AggchainProofService {
             .boxed_clone();
 
         Ok(AggchainProofService {
+            customchaindata_builder,
             proposer_service,
             aggchain_proof_builder,
         })
@@ -130,38 +149,40 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
             l1_block_number,
         };
 
+        let mut customchaindata_builder = self.customchaindata_builder.clone();
+        let mut proposer_service = self.proposer_service.clone();
         let mut proof_builder = self.aggchain_proof_builder.clone();
 
-        self.proposer_service
-            .call(proposer_request)
-            .map_err(Error::from)
-            .and_then(move |agg_span_proof_response| {
-                let aggchain_proof_builder_request =
-                    aggchain_proof_builder::AggchainProofBuilderRequest {
-                        agg_span_proof: agg_span_proof_response.agg_span_proof,
-                        start_block: agg_span_proof_response.start_block,
-                        end_block: agg_span_proof_response.end_block,
-                        l1_info_tree_merkle_proof: req.l1_info_tree_merkle_proof,
-                        l1_info_tree_leaf: req.l1_info_tree_leaf,
-                        l1_info_tree_root_hash: req.l1_info_tree_root_hash,
-                        ger_inclusion_proofs: req.ger_inclusion_proofs,
-                    };
+        async move {
+            // Execute custom chain data builder before every other services to ensure that
+            // onchain data and local data are up-to-date
+            let custom_chain_data = customchaindata_builder
+                .call(CustomChainDataBuilderRequest {})
+                .await?;
 
-                proof_builder
-                    .call(aggchain_proof_builder_request)
-                    .map_err(Error::from)
-                    .map(move |aggchain_proof_builder_result| {
-                        let agg_span_proof_response: AggchainProofBuilderResponse =
-                            aggchain_proof_builder_result?;
-                        Ok(AggchainProofServiceResponse {
-                            proof: agg_span_proof_response.proof,
-                            start_block: agg_span_proof_response.start_block,
-                            end_block: agg_span_proof_response.end_block,
-                            local_exit_root_hash: Default::default(),
-                            custom_chain_data: Default::default(),
-                        })
-                    })
+            let agg_span_proof_response = proposer_service.call(proposer_request).await?;
+            let aggchain_proof_builder_request =
+                aggchain_proof_builder::AggchainProofBuilderRequest {
+                    agg_span_proof: agg_span_proof_response.agg_span_proof,
+                    start_block: agg_span_proof_response.start_block,
+                    end_block: agg_span_proof_response.end_block,
+                    l1_info_tree_merkle_proof: req.l1_info_tree_merkle_proof,
+                    l1_info_tree_leaf: req.l1_info_tree_leaf,
+                    l1_info_tree_root_hash: req.l1_info_tree_root_hash,
+                    ger_inclusion_proofs: req.ger_inclusion_proofs,
+                };
+
+            let aggchain_proof_response =
+                proof_builder.call(aggchain_proof_builder_request).await?;
+
+            Ok(AggchainProofServiceResponse {
+                proof: aggchain_proof_response.proof,
+                start_block: agg_span_proof_response.start_block,
+                end_block: agg_span_proof_response.end_block,
+                local_exit_root_hash: Default::default(),
+                custom_chain_data: Default::default(),
             })
-            .boxed()
+        }
+        .boxed()
     }
 }

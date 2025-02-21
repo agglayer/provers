@@ -4,6 +4,9 @@ pub enum Error {
     AlloyProviderError(anyhow::Error),
 
     #[error(transparent)]
+    CustomChainDataBuilderError(#[from] crate::service::customchaindata_builder::Error),
+
+    #[error(transparent)]
     ProposerService(#[from] proposer_service::Error),
 
     #[error(transparent)]
