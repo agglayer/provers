@@ -83,26 +83,73 @@ impl FepWithPublicValues {
 impl FepWithPublicValues {
     // Follow this encoding: https://github.com/op-rs/kona/blob/161547c73aa326a924b79cca5d811a202c5c45a0/crates/proof/executor/src/executor/mod.rs#L448-L453
     pub fn compute_l2_pre_root_bytes(&self) -> [u8; 32] {
-        keccak256_combine([
-            OUTPUT_ROOT_VERSION,
-            self.public_values.prev_state_root,
-            self.public_values.prev_withdrawal_storage_root,
-            self.public_values.prev_block_hash,
-        ])
-        .0
-    }
-
-    pub fn computed_claim_root_bytes(&self) -> [u8; 32] {
-        keccak256_combine([
-            OUTPUT_ROOT_VERSION,
+        compute_output_root(
             self.public_values.new_state_root,
             self.public_values.new_withdrawal_storage_root,
             self.public_values.new_block_hash,
-        ])
-        .0
+        )
+    }
+
+    pub fn computed_claim_root_bytes(&self) -> [u8; 32] {
+        compute_output_root(
+            self.public_values.new_state_root,
+            self.public_values.new_withdrawal_storage_root,
+            self.public_values.new_block_hash,
+        )
     }
 
     pub fn get_block_hashes(&self) -> Result<([u8; 32], [u8; 32]), ProofError> {
-        Ok((self.public_values.prev_block_hash, self.public_values.new_block_hash))
+        Ok((
+            self.public_values.prev_block_hash,
+            self.public_values.new_block_hash,
+        ))
+    }
+}
+
+pub fn compute_output_root(
+    new_state_root: [u8; 32],
+    new_withdrawal_storage_root: [u8; 32],
+    new_block_hash: [u8; 32],
+) -> [u8; 32] {
+    keccak256_combine([
+        OUTPUT_ROOT_VERSION,
+        new_state_root,
+        new_withdrawal_storage_root,
+        new_block_hash,
+    ])
+    .0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_compute_output_root_expected_value() {
+        // Provided inputs from the rpc endpoint: optimism_outputAtBlock
+        let state_hex = "0xc82b7f91a1c9e78463653c6ec44a579062426d71d3404325fa5f129615e0473d";
+        let withdrawal_hex = "0x8ed4baae3a927be3dea54996b4d5899f8c01e7594bf50b17dc1e741388ce3d12";
+        let block_hash_hex = "0x61438199094c9db8d5c154034de9940712805469459346ed1b4e0fa57da5519b";
+        let expected_output_root_hex =
+            "0x720311395abb5216bee64000575e07dd3b64847b9f88d4d77b64e6aa28fc93a2";
+
+        let state = hex_str_to_array(state_hex);
+        let withdrawal = hex_str_to_array(withdrawal_hex);
+        let block_hash = hex_str_to_array(block_hash_hex);
+        let expected_output_root = hex_str_to_array(expected_output_root_hex);
+
+        let computed_output_root = compute_output_root(state, withdrawal, block_hash);
+        assert_eq!(
+            computed_output_root, expected_output_root,
+            "compute_output_root should return the expected hash"
+        );
+    }
+
+    fn hex_str_to_array(s: &str) -> [u8; 32] {
+        let s = s.trim_start_matches("0x");
+        let bytes = hex::decode(s).expect("Decoding hex string failed");
+        let mut array = [0u8; 32];
+        array.copy_from_slice(&bytes);
+        array
     }
 }
