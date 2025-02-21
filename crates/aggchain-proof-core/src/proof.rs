@@ -1,6 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{digest::Digest, error::ProofError, full_execution_proof::FepWithPublicValues};
+use crate::{
+    bridge::{BridgeInput, BridgeWitness, L2_GER_ADDR},
+    error::ProofError,
+    full_execution_proof::FepWithPublicValues,
+    keccak::digest::Digest,
+};
 
 /// Aggchain proof is generated from the FEP proof and additional
 /// bridge information.
@@ -24,29 +29,22 @@ pub struct AggchainProofWitness {
     pub origin_network: u32,
     /// Full execution proof with its metadata.
     pub fep: FepWithPublicValues,
-    /// Bridge constraints related data
-    pub bridge: BridgeData,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct BridgeData;
-
-impl BridgeData {
-    pub fn verify(&mut self) -> Result<(), ProofError> {
-        todo!()
-    }
+    /// Bridge witness related data.
+    pub bridge_witness: BridgeWitness,
 }
 
 impl AggchainProofWitness {
     pub fn generate_aggchain_proof(&mut self) -> Result<AggchainProofPublicValues, ProofError> {
+        let public_values = self.public_values();
+
         // Verify the FEP exclusively within the SP1 VM
         #[cfg(target_os = "zkvm")]
         self.fep.verify()?;
 
         // Verify the bridge constraints
-        self.bridge.verify()?;
+        self.generate_bridge_input()?.verify()?;
 
-        Ok(self.public_values())
+        Ok(public_values)
     }
 }
 
@@ -58,8 +56,23 @@ impl AggchainProofWitness {
             l1_info_root: self.l1_info_root,
             origin_network: self.origin_network,
             commit_imported_bridge_exits: self.commit_imported_bridge_exits,
-            aggchain_params: self.fep.aggchain_params(),
+            aggchain_params: self.fep.aggchain_params().into(),
         }
+    }
+}
+
+impl AggchainProofWitness {
+    pub fn generate_bridge_input(&mut self) -> Result<BridgeInput, ProofError> {
+        let (prev_blockhash, new_blockhash) = self.fep.get_block_hashes()?;
+
+        Ok(BridgeInput {
+            ger_addr: L2_GER_ADDR, // set as constant for now
+            prev_l2_block_hash: alloy_primitives::FixedBytes::from(prev_blockhash),
+            new_l2_block_hash: alloy_primitives::FixedBytes::from(new_blockhash),
+            new_local_exit_root: alloy_primitives::FixedBytes::from(&self.new_local_exit_root.0),
+            l1_info_root: alloy_primitives::FixedBytes::from(&self.l1_info_root.0),
+            bridge_witness: self.bridge_witness.clone(),
+        })
     }
 }
 
