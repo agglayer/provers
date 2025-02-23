@@ -18,6 +18,6 @@ pub enum Error {
     #[error("Error retrieving local exit root")]
     LocalExitRootError(#[source] alloy::contract::Error),
 
-    #[error("Unable to setup up async engine")]
+    #[error("Unable to setup async engine")]
     AsyncEngineSetupError(#[source] std::io::Error),
 }
