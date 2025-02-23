@@ -90,17 +90,16 @@ impl AggchainProofContractsClient {
         // manager contract.
         let polygon_zkevm_bridge_address = {
             let global_exit_root_manager_l2 = global_exit_root_manager_l2.clone();
-            std::thread::spawn(move || {
-                let rt = tokio::runtime::Runtime::new().expect("valid runtime");
-                rt.block_on(async move {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .map_err(Error::AsyncEngineSetupError)?
+                .block_on(async move {
                     // We need to retrieve PolygonZkEVMBridgeV2 contract address from the
                     // global exit root manager contract.
                     global_exit_root_manager_l2.bridgeAddress().call().await
                 })
-            })
         }
-        .join()
-        .expect("Couldn't join on the associated thread")
         .map_err(Error::BridgeAddressError)?;
 
         // Create client for Polygon zkevm bridge v2 smart contract.
