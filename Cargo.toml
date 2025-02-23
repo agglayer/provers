@@ -17,6 +17,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 [workspace.dependencies]
 # Project dependencies
 aggchain-proof-builder = { path = "crates/aggchain-proof-builder" }
+aggchain-proof-contracts = { path = "crates/aggchain-proof-contracts" }
 aggchain-proof-core = { path = "crates/aggchain-proof-core" }
 aggchain-proof-service = { path = "crates/aggchain-proof-service" }
 aggkit-prover = { path = "crates/aggkit-prover" }
