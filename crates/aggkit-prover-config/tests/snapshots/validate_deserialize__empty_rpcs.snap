@@ -28,6 +28,10 @@ proving-timeout = "5m"
 secs = 3600
 nanos = 0
 
+[aggchain-proof-service.aggchain-proof-builder.contracts]
+polygon-rollup-manager-contract = "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e"
+global-exit-root-manager-v2-sovereign-chain = "0xa40d5f56745a118d0906a34e69aec8c0db1cb8fa"
+
 [aggchain-proof-service.proposer-service]
 l1-rpc-endpoint = "http://anvil-mock-l1-rpc:8545/"
 

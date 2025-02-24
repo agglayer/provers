@@ -12,7 +12,7 @@ pub enum Error {
     #[error("Invalid contract address")]
     InvalidContractAddress(#[source] alloy::hex::FromHexError),
 
-    #[error("Unable to retrieve bridge address from the global exit root manager contract")]
+    #[error("Unable to retrieve zkevm bridge address from the global exit root manager contract")]
     BridgeAddressError(#[source] alloy::contract::Error),
 
     #[error("Error retrieving local exit root")]
@@ -32,4 +32,10 @@ pub enum Error {
 
     #[error("Invalid L2 output at block, field {0}")]
     L2OutputAtBlockInvalidValue(String, #[source] alloy::hex::FromHexError),
+
+    #[error("Error performing rollup manager rollup id to rollup data call")]
+    InvalidRollupIdToRollupData(#[source] alloy::contract::Error),
+
+    #[error("Error retrieving rollup config hash")]
+    RollupConfigHashError(#[source] alloy::contract::Error),
 }

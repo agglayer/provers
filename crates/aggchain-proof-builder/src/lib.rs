@@ -104,6 +104,8 @@ impl AggchainProofBuilder {
                     &config.l1_rpc_endpoint,
                     &config.l2_el_rpc_endpoint,
                     &config.l2_cl_rpc_endpoint,
+                    config.network_id,
+                    &config.contracts,
                 )
                 .map_err(Error::ContractsClientInitFailed)?,
             ),
@@ -136,6 +138,11 @@ impl AggchainProofBuilder {
 
         let _claim_root_output_at_block = contracts_client
             .get_l2_output_at_block(request.end_block)
+            .await
+            .map_err(Error::L2ChainDataRetrievalError)?;
+
+        let _rollup_config_hash = contracts_client
+            .get_rollup_config_hash()
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 

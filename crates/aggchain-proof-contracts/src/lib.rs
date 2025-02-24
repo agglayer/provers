@@ -1,26 +1,22 @@
+pub mod config;
 mod error;
 
 use std::str::FromStr;
 use std::sync::Arc;
 
+use aggchain_proof_core::Digest;
 use alloy::network::Ethereum;
-use alloy::primitives::Address;
-use alloy::primitives::{address, B256};
+use alloy::primitives::B256;
 use alloy::sol;
 use jsonrpsee::core::client::ClientT;
 use jsonrpsee::http_client::HttpClient;
 use jsonrpsee::rpc_params;
 use prover_alloy::{AlloyFillProvider, AlloyProvider};
-use prover_utils::from_env_or_default;
 use tracing::info;
 use url::Url;
 
+use crate::config::AggchainProofContractsConfig;
 pub use crate::error::Error;
-
-/// Address of the `GlobalExitRootManagerL2SovereignChain.sol` contract
-/// on the L2 chain is always fixed.
-const GLOBAL_EXIT_ROOT_MANAGER_L2_SOVEREIGN_CHAIN_ADDRESS: Address =
-    address!("0xa40D5f56745a118D0906a34E69aeC8C0Db1cB8fA");
 
 sol!(
     #[allow(missing_docs)]
@@ -38,23 +34,38 @@ sol!(
     "contracts/polygon-zkevm-bridge-v2.json"
 );
 
-type GlobalExitRootManagerClient =
-    GlobalExitRootManagerL2SovereignChain::GlobalExitRootManagerL2SovereignChainInstance<
-        (),
-        AlloyFillProvider,
-        Ethereum,
-    >;
+sol!(
+    #[allow(missing_docs)]
+    #[allow(clippy::too_many_arguments)]
+    #[sol(rpc)]
+    PolygonRollupManager,
+    "contracts/polygon-rollup-manager.json"
+);
+
+sol!(
+    #[allow(missing_docs)]
+    #[allow(clippy::too_many_arguments)]
+    #[sol(rpc)]
+    AggchainFep,
+    "contracts/aggchain-fep.json"
+);
+
 type ZkevmBridgeClient =
     PolygonZkevmBridgeV2::PolygonZkevmBridgeV2Instance<(), AlloyFillProvider, Ethereum>;
+
+type PolygonRollupManagerClient =
+    PolygonRollupManager::PolygonRollupManagerInstance<(), AlloyFillProvider, Ethereum>;
+
+type AggchainFepClient = AggchainFep::AggchainFepInstance<(), AlloyFillProvider, Ethereum>;
 
 /// L2 output at block data structure.
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct L2OutputAtBlock {
     pub version: B256,
-    pub state_root: B256,
-    pub withdrawal_storage_root: B256,
-    pub latest_block_hash: B256,
-    pub output_root: B256,
+    pub state_root: Digest,
+    pub withdrawal_storage_root: Digest,
+    pub latest_block_hash: Digest,
+    pub output_root: Digest,
 }
 
 /// `AggchainProofContractsClient` is a client for interacting with the
@@ -70,12 +81,11 @@ pub struct AggchainProofContractsClient {
     /// L2 rpc consensus layer client (rollup node).
     l2_cl_client: Arc<HttpClient>,
 
-    /// Global exit root manager for smart sovereign chain
-    /// contract on the l2 network.
-    _global_exit_root_manager_l2: GlobalExitRootManagerClient,
-
     /// Polygon zkevm bridge contract on the l2 network.
     polygon_zkevm_bridge_v2: ZkevmBridgeClient,
+
+    /// Aggchain FEP contract on the l1 network.
+    aggchain_fep: AggchainFepClient,
 }
 
 impl AggchainProofContractsClient {
@@ -83,6 +93,8 @@ impl AggchainProofContractsClient {
         l1_rpc_endpoint: &Url,
         l2_el_rpc_endpoint: &Url,
         l2_cl_rpc_endpoint: &Url,
+        network_id: u32,
+        contracts: &AggchainProofContractsConfig,
     ) -> Result<Self, crate::Error> {
         let l1_client = Arc::new(
             AlloyProvider::new(
@@ -110,14 +122,13 @@ impl AggchainProofContractsClient {
 
         // Create client for global exit root manager smart contract.
         let global_exit_root_manager_l2 = GlobalExitRootManagerL2SovereignChain::new(
-            GLOBAL_EXIT_ROOT_MANAGER_L2_SOVEREIGN_CHAIN_ADDRESS,
+            contracts.global_exit_root_manager_v2_sovereign_chain,
             l2_el_client.provider().clone(),
         );
 
         // Retrieve PolygonZkEVMBridgeV2 contract address from the global exit root
         // manager contract.
         let polygon_zkevm_bridge_address = {
-            let global_exit_root_manager_l2 = global_exit_root_manager_l2.clone();
             tokio::runtime::Builder::new_current_thread()
                 .enable_all()
                 .build()
@@ -136,21 +147,51 @@ impl AggchainProofContractsClient {
             l2_el_client.provider().clone(),
         );
 
-        info!(global_exit_root_manager_l2=%GLOBAL_EXIT_ROOT_MANAGER_L2_SOVEREIGN_CHAIN_ADDRESS,
+        // Create client for Polygon rollup manager contract.
+        let polygon_rollup_manager = PolygonRollupManagerClient::new(
+            contracts.polygon_rollup_manager_contract,
+            l1_client.provider().clone(),
+        );
+
+        // Retrieve AggchainFep address from the Polygon rollup manager contract.
+        let aggchain_fep_address = {
+            let polygon_rollup_manager = polygon_rollup_manager.clone();
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .map_err(Error::AsyncEngineSetupError)?
+                .block_on(async move {
+                    // We need to retrieve AggchainFep contract address from the
+                    // polygon rollup manager.
+                    let rollup_data = polygon_rollup_manager
+                        .rollupIDToRollupData(network_id)
+                        .call()
+                        .await?;
+                    Ok(rollup_data.rollupData.rollupContract)
+                })
+        }
+        .map_err(Error::BridgeAddressError)?;
+
+        // Create client for AggchainFep smart contract.
+        let aggchain_fep = AggchainFep::new(aggchain_fep_address, l1_client.provider().clone());
+
+        info!(global_exit_root_manager_l2=%contracts.global_exit_root_manager_v2_sovereign_chain,
             polygon_zkevm_bridge_v2=%polygon_zkevm_bridge_v2.address(),
+            polygon_rollup_manager=%contracts.polygon_rollup_manager_contract,
+            aggchain_fep=%aggchain_fep.address(),
             "Aggchain proof contracts client created successfully");
 
         Ok(Self {
             _l1_client: l1_client,
             _l2_el_client: l2_el_client,
             l2_cl_client,
-            _global_exit_root_manager_l2: global_exit_root_manager_l2,
             polygon_zkevm_bridge_v2,
+            aggchain_fep,
         })
     }
 
     pub async fn get_l2_local_exit_root(&self, block_number: u64) -> Result<B256, Error> {
-        let bytes = self
+        let response = self
             .polygon_zkevm_bridge_v2
             .getRoot()
             .call_raw()
@@ -161,7 +202,7 @@ impl AggchainProofContractsClient {
         let result = self
             .polygon_zkevm_bridge_v2
             .getRoot()
-            .decode_output(bytes, true)
+            .decode_output(response, true)
             .map_err(Error::LocalExitRootError)?;
 
         Ok(result._0)
@@ -185,10 +226,10 @@ impl AggchainProofContractsClient {
 
         Ok(L2OutputAtBlock {
             version: parse_field(&json, "version")?,
-            state_root: parse_field(&json, "stateRoot")?,
-            withdrawal_storage_root: parse_field(&json, "withdrawalStorageRoot")?,
-            latest_block_hash: parse_field(block_ref, "hash")?,
-            output_root: parse_field(&json, "outputRoot")?,
+            state_root: *parse_field(&json, "stateRoot")?,
+            withdrawal_storage_root: *parse_field(&json, "withdrawalStorageRoot")?,
+            latest_block_hash: *parse_field(block_ref, "hash")?,
+            output_root: *parse_field(&json, "outputRoot")?,
         })
     }
 
@@ -199,19 +240,28 @@ impl AggchainProofContractsClient {
         let params = rpc_params![format!("0x{block_number:x}")];
         let json: serde_json::Value = self
             .l2_cl_client
-            .request(&default_output_at_block_endpoint(), params)
+            .request(&crate::config::default_output_at_block_endpoint(), params)
             .await
             .map_err(Error::L2OutputAtBlockRetrievalError)?;
 
         Self::parse_l2_output_root(json)
     }
-}
 
-fn default_output_at_block_endpoint() -> String {
-    from_env_or_default(
-        "L2_OUTPUT_AT_BLOCK_ENDPOINT",
-        "l2_outputAtBlock".to_string(),
-    )
+    pub async fn get_rollup_config_hash(&self) -> Result<Digest, Error> {
+        let response = self
+            .aggchain_fep
+            .chainConfigHash()
+            .call_raw()
+            .await
+            .map_err(Error::RollupConfigHashError)?;
+
+        let chain_config_hash_response = self
+            .aggchain_fep
+            .chainConfigHash()
+            .decode_output(response, true)
+            .map_err(Error::RollupConfigHashError)?;
+        Ok(*chain_config_hash_response._0)
+    }
 }
 
 #[cfg(test)]

@@ -51,6 +51,7 @@ dependencies = [
 name = "aggchain-proof-contracts"
 version = "0.1.0"
 dependencies = [
+ "aggchain-proof-core",
  "alloy",
  "anyhow",
  "futures",

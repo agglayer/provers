@@ -16,7 +16,7 @@ impl Default for ProposerServiceConfig {
     fn default() -> Self {
         Self {
             client: ProposerClientConfig::default(),
-            l1_rpc_endpoint: prover_alloy::default_l1_url(),
+            l1_rpc_endpoint: prover_alloy::default_l1_node_url(),
         }
     }
 }
