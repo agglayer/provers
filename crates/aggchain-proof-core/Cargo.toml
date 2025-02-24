@@ -33,3 +33,11 @@ sp1-zkvm = { version = "=4.0.0", features = ["verify"] }
 # sp1-cc
 sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", branch = "main" }
 sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", branch = "main" }
+
+dotenvy.workspace = true
+url = "2.3"
+
+tokio = { version = "1.21", default-features = false, features = [
+    "rt",
+    "rt-multi-thread",
+] }
