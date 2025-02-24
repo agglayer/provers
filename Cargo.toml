@@ -69,7 +69,7 @@ tokio-util = "0.7.13"
 toml = "0.8.15"
 tonic = { version = "0.12.3", default-features = false }
 tonic-types = "0.12.3"
-tower = "0.4.13"
+tower = "0.5.2"
 tracing = "0.1.41"
 tracing-appender = "0.2.3"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
@@ -82,7 +82,7 @@ insta = { git = "https://github.com/freyskeyd/insta", branch = "chore/updating-d
     "yaml",
 ] }
 mockall = "0.13.1"
-rand = "0.8.5"
+rand = "0.9.0"
 rstest = "0.22.0"
 test-log = "0.2.16"
 
