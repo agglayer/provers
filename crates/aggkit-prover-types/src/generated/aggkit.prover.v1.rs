@@ -2,7 +2,10 @@
 /// The request message for generating aggchain proof.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenerateAggchainProofRequest {
-    /// The start block for which the aggchain proof is requested.
+    /// Start block of the aggchain proof.
+    /// This block must match the end_block of the last proof, to check the consistency between proofs, but it's not proved.
+    /// The span of blocks processed and proved goes from start_block+1 to end_block both inclusive.
+    /// Proof (start_block, end_block]
     #[prost(uint64, tag = "1")]
     pub start_block: u64,
     /// The max end block for which the aggchain proof is requested.
@@ -35,7 +38,7 @@ pub struct GenerateAggchainProofResponse {
     /// Aggchain proof.
     #[prost(bytes = "vec", tag = "1")]
     pub aggchain_proof: ::prost::alloc::vec::Vec<u8>,
-    /// The start block of the aggchain proof.
+    /// Start block of the aggchain proof.
     #[prost(uint64, tag = "2")]
     pub start_block: u64,
     /// The end block of the aggchain proof.

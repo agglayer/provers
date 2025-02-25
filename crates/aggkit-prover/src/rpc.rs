@@ -37,7 +37,7 @@ impl AggchainProofGrpcService for GrpcService {
         request: Request<GenerateAggchainProofRequest>,
     ) -> Result<Response<GenerateAggchainProofResponse>, Status> {
         let request = request.into_inner();
-        if request.max_end_block < request.start_block {
+        if request.max_end_block <= request.start_block {
             let mut error = ErrorDetails::new();
             error.add_bad_request_violation(
                 "max_end_block",
