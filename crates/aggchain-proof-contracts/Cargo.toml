@@ -16,7 +16,5 @@ url.workspace = true
 
 prover-alloy.workspace = true
 
-
-
 [lints]
 workspace = true
