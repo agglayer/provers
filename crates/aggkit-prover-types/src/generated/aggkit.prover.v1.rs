@@ -19,11 +19,11 @@ pub struct GenerateAggchainProofRequest {
     pub l1_info_tree_merkle_proof: ::prost::alloc::vec::Vec<
         ::prost::alloc::vec::Vec<u8>,
     >,
-    /// Map of the GER with their inclusion proof. Note: the GER (string) is a base64 encoded string of the GER digest.
+    /// Map of the GER with their ger leaf. Note: the GER (string) is a base64 encoded string of the GER digest.
     #[prost(map = "string, message", tag = "6")]
-    pub ger_inclusion_proofs: ::std::collections::HashMap<
+    pub ger_leaves: ::std::collections::HashMap<
         ::prost::alloc::string::String,
-        InclusionProof,
+        ClaimFromMainnet,
     >,
     /// bridge exits
     #[prost(message, repeated, tag = "7")]
@@ -48,35 +48,59 @@ pub struct GenerateAggchainProofResponse {
     #[prost(bytes = "vec", tag = "5")]
     pub custom_chain_data: ::prost::alloc::vec::Vec<u8>,
 }
+/// Represents a claim.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ClaimFromMainnet {
+    /// Proof from GER to Root
+    #[prost(message, optional, tag = "1")]
+    pub inclusion_proof: ::core::option::Option<InclusionProof>,
+    /// L1InfoTree leaf
+    #[prost(message, optional, tag = "2")]
+    pub l1_leaf: ::core::option::Option<L1InfoTreeLeaf>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GerLeaf {
+    /// leaf data
+    #[prost(message, optional, tag = "1")]
+    pub l1_info_tree_leaf: ::core::option::Option<L1InfoTreeLeaf>,
+    /// Inclusion proof
+    #[prost(message, optional, tag = "2")]
+    pub inclusion_proof: ::core::option::Option<InclusionProof>,
+}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct InclusionProof {
     /// Siblings.
     #[prost(bytes = "vec", repeated, tag = "1")]
     pub siblings: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
+/// Represents a leaf in the L1InfoTree.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct L1InfoTreeLeaf {
-    /// previous block hash of leaf
-    #[prost(bytes = "vec", tag = "1")]
-    pub previous_block_hash: ::prost::alloc::vec::Vec<u8>,
-    /// block number timestamp
-    #[prost(uint64, tag = "2")]
-    pub timestamp: u64,
-    /// mainnet exit root hash
-    #[prost(bytes = "vec", tag = "3")]
-    pub mainnet_exit_root_hash: ::prost::alloc::vec::Vec<u8>,
-    /// rollup exit root hash
-    #[prost(bytes = "vec", tag = "4")]
-    pub rollup_exit_root_hash: ::prost::alloc::vec::Vec<u8>,
-    /// global exit root hash
-    #[prost(bytes = "vec", tag = "5")]
-    pub global_exit_root_hash: ::prost::alloc::vec::Vec<u8>,
-    /// leaf hash
-    #[prost(bytes = "vec", tag = "6")]
-    pub leaf_hash: ::prost::alloc::vec::Vec<u8>,
-    /// leaf index
-    #[prost(uint32, tag = "7")]
+    /// l1 info tree leaf index
+    #[prost(uint32, tag = "1")]
     pub l1_info_tree_index: u32,
+    /// Rollup exit root
+    #[prost(bytes = "vec", tag = "2")]
+    pub rer: ::prost::alloc::vec::Vec<u8>,
+    /// Mainnet exit root
+    #[prost(bytes = "vec", tag = "3")]
+    pub mer: ::prost::alloc::vec::Vec<u8>,
+    /// Inner leaf
+    #[prost(message, optional, tag = "4")]
+    pub inner: ::core::option::Option<L1InfoTreeLeafInner>,
+}
+/// Represents the inner part of a leaf in the L1InfoTree.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct L1InfoTreeLeafInner {
+    /// The global exit root.
+    #[prost(bytes = "vec", tag = "1")]
+    pub global_exit_root: ::prost::alloc::vec::Vec<u8>,
+    /// Block hash.
+    #[prost(bytes = "vec", tag = "2")]
+    pub block_hash: ::prost::alloc::vec::Vec<u8>,
+    /// Timestamp.
+    #[prost(uint64, tag = "3")]
+    pub timestamp: u64,
 }
 /// Represents a token bridge exit originating on another network but claimed on
 /// the current network.
