@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    bridge::{BridgeInput, BridgeWitness, L2_GER_ADDR},
+    bridge::{BridgeConstraintsInput, BridgeWitness, L2_GER_ADDR},
     error::ProofError,
     full_execution_proof::FepWithPublicValues,
     keccak::digest::Digest,
@@ -62,10 +62,10 @@ impl AggchainProofWitness {
 }
 
 impl AggchainProofWitness {
-    pub fn generate_bridge_input(&mut self) -> Result<BridgeInput, ProofError> {
+    pub fn generate_bridge_input(&mut self) -> Result<BridgeConstraintsInput, ProofError> {
         let (prev_blockhash, new_blockhash) = self.fep.get_block_hashes()?;
 
-        Ok(BridgeInput {
+        Ok(BridgeConstraintsInput {
             ger_addr: L2_GER_ADDR, // set as constant for now
             prev_l2_block_hash: alloy_primitives::FixedBytes::from(prev_blockhash),
             new_l2_block_hash: alloy_primitives::FixedBytes::from(new_blockhash),

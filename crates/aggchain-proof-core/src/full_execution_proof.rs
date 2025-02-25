@@ -81,7 +81,7 @@ impl FepWithPublicValues {
 }
 
 impl FepWithPublicValues {
-    // Follow this encoding: https://github.com/op-rs/kona/blob/161547c73aa326a924b79cca5d811a202c5c45a0/crates/proof/executor/src/executor/mod.rs#L448-L453
+    // Compute l2 pre root
     pub fn compute_l2_pre_root_bytes(&self) -> [u8; 32] {
         compute_output_root(
             self.public_values.new_state_root,
@@ -90,6 +90,7 @@ impl FepWithPublicValues {
         )
     }
 
+    // Compute claim root
     pub fn computed_claim_root_bytes(&self) -> [u8; 32] {
         compute_output_root(
             self.public_values.new_state_root,
@@ -98,6 +99,8 @@ impl FepWithPublicValues {
         )
     }
 
+    // This function should always be implemented regardless the FEP, since it's used by the bridge proof
+    // Return the previous and new block hashes
     pub fn get_block_hashes(&self) -> Result<([u8; 32], [u8; 32]), ProofError> {
         Ok((
             self.public_values.prev_block_hash,
@@ -106,6 +109,8 @@ impl FepWithPublicValues {
     }
 }
 
+// Compute output root as defined here:
+// https://specs.optimism.io/protocol/proposals.html#l2-output-commitment-construction
 pub fn compute_output_root(
     new_state_root: [u8; 32],
     new_withdrawal_storage_root: [u8; 32],
