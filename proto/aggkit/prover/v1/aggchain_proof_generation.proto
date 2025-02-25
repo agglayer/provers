@@ -5,6 +5,7 @@ package aggkit.prover.v1;
 import "agglayer/protocol/types/v1/bytes.proto";
 import "agglayer/protocol/types/v1/claim.proto";
 import "agglayer/protocol/types/v1/imported_bridge_exit.proto";
+import "agglayer/protocol/types/v1/merkle_proof.proto";
 
 // Service for generating aggchain proof.
 service AggchainProofService {
@@ -23,7 +24,7 @@ message GenerateAggchainProofRequest {
   // L1 Info tree leaf
   agglayer.protocol.types.v1.L1InfoTreeLeafWithContext l1_info_tree_leaf = 4;
   // L1 Info tree proof. ([32]hash)
-  repeated agglayer.protocol.types.v1.FixedBytes32 l1_info_tree_merkle_proof = 5;
+  agglayer.protocol.types.v1.MerkleProof l1_info_tree_merkle_proof = 5;
   // Map of the GER with their ger leaf. Note: the GER (string) is a base64 encoded string of the GER digest.
   map<string, agglayer.protocol.types.v1.ClaimFromMainnet> ger_leaves = 6;
   // bridge exits

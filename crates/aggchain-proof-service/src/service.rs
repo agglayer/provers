@@ -6,10 +6,10 @@ use std::{
     task::{Context, Poll},
 };
 
-use aggchain_proof_builder::{AggchainProofBuilder, AggchainProofBuilderResponse};
+use aggchain_proof_builder::AggchainProofBuilder;
 use aggchain_proof_core::proof::{InclusionProof, L1InfoTreeLeaf};
 use aggkit_prover_types::Hash;
-use futures::{FutureExt as _, TryFutureExt};
+use futures::FutureExt as _;
 use proposer_service::{ProposerRequest, ProposerService};
 use sp1_sdk::SP1Proof;
 use tower::{util::BoxCloneService, ServiceExt as _};
@@ -130,38 +130,33 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
             l1_block_number,
         };
 
+        let mut proposer_service = self.proposer_service.clone();
         let mut proof_builder = self.aggchain_proof_builder.clone();
 
-        self.proposer_service
-            .call(proposer_request)
-            .map_err(Error::from)
-            .and_then(move |agg_span_proof_response| {
-                let aggchain_proof_builder_request =
-                    aggchain_proof_builder::AggchainProofBuilderRequest {
-                        agg_span_proof: agg_span_proof_response.agg_span_proof,
-                        start_block: agg_span_proof_response.start_block,
-                        end_block: agg_span_proof_response.end_block,
-                        l1_info_tree_merkle_proof: req.l1_info_tree_merkle_proof,
-                        l1_info_tree_leaf: req.l1_info_tree_leaf,
-                        l1_info_tree_root_hash: req.l1_info_tree_root_hash,
-                        ger_inclusion_proofs: req.ger_inclusion_proofs,
-                    };
+        async move {
+            let agg_span_proof_response = proposer_service.call(proposer_request).await?;
+            let aggchain_proof_builder_request =
+                aggchain_proof_builder::AggchainProofBuilderRequest {
+                    agg_span_proof: agg_span_proof_response.agg_span_proof,
+                    start_block: agg_span_proof_response.start_block,
+                    end_block: agg_span_proof_response.end_block,
+                    l1_info_tree_merkle_proof: req.l1_info_tree_merkle_proof,
+                    l1_info_tree_leaf: req.l1_info_tree_leaf,
+                    l1_info_tree_root_hash: req.l1_info_tree_root_hash,
+                    ger_inclusion_proofs: req.ger_inclusion_proofs,
+                };
 
-                proof_builder
-                    .call(aggchain_proof_builder_request)
-                    .map_err(Error::from)
-                    .map(move |aggchain_proof_builder_result| {
-                        let agg_span_proof_response: AggchainProofBuilderResponse =
-                            aggchain_proof_builder_result?;
-                        Ok(AggchainProofServiceResponse {
-                            proof: agg_span_proof_response.proof,
-                            start_block: agg_span_proof_response.start_block,
-                            end_block: agg_span_proof_response.end_block,
-                            local_exit_root_hash: Default::default(),
-                            custom_chain_data: Default::default(),
-                        })
-                    })
+            let aggchain_proof_response =
+                proof_builder.call(aggchain_proof_builder_request).await?;
+
+            Ok(AggchainProofServiceResponse {
+                proof: aggchain_proof_response.proof,
+                start_block: agg_span_proof_response.start_block,
+                end_block: agg_span_proof_response.end_block,
+                local_exit_root_hash: Default::default(),
+                custom_chain_data: Default::default(),
             })
-            .boxed()
+        }
+        .boxed()
     }
 }

@@ -1,0 +1,34 @@
+version: v2
+
+managed:
+  enabled: true
+  disable:
+    - module: buf.build/agglayer/agglayer
+plugins:
+  - local: protoc-gen-prost
+    out: crates/aggkit-prover-types/src/generated
+    include_imports: true
+    strategy: all
+    opt:
+      - bytes=.
+      - file_descriptor_set
+      - compile_well_known_types
+
+  - local: protoc-gen-prost-serde
+    include_imports: true
+    out: crates/aggkit-prover-types/src/generated
+
+  - local: protoc-gen-prost-crate
+    out: crates/aggkit-prover-types/src/generated/
+    include_imports: true
+    opt:
+      - no_features
+
+  - local: protoc-gen-tonic
+    include_imports: true
+    out: crates/aggkit-prover-types/src/generated
+
+inputs:
+  - directory: ./proto
+    paths:
+      - ./proto/aggkit

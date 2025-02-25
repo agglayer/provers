@@ -4,3 +4,4 @@ deps:
   - name: buf.build/agglayer/agglayer
     commit: 738027c8619342bd955f84dfa8e60bab
     digest: b5:7678fbf7bba0f3eb165e8a1e3a3ff8a88e6cc1571f034242c9d8de0dec836d7751f7b644f4e3c920dfe691274caec2cb672678567c72d9057e7eff98a56c909d
+
