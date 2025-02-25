@@ -1,11 +1,12 @@
 //! A program that verifies the bridge integrity
-use crate::inserted_ger::InsertedGER;
-use crate::keccak::keccak256_combine;
 use alloy_primitives::{address, Address, FixedBytes};
 use alloy_sol_macro::sol;
 use alloy_sol_types::SolCall;
 use serde::{Deserialize, Serialize};
 use sp1_cc_client_executor::{io::EVMStateSketch, ClientExecutor, ContractInput};
+
+use crate::inserted_ger::InsertedGER;
+use crate::keccak::keccak256_combine;
 // temporal solution, won't work with Outpost networks
 pub const L2_GER_ADDR: Address = address!("a40d5f56745a118d0906a34e69aec8c0db1cb8fa");
 
@@ -248,11 +249,12 @@ pub fn compute_ger_hash_chain(
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use alloy_primitives::hex;
     use alloy_provider::RootProvider;
     use alloy_rpc_types::BlockNumberOrTag;
     use sp1_cc_host_executor::HostExecutor;
-    use std::str::FromStr;
     use url::Url;
 
     use super::*;
@@ -262,9 +264,10 @@ mod tests {
     #[tokio::test(flavor = "multi_thread")]
     #[ignore = "Unable to properly test with mock yet"]
     async fn test_bridge_contraints() -> Result<(), Box<dyn std::error::Error>> {
-        use serde_json::Value;
         use std::fs::File;
         use std::io::BufReader;
+
+        use serde_json::Value;
 
         // Initialize the environment variables.
         dotenvy::dotenv().ok();
