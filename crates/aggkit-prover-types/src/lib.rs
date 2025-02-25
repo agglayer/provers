@@ -3,12 +3,14 @@ use bincode::{
     DefaultOptions, Options,
 };
 
-pub const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("generated/aggkit.prover.bin");
+pub mod compat;
 
-#[path = "generated/aggkit.prover.v1.rs"]
 #[rustfmt::skip]
 #[allow(warnings)]
-pub mod v1;
+mod generated;
+
+pub use generated::aggkit::prover::v1;
+pub use generated::agglayer;
 
 pub fn default_bincode_options(
 ) -> WithOtherIntEncoding<WithOtherEndian<DefaultOptions, BigEndian>, FixintEncoding> {

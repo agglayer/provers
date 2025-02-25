@@ -8,11 +8,15 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-anyhow = { workspace = true }
+anyhow.workspace = true
+async-trait.workspace = true
 futures.workspace = true
+futures-util = "0.3.31"
+once_cell = "1.20.3"
 serde.workspace = true
 sp1-sdk = { workspace = true }
 thiserror.workspace = true
+tokio.workspace = true
 tower = { workspace = true, features = ["timeout"] }
 tracing.workspace = true
 
@@ -21,3 +25,10 @@ aggchain-proof-core.workspace = true
 aggkit-prover-types.workspace = true
 proposer-service.workspace = true
 prover-alloy.workspace = true
+
+[dev-dependencies]
+mockall.workspace = true
+
+[build-dependencies]
+semver = "1.0"
+toml.workspace = true
