@@ -99,8 +99,8 @@ impl FepWithPublicValues {
         )
     }
 
-    // This function should always be implemented regardless the FEP, since it's used by the bridge proof
-    // Return the previous and new block hashes
+    // This function should always be implemented regardless the FEP, since it's
+    // used by the bridge proof Return the previous and new block hashes
     pub fn get_block_hashes(&self) -> Result<([u8; 32], [u8; 32]), ProofError> {
         Ok((
             self.public_values.prev_block_hash,

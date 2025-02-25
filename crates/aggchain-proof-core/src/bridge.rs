@@ -8,7 +8,8 @@ use sp1_cc_client_executor::{io::EVMStateSketch, ClientExecutor, ContractInput};
 use crate::inserted_ger::InsertedGER;
 use crate::keccak::keccak256_combine;
 
-// This solution won't work with Outpost networks
+// This solution won't work with Outpost networks as this address won't be
+// constant GlobalExitRootManagerL2SovereignChain smart contract address
 pub const L2_GER_ADDR: Address = address!("a40d5f56745a118d0906a34e69aec8c0db1cb8fa");
 
 // Contract interfaces of the pre-deployed contracts on sovereign chains
@@ -73,6 +74,12 @@ pub struct BridgeConstraintsInput {
     pub bridge_witness: BridgeWitness,
 }
 
+// Warning using static calls:
+// The static call must not use the chainID opcode, since will return 1
+// (mainnet). Evm version used by the solidity compiler must be compatible with
+// the version used on the static call. No special precompileds are supported
+// Even though the current example satisfies these constraints, it's important
+// to keep them in mind when updating the code.
 impl BridgeConstraintsInput {
     pub fn verify(&self) -> Result<(), BridgeConstraintsError> {
         // Verify bridge state:
@@ -129,7 +136,8 @@ impl BridgeConstraintsInput {
 
         // 3.1 Get the bridge address from the GER smart contract.
         // Since the bridge address is not constant but the l2 ger address is
-        // We can retrieve the bridge address saving some public inputs and possible errors
+        // We can retrieve the bridge address saving some public inputs and possible
+        // errors
         let executor_get_bridge_address: ClientExecutor =
             ClientExecutor::new(&self.bridge_witness.get_bridge_address_sketch).unwrap();
 
