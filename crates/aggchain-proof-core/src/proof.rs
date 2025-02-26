@@ -63,7 +63,7 @@ impl AggchainProofWitness {
 
 impl AggchainProofWitness {
     pub fn generate_bridge_input(&mut self) -> Result<BridgeConstraintsInput, ProofError> {
-        let (prev_blockhash, new_blockhash) = self.fep.get_block_hashes()?;
+        let (prev_blockhash, new_blockhash) = self.fep.public_values.get_block_hashes()?;
 
         Ok(BridgeConstraintsInput {
             ger_addr: L2_GER_ADDR, // set as constant for now

@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-#[cfg(target_os = "zkvm")]
 use sha2::{Digest as Sha256Digest, Sha256};
 use sp1_zkvm::lib::utils::words_to_bytes_le;
 
@@ -25,7 +24,7 @@ pub struct FepPublicValues {
     pub new_block_hash: [u8; 32],
 }
 
-#[cfg(target_os = "zkvm")]
+#[allow(unused)]
 impl FepPublicValues {
     pub fn hash(&self) -> [u8; 32] {
         let public_values = [
@@ -53,8 +52,8 @@ impl FepWithPublicValues {
     pub fn aggchain_params(&self) -> [u8; 32] {
         keccak256_combine([
             self.public_values.l1_head.as_slice(),
-            self.compute_l2_pre_root_bytes().as_slice(),
-            self.computed_claim_root_bytes().as_slice(),
+            self.public_values.compute_l2_pre_root_bytes().as_slice(),
+            self.public_values.computed_claim_root_bytes().as_slice(),
             &self.public_values.claim_block_num.to_be_bytes(),
             self.public_values.rollup_config_hash.as_slice(),
             self.public_values.range_vkey_commitment.as_slice(),
@@ -80,32 +79,29 @@ impl FepWithPublicValues {
     }
 }
 
-impl FepWithPublicValues {
+impl FepPublicValues {
     // Compute l2 pre root
     pub fn compute_l2_pre_root_bytes(&self) -> [u8; 32] {
         compute_output_root(
-            self.public_values.new_state_root,
-            self.public_values.new_withdrawal_storage_root,
-            self.public_values.new_block_hash,
+            self.new_state_root,
+            self.new_withdrawal_storage_root,
+            self.new_block_hash,
         )
     }
 
     // Compute claim root
     pub fn computed_claim_root_bytes(&self) -> [u8; 32] {
         compute_output_root(
-            self.public_values.new_state_root,
-            self.public_values.new_withdrawal_storage_root,
-            self.public_values.new_block_hash,
+            self.new_state_root,
+            self.new_withdrawal_storage_root,
+            self.new_block_hash,
         )
     }
 
     // This function should always be implemented regardless the FEP, since it's
     // used by the bridge proof Return the previous and new block hashes
     pub fn get_block_hashes(&self) -> Result<([u8; 32], [u8; 32]), ProofError> {
-        Ok((
-            self.public_values.prev_block_hash,
-            self.public_values.new_block_hash,
-        ))
+        Ok((self.prev_block_hash, self.new_block_hash))
     }
 }
 

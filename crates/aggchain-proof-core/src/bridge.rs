@@ -270,11 +270,14 @@ pub fn compute_ger_hash_chain(
 
 #[cfg(test)]
 mod tests {
+    use std::fs::File;
+    use std::io::BufReader;
     use std::str::FromStr;
 
     use alloy_primitives::hex;
     use alloy_provider::RootProvider;
     use alloy_rpc_types::BlockNumberOrTag;
+    use serde_json::Value;
     use sp1_cc_host_executor::HostExecutor;
     use url::Url;
 
@@ -283,13 +286,8 @@ mod tests {
     use crate::local_exit_tree::proof::LETMerkleProof;
 
     #[tokio::test(flavor = "multi_thread")]
-    #[ignore = "Unable to properly test with mock yet"]
+    //#[ignore = "Unable to properly test with mock yet"]
     async fn test_bridge_contraints() -> Result<(), Box<dyn std::error::Error>> {
-        use std::fs::File;
-        use std::io::BufReader;
-
-        use serde_json::Value;
-
         // Initialize the environment variables.
         dotenvy::dotenv().ok();
 
