@@ -1,15 +1,20 @@
 use alloy_primitives::Address;
 use alloy_sol_types::SolCall;
 use serde::{Deserialize, Serialize};
-use sp1_cc_client_executor::ContractPublicValues;
 use sp1_cc_client_executor::{io::EVMStateSketch, ClientExecutor, ContractInput};
 
-/// Context giver for static call errors.
+use crate::keccak::digest::Digest;
+
+/// Context giver about the stage of the error.
 #[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug)]
 pub enum StaticCallStage {
+    /// Related to the hash chain fetch in the previous L2 block.
     PrevHashChain,
+    /// Related to the hash chain fetch in the new L2 block.
     NewHashChain,
+    /// Related to the fetch of the bridge address from the GER smart contract.
     BridgeAddress,
+    /// Related to the fetch of the new local exit root.
     NewLER,
 }
 
@@ -17,31 +22,31 @@ pub enum StaticCallStage {
 #[derive(Clone, thiserror::Error, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum StaticCallError {
     #[error("Failure on the initialization of the ClientExecutor: {0}")]
-    ClientInitializationFailure(String),
+    ClientInitialization(String),
     #[error("Failure on the execution of the ClientExecutor: {0}")]
-    ClientExecutionFailure(String),
+    ClientExecution(String),
     #[error("Failure on the decoding of the contractOutput: {0}")]
-    DecodeContractOutputFailure(String),
+    DecodeContractOutput(String),
 }
 
 /// Execute a static call.
-/// Returns the public values and the decoded output values.
+/// Returns the decoded output values and the block hash.
 pub fn execute_static_call<C: SolCall>(
     state_sketch: &EVMStateSketch,
     contract_address: Address,
     calldata: C,
-) -> Result<(ContractPublicValues, C::Return), StaticCallError> {
+) -> Result<(C::Return, Digest), StaticCallError> {
     let cc_public_values = ClientExecutor::new(state_sketch)
-        .map_err(|e| StaticCallError::ClientInitializationFailure(e.to_string()))?
+        .map_err(|e| StaticCallError::ClientInitialization(e.to_string()))?
         .execute(ContractInput::new_call(
             contract_address,
             Address::default(),
             calldata,
         ))
-        .map_err(|e| StaticCallError::ClientExecutionFailure(e.to_string()))?;
+        .map_err(|e| StaticCallError::ClientExecution(e.to_string()))?;
 
     let decoded_contract_output = C::abi_decode_returns(&cc_public_values.contractOutput, true)
-        .map_err(|e| StaticCallError::DecodeContractOutputFailure(e.to_string()))?;
+        .map_err(|e| StaticCallError::DecodeContractOutput(e.to_string()))?;
 
-    Ok((cc_public_values, decoded_contract_output))
+    Ok((decoded_contract_output, cc_public_values.blockHash.0.into()))
 }

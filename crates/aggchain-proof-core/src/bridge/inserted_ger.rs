@@ -46,7 +46,7 @@ impl InsertedGER {
     }
 
     /// Returns the inserted GER.
-    pub fn inserted_ger(&self) -> Digest {
+    pub fn ger(&self) -> Digest {
         self.l1_info_tree_leaf.global_exit_root
     }
 }
