@@ -35,8 +35,6 @@ pub struct AggchainProofWitness {
 
 impl AggchainProofWitness {
     pub fn generate_aggchain_proof(&self) -> Result<AggchainProofPublicValues, ProofError> {
-        let public_values = self.public_values();
-
         // Verify the FEP exclusively within the SP1 VM
         #[cfg(target_os = "zkvm")]
         self.fep.verify()?;
@@ -46,7 +44,7 @@ impl AggchainProofWitness {
             .verify()
             .map_err(ProofError::BridgeConstraintsError)?;
 
-        Ok(public_values)
+        Ok(self.public_values())
     }
 }
 

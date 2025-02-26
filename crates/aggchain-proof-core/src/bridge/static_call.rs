@@ -29,8 +29,7 @@ pub enum StaticCallError {
     DecodeContractOutput(String),
 }
 
-/// Execute a static call.
-/// Returns the decoded output values and the block hash.
+/// Returns the decoded output values and the block hash of a static call.
 pub fn execute_static_call<C: SolCall>(
     state_sketch: &EVMStateSketch,
     contract_address: Address,

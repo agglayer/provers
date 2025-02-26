@@ -35,12 +35,12 @@ sol! (
 pub enum BridgeConstraintsError {
     /// The inclusion proof from the GER to the L1 info Root is invalid.
     #[error(
-        "Invalid inclusion proof for inserted GER. l1_info_leaf_index: {l1_info_index}, \
+        "Invalid inclusion proof for inserted GER. l1_info_leaf_index: {l1_info_leaf_index}, \
          l1_info_root: {l1_info_root}, inserted_ger: {inserted_ger}"
     )]
     InvalidMerklePathGERToL1Root {
         inserted_ger: Digest,
-        l1_info_index: u32,
+        l1_info_leaf_index: u32,
         l1_info_root: Digest,
     },
 
@@ -77,16 +77,6 @@ pub struct BridgeWitness {
     pub new_hash_chain_sketch: EVMStateSketch,
     pub get_bridge_address_sketch: EVMStateSketch,
     pub new_ler_sketch: EVMStateSketch,
-}
-
-impl BridgeWitness {
-    /// Computes the GER hash chain starting from the initial hash.
-    fn ger_hash_chain(&self, initial_hash_chain: Digest) -> Digest {
-        self.injected_gers
-            .iter()
-            .map(|inserted_ger| inserted_ger.ger())
-            .fold(initial_hash_chain, |acc, ger| keccak256_combine([acc, ger]))
-    }
 }
 
 /// Bridge data required to verify the bridge smart contract integrity.
@@ -154,7 +144,13 @@ impl BridgeConstraintsInput {
         };
 
         // 1.3 Check that the reconstructed hash chain is equal to the new hash chain
-        let reconstructed_hash_chain = self.bridge_witness.ger_hash_chain(prev_hash_chain);
+        let reconstructed_hash_chain = self
+            .bridge_witness
+            .injected_gers
+            .iter()
+            .map(|inserted_ger| inserted_ger.ger())
+            .fold(prev_hash_chain, |acc, ger| keccak256_combine([acc, ger]));
+
         if reconstructed_hash_chain != new_hash_chain {
             return Err(BridgeConstraintsError::MismatchHashChain {
                 computed: reconstructed_hash_chain,
@@ -239,7 +235,7 @@ impl BridgeConstraintsInput {
             .map_or(Ok(()), |inserted_ger| {
                 Err(BridgeConstraintsError::InvalidMerklePathGERToL1Root {
                     inserted_ger: inserted_ger.ger(),
-                    l1_info_index: inserted_ger.l1_info_tree_index,
+                    l1_info_leaf_index: inserted_ger.l1_info_tree_index,
                     l1_info_root: self.l1_info_root,
                 })
             })
