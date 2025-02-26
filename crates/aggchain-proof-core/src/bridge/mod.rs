@@ -100,19 +100,18 @@ pub struct BridgeConstraintsInput {
     pub bridge_witness: BridgeWitness,
 }
 
-// Warning using static calls:
-// The static call must not use the chainID opcode, since will return 1
+// WARN: The static call must not use the chainID opcode, since will return 1
 // (mainnet). Evm version used by the solidity compiler must be compatible with
 // the version used on the static call. No special precompileds are supported
 // Even though the current example satisfies these constraints, it's important
 // to keep them in mind when updating the code.
 impl BridgeConstraintsInput {
-    /// Verify the bridge state.
-    pub fn verify(&self) -> Result<(), BridgeConstraintsError> {
+    /// Verify the previous and new hash chain and its reconstruction.
+    fn verify_hash_chain(&self) -> Result<(), BridgeConstraintsError> {
         let static_call_error =
             |error, stage| BridgeConstraintsError::StaticCallError { stage, error };
 
-        // 1. Get the state of the hash chain of the previous block on L2
+        // 1.1 Get the state of the hash chain of the previous block on L2
         let prev_hash_chain: Digest = {
             let (decoded_return, retrieved_block_hash) = execute_static_call(
                 &self.bridge_witness.prev_hash_chain_sketch,
@@ -133,7 +132,7 @@ impl BridgeConstraintsInput {
             decoded_return.hashChain.0.into()
         };
 
-        // 2. Get the state of the hash chain of the new block on L2
+        // 1.2 Get the state of the hash chain of the new block on L2
         let new_hash_chain: Digest = {
             let (decoded_return, retrieved_block_hash) = execute_static_call(
                 &self.bridge_witness.new_hash_chain_sketch,
@@ -154,7 +153,24 @@ impl BridgeConstraintsInput {
             decoded_return.hashChain.0.into()
         };
 
-        // 3.1 Get the bridge address from the GER smart contract.
+        // 1.3 Check that the reconstructed hash chain is equal to the new hash chain
+        let reconstructed_hash_chain = self.bridge_witness.ger_hash_chain(prev_hash_chain);
+        if reconstructed_hash_chain != new_hash_chain {
+            return Err(BridgeConstraintsError::MismatchHashChain {
+                computed: reconstructed_hash_chain,
+                input: new_hash_chain,
+            });
+        }
+
+        Ok(())
+    }
+
+    // Verify the new local exit root.
+    fn verify_new_ler(&self) -> Result<(), BridgeConstraintsError> {
+        let static_call_error =
+            |error, stage| BridgeConstraintsError::StaticCallError { stage, error };
+
+        // 2.1 Get the bridge address from the GER smart contract.
         // Since the bridge address is not constant but the l2 ger address is
         // We can retrieve the bridge address saving some public inputs and possible
         // errors
@@ -180,7 +196,7 @@ impl BridgeConstraintsInput {
             decoded_return.bridgeAddress
         };
 
-        // 3.2 Get the new local exit root
+        // 2.2 Get the new local exit root
         let new_ler = {
             // Execute the static call
             let (decoded_return, retrieved_block_hash) = execute_static_call(
@@ -203,21 +219,7 @@ impl BridgeConstraintsInput {
             decoded_return.lastRollupExitRoot.0.into()
         };
 
-        // 4. Check consistency of the calls
-
-        // 4.1 Reconstruct hashChain based on the previous hashChain and the injected
-        // GERs
-        let reconstructed_hash_chain = self.bridge_witness.ger_hash_chain(prev_hash_chain);
-
-        // Check that the reconstructed hash chain is equal to the new hash chain
-        if reconstructed_hash_chain != new_hash_chain {
-            return Err(BridgeConstraintsError::MismatchHashChain {
-                computed: reconstructed_hash_chain,
-                input: new_hash_chain,
-            });
-        }
-
-        // 4.2 Check that the new local exit root returned from L2 matches the expected
+        // 2.3 Check that the new local exit root returned from L2 matches the expected
         if new_ler != self.new_local_exit_root {
             return Err(BridgeConstraintsError::MismatchNewLocalExitRoot {
                 retrieved: new_ler,
@@ -225,8 +227,7 @@ impl BridgeConstraintsInput {
             });
         }
 
-        // 4.3 Check Gers are inside of L1InfoRoot
-        self.verify_inserted_gers()
+        Ok(())
     }
 
     /// Verify the inclusion proofs of the inserted GERs up to the L1InfoRoot.
@@ -242,6 +243,13 @@ impl BridgeConstraintsInput {
                     l1_info_root: self.l1_info_root,
                 })
             })
+    }
+
+    /// Verify the bridge state.
+    pub fn verify(&self) -> Result<(), BridgeConstraintsError> {
+        self.verify_hash_chain()?;
+        self.verify_new_ler()?;
+        self.verify_inserted_gers()
     }
 }
 
