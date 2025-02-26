@@ -10,7 +10,7 @@ use crate::keccak::keccak256_combine;
 
 // This solution won't work with Outpost networks as this address won't be
 // constant GlobalExitRootManagerL2SovereignChain smart contract address
-pub const L2_GER_ADDR: Address = address!("a40d5f56745a118d0906a34e69aec8c0db1cb8fa");
+pub(crate) const L2_GER_ADDR: Address = address!("a40d5f56745a118d0906a34e69aec8c0db1cb8fa");
 
 // Contract interfaces of the pre-deployed contracts on sovereign chains
 sol! (
@@ -248,10 +248,9 @@ impl BridgeConstraintsInput {
         self.bridge_witness
             .injected_gers
             .iter()
-            .find(|ger| !ger.verify(self.l1_info_root.0.into()))
-            .map_or(Ok(()), |_| {
-                Err(BridgeConstraintsError::InvalidMerklePathGERToL1Root)
-            })
+            .all(|ger| ger.verify(self.l1_info_root.0.into()))
+            .then(|| ())
+            .ok_or(BridgeConstraintsError::InvalidMerklePathGERToL1Root)
     }
 }
 

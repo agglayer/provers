@@ -1,3 +1,4 @@
+use alloy_primitives::FixedBytes;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -34,7 +35,7 @@ pub struct AggchainProofWitness {
 }
 
 impl AggchainProofWitness {
-    pub fn generate_aggchain_proof(&mut self) -> Result<AggchainProofPublicValues, ProofError> {
+    pub fn generate_aggchain_proof(&self) -> Result<AggchainProofPublicValues, ProofError> {
         let public_values = self.public_values();
 
         // Verify the FEP exclusively within the SP1 VM
@@ -42,7 +43,9 @@ impl AggchainProofWitness {
         self.fep.verify()?;
 
         // Verify the bridge constraints
-        self.generate_bridge_input()?.verify()?;
+        self.bridge_constraints_input()
+            .verify()
+            .map_err(ProofError::BridgeConstraintsError)?;
 
         Ok(public_values)
     }
@@ -62,17 +65,15 @@ impl AggchainProofWitness {
 }
 
 impl AggchainProofWitness {
-    pub fn generate_bridge_input(&mut self) -> Result<BridgeConstraintsInput, ProofError> {
-        let (prev_blockhash, new_blockhash) = self.fep.public_values.get_block_hashes()?;
-
-        Ok(BridgeConstraintsInput {
+    pub fn bridge_constraints_input(&self) -> BridgeConstraintsInput {
+        BridgeConstraintsInput {
             ger_addr: L2_GER_ADDR, // set as constant for now
-            prev_l2_block_hash: alloy_primitives::FixedBytes::from(prev_blockhash),
-            new_l2_block_hash: alloy_primitives::FixedBytes::from(new_blockhash),
-            new_local_exit_root: alloy_primitives::FixedBytes::from(&self.new_local_exit_root.0),
-            l1_info_root: alloy_primitives::FixedBytes::from(&self.l1_info_root.0),
+            prev_l2_block_hash: FixedBytes::from(self.fep.public_values.prev_block_hash),
+            new_l2_block_hash: FixedBytes::from(self.fep.public_values.new_block_hash),
+            new_local_exit_root: FixedBytes::from(&self.new_local_exit_root.0),
+            l1_info_root: FixedBytes::from(&self.l1_info_root.0),
             bridge_witness: self.bridge_witness.clone(),
-        })
+        }
     }
 }
 
