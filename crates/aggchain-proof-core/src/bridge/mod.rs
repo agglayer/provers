@@ -6,9 +6,11 @@ use serde::{Deserialize, Serialize};
 use sp1_cc_client_executor::ContractPublicValues;
 use sp1_cc_client_executor::{io::EVMStateSketch, ClientExecutor, ContractInput};
 
-use crate::inserted_ger::InsertedGER;
+use crate::bridge::inserted_ger::InsertedGER;
 use crate::keccak::digest::Digest;
 use crate::keccak::keccak256_combine;
+
+mod inserted_ger;
 
 // This solution won't work with Outpost networks as this address won't be
 // constant GlobalExitRootManagerL2SovereignChain smart contract address
@@ -276,7 +278,7 @@ mod tests {
     use url::Url;
 
     use super::*;
-    use crate::inserted_ger::L1InfoTreeLeaf;
+    use crate::bridge::inserted_ger::L1InfoTreeLeaf;
     use crate::local_exit_tree::proof::LETMerkleProof;
 
     #[tokio::test(flavor = "multi_thread")]
