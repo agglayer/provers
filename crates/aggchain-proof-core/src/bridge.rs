@@ -81,17 +81,12 @@ pub struct BridgeConstraintsInput {
 // Even though the current example satisfies these constraints, it's important
 // to keep them in mind when updating the code.
 impl BridgeConstraintsInput {
-    pub fn verify(&self) -> Result<(), BridgeConstraintsError> {
-        // Verify bridge state:
-
-        // 1. Get the state of the hash chain of the previous block on L2
-
-        // Load executor with the previous L2 block sketch
-        let executor_prev_hash_chain: ClientExecutor =
-            ClientExecutor::new(&self.bridge_witness.prev_hash_chain_sketch).unwrap();
-
+    fn hash_chain_state(&self, sketch: &EVMStateSketch) -> (FixedBytes<32>, FixedBytes<32>) {
         let hash_chain_calldata =
             GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {};
+
+        // Load executor with the previous L2 block sketch
+        let executor_prev_hash_chain: ClientExecutor = ClientExecutor::new(&sketch).unwrap();
 
         let get_prev_hash_chain_input = ContractInput::new_call(
             self.ger_addr,
@@ -105,34 +100,34 @@ impl BridgeConstraintsInput {
             .unwrap();
 
         // Decode prev hash chain from the result
-        let prev_hash_chain =
+        (
             GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall::abi_decode_returns(
                 &prev_hash_chain_call_output.contractOutput,
                 true,
             )
             .unwrap()
-            .hashChain;
+            .hashChain,
+            prev_hash_chain_call_output.blockHash,
+        )
+    }
+
+    fn prev_hash_chain_state(&self) -> (FixedBytes<32>, FixedBytes<32>) {
+        self.hash_chain_state(&self.bridge_witness.prev_hash_chain_sketch)
+    }
+
+    fn new_hash_chain_state(&self) -> (FixedBytes<32>, FixedBytes<32>) {
+        self.hash_chain_state(&self.bridge_witness.new_hash_chain_sketch)
+        // TODO: move block hash check here
+    }
+
+    pub fn verify(&self) -> Result<(), BridgeConstraintsError> {
+        // Verify bridge state:
+
+        // 1. Get the state of the hash chain of the previous block on L2
+        let (prev_hash_chain, prev_hash_chain_block_hash) = self.prev_hash_chain_state();
 
         // 2. Get the state of the hash chain of the new block on L2
-        let executor_new_hash_chain: ClientExecutor =
-            ClientExecutor::new(&self.bridge_witness.new_hash_chain_sketch).unwrap();
-
-        let get_new_hash_chain_contract_input: ContractInput =
-            ContractInput::new_call(self.ger_addr, Address::default(), hash_chain_calldata);
-
-        // Execute the static call
-        let new_hash_chain_call_output = executor_new_hash_chain
-            .execute(get_new_hash_chain_contract_input)
-            .unwrap();
-
-        // Decode new hash chain from the result
-        let new_hash_chain =
-            GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall::abi_decode_returns(
-                &new_hash_chain_call_output.contractOutput,
-                true,
-            )
-            .unwrap()
-            .hashChain;
+        let (new_hash_chain, new_hash_chain_block_hash) = self.new_hash_chain_state();
 
         // 3.1 Get the bridge address from the GER smart contract.
         // Since the bridge address is not constant but the l2 ger address is
@@ -220,12 +215,9 @@ impl BridgeConstraintsInput {
         };
 
         // assert blockhashes
-        check_block_hash(
-            self.prev_l2_block_hash,
-            prev_hash_chain_call_output.blockHash,
-        )?;
+        check_block_hash(self.prev_l2_block_hash, prev_hash_chain_block_hash)?;
 
-        check_block_hash(self.new_l2_block_hash, new_hash_chain_call_output.blockHash)?;
+        check_block_hash(self.new_l2_block_hash, new_hash_chain_block_hash)?;
 
         check_block_hash(
             self.new_l2_block_hash,
@@ -243,7 +235,7 @@ impl BridgeConstraintsInput {
             .injected_gers
             .iter()
             .all(|ger| ger.verify(self.l1_info_root.0.into()))
-            .then(|| ())
+            .then_some(())
             .ok_or(BridgeConstraintsError::InvalidMerklePathGERToL1Root)
     }
 }
