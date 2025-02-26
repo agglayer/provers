@@ -7,7 +7,7 @@ use crate::{error::ProofError, keccak::digest::Digest, keccak::keccak256_combine
 type Vkey = [u32; 8];
 
 // Hardcoded for now, might see if we might need it as input
-pub const OUTPUT_ROOT_VERSION: [u8; 32] = [0; 32];
+pub const OUTPUT_ROOT_VERSION: [u8; 32] = [0u8; 32];
 
 /// Public values to verify the FEP.
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -16,12 +16,12 @@ pub struct FepPublicValues {
     pub claim_block_num: u32,
     pub rollup_config_hash: Digest,
     pub range_vkey_commitment: Digest,
-    pub prev_state_root: [u8; 32],
-    pub prev_withdrawal_storage_root: [u8; 32],
-    pub prev_block_hash: [u8; 32],
-    pub new_state_root: [u8; 32],
-    pub new_withdrawal_storage_root: [u8; 32],
-    pub new_block_hash: [u8; 32],
+    pub prev_state_root: Digest,
+    pub prev_withdrawal_storage_root: Digest,
+    pub prev_block_hash: Digest,
+    pub new_state_root: Digest,
+    pub new_withdrawal_storage_root: Digest,
+    pub new_block_hash: Digest,
 }
 
 #[allow(unused)]
@@ -29,8 +29,8 @@ impl FepPublicValues {
     pub fn hash(&self) -> [u8; 32] {
         let public_values = [
             self.l1_head.as_slice(),
-            self.compute_l2_pre_root_bytes().as_slice(),
-            self.computed_claim_root_bytes().as_slice(),
+            self.compute_l2_pre_root().as_slice(),
+            self.compute_claim_root().as_slice(),
             &self.claim_block_num.to_be_bytes(),
             self.rollup_config_hash.as_slice(),
             self.range_vkey_commitment.as_slice(),
@@ -49,17 +49,16 @@ pub struct FepWithPublicValues {
 
 impl FepWithPublicValues {
     /// Compute the chain-specific commitment forwarded to the PP.
-    pub fn aggchain_params(&self) -> [u8; 32] {
+    pub fn aggchain_params(&self) -> Digest {
         keccak256_combine([
             self.public_values.l1_head.as_slice(),
-            self.public_values.compute_l2_pre_root_bytes().as_slice(),
-            self.public_values.computed_claim_root_bytes().as_slice(),
+            self.public_values.compute_l2_pre_root().as_slice(),
+            self.public_values.compute_claim_root().as_slice(),
             &self.public_values.claim_block_num.to_be_bytes(),
             self.public_values.rollup_config_hash.as_slice(),
             self.public_values.range_vkey_commitment.as_slice(),
             words_to_bytes_le(&self.aggregation_vkey).as_slice(),
         ])
-        .0
     }
 
     /// Verify the SP1 proof
@@ -80,44 +79,43 @@ impl FepWithPublicValues {
 }
 
 impl FepPublicValues {
-    // Compute l2 pre root
-    pub fn compute_l2_pre_root_bytes(&self) -> [u8; 32] {
+    /// Compute l2 pre root.
+    pub fn compute_l2_pre_root(&self) -> Digest {
         compute_output_root(
-            self.new_state_root,
-            self.new_withdrawal_storage_root,
-            self.new_block_hash,
+            self.prev_state_root.0,
+            self.prev_withdrawal_storage_root.0,
+            self.prev_block_hash.0,
         )
     }
 
-    // Compute claim root
-    pub fn computed_claim_root_bytes(&self) -> [u8; 32] {
+    /// Compute claim root.
+    pub fn compute_claim_root(&self) -> Digest {
         compute_output_root(
-            self.new_state_root,
-            self.new_withdrawal_storage_root,
-            self.new_block_hash,
+            self.new_state_root.0,
+            self.new_withdrawal_storage_root.0,
+            self.new_block_hash.0,
         )
     }
 }
 
-// Compute output root as defined here:
-// https://specs.optimism.io/protocol/proposals.html#l2-output-commitment-construction
-pub fn compute_output_root(
-    new_state_root: [u8; 32],
-    new_withdrawal_storage_root: [u8; 32],
-    new_block_hash: [u8; 32],
-) -> [u8; 32] {
+/// Compute output root as defined here:
+/// https://specs.optimism.io/protocol/proposals.html#l2-output-commitment-construction
+pub(crate) fn compute_output_root(
+    state_root: [u8; 32],
+    withdrawal_storage_root: [u8; 32],
+    block_hash: [u8; 32],
+) -> Digest {
     keccak256_combine([
         OUTPUT_ROOT_VERSION,
-        new_state_root,
-        new_withdrawal_storage_root,
-        new_block_hash,
+        state_root,
+        withdrawal_storage_root,
+        block_hash,
     ])
-    .0
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::full_execution_proof::compute_output_root;
 
     #[test]
     fn test_compute_output_root_expected_value() {
@@ -133,7 +131,7 @@ mod tests {
         let block_hash = hex_str_to_array(block_hash_hex);
         let expected_output_root = hex_str_to_array(expected_output_root_hex);
 
-        let computed_output_root = compute_output_root(state, withdrawal, block_hash);
+        let computed_output_root = compute_output_root(state, withdrawal, block_hash).0;
         assert_eq!(
             computed_output_root, expected_output_root,
             "compute_output_root should return the expected hash"

@@ -58,7 +58,7 @@ impl AggchainProofWitness {
             l1_info_root: self.l1_info_root,
             origin_network: self.origin_network,
             commit_imported_bridge_exits: self.commit_imported_bridge_exits,
-            aggchain_params: self.fep.aggchain_params().into(),
+            aggchain_params: self.fep.aggchain_params(),
         }
     }
 }
