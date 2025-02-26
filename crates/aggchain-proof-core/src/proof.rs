@@ -1,4 +1,3 @@
-use alloy_primitives::FixedBytes;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -68,10 +67,10 @@ impl AggchainProofWitness {
     pub fn bridge_constraints_input(&self) -> BridgeConstraintsInput {
         BridgeConstraintsInput {
             ger_addr: L2_GER_ADDR, // set as constant for now
-            prev_l2_block_hash: FixedBytes::from(self.fep.public_values.prev_block_hash),
-            new_l2_block_hash: FixedBytes::from(self.fep.public_values.new_block_hash),
-            new_local_exit_root: FixedBytes::from(&self.new_local_exit_root.0),
-            l1_info_root: FixedBytes::from(&self.l1_info_root.0),
+            prev_l2_block_hash: self.fep.public_values.prev_block_hash.into(),
+            new_l2_block_hash: self.fep.public_values.new_block_hash.into(),
+            new_local_exit_root: self.new_local_exit_root,
+            l1_info_root: self.l1_info_root,
             bridge_witness: self.bridge_witness.clone(),
         }
     }

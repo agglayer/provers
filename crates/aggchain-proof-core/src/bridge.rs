@@ -1,11 +1,12 @@
 //! A program that verifies the bridge integrity
-use alloy_primitives::{address, Address, FixedBytes};
+use alloy_primitives::{address, Address};
 use alloy_sol_macro::sol;
 use alloy_sol_types::SolCall;
 use serde::{Deserialize, Serialize};
 use sp1_cc_client_executor::{io::EVMStateSketch, ClientExecutor, ContractInput};
 
 use crate::inserted_ger::InsertedGER;
+use crate::keccak::digest::Digest;
 use crate::keccak::keccak256_combine;
 
 // This solution won't work with Outpost networks as this address won't be
@@ -35,22 +36,13 @@ pub enum BridgeConstraintsError {
 
     /// The block hashes used on the sketches do not match
     #[error("Block hash does not match: {left} != {right}")]
-    MismatchBlockHash {
-        left: FixedBytes<32>,
-        right: FixedBytes<32>,
-    },
+    MismatchBlockHash { left: Digest, right: Digest },
 
     #[error("Hash chain does not match: computed {computed} vs input {input}")]
-    MismatchHashChain {
-        computed: FixedBytes<32>,
-        input: FixedBytes<32>,
-    },
+    MismatchHashChain { computed: Digest, input: Digest },
 
     #[error("Local exit root does not match: retrieved {retrieved} vs input {input}")]
-    MismatchLocalExitRoot {
-        retrieved: FixedBytes<32>,
-        input: FixedBytes<32>,
-    },
+    MismatchLocalExitRoot { retrieved: Digest, input: Digest },
 }
 
 // All the bridge data required to verify the BridgeConstraintsInput integrity
@@ -67,10 +59,10 @@ pub struct BridgeWitness {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BridgeConstraintsInput {
     pub ger_addr: Address,
-    pub prev_l2_block_hash: FixedBytes<32>,
-    pub new_l2_block_hash: FixedBytes<32>,
-    pub new_local_exit_root: FixedBytes<32>,
-    pub l1_info_root: FixedBytes<32>,
+    pub prev_l2_block_hash: Digest,
+    pub new_l2_block_hash: Digest,
+    pub new_local_exit_root: Digest,
+    pub l1_info_root: Digest,
     pub bridge_witness: BridgeWitness,
 }
 
@@ -81,103 +73,105 @@ pub struct BridgeConstraintsInput {
 // Even though the current example satisfies these constraints, it's important
 // to keep them in mind when updating the code.
 impl BridgeConstraintsInput {
-    fn hash_chain_state(&self, sketch: &EVMStateSketch) -> (FixedBytes<32>, FixedBytes<32>) {
-        let hash_chain_calldata =
-            GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {};
+    /// Returns the hash chain and its block hash for the given block sketch.
+    fn hash_chain_state(&self, sketch: &EVMStateSketch) -> (Digest, Digest) {
+        // Load executor with the L2 block sketch
+        let executor_hash_chain: ClientExecutor = ClientExecutor::new(&sketch).unwrap();
 
-        // Load executor with the previous L2 block sketch
-        let executor_prev_hash_chain: ClientExecutor = ClientExecutor::new(&sketch).unwrap();
-
-        let get_prev_hash_chain_input = ContractInput::new_call(
+        let get_hash_chain_input = ContractInput::new_call(
             self.ger_addr,
             Address::default(),
-            hash_chain_calldata.clone(),
+            GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
         );
 
         // Execute the static call
-        let prev_hash_chain_call_output = executor_prev_hash_chain
-            .execute(get_prev_hash_chain_input)
-            .unwrap();
+        let hash_chain_call_output = executor_hash_chain.execute(get_hash_chain_input).unwrap();
 
-        // Decode prev hash chain from the result
+        // Decode hash chain from the result
         (
             GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall::abi_decode_returns(
-                &prev_hash_chain_call_output.contractOutput,
+                &hash_chain_call_output.contractOutput,
                 true,
             )
             .unwrap()
-            .hashChain,
-            prev_hash_chain_call_output.blockHash,
+            .hashChain
+            .0
+            .into(),
+            hash_chain_call_output.blockHash.0.into(),
         )
-    }
-
-    fn prev_hash_chain_state(&self) -> (FixedBytes<32>, FixedBytes<32>) {
-        self.hash_chain_state(&self.bridge_witness.prev_hash_chain_sketch)
-    }
-
-    fn new_hash_chain_state(&self) -> (FixedBytes<32>, FixedBytes<32>) {
-        self.hash_chain_state(&self.bridge_witness.new_hash_chain_sketch)
-        // TODO: move block hash check here
     }
 
     pub fn verify(&self) -> Result<(), BridgeConstraintsError> {
         // Verify bridge state:
 
         // 1. Get the state of the hash chain of the previous block on L2
-        let (prev_hash_chain, prev_hash_chain_block_hash) = self.prev_hash_chain_state();
+        let (prev_hash_chain, prev_hash_chain_block_hash) =
+            self.hash_chain_state(&self.bridge_witness.prev_hash_chain_sketch);
 
         // 2. Get the state of the hash chain of the new block on L2
-        let (new_hash_chain, new_hash_chain_block_hash) = self.new_hash_chain_state();
+        let (new_hash_chain, new_hash_chain_block_hash) =
+            self.hash_chain_state(&self.bridge_witness.new_hash_chain_sketch);
 
         // 3.1 Get the bridge address from the GER smart contract.
         // Since the bridge address is not constant but the l2 ger address is
         // We can retrieve the bridge address saving some public inputs and possible
         // errors
-        let executor_get_bridge_address: ClientExecutor =
-            ClientExecutor::new(&self.bridge_witness.get_bridge_address_sketch).unwrap();
+        let (bridge_address, bridge_address_retrieved_block_hash) = {
+            let executor_get_bridge_address: ClientExecutor =
+                ClientExecutor::new(&self.bridge_witness.get_bridge_address_sketch).unwrap();
 
-        let get_bridge_address_contract_input: ContractInput = ContractInput::new_call(
-            self.ger_addr,
-            Address::default(),
-            GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
-        );
+            let get_bridge_address_contract_input: ContractInput = ContractInput::new_call(
+                self.ger_addr,
+                Address::default(),
+                GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
+            );
 
-        // Execute the static call
-        let get_bridge_address_call_output = executor_get_bridge_address
-            .execute(get_bridge_address_contract_input)
-            .unwrap();
+            // Execute the static call
+            let get_bridge_address_call_output = executor_get_bridge_address
+                .execute(get_bridge_address_contract_input)
+                .unwrap();
 
-        // Decode new bridge address from the result
-        let bridge_address =
-            GlobalExitRootManagerL2SovereignChain::bridgeAddressCall::abi_decode_returns(
-                &get_bridge_address_call_output.contractOutput,
-                true,
+            // Decode new bridge address from the result
+            (
+                GlobalExitRootManagerL2SovereignChain::bridgeAddressCall::abi_decode_returns(
+                    &get_bridge_address_call_output.contractOutput,
+                    true,
+                )
+                .unwrap()
+                .bridgeAddress,
+                get_bridge_address_call_output.blockHash.0.into(),
             )
-            .unwrap()
-            .bridgeAddress;
+        };
 
         // 3.2 Get the new local exit root
-        let executor_new_ler: ClientExecutor =
-            ClientExecutor::new(&self.bridge_witness.new_ler_sketch).unwrap();
+        let (new_ler, new_ler_retrieved_block_hash) = {
+            let executor_new_ler: ClientExecutor =
+                ClientExecutor::new(&self.bridge_witness.new_ler_sketch).unwrap();
 
-        let get_new_ler_contract_input: ContractInput = ContractInput::new_call(
-            bridge_address,
-            Address::default(),
-            BridgeL2SovereignChain::getRootCall {},
-        );
+            let get_new_ler_contract_input: ContractInput = ContractInput::new_call(
+                bridge_address,
+                Address::default(),
+                BridgeL2SovereignChain::getRootCall {},
+            );
 
-        // Execute the static call
-        let new_ler_call_output = executor_new_ler
-            .execute(get_new_ler_contract_input)
-            .unwrap();
+            // Execute the static call
+            let new_ler_call_output = executor_new_ler
+                .execute(get_new_ler_contract_input)
+                .unwrap();
 
-        // Decode new local exit root from the result
-        let new_ler = BridgeL2SovereignChain::getRootCall::abi_decode_returns(
-            &new_ler_call_output.contractOutput,
-            true,
-        )
-        .unwrap()
-        .lastRollupExitRoot;
+            // Decode new local exit root from the result
+            (
+                BridgeL2SovereignChain::getRootCall::abi_decode_returns(
+                    &new_ler_call_output.contractOutput,
+                    true,
+                )
+                .unwrap()
+                .lastRollupExitRoot
+                .0
+                .into(),
+                new_ler_call_output.blockHash.0.into(),
+            )
+        };
 
         // 4. Check consistency of the calls
 
@@ -219,12 +213,9 @@ impl BridgeConstraintsInput {
 
         check_block_hash(self.new_l2_block_hash, new_hash_chain_block_hash)?;
 
-        check_block_hash(
-            self.new_l2_block_hash,
-            get_bridge_address_call_output.blockHash,
-        )?;
+        check_block_hash(self.new_l2_block_hash, bridge_address_retrieved_block_hash)?;
 
-        check_block_hash(self.new_l2_block_hash, new_ler_call_output.blockHash)?;
+        check_block_hash(self.new_l2_block_hash, new_ler_retrieved_block_hash)?;
 
         Ok(())
     }
@@ -246,9 +237,7 @@ impl BridgeWitness {
         self.injected_gers
             .iter()
             .map(|ger| ger.inserted_ger())
-            .fold(initial_hash_chain, |acc, ger| {
-                keccak256_combine([acc, ger]).0.into()
-            })
+            .fold(initial_hash_chain, |acc, ger| keccak256_combine([acc, ger]))
     }
 }
 
@@ -421,11 +410,13 @@ mod tests {
             ))
             .await?;
 
-        let new_ler =
+        let new_ler: Digest =
             BridgeL2SovereignChain::getRootCall::abi_decode_returns(&new_ler_bytes, true)?
-                .lastRollupExitRoot;
+                .lastRollupExitRoot
+                .0
+                .into();
 
-        let expected_new_ler: FixedBytes<32> = {
+        let expected_new_ler: Digest = {
             let bytes = hex::decode(local_exit_root.trim_start_matches("0x")).unwrap();
             let arr: [u8; 32] = bytes.try_into().unwrap();
             arr.into()
@@ -437,8 +428,8 @@ mod tests {
         // Commit the bridge proof.
         let bridge_data_input = BridgeConstraintsInput {
             ger_addr: ger_address,
-            prev_l2_block_hash: executor_prev_hash_chain_sketch.header.hash_slow(),
-            new_l2_block_hash: executor_new_hash_chain.header.hash_slow(),
+            prev_l2_block_hash: executor_prev_hash_chain_sketch.header.hash_slow().0.into(),
+            new_l2_block_hash: executor_new_hash_chain.header.hash_slow().0.into(),
             new_local_exit_root: expected_new_ler,
             l1_info_root: {
                 let bytes = hex::decode(l1_info_root.trim_start_matches("0x")).unwrap();
