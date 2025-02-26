@@ -33,7 +33,7 @@ message GenerateAggchainProofRequest {
 message GenerateAggchainProofResponse {
   // Aggchain proof.
   bytes aggchain_proof = 1;
-  // Start block of the aggregated span proof.
+  // Start block of the aggchain proof.
   uint64 start_block = 2;
   // The end block of the aggchain proof.
   uint64 end_block = 3;
