@@ -188,13 +188,7 @@ impl BridgeConstraintsInput {
 
         // 4.1 Reconstruct hashChain based on the previous hashChain and the injected
         // GERs
-        let reconstructed_hash_chain = compute_ger_hash_chain(
-            prev_hash_chain,
-            self.bridge_witness
-                .injected_gers
-                .iter()
-                .map(|inserted_ger| inserted_ger.inserted_ger().0.into()),
-        );
+        let reconstructed_hash_chain = self.bridge_witness.ger_hash_chain(prev_hash_chain);
 
         // Check that the reconstructed hash chain is equal to the new hash chain
         if reconstructed_hash_chain != new_hash_chain {
@@ -254,17 +248,16 @@ impl BridgeConstraintsInput {
     }
 }
 
-// Compute ger hash chain following:
-// new_hash_chain = Keccak256(current_hash_chain, newRoot);
-pub fn compute_ger_hash_chain(
-    initial_hash_chain: FixedBytes<32>,
-    global_exit_roots: impl Iterator<Item = FixedBytes<32>>,
-) -> FixedBytes<32> {
-    let mut hash_chain = initial_hash_chain;
-    for ger in global_exit_roots {
-        hash_chain = FixedBytes::from(keccak256_combine([hash_chain, ger]).0);
+impl BridgeWitness {
+    /// Computes the GER hash chain from the initial hash.
+    fn ger_hash_chain(&self, initial_hash_chain: Digest) -> Digest {
+        self.injected_gers
+            .iter()
+            .map(|ger| ger.inserted_ger())
+            .fold(initial_hash_chain, |acc, ger| {
+                keccak256_combine([acc, ger]).0.into()
+            })
     }
-    hash_chain
 }
 
 #[cfg(test)]
