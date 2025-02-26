@@ -1,16 +1,16 @@
 //! A program that verifies the bridge integrity
 use alloy_primitives::{address, Address};
 use alloy_sol_macro::sol;
-use alloy_sol_types::SolCall;
 use serde::{Deserialize, Serialize};
-use sp1_cc_client_executor::ContractPublicValues;
-use sp1_cc_client_executor::{io::EVMStateSketch, ClientExecutor, ContractInput};
+use sp1_cc_client_executor::io::EVMStateSketch;
+use static_call::{execute_static_call, StaticCallError, StaticCallStage};
 
 use crate::bridge::inserted_ger::InsertedGER;
 use crate::keccak::digest::Digest;
 use crate::keccak::keccak256_combine;
 
 mod inserted_ger;
+mod static_call;
 
 // This solution won't work with Outpost networks as this address won't be
 // constant GlobalExitRootManagerL2SovereignChain smart contract address
@@ -54,17 +54,6 @@ pub enum BridgeConstraintsError {
     },
 }
 
-/// Represents all the static call errors.
-#[derive(Clone, thiserror::Error, Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub enum StaticCallError {
-    #[error("Failure on the initialization of the ClientExecutor: {0}")]
-    ClientInitializationFailure(String),
-    #[error("Failure on the execution of the ClientExecutor: {0}")]
-    ClientExecutionFailure(String),
-    #[error("Failure on the decoding of the contractOutput: {0}")]
-    DecodeContractOutputFailure(String),
-}
-
 /// Bridge data required to verify the BridgeConstraintsInput integrity.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BridgeWitness {
@@ -96,37 +85,6 @@ pub struct BridgeConstraintsInput {
     pub bridge_witness: BridgeWitness,
 }
 
-/// Execute a static call.
-/// Returns the public values and the decoded output values.
-fn static_call<C: SolCall>(
-    state_sketch: &EVMStateSketch,
-    contract_address: Address,
-    calldata: C,
-) -> Result<(ContractPublicValues, C::Return), StaticCallError> {
-    let cc_public_values = ClientExecutor::new(&state_sketch)
-        .map_err(|e| StaticCallError::ClientInitializationFailure(e.to_string()))?
-        .execute(ContractInput::new_call(
-            contract_address,
-            Address::default(),
-            calldata,
-        ))
-        .map_err(|e| StaticCallError::ClientExecutionFailure(e.to_string()))?;
-
-    let decoded_contract_output = C::abi_decode_returns(&cc_public_values.contractOutput, true)
-        .map_err(|e| StaticCallError::DecodeContractOutputFailure(e.to_string()))?;
-
-    Ok((cc_public_values, decoded_contract_output))
-}
-
-/// Context giver for static call errors.
-#[derive(Serialize, Deserialize, Clone, Eq, PartialEq, Debug)]
-pub enum StaticCallStage {
-    PrevHashChain,
-    NewHashChain,
-    BridgeAddress,
-    NewLER,
-}
-
 // Warning using static calls:
 // The static call must not use the chainID opcode, since will return 1
 // (mainnet). Evm version used by the solidity compiler must be compatible with
@@ -140,7 +98,7 @@ impl BridgeConstraintsInput {
         sketch: &EVMStateSketch,
     ) -> Result<(Digest, Digest), StaticCallError> {
         // Execute the static call
-        let (hash_chain_call_output, decoded_return) = static_call(
+        let (hash_chain_call_output, decoded_return) = execute_static_call(
             sketch,
             self.ger_addr,
             GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
@@ -160,9 +118,10 @@ impl BridgeConstraintsInput {
             |error, stage| BridgeConstraintsError::StaticCallError { stage, error };
 
         // 1. Get the state of the hash chain of the previous block on L2
-        let (prev_hash_chain, prev_hash_chain_block_hash) = self
-            .hash_chain_state(&self.bridge_witness.prev_hash_chain_sketch)
-            .map_err(|e| static_call_error(e, StaticCallStage::PrevHashChain))?;
+        let (prev_hash_chain, prev_hash_chain_block_hash) = {
+            self.hash_chain_state(&self.bridge_witness.prev_hash_chain_sketch)
+                .map_err(|e| static_call_error(e, StaticCallStage::PrevHashChain))?
+        };
 
         // 2. Get the state of the hash chain of the new block on L2
         let (new_hash_chain, new_hash_chain_block_hash) = self
@@ -175,7 +134,7 @@ impl BridgeConstraintsInput {
         // errors
         let (bridge_address, bridge_address_retrieved_block_hash) = {
             // Execute the static call
-            let (get_bridge_address_call_output, decoded_return) = static_call(
+            let (get_bridge_address_call_output, decoded_return) = execute_static_call(
                 &self.bridge_witness.get_bridge_address_sketch,
                 self.ger_addr,
                 GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
@@ -192,7 +151,7 @@ impl BridgeConstraintsInput {
         // 3.2 Get the new local exit root
         let (new_ler, new_ler_retrieved_block_hash) = {
             // Execute the static call
-            let (new_ler_call_output, decoded_return) = static_call(
+            let (new_ler_call_output, decoded_return) = execute_static_call(
                 &self.bridge_witness.new_ler_sketch,
                 bridge_address,
                 BridgeL2SovereignChain::getRootCall {},
@@ -273,7 +232,9 @@ mod tests {
     use alloy_primitives::hex;
     use alloy_provider::RootProvider;
     use alloy_rpc_types::BlockNumberOrTag;
+    use alloy_sol_types::SolCall;
     use serde_json::Value;
+    use sp1_cc_client_executor::ContractInput;
     use sp1_cc_host_executor::HostExecutor;
     use url::Url;
 
