@@ -67,18 +67,12 @@ where
         let response = self
             .polygon_zkevm_bridge_v2
             .getRoot()
-            .call_raw()
+            .call()
             .block(block_number.into())
             .await
             .map_err(Error::LocalExitRootError)?;
 
-        let result = self
-            .polygon_zkevm_bridge_v2
-            .getRoot()
-            .decode_output(response, true)
-            .map_err(Error::LocalExitRootError)?;
-
-        Ok(*result._0)
+        Ok(*response._0)
     }
 }
 
@@ -88,7 +82,7 @@ where
     RpcProvider: alloy::providers::Provider + Send + Sync,
 {
     fn parse_l2_output_root(json: serde_json::Value) -> Result<L2OutputAtBlock, Error> {
-        fn parse_field(json: &serde_json::Value, field: &str) -> Result<B256, Error> {
+        fn parse_hash(json: &serde_json::Value, field: &str) -> Result<B256, Error> {
             let value_str = json
                 .get(field)
                 .ok_or(Error::L2OutputAtBlockValueMissing(field.to_string()))?
@@ -104,11 +98,11 @@ where
             .ok_or(Error::L2OutputAtBlockValueMissing("blockRef".to_string()))?;
 
         Ok(L2OutputAtBlock {
-            version: parse_field(&json, "version")?,
-            state_root: *parse_field(&json, "stateRoot")?,
-            withdrawal_storage_root: *parse_field(&json, "withdrawalStorageRoot")?,
-            latest_block_hash: *parse_field(block_ref, "hash")?,
-            output_root: *parse_field(&json, "outputRoot")?,
+            version: parse_hash(&json, "version")?,
+            state_root: *parse_hash(&json, "stateRoot")?,
+            withdrawal_storage_root: *parse_hash(&json, "withdrawalStorageRoot")?,
+            latest_block_hash: *parse_hash(block_ref, "hash")?,
+            output_root: *parse_hash(&json, "outputRoot")?,
         })
     }
 
@@ -133,16 +127,11 @@ where
         let response = self
             .aggchain_fep
             .chainConfigHash()
-            .call_raw()
+            .call()
             .await
             .map_err(Error::RollupConfigHashError)?;
 
-        let chain_config_hash_response = self
-            .aggchain_fep
-            .chainConfigHash()
-            .decode_output(response, true)
-            .map_err(Error::RollupConfigHashError)?;
-        Ok(*chain_config_hash_response._0)
+        Ok(*response._0)
     }
 }
 

@@ -154,7 +154,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         let _rollup_config_hash = contracts_client
             .get_rollup_config_hash()
             .await
-            .map_err(Error::L2ChainDataRetrievalError)?;
+            .map_err(Error::L1ChainDataRetrievalError)?;
 
         todo!()
     }
