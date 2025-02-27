@@ -30,6 +30,13 @@ pub enum StaticCallError {
 }
 
 /// Returns the decoded output values and the block hash of a static call.
+///
+/// WARN: The static call must not use the `chainID` opcode, as it will return 1
+/// (mainnet). The EVM version used by the Solidity compiler must be compatible
+/// with the version used in the static call. No special precompiled contracts
+/// are supported.
+/// Even though the current example satisfies these constraints, it's important
+/// to keep them in mind when updating the code.
 pub fn execute_static_call<C: SolCall>(
     state_sketch: &EVMStateSketch,
     contract_address: Address,

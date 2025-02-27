@@ -12,8 +12,8 @@ use crate::keccak::keccak256_combine;
 mod inserted_ger;
 mod static_call;
 
-// This solution won't work with Outpost networks as this address won't be
-// constant GlobalExitRootManagerL2SovereignChain smart contract address
+/// NOTE: Won't work with Outpost networks as this address won't be constant.
+/// Address of the GlobalExitRootManagerL2SovereignChain smart contract.
 pub(crate) const L2_GER_ADDR: Address = address!("a40d5f56745a118d0906a34e69aec8c0db1cb8fa");
 
 // Contract interfaces of the pre-deployed contracts on sovereign chains
@@ -90,11 +90,6 @@ pub struct BridgeConstraintsInput {
     pub bridge_witness: BridgeWitness,
 }
 
-// WARN: The static call must not use the chainID opcode, since will return 1
-// (mainnet). Evm version used by the solidity compiler must be compatible with
-// the version used on the static call. No special precompileds are supported
-// Even though the current example satisfies these constraints, it's important
-// to keep them in mind when updating the code.
 impl BridgeConstraintsInput {
     /// Verify the previous and new hash chain and its reconstruction.
     fn verify_hash_chain(&self) -> Result<(), BridgeConstraintsError> {
@@ -455,11 +450,6 @@ mod tests {
             },
         };
 
-        // Save the BridgeConstraintsInput to a file for the CI test
-        // let output_file =
-        // File::create("src/test_input/bridge_constraints_input.json")?;
-        // serde_json::to_writer_pretty(output_file, &bridge_data_input)?;
-
         assert!(bridge_data_input.verify().is_ok());
 
         // Invalid l1 info root
@@ -500,20 +490,16 @@ mod tests {
         Ok(())
     }
 
-    #[tokio::test(flavor = "multi_thread")]
-    async fn test_bridge_constraints_from_file() -> Result<(), Box<dyn std::error::Error>> {
-        use std::fs::File;
-        use std::io::BufReader;
-
+    #[test]
+    fn test_bridge_constraints_from_file() {
         // Read and parse the JSON file
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("src/test_input/bridge_constraints_input.json");
-        let file = File::open(path)?;
+        let file = File::open(path).unwrap();
         let reader = BufReader::new(file);
-        let bridge_data_input: BridgeConstraintsInput = serde_json::from_reader(reader)?;
+        let bridge_data_input: BridgeConstraintsInput = serde_json::from_reader(reader).unwrap();
 
         // Verify the bridge data input
         assert!(bridge_data_input.verify().is_ok());
-        Ok(())
     }
 }
