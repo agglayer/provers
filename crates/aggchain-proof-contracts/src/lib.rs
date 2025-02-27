@@ -143,6 +143,11 @@ impl AggchainContractsClient for AggchainContractsRpcClient<AlloyFillProvider> {
         network_id: u32,
         contracts: &AggchainProofContractsConfig,
     ) -> Result<Self, crate::Error> {
+        let async_runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(Error::AsyncEngineSetupError)?;
+
         let l1_client = build_alloy_fill_provider(
             l1_rpc_endpoint,
             prover_alloy::DEFAULT_HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
@@ -172,15 +177,11 @@ impl AggchainContractsClient for AggchainContractsRpcClient<AlloyFillProvider> {
         // Retrieve PolygonZkEVMBridgeV2 contract address from the global exit root
         // manager contract.
         let polygon_zkevm_bridge_address = {
-            tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .map_err(Error::AsyncEngineSetupError)?
-                .block_on(async move {
-                    // We need to retrieve PolygonZkEVMBridgeV2 contract address from the
-                    // global exit root manager contract.
-                    global_exit_root_manager_l2.bridgeAddress().call().await
-                })
+            async_runtime.block_on(async move {
+                // We need to retrieve PolygonZkEVMBridgeV2 contract address from the
+                // global exit root manager contract.
+                global_exit_root_manager_l2.bridgeAddress().call().await
+            })
         }
         .map_err(Error::BridgeAddressError)?;
 
@@ -197,19 +198,15 @@ impl AggchainContractsClient for AggchainContractsRpcClient<AlloyFillProvider> {
         // Retrieve AggchainFep address from the Polygon rollup manager contract.
         let aggchain_fep_address = {
             let polygon_rollup_manager = polygon_rollup_manager.clone();
-            tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .map_err(Error::AsyncEngineSetupError)?
-                .block_on(async move {
-                    // We need to retrieve AggchainFep contract address from the
-                    // polygon rollup manager.
-                    let rollup_data = polygon_rollup_manager
-                        .rollupIDToRollupData(network_id)
-                        .call()
-                        .await?;
-                    Ok(rollup_data.rollupData.rollupContract)
-                })
+            async_runtime.block_on(async move {
+                // We need to retrieve AggchainFep contract address from the
+                // polygon rollup manager.
+                let rollup_data = polygon_rollup_manager
+                    .rollupIDToRollupData(network_id)
+                    .call()
+                    .await?;
+                Ok(rollup_data.rollupData.rollupContract)
+            })
         }
         .map_err(Error::BridgeAddressError)?;
 
