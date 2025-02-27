@@ -6,6 +6,6 @@ use crate::bridge::BridgeConstraintsError;
 #[derive(Clone, thiserror::Error, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ProofError {
     /// Error on the bridge constraints.
-    #[error("Failure in the bridge constraints verification.")]
-    BridgeConstraintsError(#[source] BridgeConstraintsError),
+    #[error(transparent)]
+    BridgeConstraintsError(#[from] BridgeConstraintsError),
 }

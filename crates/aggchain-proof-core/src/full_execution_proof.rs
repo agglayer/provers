@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+#[cfg(target_os = "zkvm")]
 use sha2::{Digest as Sha256Digest, Sha256};
 use sp1_zkvm::lib::utils::words_to_bytes_le;
 
@@ -24,7 +25,7 @@ pub struct FepPublicValues {
     pub new_block_hash: Digest,
 }
 
-#[allow(unused)]
+#[cfg(target_os = "zkvm")]
 impl FepPublicValues {
     pub fn hash(&self) -> [u8; 32] {
         let public_values = [

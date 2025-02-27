@@ -69,6 +69,12 @@ pub enum BridgeConstraintsError {
     },
 }
 
+impl BridgeConstraintsError {
+    fn static_call_error(error: StaticCallError, stage: StaticCallStage) -> BridgeConstraintsError {
+        BridgeConstraintsError::StaticCallError { error, stage }
+    }
+}
+
 /// Bridge data required to verify the BridgeConstraintsInput integrity.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BridgeWitness {
@@ -93,9 +99,6 @@ pub struct BridgeConstraintsInput {
 impl BridgeConstraintsInput {
     /// Verify the previous and new hash chain and its reconstruction.
     fn verify_hash_chain(&self) -> Result<(), BridgeConstraintsError> {
-        let static_call_error =
-            |error, stage| BridgeConstraintsError::StaticCallError { stage, error };
-
         // 1.1 Get the state of the hash chain of the previous block on L2
         let prev_hash_chain: Digest = {
             let (decoded_return, retrieved_block_hash) = execute_static_call(
@@ -103,7 +106,9 @@ impl BridgeConstraintsInput {
                 self.ger_addr,
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
             )
-            .map_err(|e| static_call_error(e, StaticCallStage::PrevHashChain))?;
+            .map_err(|e| {
+                BridgeConstraintsError::static_call_error(e, StaticCallStage::PrevHashChain)
+            })?;
 
             // check on block hash
             if retrieved_block_hash != self.prev_l2_block_hash {
@@ -124,7 +129,9 @@ impl BridgeConstraintsInput {
                 self.ger_addr,
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
             )
-            .map_err(|e| static_call_error(e, StaticCallStage::NewHashChain))?;
+            .map_err(|e| {
+                BridgeConstraintsError::static_call_error(e, StaticCallStage::NewHashChain)
+            })?;
 
             // check on block hash
             if retrieved_block_hash != self.new_l2_block_hash {
@@ -158,9 +165,6 @@ impl BridgeConstraintsInput {
 
     // Verify the new local exit root.
     fn verify_new_ler(&self) -> Result<(), BridgeConstraintsError> {
-        let static_call_error =
-            |error, stage| BridgeConstraintsError::StaticCallError { stage, error };
-
         // 2.1 Get the bridge address from the GER smart contract.
         // Since the bridge address is not constant but the l2 ger address is
         // We can retrieve the bridge address saving some public inputs and possible
@@ -172,7 +176,9 @@ impl BridgeConstraintsInput {
                 self.ger_addr,
                 GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
             )
-            .map_err(|e| static_call_error(e, StaticCallStage::BridgeAddress))?;
+            .map_err(|e| {
+                BridgeConstraintsError::static_call_error(e, StaticCallStage::BridgeAddress)
+            })?;
 
             // check on block hash
             if retrieved_block_hash != self.new_l2_block_hash {
@@ -195,14 +201,14 @@ impl BridgeConstraintsInput {
                 bridge_address,
                 BridgeL2SovereignChain::getRootCall {},
             )
-            .map_err(|e| static_call_error(e, StaticCallStage::NewLER))?;
+            .map_err(|e| BridgeConstraintsError::static_call_error(e, StaticCallStage::NewLer))?;
 
             // check on block hash
             if retrieved_block_hash != self.new_l2_block_hash {
                 return Err(BridgeConstraintsError::MismatchBlockHash {
                     retrieved: retrieved_block_hash,
                     input: self.new_l2_block_hash,
-                    stage: StaticCallStage::NewLER,
+                    stage: StaticCallStage::NewLer,
                 });
             }
 
@@ -223,17 +229,21 @@ impl BridgeConstraintsInput {
 
     /// Verify the inclusion proofs of the inserted GERs up to the L1InfoRoot.
     fn verify_inserted_gers(&self) -> Result<(), BridgeConstraintsError> {
-        self.bridge_witness
+        let maybe_wrong_inserted_ger = self
+            .bridge_witness
             .inserted_gers
             .iter()
-            .find(|ger| !ger.verify(self.l1_info_root))
-            .map_or(Ok(()), |inserted_ger| {
-                Err(BridgeConstraintsError::InvalidMerklePathGERToL1Root {
-                    inserted_ger: inserted_ger.ger(),
-                    l1_info_leaf_index: inserted_ger.l1_info_tree_index,
-                    l1_info_root: self.l1_info_root,
-                })
-            })
+            .find(|ger| !ger.verify(self.l1_info_root));
+
+        if let Some(wrong_ger) = maybe_wrong_inserted_ger {
+            return Err(BridgeConstraintsError::InvalidMerklePathGERToL1Root {
+                inserted_ger: wrong_ger.ger(),
+                l1_info_leaf_index: wrong_ger.l1_info_tree_index,
+                l1_info_root: self.l1_info_root,
+            });
+        }
+
+        Ok(())
     }
 
     /// Verify the bridge state.

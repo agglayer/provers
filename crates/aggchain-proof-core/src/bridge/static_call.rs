@@ -15,7 +15,7 @@ pub enum StaticCallStage {
     /// Related to the fetch of the bridge address from the GER smart contract.
     BridgeAddress,
     /// Related to the fetch of the new local exit root.
-    NewLER,
+    NewLer,
 }
 
 /// Represents all the static call errors.

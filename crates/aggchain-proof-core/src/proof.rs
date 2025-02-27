@@ -40,9 +40,7 @@ impl AggchainProofWitness {
         self.fep.verify()?;
 
         // Verify the bridge constraints
-        self.bridge_constraints_input()
-            .verify()
-            .map_err(ProofError::BridgeConstraintsError)?;
+        self.bridge_constraints_input().verify()?;
 
         Ok(self.public_values())
     }
