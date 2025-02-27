@@ -269,14 +269,14 @@ mod tests {
     use crate::local_exit_tree::proof::LETMerkleProof;
 
     #[tokio::test(flavor = "multi_thread")]
-    #[ignore = "Unable to properly test with mock yet"]
+    #[ignore = "e2e test, sepolia provider needed"]
     async fn test_bridge_contraints() -> Result<(), Box<dyn std::error::Error>> {
         // Initialize the environment variables.
         dotenvy::dotenv().ok();
 
         // Read and parse the JSON file
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("src/test_input/bridge_test.json");
+            .join("src/test_input/bridge_input_e2e_sepolia.json");
         let file = File::open(path)?;
         let reader = BufReader::new(file);
         let json_data: Value = serde_json::from_reader(reader)?;
@@ -455,6 +455,27 @@ mod tests {
             },
         };
 
+        // Save the BridgeConstraintsInput to a file for the CI test
+        // let output_file = File::create("src/test_input/bridge_constraints_input.json")?;
+        // serde_json::to_writer_pretty(output_file, &bridge_data_input)?;
+
+        assert!(bridge_data_input.verify().is_ok());
+        Ok(())
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_bridge_constraints_from_file() -> Result<(), Box<dyn std::error::Error>> {
+        use std::fs::File;
+        use std::io::BufReader;
+
+        // Read and parse the JSON file
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("src/test_input/bridge_constraints_input.json");
+        let file = File::open(path)?;
+        let reader = BufReader::new(file);
+        let bridge_data_input: BridgeConstraintsInput = serde_json::from_reader(reader)?;
+
+        // Verify the bridge data input
         assert!(bridge_data_input.verify().is_ok());
         Ok(())
     }
