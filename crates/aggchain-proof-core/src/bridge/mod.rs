@@ -72,7 +72,7 @@ pub enum BridgeConstraintsError {
 /// Bridge data required to verify the BridgeConstraintsInput integrity.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BridgeWitness {
-    pub injected_gers: Vec<InsertedGER>,
+    pub inserted_gers: Vec<InsertedGER>,
     pub prev_hash_chain_sketch: EVMStateSketch,
     pub new_hash_chain_sketch: EVMStateSketch,
     pub get_bridge_address_sketch: EVMStateSketch,
@@ -146,7 +146,7 @@ impl BridgeConstraintsInput {
         // 1.3 Check that the reconstructed hash chain is equal to the new hash chain
         let reconstructed_hash_chain = self
             .bridge_witness
-            .injected_gers
+            .inserted_gers
             .iter()
             .map(|inserted_ger| inserted_ger.ger())
             .fold(prev_hash_chain, |acc, ger| keccak256_combine([acc, ger]));
@@ -229,7 +229,7 @@ impl BridgeConstraintsInput {
     /// Verify the inclusion proofs of the inserted GERs up to the L1InfoRoot.
     fn verify_inserted_gers(&self) -> Result<(), BridgeConstraintsError> {
         self.bridge_witness
-            .injected_gers
+            .inserted_gers
             .iter()
             .find(|ger| !ger.verify(self.l1_info_root))
             .map_or(Ok(()), |inserted_ger| {
@@ -447,7 +447,7 @@ mod tests {
                 arr.into()
             },
             bridge_witness: BridgeWitness {
-                injected_gers: imported_l1_info_tree_leafs,
+                inserted_gers: imported_l1_info_tree_leafs,
                 prev_hash_chain_sketch: executor_prev_hash_chain_sketch.clone(),
                 new_hash_chain_sketch: executor_new_hash_chain.clone(),
                 get_bridge_address_sketch: executor_get_bridge_address_sketch,
@@ -479,9 +479,9 @@ mod tests {
         {
             let bridge_data_invalid = BridgeConstraintsInput {
                 bridge_witness: BridgeWitness {
-                    injected_gers: bridge_data_input
+                    inserted_gers: bridge_data_input
                         .bridge_witness
-                        .injected_gers
+                        .inserted_gers
                         .iter()
                         .take(1)
                         .cloned()
