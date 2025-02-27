@@ -456,10 +456,47 @@ mod tests {
         };
 
         // Save the BridgeConstraintsInput to a file for the CI test
-        // let output_file = File::create("src/test_input/bridge_constraints_input.json")?;
+        // let output_file =
+        // File::create("src/test_input/bridge_constraints_input.json")?;
         // serde_json::to_writer_pretty(output_file, &bridge_data_input)?;
 
         assert!(bridge_data_input.verify().is_ok());
+
+        // Invalid l1 info root
+        {
+            let bridge_data_invalid = BridgeConstraintsInput {
+                l1_info_root: Digest([0u8; 32]),
+                ..bridge_data_input.clone()
+            };
+
+            assert!(matches!(
+                bridge_data_invalid.verify(),
+                Err(BridgeConstraintsError::InvalidMerklePathGERToL1Root { .. })
+            ));
+        }
+
+        // Invalid hash chain
+        {
+            let bridge_data_invalid = BridgeConstraintsInput {
+                bridge_witness: BridgeWitness {
+                    injected_gers: bridge_data_input
+                        .bridge_witness
+                        .injected_gers
+                        .iter()
+                        .take(1)
+                        .cloned()
+                        .collect::<Vec<_>>(),
+                    ..bridge_data_input.bridge_witness
+                },
+                ..bridge_data_input
+            };
+
+            assert!(matches!(
+                bridge_data_invalid.verify(),
+                Err(BridgeConstraintsError::MismatchHashChain { .. })
+            ));
+        }
+
         Ok(())
     }
 
