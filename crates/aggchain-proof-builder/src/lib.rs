@@ -106,8 +106,8 @@ impl AggchainProofBuilder<AggchainContractsRpcClient<AlloyFillProvider>> {
             contracts_client: Arc::new(
                 AggchainContractsRpcClient::new(
                     &config.l1_rpc_endpoint,
-                    &config.l2_el_rpc_endpoint,
-                    &config.l2_cl_rpc_endpoint,
+                    &config.l2_execution_layer_rpc_endpoint,
+                    &config.l2_consensus_layer_rpc_endpoint,
                     config.network_id,
                     &config.contracts,
                 )

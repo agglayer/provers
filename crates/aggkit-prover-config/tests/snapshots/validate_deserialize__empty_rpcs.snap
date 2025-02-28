@@ -17,8 +17,8 @@ runtime-timeout = "5s"
 
 [aggchain-proof-service.aggchain-proof-builder]
 l1-rpc-endpoint = "http://anvil-mock-l1-rpc:8545/"
-l2-el-rpc-endpoint = "http://anvil-mock-l2-rpc:8545/"
-l2-cl-rpc-endpoint = "http://rollup-node-mock-l2-rpc:8545/"
+l2-execution-layer-rpc-endpoint = "http://anvil-mock-l2-rpc:8545/"
+l2-consensus-layer-rpc-endpoint = "http://rollup-node-mock-l2-rpc:8545/"
 network-id = 0
 
 [aggchain-proof-service.aggchain-proof-builder.primary-prover.network-prover]
