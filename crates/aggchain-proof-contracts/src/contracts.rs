@@ -53,7 +53,6 @@ pub trait L2LocalExitRootFetcher {
 
 #[async_trait::async_trait]
 pub trait L2OutputAtBlockFetcher {
-    fn parse_l2_output_root(json: serde_json::Value) -> Result<L2OutputAtBlock, Error>;
     async fn get_l2_output_at_block(&self, block_number: u64) -> Result<L2OutputAtBlock, Error>;
 }
 

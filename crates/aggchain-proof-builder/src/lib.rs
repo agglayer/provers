@@ -104,15 +104,9 @@ impl AggchainProofBuilder<AggchainContractsRpcClient<AlloyFillProvider>> {
 
         Ok(AggchainProofBuilder {
             contracts_client: Arc::new(
-                AggchainContractsRpcClient::new(
-                    &config.l1_rpc_endpoint,
-                    &config.l2_execution_layer_rpc_endpoint,
-                    &config.l2_consensus_layer_rpc_endpoint,
-                    config.network_id,
-                    &config.contracts,
-                )
-                .await
-                .map_err(Error::ContractsClientInitFailed)?,
+                AggchainContractsRpcClient::new(config.network_id, &config.contracts)
+                    .await
+                    .map_err(Error::ContractsClientInitFailed)?,
             ),
             prover,
             network_id: config.network_id,

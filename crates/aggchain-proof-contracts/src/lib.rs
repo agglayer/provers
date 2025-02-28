@@ -12,7 +12,6 @@ use jsonrpsee::http_client::HttpClient;
 use jsonrpsee::rpc_params;
 use prover_alloy::{build_alloy_fill_provider, AlloyFillProvider};
 use tracing::info;
-use url::Url;
 
 use crate::config::AggchainProofContractsConfig;
 use crate::contracts::{
@@ -74,31 +73,6 @@ impl<RpcProvider> L2OutputAtBlockFetcher for AggchainContractsRpcClient<RpcProvi
 where
     RpcProvider: alloy::providers::Provider + Send + Sync,
 {
-    fn parse_l2_output_root(json: serde_json::Value) -> Result<L2OutputAtBlock, Error> {
-        fn parse_hash(json: &serde_json::Value, field: &str) -> Result<B256, Error> {
-            let value_str = json
-                .get(field)
-                .ok_or(Error::L2OutputAtBlockValueMissing(field.to_string()))?
-                .as_str()
-                .ok_or(Error::L2OutputAtBlockValueMissing(field.to_string()))?;
-
-            B256::from_str(value_str)
-                .map_err(|e| Error::L2OutputAtBlockInvalidValue(field.to_string(), e))
-        }
-
-        let block_ref = json
-            .get("blockRef")
-            .ok_or(Error::L2OutputAtBlockValueMissing("blockRef".to_string()))?;
-
-        Ok(L2OutputAtBlock {
-            version: parse_hash(&json, "version")?,
-            state_root: *parse_hash(&json, "stateRoot")?,
-            withdrawal_storage_root: *parse_hash(&json, "withdrawalStorageRoot")?,
-            latest_block_hash: *parse_hash(block_ref, "hash")?,
-            output_root: *parse_hash(&json, "outputRoot")?,
-        })
-    }
-
     async fn get_l2_output_at_block(&self, block_number: u64) -> Result<L2OutputAtBlock, Error> {
         let params = rpc_params![format!("0x{block_number:x}")];
         let json: serde_json::Value = self
@@ -128,23 +102,47 @@ where
     }
 }
 
+impl<RpcProvider> AggchainContractsRpcClient<RpcProvider> {
+    fn parse_l2_output_root(json: serde_json::Value) -> Result<L2OutputAtBlock, Error> {
+        fn parse_hash(json: &serde_json::Value, field: &str) -> Result<B256, Error> {
+            let value_str = json
+                .get(field)
+                .ok_or(Error::L2OutputAtBlockValueMissing(field.to_string()))?
+                .as_str()
+                .ok_or(Error::L2OutputAtBlockValueMissing(field.to_string()))?;
+
+            B256::from_str(value_str)
+                .map_err(|e| Error::L2OutputAtBlockInvalidValue(field.to_string(), e))
+        }
+
+        let block_ref = json
+            .get("blockRef")
+            .ok_or(Error::L2OutputAtBlockValueMissing("blockRef".to_string()))?;
+
+        Ok(L2OutputAtBlock {
+            version: parse_hash(&json, "version")?,
+            state_root: *parse_hash(&json, "stateRoot")?,
+            withdrawal_storage_root: *parse_hash(&json, "withdrawalStorageRoot")?,
+            latest_block_hash: *parse_hash(block_ref, "hash")?,
+            output_root: *parse_hash(&json, "outputRoot")?,
+        })
+    }
+}
+
 impl AggchainContractsRpcClient<AlloyFillProvider> {
     pub async fn new(
-        l1_rpc_endpoint: &Url,
-        l2_el_rpc_endpoint: &Url,
-        l2_cl_rpc_endpoint: &Url,
         network_id: u32,
-        contracts: &AggchainProofContractsConfig,
+        config: &AggchainProofContractsConfig,
     ) -> Result<Self, crate::Error> {
         let l1_client = build_alloy_fill_provider(
-            l1_rpc_endpoint,
+            &config.l1_rpc_endpoint,
             prover_alloy::DEFAULT_HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
             prover_alloy::DEFAULT_HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
         )
         .map_err(Error::ProviderInitializationError)?;
 
         let l2_el_client = build_alloy_fill_provider(
-            l2_el_rpc_endpoint,
+            &config.l2_execution_layer_rpc_endpoint,
             prover_alloy::DEFAULT_HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
             prover_alloy::DEFAULT_HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
         )
@@ -152,13 +150,13 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
 
         let l2_cl_client = Arc::new(
             HttpClient::builder()
-                .build(l2_cl_rpc_endpoint)
+                .build(&config.l2_consensus_layer_rpc_endpoint)
                 .map_err(Error::RollupNodeInitError)?,
         );
 
         // Create client for global exit root manager smart contract.
         let global_exit_root_manager_l2 = GlobalExitRootManagerL2SovereignChain::new(
-            contracts.global_exit_root_manager_v2_sovereign_chain,
+            config.global_exit_root_manager_v2_sovereign_chain,
             l2_el_client.clone(),
         );
 
@@ -176,7 +174,7 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
 
         // Create client for Polygon rollup manager contract.
         let polygon_rollup_manager =
-            PolygonRollupManagerRpcClient::new(contracts.polygon_rollup_manager, l1_client.clone());
+            PolygonRollupManagerRpcClient::new(config.polygon_rollup_manager, l1_client.clone());
 
         // Retrieve AggchainFep address from the Polygon rollup manager contract.
         let aggchain_fep_address = polygon_rollup_manager
@@ -190,9 +188,9 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
         // Create client for AggchainFep smart contract.
         let aggchain_fep = AggchainFep::new(aggchain_fep_address, l1_client.clone());
 
-        info!(global_exit_root_manager_l2=%contracts.global_exit_root_manager_v2_sovereign_chain,
+        info!(global_exit_root_manager_l2=%config.global_exit_root_manager_v2_sovereign_chain,
             polygon_zkevm_bridge_v2=%polygon_zkevm_bridge_v2.address(),
-            polygon_rollup_manager=%contracts.polygon_rollup_manager,
+            polygon_rollup_manager=%config.polygon_rollup_manager,
             aggchain_fep=%aggchain_fep.address(),
             "Aggchain proof contracts client created successfully");
 
@@ -213,7 +211,6 @@ mod tests {
     use alloy::primitives::B256;
     use prover_alloy::AlloyFillProvider;
 
-    use crate::contracts::L2OutputAtBlockFetcher;
     use crate::AggchainContractsRpcClient;
 
     #[test]
