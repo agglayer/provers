@@ -163,7 +163,7 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
 
         // Create client for global exit root manager smart contract.
         let global_exit_root_manager_l2 = GlobalExitRootManagerL2SovereignChain::new(
-            contracts.global_exit_root_manager_v2_sovereign_chain,
+            contracts.global_exit_root_manager_v2_sovereign_chain_contract,
             l2_el_client.clone(),
         );
 
@@ -206,7 +206,7 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
         // Create client for AggchainFep smart contract.
         let aggchain_fep = AggchainFep::new(aggchain_fep_address, l1_client.clone());
 
-        info!(global_exit_root_manager_l2=%contracts.global_exit_root_manager_v2_sovereign_chain,
+        info!(global_exit_root_manager_l2=%contracts.global_exit_root_manager_v2_sovereign_chain_contract,
             polygon_zkevm_bridge_v2=%polygon_zkevm_bridge_v2.address(),
             polygon_rollup_manager=%contracts.polygon_rollup_manager_contract,
             aggchain_fep=%aggchain_fep.address(),

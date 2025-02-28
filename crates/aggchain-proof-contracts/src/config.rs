@@ -14,17 +14,19 @@ const POLYGON_ROLLUP_MANAGER: Address = address!("0xB7f8BC63BbcaD18155201308C8f3
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct AggchainProofContractsConfig {
-    #[serde(alias = "PolygonRollupManagerContract")]
+    /// Address of the L1 PolygonRollupManager.sol contract
+    #[serde(default = "default_polygon_rollup_manager")]
     pub polygon_rollup_manager_contract: Address,
-    #[serde(alias = "GlobalExitRootManagerL2SovereignChainContract")]
-    pub global_exit_root_manager_v2_sovereign_chain: Address,
+    /// Address of the L2 GlobalExitRootManagerL2SovereignChain.sol contract
+    #[serde(default = "default_global_exit_root_manager_v2_sovereign_chain")]
+    pub global_exit_root_manager_v2_sovereign_chain_contract: Address,
 }
 
 impl Default for AggchainProofContractsConfig {
     fn default() -> Self {
         Self {
             polygon_rollup_manager_contract: default_polygon_rollup_manager(),
-            global_exit_root_manager_v2_sovereign_chain:
+            global_exit_root_manager_v2_sovereign_chain_contract:
                 default_global_exit_root_manager_v2_sovereign_chain(),
         }
     }
