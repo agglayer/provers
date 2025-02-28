@@ -143,7 +143,20 @@ impl Executor {
                 )
             }
             ProverType::GpuProver(_) => todo!(),
-            ProverType::SindriProver(_) => todo!(),
+            ProverType::SindriProver(sindri_prover_config) => {
+                debug!("Creating Sindri prover executor...");
+                let mut sindri_client = SindriClient::default();
+                sindri_client.polling_options.timeout = Some(sindri_prover_config.proving_timeout);
+                let verification_key = Self::get_vkey(program);
+                Self::build_network_service(
+                    sindri_prover_config.get_proving_request_timeout(),
+                    SindriExecutor {
+                        prover: Arc::new(sindri_client),
+                        verification_key,
+                        timeout: sindri_prover_config.proving_timeout,
+                    },
+                )
+            },
         }
     }
 
