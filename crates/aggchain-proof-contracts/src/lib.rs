@@ -27,15 +27,6 @@ pub use crate::error::Error;
 pub trait AggchainContractsClient:
     L2LocalExitRootFetcher + L2OutputAtBlockFetcher + L1RollupConfigHashFetcher
 {
-    fn new(
-        l1_rpc_endpoint: &Url,
-        l2_el_rpc_endpoint: &Url,
-        l2_cl_rpc_endpoint: &Url,
-        network_id: u32,
-        contracts: &AggchainProofContractsConfig,
-    ) -> Result<Self, Error>
-    where
-        Self: std::marker::Sized;
 }
 
 /// `AggchainProofContractsRpcClient` is a client for interacting with the
@@ -57,6 +48,8 @@ pub struct AggchainContractsRpcClient<RpcProvider> {
     /// Aggchain FEP contract on the l1 network.
     aggchain_fep: AggchainFepRpcClient<RpcProvider>,
 }
+
+impl<T: alloy::providers::Provider> AggchainContractsClient for AggchainContractsRpcClient<T> {}
 
 #[async_trait::async_trait]
 impl<RpcProvider> L2LocalExitRootFetcher for AggchainContractsRpcClient<RpcProvider>
@@ -135,8 +128,8 @@ where
     }
 }
 
-impl AggchainContractsClient for AggchainContractsRpcClient<AlloyFillProvider> {
-    fn new(
+impl AggchainContractsRpcClient<AlloyFillProvider> {
+    pub fn new(
         l1_rpc_endpoint: &Url,
         l2_el_rpc_endpoint: &Url,
         l2_cl_rpc_endpoint: &Url,
