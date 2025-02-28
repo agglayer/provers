@@ -167,6 +167,12 @@ pub struct SindriProverConfig {
     #[serde(default = "default_network_proving_timeout")]
     #[serde(with = "crate::with::HumanDuration")]
     pub proving_timeout: Duration,
+
+    #[serde(default = "default_sindri_project_name")]
+    pub project_name: String,
+
+    #[serde(default = "default_sindri_project_tag")]
+    pub project_tag: String,
 }
 
 impl SindriProverConfig {
@@ -184,6 +190,8 @@ impl Default for SindriProverConfig {
         Self {
             proving_request_timeout: None,
             proving_timeout: default_network_proving_timeout(),
+            project_name: default_sindri_project_name(),
+            project_tag: default_sindri_project_tag(),
         }
     }
 }
@@ -199,4 +207,12 @@ const fn default_local_proving_timeout() -> Duration {
 
 const fn default_network_proving_timeout() -> Duration {
     Duration::from_secs(60 * 5)
+}
+
+fn default_sindri_project_name() -> String {
+    "pessimistic-proof".to_string()
+}
+
+fn default_sindri_project_tag() -> String {
+    "latest".to_string()
 }

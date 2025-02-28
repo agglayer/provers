@@ -2,3 +2,5 @@
 [primary-prover.sindri-prover]
 proving-request-timeout = "5m"
 proving-timeout = "10m"
+project-name = "pessimistic-proof"
+project-tag = "latest"

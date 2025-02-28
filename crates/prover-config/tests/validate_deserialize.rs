@@ -86,6 +86,8 @@ fn sindri_prover() {
         ProverType::SindriProver(SindriProverConfig {
             proving_request_timeout: Some(std::time::Duration::from_secs(300)),
             proving_timeout: std::time::Duration::from_secs(600),
+            project_name: "pessimistic-proof".to_string(),
+            project_tag: "latest".to_string(),
         })
     );
 }
