@@ -6,8 +6,14 @@ use std::{
 };
 
 pub use error::Error;
+use error::ProofVerificationError;
 use futures::{Future, TryFutureExt};
 use prover_config::ProverType;
+use sindri::{
+    client::SindriClient,
+    integrations::sp1_v4::SP1ProofInfo,
+    ProofInput,
+};
 use sp1_sdk::{
     network::{prover::NetworkProver, FulfillmentStrategy},
     CpuProver, Prover, ProverClient, SP1ProofWithPublicValues, SP1ProvingKey, SP1Stdin,
@@ -137,6 +143,7 @@ impl Executor {
                 )
             }
             ProverType::GpuProver(_) => todo!(),
+            ProverType::SindriProver(_) => todo!(),
         }
     }
 
@@ -285,6 +292,58 @@ impl Service<Request> for NetworkExecutor {
             prover
                 .verify(&proof, &verification_key)
                 .map_err(|error| Error::ProofVerificationFailed(error.into()))?;
+
+            debug!("Proof verification completed successfully");
+            Ok(Response { proof })
+        };
+
+        Box::pin(fut)
+    }
+}
+
+#[derive(Clone)]
+struct SindriExecutor {
+    prover: Arc<SindriClient>,
+    verification_key: SP1VerifyingKey,
+    timeout: Duration,
+}
+
+impl Service<Request> for SindriExecutor {
+    type Response = Response;
+
+    type Error = Error;
+
+    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
+
+    fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+
+    fn call(&mut self, req: Request) -> Self::Future {
+        let prover = self.prover.clone();
+        let stdin = req.stdin;
+
+        let verification_key = self.verification_key.clone();
+        let timeout = self.timeout;
+
+        debug!("Proving with network prover with timeout: {:?}", timeout);
+        let fut = async move {
+            debug!("Starting the proving of the requested MultiBatchHeader");
+
+            let circuit_id = "pessimistic-proof";
+            let proof_input = ProofInput::try_from(stdin).map_err(|error| Error::ProverFailed(error.to_string()))?;
+            let proof_response = prover
+                .prove_circuit_blocking(circuit_id, proof_input, None, None, None)
+                .map_err(|error| Error::ProverFailed(error.to_string()))?;
+
+            let proof = proof_response
+                .to_sp1_proof_with_public()
+                .map_err(|error| Error::ProverFailed(error.to_string()))?;
+
+            debug!("Proving completed. Verifying the proof...");
+            proof_response
+                .verify_sp1_proof_locally(&verification_key)
+                .map_err(|error| Error::ProofVerificationFailed(ProofVerificationError::Plonk(error.to_string())))?;
 
             debug!("Proof verification completed successfully");
             Ok(Response { proof })
