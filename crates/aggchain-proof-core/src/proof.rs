@@ -34,7 +34,9 @@ pub struct AggchainProofWitness {
 }
 
 impl AggchainProofWitness {
-    pub fn generate_aggchain_proof(&self) -> Result<AggchainProofPublicValues, ProofError> {
+    pub fn verify_aggchain_inputs(
+        &self,
+    ) -> Result<AggchainProofPublicValues, ProofError> {
         // Verify the FEP exclusively within the SP1 VM
         #[cfg(target_os = "zkvm")]
         self.fep.verify()?;
