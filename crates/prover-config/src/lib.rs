@@ -12,6 +12,7 @@ pub enum ProverType {
     CpuProver(CpuProverConfig),
     GpuProver(GpuProverConfig),
     MockProver(MockProverConfig),
+    SindriProver(SindriProverConfig),
 }
 
 impl Default for ProverType {
@@ -155,6 +156,38 @@ impl Default for MockProverConfig {
         }
     }
 }
+
+#[serde_as]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+#[serde(rename_all = "kebab-case")]
+pub struct SindriProverConfig {
+    #[serde_as(as = "Option<crate::with::HumanDuration>")]
+    pub proving_request_timeout: Option<Duration>,
+
+    #[serde(default = "default_network_proving_timeout")]
+    #[serde(with = "crate::with::HumanDuration")]
+    pub proving_timeout: Duration,
+}
+
+impl SindriProverConfig {
+    // This constant represents the number of second added to the proving_timeout
+    pub const DEFAULT_PROVING_TIMEOUT_PADDING: Duration = Duration::from_secs(1);
+
+    pub fn get_proving_request_timeout(&self) -> Duration {
+        self.proving_request_timeout
+            .unwrap_or_else(|| self.proving_timeout + Self::DEFAULT_PROVING_TIMEOUT_PADDING)
+    }
+}
+
+impl Default for SindriProverConfig {
+    fn default() -> Self {
+        Self {
+            proving_request_timeout: None,
+            proving_timeout: default_network_proving_timeout(),
+        }
+    }
+}
+
 
 pub const fn default_max_concurrency_limit() -> usize {
     100

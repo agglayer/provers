@@ -1,5 +1,5 @@
 use pretty_assertions::assert_eq;
-use prover_config::{CpuProverConfig, MockProverConfig, NetworkProverConfig, ProverType};
+use prover_config::{CpuProverConfig, MockProverConfig, NetworkProverConfig, ProverType, SindriProverConfig};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
@@ -70,6 +70,20 @@ fn mock_prover() {
         config.primary_prover,
         ProverType::MockProver(MockProverConfig {
             max_concurrency_limit: 10,
+            proving_request_timeout: Some(std::time::Duration::from_secs(300)),
+            proving_timeout: std::time::Duration::from_secs(600),
+        })
+    );
+}
+
+#[test]
+fn sindri_prover() {
+    let input = "./tests/fixtures/validate_config/prover_config_sindri_prover.toml";
+    let config: TestConfig = toml::from_str(&std::fs::read_to_string(input).unwrap()).unwrap();
+
+    assert_eq!(
+        config.primary_prover,
+        ProverType::SindriProver(SindriProverConfig {
             proving_request_timeout: Some(std::time::Duration::from_secs(300)),
             proving_timeout: std::time::Duration::from_secs(600),
         })
