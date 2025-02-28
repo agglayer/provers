@@ -27,13 +27,12 @@ fn main() -> anyhow::Result<()> {
         .enable_all()
         .build()?;
 
-    let aggchain_proof_service: AggchainProofServiceServer<GrpcService> =
-        prover_runtime.block_on(async {
-            let grpc_service = GrpcService::new(&config.aggchain_proof_service).await?;
-            Ok::<AggchainProofServiceServer<GrpcService>, aggchain_proof_service::Error>(
-                AggchainProofServiceServer::new(grpc_service),
-            )
-        })?;
+    let aggchain_proof_service = prover_runtime.block_on(async {
+        let grpc_service = GrpcService::new(&config.aggchain_proof_service).await?;
+        Ok::<AggchainProofServiceServer<GrpcService>, aggchain_proof_service::Error>(
+            AggchainProofServiceServer::new(grpc_service),
+        )
+    })?;
 
     _ = ProverEngine::builder()
         .add_rpc_service(aggchain_proof_service)
