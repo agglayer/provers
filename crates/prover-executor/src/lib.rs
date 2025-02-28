@@ -9,11 +9,7 @@ pub use error::Error;
 use error::ProofVerificationError;
 use futures::{Future, TryFutureExt};
 use prover_config::ProverType;
-use sindri::{
-    client::SindriClient,
-    integrations::sp1_v4::SP1ProofInfo,
-    ProofInput,
-};
+use sindri::{client::SindriClient, integrations::sp1_v4::SP1ProofInfo, ProofInput};
 use sp1_sdk::{
     network::{prover::NetworkProver, FulfillmentStrategy},
     CpuProver, Prover, ProverClient, SP1ProofWithPublicValues, SP1ProvingKey, SP1Stdin,
@@ -154,9 +150,11 @@ impl Executor {
                         prover: Arc::new(sindri_client),
                         verification_key,
                         timeout: sindri_prover_config.proving_timeout,
+                        project_name: sindri_prover_config.project_name.clone(),
+                        project_tag: sindri_prover_config.project_tag.clone(),
                     },
                 )
-            },
+            }
         }
     }
 
@@ -319,6 +317,8 @@ struct SindriExecutor {
     prover: Arc<SindriClient>,
     verification_key: SP1VerifyingKey,
     timeout: Duration,
+    project_name: String,
+    project_tag: String,
 }
 
 impl Service<Request> for SindriExecutor {
@@ -335,18 +335,25 @@ impl Service<Request> for SindriExecutor {
     fn call(&mut self, req: Request) -> Self::Future {
         let prover = self.prover.clone();
         let stdin = req.stdin;
-
         let verification_key = self.verification_key.clone();
         let timeout = self.timeout;
+        let project_name = self.project_name.clone();
+        let project_tag = self.project_tag.clone();
 
         debug!("Proving with network prover with timeout: {:?}", timeout);
         let fut = async move {
             debug!("Starting the proving of the requested MultiBatchHeader");
 
-            let circuit_id = "pessimistic-proof";
-            let proof_input = ProofInput::try_from(stdin).map_err(|error| Error::ProverFailed(error.to_string()))?;
+            let proof_input = ProofInput::try_from(stdin)
+                .map_err(|error| Error::ProverFailed(error.to_string()))?;
             let proof_response = prover
-                .prove_circuit_blocking(circuit_id, proof_input, None, None, None)
+                .prove_circuit_blocking(
+                    &format!("{}:{}", project_name, project_tag),
+                    proof_input,
+                    None,
+                    None,
+                    None,
+                )
                 .map_err(|error| Error::ProverFailed(error.to_string()))?;
 
             let proof = proof_response
@@ -356,7 +363,9 @@ impl Service<Request> for SindriExecutor {
             debug!("Proving completed. Verifying the proof...");
             proof_response
                 .verify_sp1_proof_locally(&verification_key)
-                .map_err(|error| Error::ProofVerificationFailed(ProofVerificationError::Plonk(error.to_string())))?;
+                .map_err(|error| {
+                    Error::ProofVerificationFailed(ProofVerificationError::Plonk(error.to_string()))
+                })?;
 
             debug!("Proof verification completed successfully");
             Ok(Response { proof })
