@@ -90,7 +90,7 @@ pub struct AggchainProofBuilder<ContractsClient> {
 }
 
 impl AggchainProofBuilder<AggchainContractsRpcClient<AlloyFillProvider>> {
-    pub fn new(config: &AggchainProofBuilderConfig) -> Result<Self, Error> {
+    pub async fn new(config: &AggchainProofBuilderConfig) -> Result<Self, Error> {
         let executor = tower::ServiceBuilder::new()
             .service(Executor::new(
                 &config.primary_prover,
@@ -111,6 +111,7 @@ impl AggchainProofBuilder<AggchainContractsRpcClient<AlloyFillProvider>> {
                     config.network_id,
                     &config.contracts,
                 )
+                .await
                 .map_err(Error::ContractsClientInitFailed)?,
             ),
             prover,

@@ -15,6 +15,9 @@ pub enum Error {
     #[error("Unable to retrieve zkevm bridge address from the global exit root manager contract")]
     BridgeAddressError(#[source] alloy::contract::Error),
 
+    #[error("Unable to retrieve aggchain fep address from the polygon rollup manager contract")]
+    AggchainFepAddressError(#[source] alloy::contract::Error),
+
     #[error("Error retrieving local exit root")]
     LocalExitRootError(#[source] alloy::contract::Error),
 

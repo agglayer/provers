@@ -129,18 +129,13 @@ where
 }
 
 impl AggchainContractsRpcClient<AlloyFillProvider> {
-    pub fn new(
+    pub async fn new(
         l1_rpc_endpoint: &Url,
         l2_el_rpc_endpoint: &Url,
         l2_cl_rpc_endpoint: &Url,
         network_id: u32,
         contracts: &AggchainProofContractsConfig,
     ) -> Result<Self, crate::Error> {
-        let async_runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .map_err(Error::AsyncEngineSetupError)?;
-
         let l1_client = build_alloy_fill_provider(
             l1_rpc_endpoint,
             prover_alloy::DEFAULT_HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
@@ -163,52 +158,41 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
 
         // Create client for global exit root manager smart contract.
         let global_exit_root_manager_l2 = GlobalExitRootManagerL2SovereignChain::new(
-            contracts.global_exit_root_manager_v2_sovereign_chain_contract,
+            contracts.global_exit_root_manager_v2_sovereign_chain,
             l2_el_client.clone(),
         );
 
         // Retrieve PolygonZkEVMBridgeV2 contract address from the global exit root
         // manager contract.
-        let polygon_zkevm_bridge_address = {
-            async_runtime.block_on(async move {
-                // We need to retrieve PolygonZkEVMBridgeV2 contract address from the
-                // global exit root manager contract.
-                global_exit_root_manager_l2.bridgeAddress().call().await
-            })
-        }
-        .map_err(Error::BridgeAddressError)?;
+        let polygon_zkevm_bridge_address = global_exit_root_manager_l2
+            .bridgeAddress()
+            .call()
+            .await
+            .map_err(Error::BridgeAddressError)?;
 
         // Create client for Polygon zkevm bridge v2 smart contract.
         let polygon_zkevm_bridge_v2 =
             PolygonZkevmBridgeV2::new(polygon_zkevm_bridge_address._0, l2_el_client.clone());
 
         // Create client for Polygon rollup manager contract.
-        let polygon_rollup_manager = PolygonRollupManagerRpcClient::new(
-            contracts.polygon_rollup_manager_contract,
-            l1_client.clone(),
-        );
+        let polygon_rollup_manager =
+            PolygonRollupManagerRpcClient::new(contracts.polygon_rollup_manager, l1_client.clone());
 
         // Retrieve AggchainFep address from the Polygon rollup manager contract.
-        let aggchain_fep_address = {
-            let polygon_rollup_manager = polygon_rollup_manager.clone();
-            async_runtime.block_on(async move {
-                // We need to retrieve AggchainFep contract address from the
-                // polygon rollup manager.
-                let rollup_data = polygon_rollup_manager
-                    .rollupIDToRollupData(network_id)
-                    .call()
-                    .await?;
-                Ok(rollup_data.rollupData.rollupContract)
-            })
-        }
-        .map_err(Error::BridgeAddressError)?;
+        let aggchain_fep_address = polygon_rollup_manager
+            .rollupIDToRollupData(network_id)
+            .call()
+            .await
+            .map_err(Error::AggchainFepAddressError)?
+            .rollupData
+            .rollupContract;
 
         // Create client for AggchainFep smart contract.
         let aggchain_fep = AggchainFep::new(aggchain_fep_address, l1_client.clone());
 
-        info!(global_exit_root_manager_l2=%contracts.global_exit_root_manager_v2_sovereign_chain_contract,
+        info!(global_exit_root_manager_l2=%contracts.global_exit_root_manager_v2_sovereign_chain,
             polygon_zkevm_bridge_v2=%polygon_zkevm_bridge_v2.address(),
-            polygon_rollup_manager=%contracts.polygon_rollup_manager_contract,
+            polygon_rollup_manager=%contracts.polygon_rollup_manager,
             aggchain_fep=%aggchain_fep.address(),
             "Aggchain proof contracts client created successfully");
 
