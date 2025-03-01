@@ -6,41 +6,29 @@ edition = "2021"
 [dependencies]
 # alloy
 alloy-primitives.workspace = true
-alloy-sol-macro = { version = "0.8.21" }
-alloy-sol-types = { version = "0.8.21" }
+alloy-sol-macro = "0.8.21"
+alloy-sol-types = "0.8.21"
 alloy-rlp = "0.3.10"
 
 # sp1
-sp1-zkvm = { version = "=4.0.0", features = ["verify"] }
+sp1-zkvm = { version = "=4.1.2", features = ["verify"] }
 sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "c9bdace" }
 
-hex = "0.4.3"
+eyre = "0.6.12"
+hex.workspace = true
 k256 = "0.13.4"
-serde = { version = "1.0.217", features = ["derive"] }
-serde_with = "3"
+serde.workspace = true
+serde_with.workspace = true
 sha2 = { git = "https://github.com/sp1-patches/RustCrypto-hashes.git", package = "sha2", tag = "patch-sha2-0.10.8-sp1-4.0.0" }
-thiserror = "2.0.8"
+thiserror.workspace = true
 tiny-keccak = { git = "https://github.com/sp1-patches/tiny-keccak", tag = "patch-2.0.2-sp1-4.0.0", features = [
     "keccak",
 ] }
 
 [dev-dependencies]
-# alloy
 alloy.workspace = true
-alloy-provider = { version = "0.11.1", default-features = false, features = [
-    "reqwest",
-] }
-alloy-rpc-types = { version = "0.11.1", default-features = false, features = [
-    "eth",
-] }
-
-# sp1
-sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "c9bdace" }
-
 dotenvy.workspace = true
-serde_json = "1.0.138"
-tokio = { version = "1.21", default-features = false, features = [
-    "rt",
-    "rt-multi-thread",
-] }
-url = "2.3"
+serde_json.workspace = true
+sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "c9bdace" }
+tokio.workspace = true
+url.workspace = true

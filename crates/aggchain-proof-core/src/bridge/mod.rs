@@ -31,7 +31,7 @@ sol! (
 );
 
 /// Represents all the bridge constraints errors.
-#[derive(Clone, thiserror::Error, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(thiserror::Error, Debug)]
 pub enum BridgeConstraintsError {
     /// The inclusion proof from the GER to the L1 info Root is invalid.
     #[error(
@@ -44,7 +44,7 @@ pub enum BridgeConstraintsError {
         l1_info_root: Digest,
     },
 
-    /// The block hashes used on the sketches do not match.
+    /// The block hash retrieved from the static call do not match.
     #[error("Mismatch on the block hash at {stage:?}. retrieved: {retrieved}, input: {input}")]
     MismatchBlockHash {
         retrieved: Digest,
@@ -62,16 +62,20 @@ pub enum BridgeConstraintsError {
     MismatchNewLocalExitRoot { retrieved: Digest, input: Digest },
 
     /// The static call failed at the given stage.
-    #[error("Failure upon static call at {stage:?}: {error}")]
+    #[error("Failure upon static call at {stage:?}.")]
     StaticCallError {
         stage: StaticCallStage,
-        error: StaticCallError,
+        #[source]
+        source: StaticCallError,
     },
 }
 
 impl BridgeConstraintsError {
-    fn static_call_error(error: StaticCallError, stage: StaticCallStage) -> BridgeConstraintsError {
-        BridgeConstraintsError::StaticCallError { error, stage }
+    fn static_call_error(
+        source: StaticCallError,
+        stage: StaticCallStage,
+    ) -> BridgeConstraintsError {
+        BridgeConstraintsError::StaticCallError { source, stage }
     }
 }
 
@@ -260,9 +264,9 @@ mod tests {
     use std::io::BufReader;
     use std::str::FromStr;
 
+    use alloy::providers::RootProvider;
+    use alloy::rpc::types::BlockNumberOrTag;
     use alloy_primitives::hex;
-    use alloy_provider::RootProvider;
-    use alloy_rpc_types::BlockNumberOrTag;
     use alloy_sol_types::SolCall;
     use serde_json::Value;
     use sp1_cc_client_executor::ContractInput;

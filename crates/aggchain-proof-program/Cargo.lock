@@ -21,6 +21,7 @@ dependencies = [
  "alloy-rlp",
  "alloy-sol-macro",
  "alloy-sol-types",
+ "eyre",
  "hex",
  "k256",
  "serde",
@@ -133,16 +134,16 @@ dependencies = [
 
 [[package]]
 name = "alloy-eip7702"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cabf647eb4650c91a9d38cb6f972bb320009e7e9d61765fb688a86f1563b33e8"
+checksum = "9b15b13d38b366d01e818fe8e710d4d702ef7499eacd44926a06171dd9585d0c"
 dependencies = [
  "alloy-primitives",
  "alloy-rlp",
- "derive_more 1.0.0",
  "k256",
  "serde",
  "serde_with",
+ "thiserror 2.0.11",
 ]
 
 [[package]]
@@ -726,9 +727,9 @@ checksum = "5e764a1d40d510daf35e07be9eb06e75770908c27d411ee6c92109c9840eaaf7"
 
 [[package]]
 name = "bitflags"
-version = "2.8.0"
+version = "2.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f68f53c83ab957f72c32642f3868eec03eb974d1fb82e453128456482613d36"
+checksum = "5c8214115b7bf84099f1309324e63141d4c5d7cc26862f97a0a857dbefe165bd"
 dependencies = [
  "serde",
 ]
@@ -831,9 +832,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.2.15"
+version = "1.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c736e259eea577f443d5c86c304f9f4ae0295c43f3ba05c21f1d66b5f06001af"
+checksum = "be714c154be609ec7f5dad223a33bf1482fff90472de28f7362806e6d4832b8c"
 dependencies = [
  "jobserver",
  "libc",
@@ -2117,9 +2118,9 @@ dependencies = [
 
 [[package]]
 name = "op-alloy-consensus"
-version = "0.10.6"
+version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06ebfbdba806885ca70c70ab8098c2ab3e8ccf272619eb5edd73ffac5a05576b"
+checksum = "6ed6cad421e41d400667a06df8bd306dd316c3e1fed803df065b1c65d7de6795"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
@@ -2134,9 +2135,9 @@ dependencies = [
 
 [[package]]
 name = "op-alloy-rpc-types"
-version = "0.10.6"
+version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0dc5177e3305d95c4bcdd0bfa63e2afee838d840be62fd46b0fd5d27b72c0433"
+checksum = "d2f91f1b1202bc5e46ece524b70d1b15b213c4bbf67718c0925cfb7d11fd800c"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
@@ -3549,9 +3550,9 @@ dependencies = [
 
 [[package]]
 name = "sp1-lib"
-version = "4.1.1"
+version = "4.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fab1b5989a446f294724cebab0e759ffd7034ba93d2aa7b97045303f7c50bf74"
+checksum = "82bf9bf66dc9244c51585c72e3b82b48b7829ee909a8cc93d2101612c28f5030"
 dependencies = [
  "bincode",
  "elliptic-curve",
@@ -3561,9 +3562,9 @@ dependencies = [
 
 [[package]]
 name = "sp1-primitives"
-version = "4.1.1"
+version = "4.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1cf66c2781c36037c94a5905b6e05e7396fd4d12df09cd7f05cf96e3f0889f49"
+checksum = "2df15132358d645a2842fa127ea37954d28fd70127c0c6fcc254219c10824427"
 dependencies = [
  "bincode",
  "hex",
@@ -3579,9 +3580,9 @@ dependencies = [
 
 [[package]]
 name = "sp1-zkvm"
-version = "4.0.0"
+version = "4.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78c9380c49efdf34e6454a735922f794bb1d4b11114c302675087f110c207b56"
+checksum = "114ab991c8d2d130c1defbb127b5cb1721bf535a602c5cd05ff98ff5584f55e5"
 dependencies = [
  "cfg-if",
  "getrandom 0.2.15",
