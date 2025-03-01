@@ -42,16 +42,16 @@ pub fn execute_static_call<C: SolCall>(
     calldata: C,
 ) -> Result<(C::Return, Digest), StaticCallError> {
     let cc_public_values = ClientExecutor::new(state_sketch)
-        .map_err(|e| StaticCallError::ClientInitialization(e))?
+        .map_err(StaticCallError::ClientInitialization)?
         .execute(ContractInput::new_call(
             contract_address,
             Address::default(),
             calldata,
         ))
-        .map_err(|e| StaticCallError::ClientExecution(e))?;
+        .map_err(StaticCallError::ClientExecution)?;
 
     let decoded_contract_output = C::abi_decode_returns(&cc_public_values.contractOutput, true)
-        .map_err(|e| StaticCallError::DecodeContractOutput(e))?;
+        .map_err(StaticCallError::DecodeContractOutput)?;
 
     Ok((decoded_contract_output, cc_public_values.blockHash.0.into()))
 }

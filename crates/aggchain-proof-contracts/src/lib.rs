@@ -228,14 +228,14 @@ mod tests {
             serde_json::from_str(json_str).unwrap(),
         )?;
 
-        assert_eq!(result.version, B256::default());
+        assert_eq!(B256::from(result.version.0), B256::default());
         assert_eq!(
-            result.latest_block_hash,
+            B256::from(result.latest_block_hash.0),
             B256::from_str("0x2d0d159b47e89cd85b82c18d217fa47f5901e81e71ae80356854849656b43354")
                 .unwrap()
         );
         assert_eq!(
-            result.output_root,
+            B256::from(result.output_root.0),
             B256::from_str("0xf9758545eb67c1a90276b44bb80047fa72148f88c69a8653f36cd157f537bde4")
                 .unwrap()
         );
