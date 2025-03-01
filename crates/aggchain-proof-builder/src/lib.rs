@@ -5,11 +5,15 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
-use aggchain_proof_contracts::AggchainProofContractsClient;
+use aggchain_proof_contracts::contracts::{
+    L1RollupConfigHashFetcher, L2LocalExitRootFetcher, L2OutputAtBlockFetcher,
+};
+use aggchain_proof_contracts::{AggchainContractsClient, AggchainContractsRpcClient};
 use aggchain_proof_core::proof::{AggchainProofWitness, InclusionProof, L1InfoTreeLeaf};
 use aggkit_prover_types::Hash;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
+use prover_alloy::AlloyFillProvider;
 use prover_executor::Executor;
 use sp1_sdk::{SP1Proof, SP1ProofWithPublicValues, SP1VerifyingKey};
 use tower::buffer::Buffer;
@@ -70,10 +74,10 @@ pub struct AggchainProofBuilderResponse {
 /// This service is responsible for building an Aggchain proof.
 #[derive(Clone)]
 #[allow(unused)]
-pub struct AggchainProofBuilder {
+pub struct AggchainProofBuilder<ContractsClient> {
     /// Client for interacting with the smart contracts relevant for the
     /// aggchain prover.
-    contracts_client: Arc<AggchainProofContractsClient>,
+    contracts_client: Arc<ContractsClient>,
 
     /// Network id of the l2 chain for which the proof is generated.
     network_id: u32,
@@ -85,8 +89,8 @@ pub struct AggchainProofBuilder {
     aggchain_proof_vkey: SP1VerifyingKey,
 }
 
-impl AggchainProofBuilder {
-    pub fn new(config: &AggchainProofBuilderConfig) -> Result<Self, Error> {
+impl AggchainProofBuilder<AggchainContractsRpcClient<AlloyFillProvider>> {
+    pub async fn new(config: &AggchainProofBuilderConfig) -> Result<Self, Error> {
         let executor = tower::ServiceBuilder::new()
             .service(Executor::new(
                 &config.primary_prover,
@@ -100,7 +104,8 @@ impl AggchainProofBuilder {
 
         Ok(AggchainProofBuilder {
             contracts_client: Arc::new(
-                AggchainProofContractsClient::new(&config.l1_rpc_endpoint, &config.l2_rpc_endpoint)
+                AggchainContractsRpcClient::new(config.network_id, &config.contracts)
+                    .await
                     .map_err(Error::ContractsClientInitFailed)?,
             ),
             prover,
@@ -108,13 +113,19 @@ impl AggchainProofBuilder {
             aggchain_proof_vkey,
         })
     }
+}
 
+impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     /// Retrieve l1 and l2 public data needed for aggchain proof generation.
     /// Combine with the rest of the inputs to form an `AggchainProverInputs`.
     pub(crate) async fn retrieve_chain_data(
-        contracts_client: Arc<AggchainProofContractsClient>,
+        contracts_client: Arc<ContractsClient>,
         request: AggchainProofBuilderRequest,
-    ) -> Result<AggchainProverInputs, Error> {
+    ) -> Result<AggchainProverInputs, Error>
+    where
+        ContractsClient:
+            L2LocalExitRootFetcher + L2OutputAtBlockFetcher + L1RollupConfigHashFetcher,
+    {
         let _prev_local_exit_root = contracts_client
             .get_l2_local_exit_root(request.start_block - 1)
             .await
@@ -124,6 +135,21 @@ impl AggchainProofBuilder {
             .get_l2_local_exit_root(request.end_block)
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
+
+        let _l2_pre_root_output_at_block = contracts_client
+            .get_l2_output_at_block(request.start_block - 1)
+            .await
+            .map_err(Error::L2ChainDataRetrievalError)?;
+
+        let _claim_root_output_at_block = contracts_client
+            .get_l2_output_at_block(request.end_block)
+            .await
+            .map_err(Error::L2ChainDataRetrievalError)?;
+
+        let _rollup_config_hash = contracts_client
+            .get_rollup_config_hash()
+            .await
+            .map_err(Error::L1ChainDataRetrievalError)?;
 
         todo!()
     }
@@ -137,7 +163,11 @@ impl AggchainProofBuilder {
     }
 }
 
-impl tower::Service<AggchainProofBuilderRequest> for AggchainProofBuilder {
+impl<ContractsClient> tower::Service<AggchainProofBuilderRequest>
+    for AggchainProofBuilder<ContractsClient>
+where
+    ContractsClient: AggchainContractsClient + Send + Sync + 'static,
+{
     type Response = AggchainProofBuilderResponse;
 
     type Error = Error;

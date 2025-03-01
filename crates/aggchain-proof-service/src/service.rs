@@ -81,7 +81,7 @@ pub struct AggchainProofService {
 }
 
 impl AggchainProofService {
-    pub fn new(config: &AggchainProofServiceConfig) -> Result<Self, Error> {
+    pub async fn new(config: &AggchainProofServiceConfig) -> Result<Self, Error> {
         let client = prover_alloy::AlloyProvider::new(
             &config.proposer_service.l1_rpc_endpoint,
             prover_alloy::DEFAULT_HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
@@ -100,7 +100,8 @@ impl AggchainProofService {
         let aggchain_proof_builder = tower::ServiceBuilder::new()
             .service(
                 AggchainProofBuilder::new(&config.aggchain_proof_builder)
-                    .map_err(Error::AggchainProofBuilderInitFailed)?,
+                    .map_err(Error::AggchainProofBuilderInitFailed)
+                    .await?,
             )
             .boxed_clone();
 

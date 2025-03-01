@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use aggkit_prover::rpc::GrpcService;
 use aggkit_prover_types::v1::aggchain_proof_service_server::AggchainProofServiceServer;
 use prover_engine::ProverEngine;
 use tokio_util::sync::CancellationToken;
@@ -26,10 +27,12 @@ fn main() -> anyhow::Result<()> {
         .enable_all()
         .build()?;
 
-    // TODO: implement the aggchain-proof service
-    let aggchain_proof_service = AggchainProofServiceServer::new(
-        aggkit_prover::rpc::GrpcService::new(&config.aggchain_proof_service)?,
-    );
+    let aggchain_proof_service = prover_runtime.block_on(async {
+        let grpc_service = GrpcService::new(&config.aggchain_proof_service).await?;
+        Ok::<AggchainProofServiceServer<GrpcService>, aggchain_proof_service::Error>(
+            AggchainProofServiceServer::new(grpc_service),
+        )
+    })?;
 
     _ = ProverEngine::builder()
         .add_rpc_service(aggchain_proof_service)

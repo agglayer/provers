@@ -1,20 +1,18 @@
 use std::str::FromStr as _;
 use std::time::Duration;
 
+use alloy::network::primitives::BlockTransactionsKind;
 use alloy::network::Ethereum;
 use alloy::providers::fillers::{
     BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller,
 };
 use alloy::providers::Identity;
+use alloy::providers::{Provider as _, ProviderBuilder};
 use alloy::transports::http::reqwest;
 use alloy::transports::layers::RetryBackoffLayer;
-pub use alloy::*;
 use alloy::{providers::RootProvider, rpc::client::ClientBuilder};
 pub use async_trait::async_trait;
-use providers::{Provider as _, ProviderBuilder};
 use url::Url;
-
-use crate::network::primitives::BlockTransactionsKind;
 
 const HTTP_CLIENT_CONNECTION_POOL_IDLE_TIMEOUT: u64 = 90;
 const HTTP_CLIENT_MAX_IDLE_CONNECTIONS_PER_HOST: usize = 64;
@@ -29,6 +27,28 @@ pub type AlloyFillProvider = FillProvider<
     RootProvider,
     Ethereum,
 >;
+
+pub fn build_alloy_fill_provider(
+    rpc_url: &url::Url,
+    backoff: u64,
+    max_retries: u32,
+) -> Result<AlloyFillProvider, anyhow::Error> {
+    let retry_policy = RetryBackoffLayer::new(max_retries, backoff, 5);
+    let reqwest_client = reqwest::ClientBuilder::new()
+        .pool_max_idle_per_host(HTTP_CLIENT_MAX_IDLE_CONNECTIONS_PER_HOST)
+        .pool_idle_timeout(Duration::from_secs(
+            HTTP_CLIENT_CONNECTION_POOL_IDLE_TIMEOUT,
+        ))
+        .build()?;
+
+    let http = alloy::transports::http::Http::with_client(reqwest_client, rpc_url.clone());
+    let is_local = http.guess_local();
+    let client = ClientBuilder::default()
+        .layer(retry_policy)
+        .transport(http, is_local);
+
+    Ok(ProviderBuilder::new().on_client(client))
+}
 
 #[async_trait]
 #[cfg_attr(feature = "testutils", mockall::automock)]
@@ -96,10 +116,14 @@ impl Provider for AlloyProvider {
     }
 }
 
-pub fn default_l1_url() -> Url {
+pub fn default_l1_node_url() -> Url {
     Url::from_str("http://anvil-mock-l1-rpc:8545").unwrap()
 }
 
-pub fn default_l2_url() -> Url {
+pub fn default_l2_execution_layer_url() -> Url {
     Url::from_str("http://anvil-mock-l2-rpc:8545").unwrap()
+}
+
+pub fn default_l2_consensus_layer_url() -> Url {
+    Url::from_str("http://rollup-node-mock-l2-rpc:8545").unwrap()
 }
