@@ -63,7 +63,7 @@ args = [
     "--api-key",
     "${SINDRI_API_KEY}",
     #"--tags",
-    #"${SINDRI_PROJECT_TAG},
+    #"${SINDRI_PROJECT_TAG}",
 ]
 
 [tasks.sp1-toolchain-shell]
