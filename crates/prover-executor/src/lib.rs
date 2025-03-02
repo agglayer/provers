@@ -347,13 +347,14 @@ impl Service<Request> for SindriExecutor {
             let proof_input = ProofInput::try_from(stdin)
                 .map_err(|error| Error::ProverFailed(error.to_string()))?;
             let proof_response = prover
-                .prove_circuit_blocking(
+                .prove_circuit(
                     &format!("{}:{}", project_name, project_tag),
                     proof_input,
                     None,
                     None,
                     None,
                 )
+                .await
                 .map_err(|error| Error::ProverFailed(error.to_string()))?;
 
             let proof = proof_response
