@@ -36,6 +36,36 @@ args = [
     "-vv",
 ]
 
+[tasks.install-sindri-cli]
+description = "Install Sindri CLI"
+command = "cargo"
+args = [
+    "install",
+    "--git",
+    "https://github.com/Sindri-Labs/sindri-rust",
+    "--tag",
+    "v0.2.0",
+    "sindri-cli"
+]
+
+[tasks.ap-elf-sindri-upload]
+description = "Upload ELF file to Sindri"
+dependencies = [
+    "ap-elf",
+    "install-sindri-cli"
+]
+cwd = "crates/aggchain-proof-program"
+command = "cargo"
+args = [
+    "sindri",
+    "deploy",
+    ".",
+    "--api-key",
+    "${SINDRI_API_KEY}",
+    #"--tags",
+    #"${SINDRI_PROJECT_TAG},
+]
+
 [tasks.sp1-toolchain-shell]
 description = "Drop into an interactive shell in sp1 build environment image"
 dependencies = ["sp1-toolchain-image"]
