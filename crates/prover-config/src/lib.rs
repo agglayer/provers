@@ -196,7 +196,6 @@ impl Default for SindriProverConfig {
     }
 }
 
-
 pub const fn default_max_concurrency_limit() -> usize {
     100
 }

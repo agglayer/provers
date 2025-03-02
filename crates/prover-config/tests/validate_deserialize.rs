@@ -1,5 +1,7 @@
 use pretty_assertions::assert_eq;
-use prover_config::{CpuProverConfig, MockProverConfig, NetworkProverConfig, ProverType, SindriProverConfig};
+use prover_config::{
+    CpuProverConfig, MockProverConfig, NetworkProverConfig, ProverType, SindriProverConfig,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
