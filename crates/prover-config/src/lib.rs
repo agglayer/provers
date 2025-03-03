@@ -12,6 +12,7 @@ pub enum ProverType {
     CpuProver(CpuProverConfig),
     GpuProver(GpuProverConfig),
     MockProver(MockProverConfig),
+    SindriProver(SindriProverConfig),
 }
 
 impl Default for ProverType {
@@ -156,6 +157,45 @@ impl Default for MockProverConfig {
     }
 }
 
+#[serde_as]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+#[serde(rename_all = "kebab-case")]
+pub struct SindriProverConfig {
+    #[serde_as(as = "Option<crate::with::HumanDuration>")]
+    pub proving_request_timeout: Option<Duration>,
+
+    #[serde(default = "default_network_proving_timeout")]
+    #[serde(with = "crate::with::HumanDuration")]
+    pub proving_timeout: Duration,
+
+    #[serde(default = "default_sindri_project_name")]
+    pub project_name: String,
+
+    #[serde(default = "default_sindri_project_tag")]
+    pub project_tag: String,
+}
+
+impl SindriProverConfig {
+    // This constant represents the number of second added to the proving_timeout
+    pub const DEFAULT_PROVING_TIMEOUT_PADDING: Duration = Duration::from_secs(1);
+
+    pub fn get_proving_request_timeout(&self) -> Duration {
+        self.proving_request_timeout
+            .unwrap_or_else(|| self.proving_timeout + Self::DEFAULT_PROVING_TIMEOUT_PADDING)
+    }
+}
+
+impl Default for SindriProverConfig {
+    fn default() -> Self {
+        Self {
+            proving_request_timeout: None,
+            proving_timeout: default_network_proving_timeout(),
+            project_name: default_sindri_project_name(),
+            project_tag: default_sindri_project_tag(),
+        }
+    }
+}
+
 pub const fn default_max_concurrency_limit() -> usize {
     100
 }
@@ -166,4 +206,12 @@ const fn default_local_proving_timeout() -> Duration {
 
 const fn default_network_proving_timeout() -> Duration {
     Duration::from_secs(60 * 5)
+}
+
+fn default_sindri_project_name() -> String {
+    "pessimistic-proof".to_string()
+}
+
+fn default_sindri_project_tag() -> String {
+    "latest".to_string()
 }
