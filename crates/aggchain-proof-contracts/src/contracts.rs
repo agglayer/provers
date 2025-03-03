@@ -9,7 +9,7 @@ sol!(
     #[allow(clippy::too_many_arguments)]
     #[sol(rpc)]
     GlobalExitRootManagerL2SovereignChain,
-    "contracts/global-exit-root-manager-l2-sovereign-chain.json"
+    "contracts/GlobalExitRootManagerL2SovereignChain.json"
 );
 
 sol!(
@@ -17,7 +17,7 @@ sol!(
     #[allow(clippy::too_many_arguments)]
     #[sol(rpc)]
     PolygonZkevmBridgeV2,
-    "contracts/polygon-zkevm-bridge-v2.json"
+    "contracts/PolygonZkEVMBridgeV2.json"
 );
 
 sol!(
@@ -25,7 +25,7 @@ sol!(
     #[allow(clippy::too_many_arguments)]
     #[sol(rpc)]
     PolygonRollupManager,
-    "contracts/polygon-rollup-manager.json"
+    "contracts/PolygonRollupManager.json"
 );
 
 sol!(
@@ -33,7 +33,7 @@ sol!(
     #[allow(clippy::too_many_arguments)]
     #[sol(rpc)]
     AggchainFep,
-    "contracts/aggchain-fep.json"
+    "contracts/AggchainFEP.json"
 );
 
 pub(crate) type ZkevmBridgeRpcClient<RpcProvider> =
