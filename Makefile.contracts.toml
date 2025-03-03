@@ -1,0 +1,46 @@
+[env]
+CONTRACT_VERSION = "feature/ongoing-v0.3.0"
+CONTRACT_REPO = "https://api.github.com/repos/0xPolygonHermez/zkevm-contracts"
+
+[tasks.contracts]
+description = "Download and update the contracts of the aggchain-proof-contracts library"
+dependencies = ["contracts-downloader"]
+
+[tasks.contracts-downloader]
+dependencies = [
+    { name = "contracts-download-PolygonRollupManager" },
+    { name = "contracts-download-PolygonZkEVM" },
+    { name = "contracts-download-PolygonZkEVMGlobalExitRootV2" },
+    { name = "contracts-download-AggchainFEP" },
+]
+
+[tasks.contracts-download-AggchainFEP]
+env = { "CONTRACT" = "AggchainFEP.json" }
+run_task = "contracts-download"
+
+[tasks.contracts-download-PolygonRollupManager]
+env = { "CONTRACT" = "PolygonRollupManager.json" }
+run_task = "contracts-download"
+
+[tasks.contracts-download-PolygonZkEVM]
+env = { "CONTRACT" = "PolygonZkEVMBridgeV2.json" }
+run_task = "contracts-download"
+
+[tasks.contracts-download-PolygonZkEVMGlobalExitRootV2]
+env = { "CONTRACT" = "GlobalExitRootManagerL2SovereignChain.json" }
+run_task = "contracts-download"
+
+[tasks.contracts-download]
+condition = { env_set = ["CONTRACT", "GITHUB_TOKEN"] }
+description = "Download the contracts of the aggchain-proof-contracts library"
+cwd = "crates/aggchain-proof-contracts/contracts"
+command = "curl"
+args = [
+    "-HAuthorization: token ${GITHUB_TOKEN}",
+    "-HAccept: application/vnd.github.v4.raw",
+    "-Ls",
+    "--output", "./${CONTRACT}",
+    "--proto",
+    "=https",
+    "${CONTRACT_REPO}/contents/compiled-contracts/${CONTRACT}?ref=${CONTRACT_VERSION}",
+]
