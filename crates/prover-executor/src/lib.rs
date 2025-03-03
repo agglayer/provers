@@ -9,7 +9,7 @@ pub use error::Error;
 use error::ProofVerificationError;
 use futures::{Future, TryFutureExt};
 use prover_config::ProverType;
-use sindri::{client::SindriClient, integrations::sp1_v4::SP1ProofInfo, ProofInput};
+use sindri::{client::SindriClient, integrations::sp1_v4::SP1ProofInfo, JobStatus, ProofInput};
 use sp1_sdk::{
     network::{prover::NetworkProver, FulfillmentStrategy},
     CpuProver, Prover, ProverClient, SP1ProofWithPublicValues, SP1ProvingKey, SP1Stdin,
@@ -344,8 +344,13 @@ impl Service<Request> for SindriExecutor {
         let fut = async move {
             debug!("Starting the proving of the requested MultiBatchHeader");
 
+            // Convert Sp1Stdin type to the Sindri client's ProofInput type
             let proof_input = ProofInput::try_from(stdin)
                 .map_err(|error| Error::ProverFailed(error.to_string()))?;
+
+            // Submit the proof request, and poll until the job is completed or a
+            // timeout occurs. The Sindri client was passed the timeout parameter
+            // upon creation
             let proof_response = prover
                 .prove_circuit(
                     &format!("{}:{}", project_name, project_tag),
@@ -357,6 +362,17 @@ impl Service<Request> for SindriExecutor {
                 .await
                 .map_err(|error| Error::ProverFailed(error.to_string()))?;
 
+            // If the Sindri job completed with an error, retrieve the error message
+            if proof_response.status == JobStatus::Failed {
+                return Err(Error::ProverFailed(
+                    proof_response.error.flatten().unwrap_or(
+                        "Sindri job was marked as failed. No error message was provided."
+                            .to_string(),
+                    ),
+                ));
+            }
+
+            // Convert the proof response to a SP1 proof with public values
             let proof = proof_response
                 .to_sp1_proof_with_public()
                 .map_err(|error| Error::ProverFailed(error.to_string()))?;
