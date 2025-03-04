@@ -7,7 +7,7 @@ use std::{
 };
 
 use aggchain_proof_builder::{AggchainProofBuilder, AggchainProofBuilderResponse};
-use aggchain_proof_core::proof::{InclusionProof, L1InfoTreeLeaf};
+use aggkit_prover_types::v1::{InclusionProof, L1InfoTreeLeaf};
 use aggkit_prover_types::Hash;
 use futures::{FutureExt as _, TryFutureExt};
 use proposer_service::{ProposerRequest, ProposerService};

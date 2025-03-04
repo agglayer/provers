@@ -1,15 +1,14 @@
 //! A program that verifies the bridge integrity
 use alloy_primitives::{address, Address};
 use alloy_sol_macro::sol;
+use inserted_ger::InsertedGER;
 use serde::{Deserialize, Serialize};
 use sp1_cc_client_executor::io::EVMStateSketch;
 use static_call::{execute_static_call, StaticCallError, StaticCallStage};
 
-use crate::bridge::inserted_ger::InsertedGER;
-use crate::keccak::digest::Digest;
-use crate::keccak::keccak256_combine;
+use crate::{keccak::keccak256_combine, Digest};
 
-mod inserted_ger;
+pub(crate) mod inserted_ger;
 mod static_call;
 
 /// NOTE: Won't work with Outpost networks as this address won't be constant.

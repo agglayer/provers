@@ -5,6 +5,8 @@ use crate::{
     error::ProofError,
     full_execution_proof::FepPublicValues,
     keccak::{digest::Digest, keccak256_combine},
+    local_exit_tree::{hasher::Keccak256Hasher, proof::LETMerkleProof},
+    L1InfoTreeLeaf,
 };
 
 /// Aggchain proof is generated from the FEP proof and additional
@@ -27,6 +29,10 @@ pub struct AggchainProofWitness {
     pub origin_network: u32,
     /// Full execution proof with its metadata.
     pub fep: FepPublicValues,
+    /// L1 info tree leaf and index containing the `l1Head` as block hash.
+    pub l1_info_tree_leaf: (u32, L1InfoTreeLeaf),
+    /// Inclusion proof of the leaf to the l1 info root.
+    pub l1_head_inclusion_proof: LETMerkleProof<Keccak256Hasher>,
     /// Bridge witness related data.
     pub bridge_witness: BridgeWitness,
 }
@@ -36,6 +42,28 @@ impl AggchainProofWitness {
         // Verify the FEP exclusively within the SP1 VM
         #[cfg(target_os = "zkvm")]
         self.fep.verify()?;
+
+        // Verify that the `l1Head` considered by the FEP exists in the L1 Info Tree
+        {
+            if self.fep.l1_head != self.l1_info_tree_leaf.1.block_hash {
+                return Err(ProofError::MismatchL1Head {
+                    from_l1_info_tree_leaf: self.l1_info_tree_leaf.1.block_hash,
+                    from_fep_public_values: self.fep.l1_head,
+                });
+            }
+
+            if !self.l1_head_inclusion_proof.verify(
+                self.l1_info_tree_leaf.1.hash(),
+                self.l1_info_tree_leaf.0,
+                self.l1_info_root,
+            ) {
+                return Err(ProofError::InvalidInclusionProofL1Head {
+                    index: self.l1_info_tree_leaf.0,
+                    l1_leaf_hash: self.l1_info_tree_leaf.1.hash(),
+                    l1_info_root: self.l1_info_root,
+                });
+            }
+        }
 
         // Verify the bridge constraints
         self.bridge_constraints_input().verify()?;
@@ -63,8 +91,8 @@ impl AggchainProofWitness {
     pub fn bridge_constraints_input(&self) -> BridgeConstraintsInput {
         BridgeConstraintsInput {
             ger_addr: L2_GER_ADDR, // set as constant for now
-            prev_l2_block_hash: self.fep.public_values.prev_block_hash,
-            new_l2_block_hash: self.fep.public_values.new_block_hash,
+            prev_l2_block_hash: self.fep.prev_block_hash,
+            new_l2_block_hash: self.fep.new_block_hash,
             new_local_exit_root: self.new_local_exit_root,
             l1_info_root: self.l1_info_root,
             bridge_witness: self.bridge_witness.clone(),
@@ -87,30 +115,4 @@ pub struct AggchainProofPublicValues {
     pub commit_imported_bridge_exits: Digest,
     /// Chain-specific commitment forwarded by the PP.
     pub aggchain_params: Digest,
-}
-
-/// Leaf tree inclusion proof.
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct InclusionProof {
-    pub siblings: Vec<Digest>,
-}
-
-/// L1 info tree leaf, part of the
-/// L1 info tree.
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct L1InfoTreeLeaf {
-    /// Previous block hash of leaf.
-    pub previous_block_hash: Digest,
-    /// Block number timestamp.
-    pub timestamp: u64,
-    /// Mainnet exit root hash.
-    pub mainnet_exit_root_hash: Digest,
-    /// Rollup exit root hash.
-    pub rollup_exit_root_hash: Digest,
-    /// Global exit root hash.
-    pub global_exit_root_hash: Digest,
-    /// Leaf hash.
-    pub leaf_hash: Digest,
-    /// Leaf index.
-    pub l1_info_tree_index: u32,
 }
