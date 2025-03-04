@@ -4,7 +4,7 @@ use crate::{
     bridge::{BridgeConstraintsInput, BridgeWitness, L2_GER_ADDR},
     error::ProofError,
     full_execution_proof::FepWithPublicValues,
-    keccak::digest::Digest,
+    keccak::{digest::Digest, keccak256_combine},
 };
 
 /// Aggchain proof is generated from the FEP proof and additional
@@ -21,8 +21,6 @@ pub struct AggchainProofWitness {
     pub prev_local_exit_root: Digest,
     /// New local exit root.
     pub new_local_exit_root: Digest,
-    /// Commitment to the imported bridge exits indexes.
-    pub commit_imported_bridge_exits: Digest,
     /// L1 info root used to import bridge exits.
     pub l1_info_root: Digest,
     /// Origin network for which the proof was generated.
@@ -53,7 +51,9 @@ impl AggchainProofWitness {
             new_local_exit_root: self.new_local_exit_root,
             l1_info_root: self.l1_info_root,
             origin_network: self.origin_network,
-            commit_imported_bridge_exits: self.commit_imported_bridge_exits,
+            commit_imported_bridge_exits: keccak256_combine(
+                self.bridge_witness.global_index_hashes.iter(),
+            ),
             aggchain_params: self.fep.aggchain_params(),
         }
     }
