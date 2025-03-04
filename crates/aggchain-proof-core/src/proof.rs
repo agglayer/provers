@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     bridge::{BridgeConstraintsInput, BridgeWitness, L2_GER_ADDR},
     error::ProofError,
-    full_execution_proof::FepWithPublicValues,
+    full_execution_proof::FepPublicValues,
     keccak::{digest::Digest, keccak256_combine},
 };
 
@@ -26,7 +26,7 @@ pub struct AggchainProofWitness {
     /// Origin network for which the proof was generated.
     pub origin_network: u32,
     /// Full execution proof with its metadata.
-    pub fep: FepWithPublicValues,
+    pub fep: FepPublicValues,
     /// Bridge witness related data.
     pub bridge_witness: BridgeWitness,
 }

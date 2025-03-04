@@ -1,13 +1,18 @@
 use serde::{Deserialize, Serialize};
 #[cfg(target_os = "zkvm")]
 use sha2::{Digest as Sha256Digest, Sha256};
-use sp1_zkvm::lib::utils::words_to_bytes_le;
 
 use crate::{error::ProofError, keccak::digest::Digest, keccak::keccak256_combine};
 
+#[cfg(target_os = "zkvm")]
 type Vkey = [u32; 8];
 
-// Hardcoded for now, might see if we might need it as input
+/// Hardcoded hash of the "aggregation vkey".
+/// NOTE: Format being `hash_u32()` of the `SP1StarkVerifyingKey`.
+#[cfg(target_os = "zkvm")]
+pub const AGGREGATION_VKEY: Vkey = [0u32; 8]; // TODO: to put the right value
+
+/// Hardcoded for now, might see if we might need it as input
 pub const OUTPUT_ROOT_VERSION: [u8; 32] = [0u8; 32];
 
 /// Public values to verify the FEP.
@@ -42,23 +47,16 @@ impl FepPublicValues {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct FepWithPublicValues {
-    pub(crate) public_values: FepPublicValues,
-    pub(crate) aggregation_vkey: Vkey,
-}
-
-impl FepWithPublicValues {
+impl FepPublicValues {
     /// Compute the chain-specific commitment forwarded to the PP.
     pub fn aggchain_params(&self) -> Digest {
         keccak256_combine([
-            self.public_values.l1_head.as_slice(),
-            self.public_values.compute_l2_pre_root().as_slice(),
-            self.public_values.compute_claim_root().as_slice(),
-            &self.public_values.claim_block_num.to_be_bytes(),
-            self.public_values.rollup_config_hash.as_slice(),
-            self.public_values.range_vkey_commitment.as_slice(),
-            words_to_bytes_le(&self.aggregation_vkey).as_slice(),
+            self.l1_head.as_slice(),
+            self.compute_l2_pre_root().as_slice(),
+            self.compute_claim_root().as_slice(),
+            &self.claim_block_num.to_be_bytes(),
+            self.rollup_config_hash.as_slice(),
+            self.range_vkey_commitment.as_slice(),
         ])
     }
 
@@ -70,7 +68,7 @@ impl FepWithPublicValues {
         #[cfg(target_os = "zkvm")]
         {
             sp1_zkvm::lib::verify::verify_sp1_proof(
-                &self.aggregation_vkey,
+                &AGGREGATION_VKEY,
                 &self.public_values.hash().into(),
             );
 
