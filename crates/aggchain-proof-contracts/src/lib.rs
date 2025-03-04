@@ -64,7 +64,7 @@ where
             .await
             .map_err(Error::LocalExitRootError)?;
 
-        Ok(*response._0)
+        Ok((*response._0).into())
     }
 }
 
@@ -98,13 +98,13 @@ where
             .await
             .map_err(Error::RollupConfigHashError)?;
 
-        Ok(*response._0)
+        Ok((*response._0).into())
     }
 }
 
 impl<RpcProvider> AggchainContractsRpcClient<RpcProvider> {
     fn parse_l2_output_root(json: serde_json::Value) -> Result<L2OutputAtBlock, Error> {
-        fn parse_hash(json: &serde_json::Value, field: &str) -> Result<B256, Error> {
+        fn parse_hash(json: &serde_json::Value, field: &str) -> Result<Digest, Error> {
             let value_str = json
                 .get(field)
                 .ok_or(Error::L2OutputAtBlockValueMissing(field.to_string()))?
@@ -112,6 +112,7 @@ impl<RpcProvider> AggchainContractsRpcClient<RpcProvider> {
                 .ok_or(Error::L2OutputAtBlockValueMissing(field.to_string()))?;
 
             B256::from_str(value_str)
+                .map(|bytes| bytes.0.into())
                 .map_err(|e| Error::L2OutputAtBlockInvalidValue(field.to_string(), e))
         }
 
@@ -121,10 +122,10 @@ impl<RpcProvider> AggchainContractsRpcClient<RpcProvider> {
 
         Ok(L2OutputAtBlock {
             version: parse_hash(&json, "version")?,
-            state_root: *parse_hash(&json, "stateRoot")?,
-            withdrawal_storage_root: *parse_hash(&json, "withdrawalStorageRoot")?,
-            latest_block_hash: *parse_hash(block_ref, "hash")?,
-            output_root: *parse_hash(&json, "outputRoot")?,
+            state_root: parse_hash(&json, "stateRoot")?,
+            withdrawal_storage_root: parse_hash(&json, "withdrawalStorageRoot")?,
+            latest_block_hash: parse_hash(block_ref, "hash")?,
+            output_root: parse_hash(&json, "outputRoot")?,
         })
     }
 }
@@ -227,14 +228,14 @@ mod tests {
             serde_json::from_str(json_str).unwrap(),
         )?;
 
-        assert_eq!(result.version, B256::default());
+        assert_eq!(B256::from(result.version.0), B256::default());
         assert_eq!(
-            result.latest_block_hash,
+            B256::from(result.latest_block_hash.0),
             B256::from_str("0x2d0d159b47e89cd85b82c18d217fa47f5901e81e71ae80356854849656b43354")
                 .unwrap()
         );
         assert_eq!(
-            result.output_root,
+            B256::from(result.output_root.0),
             B256::from_str("0xf9758545eb67c1a90276b44bb80047fa72148f88c69a8653f36cd157f537bde4")
                 .unwrap()
         );

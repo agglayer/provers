@@ -1,6 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{digest::Digest, error::ProofError, full_execution_proof::FepWithPublicValues};
+use crate::{
+    bridge::{BridgeConstraintsInput, BridgeWitness, L2_GER_ADDR},
+    error::ProofError,
+    full_execution_proof::FepWithPublicValues,
+    keccak::digest::Digest,
+};
 
 /// Aggchain proof is generated from the FEP proof and additional
 /// bridge information.
@@ -24,27 +29,18 @@ pub struct AggchainProofWitness {
     pub origin_network: u32,
     /// Full execution proof with its metadata.
     pub fep: FepWithPublicValues,
-    /// Bridge constraints related data
-    pub bridge: BridgeData,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct BridgeData;
-
-impl BridgeData {
-    pub fn verify(&mut self) -> Result<(), ProofError> {
-        todo!()
-    }
+    /// Bridge witness related data.
+    pub bridge_witness: BridgeWitness,
 }
 
 impl AggchainProofWitness {
-    pub fn generate_aggchain_proof(&mut self) -> Result<AggchainProofPublicValues, ProofError> {
+    pub fn verify_aggchain_inputs(&self) -> Result<AggchainProofPublicValues, ProofError> {
         // Verify the FEP exclusively within the SP1 VM
         #[cfg(target_os = "zkvm")]
         self.fep.verify()?;
 
         // Verify the bridge constraints
-        self.bridge.verify()?;
+        self.bridge_constraints_input().verify()?;
 
         Ok(self.public_values())
     }
@@ -59,6 +55,19 @@ impl AggchainProofWitness {
             origin_network: self.origin_network,
             commit_imported_bridge_exits: self.commit_imported_bridge_exits,
             aggchain_params: self.fep.aggchain_params(),
+        }
+    }
+}
+
+impl AggchainProofWitness {
+    pub fn bridge_constraints_input(&self) -> BridgeConstraintsInput {
+        BridgeConstraintsInput {
+            ger_addr: L2_GER_ADDR, // set as constant for now
+            prev_l2_block_hash: self.fep.public_values.prev_block_hash,
+            new_l2_block_hash: self.fep.public_values.new_block_hash,
+            new_local_exit_root: self.new_local_exit_root,
+            l1_info_root: self.l1_info_root,
+            bridge_witness: self.bridge_witness.clone(),
         }
     }
 }
