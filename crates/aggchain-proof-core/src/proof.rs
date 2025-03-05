@@ -1,3 +1,4 @@
+use alloy_primitives::keccak256;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -80,7 +81,10 @@ impl AggchainProofWitness {
             l1_info_root: self.l1_info_root,
             origin_network: self.origin_network,
             commit_imported_bridge_exits: keccak256_combine(
-                self.bridge_witness.global_index_hashes.iter(),
+                self.bridge_witness
+                    .global_indices
+                    .iter()
+                    .map(|idx| keccak256(idx.as_slice())),
             ),
             aggchain_params: self.fep.aggchain_params(),
         }

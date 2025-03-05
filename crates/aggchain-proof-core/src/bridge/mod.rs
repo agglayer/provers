@@ -1,5 +1,5 @@
 //! A program that verifies the bridge integrity
-use alloy_primitives::{address, Address};
+use alloy_primitives::{address, Address, B256};
 use alloy_sol_macro::sol;
 use inserted_ger::InsertedGER;
 use serde::{Deserialize, Serialize};
@@ -83,8 +83,8 @@ impl BridgeConstraintsError {
 pub struct BridgeWitness {
     /// List of inserted GER.
     pub inserted_gers: Vec<InsertedGER>,
-    /// List of the hash of the global index of each imported bridge exit.
-    pub global_index_hashes: Vec<Digest>,
+    /// List of the global index of each imported bridge exit.
+    pub global_indices: Vec<B256>,
     /// State sketch to retrieve the previous hash chain GER.
     pub prev_hash_chain_ger_sketch: EVMStateSketch,
     /// State sketch to retrieve the new hash chain GER.
@@ -168,10 +168,10 @@ impl BridgeConstraintsInput {
         // 1.3 Check that the rebuilt hash chain is equal to the new hash chain
         let rebuilt_hash_chain_global_index = self
             .bridge_witness
-            .global_index_hashes
+            .global_indices
             .iter()
             .fold(prev_hash_chain, |acc, &global_index_hashed| {
-                keccak256_combine([acc, global_index_hashed])
+                keccak256_combine([acc, global_index_hashed.0.into()])
             });
 
         if rebuilt_hash_chain_global_index != new_hash_chain {
@@ -546,7 +546,7 @@ mod tests {
                 new_hash_chain_ger_sketch: executor_new_hash_chain.clone(),
                 bridge_address_sketch: executor_get_bridge_address_sketch,
                 new_ler_sketch: executor_get_ler_sketch,
-                global_index_hashes: todo!(),
+                global_indices: todo!(),
                 prev_hash_chain_global_index_sketch: todo!(),
                 new_hash_chain_global_index_sketch: todo!(),
             },

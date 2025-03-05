@@ -10,7 +10,7 @@ type Vkey = [u32; 8];
 /// Hardcoded hash of the "aggregation vkey".
 /// NOTE: Format being `hash_u32()` of the `SP1StarkVerifyingKey`.
 #[cfg(target_os = "zkvm")]
-pub const AGGREGATION_VKEY: Vkey = [0u32; 8]; // TODO: to put the right value
+pub const AGGREGATION_VKEY_HASH: Vkey = [0u32; 8]; // TODO: to put the right value
 
 /// Hardcoded for now, might see if we might need it as input
 pub const OUTPUT_ROOT_VERSION: [u8; 32] = [0u8; 32];
@@ -67,10 +67,7 @@ impl FepPublicValues {
 
         #[cfg(target_os = "zkvm")]
         {
-            sp1_zkvm::lib::verify::verify_sp1_proof(
-                &AGGREGATION_VKEY,
-                &self.public_values.hash().into(),
-            );
+            sp1_zkvm::lib::verify::verify_sp1_proof(&AGGREGATION_VKEY_HASH, &self.hash().into());
 
             return Ok(());
         }
