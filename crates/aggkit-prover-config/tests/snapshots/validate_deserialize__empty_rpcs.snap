@@ -1,6 +1,7 @@
 ---
 source: crates/aggkit-prover-config/tests/validate_deserialize.rs
 expression: config
+snapshot_kind: text
 ---
 grpc-endpoint = "127.0.0.1:8081"
 
@@ -34,6 +35,7 @@ global-exit-root-manager-v2-sovereign-chain = "0xa40d5f56745a118d0906a34e69aec8c
 
 [aggchain-proof-service.proposer-service]
 l1-rpc-endpoint = "http://anvil-mock-l1-rpc:8545/"
+aggregated-proof-vkey-hash = "0x00441b614a713401ad1090cd7e59813e07352cb247172934f5a05dedb9e671bf"
 
 [aggchain-proof-service.proposer-service.client]
 proposer-endpoint = "http://proposer-mock-rpc:3000/"

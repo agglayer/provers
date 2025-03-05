@@ -3,7 +3,7 @@ use std::sync::Arc;
 use alloy_primitives::{FixedBytes, B256};
 use proposer_client::{rpc::AggSpanProofProposerRequest, MockProposerClient, ProposerRequest};
 use prover_alloy::MockProvider;
-use sp1_sdk::{Prover as _, SP1_CIRCUIT_VERSION};
+use sp1_sdk::{HashableKey as _, Prover as _, SP1_CIRCUIT_VERSION};
 use tower::Service as _;
 
 use crate::Error;
@@ -44,20 +44,31 @@ async fn test_proposer_service() {
         (pk, public_values)
     };
 
-    client.expect_wait_for_proof().once().return_once(move |_| {
-        Box::pin(async move {
-            Ok(sp1_sdk::SP1ProofWithPublicValues::create_mock_proof(
-                &pk,
-                public_values,
-                sp1_sdk::SP1ProofMode::Compressed,
-                SP1_CIRCUIT_VERSION,
-            ))
-        })
-    });
+    let vk_hash = {
+        let mock_proof = sp1_sdk::SP1ProofWithPublicValues::create_mock_proof(
+            &pk,
+            public_values,
+            sp1_sdk::SP1ProofMode::Compressed,
+            SP1_CIRCUIT_VERSION,
+        );
+        let compressed = mock_proof.proof.try_as_compressed_ref().unwrap();
+        let vk_hash = compressed.vk.hash_bytes();
+
+        client
+            .expect_wait_for_proof()
+            .once()
+            .return_once(move |_| Box::pin(async move { Ok(mock_proof) }));
+
+        vk_hash.into()
+    };
 
     let client = Arc::new(client);
     let l1_rpc = Arc::new(l1_rpc);
-    let mut proposer_service = ProposerService { client, l1_rpc };
+    let mut proposer_service = ProposerService {
+        client,
+        l1_rpc,
+        aggspan_vkey_hash: vk_hash,
+    };
 
     let request = ProposerRequest {
         start_block: 0,
@@ -81,7 +92,11 @@ async fn unable_to_fetch_block_hash() {
 
     let client = Arc::new(client);
     let l1_rpc = Arc::new(l1_rpc);
-    let mut proposer_service = ProposerService { client, l1_rpc };
+    let mut proposer_service = ProposerService {
+        client,
+        l1_rpc,
+        aggspan_vkey_hash: [0x91; 32].into(),
+    };
 
     let request = ProposerRequest {
         start_block: 0,
