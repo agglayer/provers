@@ -552,9 +552,9 @@ mod tests {
                 new_hash_chain_ger_sketch: executor_new_hash_chain.clone(),
                 bridge_address_sketch: executor_get_bridge_address_sketch,
                 new_ler_sketch: executor_get_ler_sketch,
-                global_indices: todo!(),
-                prev_hash_chain_global_index_sketch: todo!(),
-                new_hash_chain_global_index_sketch: todo!(),
+                global_indices: Vec::new(), // TODO
+                prev_hash_chain_global_index_sketch: executor_new_hash_chain.clone(), // TODO
+                new_hash_chain_global_index_sketch: executor_new_hash_chain.clone(), // TODO
             },
         };
 
@@ -591,7 +591,7 @@ mod tests {
 
             assert!(matches!(
                 bridge_data_invalid.verify(),
-                Err(BridgeConstraintsError::MismatchHashChain { .. })
+                Err(BridgeConstraintsError::MismatchHashChainGER { .. })
             ));
         }
 

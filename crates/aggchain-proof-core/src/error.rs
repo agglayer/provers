@@ -1,3 +1,5 @@
+use alloy_primitives::Address;
+
 use crate::{bridge::BridgeConstraintsError, Digest};
 
 /// Represents all the aggchain proof errors.
@@ -27,5 +29,17 @@ pub enum ProofError {
         index: u32,
         l1_leaf_hash: Digest,
         l1_info_root: Digest,
+    },
+
+    /// The signature on the fep public values is invalid.
+    #[error("Invalid signature.")]
+    InvalidSignature,
+
+    /// The signer recovered from the signature differs from the one declared as
+    /// witness.
+    #[error("Invalid signer. declared: {declared}, recovered: {recovered}")]
+    InvalidSigner {
+        declared: Address,
+        recovered: Address,
     },
 }

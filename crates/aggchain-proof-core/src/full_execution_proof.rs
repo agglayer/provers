@@ -1,5 +1,5 @@
+use alloy_primitives::{Address, PrimitiveSignature, B256};
 use serde::{Deserialize, Serialize};
-#[cfg(target_os = "zkvm")]
 use sha2::{Digest as Sha256Digest, Sha256};
 
 use crate::{error::ProofError, keccak::digest::Digest, keccak::keccak256_combine};
@@ -28,9 +28,13 @@ pub struct FepPublicValues {
     pub new_state_root: Digest,
     pub new_withdrawal_storage_root: Digest,
     pub new_block_hash: Digest,
+
+    /// Trusted sequencer address.
+    pub trusted_sequencer: Address,
+    /// Signature in the "OptimisticMode" case.
+    pub signature_optimistic_mode: Option<PrimitiveSignature>,
 }
 
-#[cfg(target_os = "zkvm")]
 impl FepPublicValues {
     pub fn hash(&self) -> [u8; 32] {
         let public_values = [
@@ -47,29 +51,64 @@ impl FepPublicValues {
     }
 }
 
+#[repr(u8)]
+#[derive(Clone, Copy)]
+enum OptimisticMode {
+    Sp1 = 0,
+    Ecdsa = 1,
+}
+
 impl FepPublicValues {
     /// Compute the chain-specific commitment forwarded to the PP.
     pub fn aggchain_params(&self) -> Digest {
+        let optimistic_mode: u8 = self.optimistic_mode() as u8;
+
         keccak256_combine([
-            self.l1_head.as_slice(),
             self.compute_l2_pre_root().as_slice(),
             self.compute_claim_root().as_slice(),
             &self.claim_block_num.to_be_bytes(),
             self.rollup_config_hash.as_slice(),
-            self.range_vkey_commitment.as_slice(),
+            &optimistic_mode.to_be_bytes(),
+            self.trusted_sequencer.as_slice(),
         ])
+    }
+
+    fn optimistic_mode(&self) -> OptimisticMode {
+        if self.signature_optimistic_mode.is_some() {
+            OptimisticMode::Sp1
+        } else {
+            OptimisticMode::Ecdsa
+        }
     }
 
     /// Verify the SP1 proof
     pub fn verify(&self) -> Result<(), ProofError> {
-        #[cfg(not(target_os = "zkvm"))]
-        unreachable!("verify_sp1_proof is not callable outside of SP1");
+        if let Some(signature) = self.signature_optimistic_mode {
+            let recovered_signer = signature
+                .recover_address_from_prehash(&B256::new(self.hash()))
+                .map_err(|_| ProofError::InvalidSignature)?;
 
-        #[cfg(target_os = "zkvm")]
-        {
-            sp1_zkvm::lib::verify::verify_sp1_proof(&AGGREGATION_VKEY_HASH, &self.hash().into());
+            if recovered_signer != self.trusted_sequencer {
+                return Err(ProofError::InvalidSigner {
+                    declared: self.trusted_sequencer,
+                    recovered: recovered_signer,
+                });
+            }
 
-            return Ok(());
+            Ok(())
+        } else {
+            #[cfg(not(target_os = "zkvm"))]
+            unreachable!("verify_sp1_proof is not callable outside of SP1");
+
+            #[cfg(target_os = "zkvm")]
+            {
+                sp1_zkvm::lib::verify::verify_sp1_proof(
+                    &AGGREGATION_VKEY_HASH,
+                    &self.hash().into(),
+                );
+
+                return Ok(());
+            }
         }
     }
 }

@@ -40,8 +40,7 @@ pub struct AggchainProofWitness {
 
 impl AggchainProofWitness {
     pub fn verify_aggchain_inputs(&self) -> Result<AggchainProofPublicValues, ProofError> {
-        // Verify the FEP exclusively within the SP1 VM
-        #[cfg(target_os = "zkvm")]
+        // Verify the FEP proof or ECDSA signature.
         self.fep.verify()?;
 
         // Verify that the `l1Head` considered by the FEP exists in the L1 Info Tree
