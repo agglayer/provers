@@ -110,9 +110,9 @@ mod aggchain_contracts_rpc_client {
         Ok((
             result?,
             TestServers {
-                server_l1: server_l1,
-                server_l2_el: server_l2_el,
-                server_l2_cl: server_l2_cl,
+                server_l1,
+                server_l2_el,
+                server_l2_cl,
             },
         ))
     }
