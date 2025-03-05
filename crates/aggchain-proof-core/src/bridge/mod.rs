@@ -51,9 +51,15 @@ pub enum BridgeConstraintsError {
         stage: StaticCallStage,
     },
 
-    /// The provided hash chain does not correspond with the computed one.
-    #[error("Mismatch on the hash chain. computed: {computed}, input: {input}")]
-    MismatchHashChain { computed: Digest, input: Digest },
+    /// The provided hash chain on GER does not correspond with the computed
+    /// one.
+    #[error("Mismatch on the hash chain of GERs. computed: {computed}, input: {input}")]
+    MismatchHashChainGER { computed: Digest, input: Digest },
+
+    /// The provided hash chain on global indices does not correspond with the
+    /// computed one.
+    #[error("Mismatch on the hash chain of global indices. computed: {computed}, input: {input}")]
+    MismatchHashChainGlobalIndex { computed: Digest, input: Digest },
 
     /// The provided new LER does not correspond with the one retrieved from
     /// contracts.
@@ -124,7 +130,7 @@ impl BridgeConstraintsInput {
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
             )
             .map_err(|e| {
-                BridgeConstraintsError::static_call_error(e, StaticCallStage::PrevHashChain)
+                BridgeConstraintsError::static_call_error(e, StaticCallStage::PrevHashChainGER)
             })?;
 
             // check on block hash
@@ -133,7 +139,7 @@ impl BridgeConstraintsInput {
                     retrieved: retrieved_block_hash,
                     input: self.prev_l2_block_hash,
                     // TODO: Bring context (GER or Claims)
-                    stage: StaticCallStage::PrevHashChain,
+                    stage: StaticCallStage::PrevHashChainGER,
                 });
             }
 
@@ -149,7 +155,10 @@ impl BridgeConstraintsInput {
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
             )
             .map_err(|e| {
-                BridgeConstraintsError::static_call_error(e, StaticCallStage::NewHashChain)
+                BridgeConstraintsError::static_call_error(
+                    e,
+                    StaticCallStage::NewHashChainGlobalIndex,
+                )
             })?;
 
             // check on block hash
@@ -157,8 +166,7 @@ impl BridgeConstraintsInput {
                 return Err(BridgeConstraintsError::MismatchBlockHash {
                     retrieved: retrieved_block_hash,
                     input: self.new_l2_block_hash,
-                    // TODO: Bring context (GER or Claims)
-                    stage: StaticCallStage::NewHashChain,
+                    stage: StaticCallStage::NewHashChainGlobalIndex,
                 });
             }
 
@@ -175,8 +183,7 @@ impl BridgeConstraintsInput {
             });
 
         if rebuilt_hash_chain_global_index != new_hash_chain {
-            // TODO: Bring context for hashchain mismatch (GER vs. Claims)
-            return Err(BridgeConstraintsError::MismatchHashChain {
+            return Err(BridgeConstraintsError::MismatchHashChainGlobalIndex {
                 computed: rebuilt_hash_chain_global_index,
                 input: new_hash_chain,
             });
@@ -195,7 +202,7 @@ impl BridgeConstraintsInput {
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
             )
             .map_err(|e| {
-                BridgeConstraintsError::static_call_error(e, StaticCallStage::PrevHashChain)
+                BridgeConstraintsError::static_call_error(e, StaticCallStage::PrevHashChainGER)
             })?;
 
             // check on block hash
@@ -203,7 +210,7 @@ impl BridgeConstraintsInput {
                 return Err(BridgeConstraintsError::MismatchBlockHash {
                     retrieved: retrieved_block_hash,
                     input: self.prev_l2_block_hash,
-                    stage: StaticCallStage::PrevHashChain,
+                    stage: StaticCallStage::PrevHashChainGER,
                 });
             }
 
@@ -218,7 +225,7 @@ impl BridgeConstraintsInput {
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
             )
             .map_err(|e| {
-                BridgeConstraintsError::static_call_error(e, StaticCallStage::NewHashChain)
+                BridgeConstraintsError::static_call_error(e, StaticCallStage::NewHashChainGER)
             })?;
 
             // check on block hash
@@ -226,7 +233,7 @@ impl BridgeConstraintsInput {
                 return Err(BridgeConstraintsError::MismatchBlockHash {
                     retrieved: retrieved_block_hash,
                     input: self.new_l2_block_hash,
-                    stage: StaticCallStage::NewHashChain,
+                    stage: StaticCallStage::NewHashChainGER,
                 });
             }
 
@@ -242,8 +249,7 @@ impl BridgeConstraintsInput {
             .fold(prev_hash_chain, |acc, ger| keccak256_combine([acc, ger]));
 
         if rebuilt_hash_chain != new_hash_chain {
-            // TODO: Bring context for hashchain mismatch (GER vs. Claims)
-            return Err(BridgeConstraintsError::MismatchHashChain {
+            return Err(BridgeConstraintsError::MismatchHashChainGER {
                 computed: rebuilt_hash_chain,
                 input: new_hash_chain,
             });
