@@ -84,8 +84,9 @@ impl std::fmt::Debug for VKeyHash {
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use alloy_primitives::b256;
+
+    use super::*;
 
     #[test]
     fn constructors_consistently_be() {
