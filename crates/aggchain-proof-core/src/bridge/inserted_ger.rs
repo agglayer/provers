@@ -1,9 +1,7 @@
+use aggchain_proof_types::{keccak256_combine, Digest};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    keccak::{digest::Digest, keccak256_combine},
-    local_exit_tree::{hasher::Keccak256Hasher, proof::LETMerkleProof},
-};
+use crate::local_exit_tree::{hasher::Keccak256Hasher, proof::LETMerkleProof};
 
 impl L1InfoTreeLeaf {
     /// Hashes the L1 Info Tree leaf.

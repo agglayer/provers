@@ -1,4 +1,5 @@
 //! A program that verifies the bridge integrity
+use aggchain_proof_types::{keccak256_combine, Digest};
 use alloy_primitives::{address, Address};
 use alloy_sol_macro::sol;
 use serde::{Deserialize, Serialize};
@@ -6,8 +7,6 @@ use sp1_cc_client_executor::io::EVMStateSketch;
 use static_call::{execute_static_call, StaticCallError, StaticCallStage};
 
 use crate::bridge::inserted_ger::InsertedGER;
-use crate::keccak::digest::Digest;
-use crate::keccak::keccak256_combine;
 
 mod inserted_ger;
 mod static_call;

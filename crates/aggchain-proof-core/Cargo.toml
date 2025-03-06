@@ -25,6 +25,8 @@ tiny-keccak = { git = "https://github.com/sp1-patches/tiny-keccak", tag = "patch
     "keccak",
 ] }
 
+aggchain-proof-types.workspace = true
+
 [dev-dependencies]
 alloy.workspace = true
 dotenvy.workspace = true

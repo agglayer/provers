@@ -5,8 +5,8 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+alloy-primitives.workspace = true
 anyhow.workspace = true
-aggchain-proof-core.workspace = true
 bincode.workspace = true
 prost = "0.13.4"
 serde.workspace = true
@@ -16,6 +16,8 @@ tonic = { workspace = true, default-features = false, features = [
     "codegen",
     "transport",
 ] }
+
+aggchain-proof-types.workspace = true
 
 [build-dependencies]
 tonic-build = { version = "0.12", default-features = false, features = [

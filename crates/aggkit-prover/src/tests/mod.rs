@@ -25,8 +25,6 @@ async fn service_can_be_called() {
         .await
         .expect("create aggchain proof service");
     let request = AggchainProofServiceRequest {
-        start_block: 0,
-        max_block: 100,
         ..Default::default()
     };
     let response = service.call(request).await;

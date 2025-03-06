@@ -1,10 +1,10 @@
+use aggchain_proof_types::Digest;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     bridge::{BridgeConstraintsInput, BridgeWitness, L2_GER_ADDR},
     error::ProofError,
     full_execution_proof::FepWithPublicValues,
-    keccak::digest::Digest,
 };
 
 /// Aggchain proof is generated from the FEP proof and additional
@@ -87,30 +87,4 @@ pub struct AggchainProofPublicValues {
     pub commit_imported_bridge_exits: Digest,
     /// Chain-specific commitment forwarded by the PP.
     pub aggchain_params: Digest,
-}
-
-/// Leaf tree inclusion proof.
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct InclusionProof {
-    pub siblings: Vec<Digest>,
-}
-
-/// L1 info tree leaf, part of the
-/// L1 info tree.
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct L1InfoTreeLeaf {
-    /// Previous block hash of leaf.
-    pub previous_block_hash: Digest,
-    /// Block number timestamp.
-    pub timestamp: u64,
-    /// Mainnet exit root hash.
-    pub mainnet_exit_root_hash: Digest,
-    /// Rollup exit root hash.
-    pub rollup_exit_root_hash: Digest,
-    /// Global exit root hash.
-    pub global_exit_root_hash: Digest,
-    /// Leaf hash.
-    pub leaf_hash: Digest,
-    /// Leaf index.
-    pub l1_info_tree_index: u32,
 }

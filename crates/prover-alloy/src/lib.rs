@@ -8,6 +8,7 @@ use alloy::providers::fillers::{
 };
 use alloy::providers::Identity;
 use alloy::providers::{Provider as _, ProviderBuilder};
+use alloy::signers::k256::elliptic_curve::ff::derive::bitvec::macros::internal::funty::Fundamental;
 use alloy::transports::http::reqwest;
 use alloy::transports::layers::RetryBackoffLayer;
 use alloy::{providers::RootProvider, rpc::client::ClientBuilder};
@@ -57,6 +58,11 @@ pub trait Provider {
         &self,
         block_number: u64,
     ) -> Result<alloy::primitives::B256, anyhow::Error>;
+
+    async fn get_block_number(
+        &self,
+        block_hash: alloy::primitives::B256,
+    ) -> Result<u64, anyhow::Error>;
 }
 
 /// Wrapper around alloy `Provider` client.
@@ -113,6 +119,22 @@ impl Provider for AlloyProvider {
             .header
             .hash;
         Ok(hash)
+    }
+
+    async fn get_block_number(
+        &self,
+        block_hash: alloy::primitives::B256,
+    ) -> Result<u64, anyhow::Error> {
+        let number = self
+            .client
+            .get_block_by_hash(block_hash, BlockTransactionsKind::Hashes)
+            .await
+            .map_err(|error| anyhow::anyhow!("Failed to get L1 block number: {:?}", error))?
+            .ok_or(anyhow::anyhow!("target block {block_hash} does not exist"))?
+            .header
+            .number
+            .as_u64();
+        Ok(number)
     }
 }
 

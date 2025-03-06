@@ -2,6 +2,7 @@ use std::fmt::Display;
 use std::sync::Arc;
 use std::time::Duration;
 
+use aggchain_proof_types::Digest;
 use alloy_primitives::B256;
 use serde::{Deserialize, Serialize};
 use sp1_sdk::SP1ProofWithPublicValues;
@@ -88,7 +89,7 @@ where
 pub struct ProposerRequest {
     pub start_block: u64,
     pub max_block: u64,
-    pub l1_block_number: u64,
+    pub l1_block_hash: Digest,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

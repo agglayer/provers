@@ -9,6 +9,7 @@ pub const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("generated/aggkit.prover.b
 #[rustfmt::skip]
 #[allow(warnings)]
 pub mod v1;
+pub mod conversion;
 
 pub fn default_bincode_options(
 ) -> WithOtherIntEncoding<WithOtherEndian<DefaultOptions, BigEndian>, FixintEncoding> {
