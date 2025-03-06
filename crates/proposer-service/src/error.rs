@@ -9,9 +9,9 @@ pub enum Error {
     #[error("Proposer client error: {0}")]
     Client(#[from] ProposerClientError),
 
-    #[error("Unsupported aggregated execution proof mode {0:?}")]
+    #[error("Unsupported aggregated span proof mode {0:?}")]
     UnsupportedAggProofMode(sp1_sdk::SP1ProofMode),
 
-    #[error("Aggregated execution proof vkey mismatch (got: {got:?}, expected: {expected:?})")]
+    #[error("Aggregated span proof vkey mismatch (got: {got:?}, expected: {expected:?})")]
     AggProofVKeyMismatch { got: B256, expected: B256 },
 }

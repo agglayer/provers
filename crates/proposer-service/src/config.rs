@@ -13,8 +13,11 @@ pub struct ProposerServiceConfig {
     pub l1_rpc_endpoint: Url,
 
     /// Hash of the aggregated execution proof verification key.
-    #[serde(default = "default_aggregated_proof_vkey_hash")]
-    pub aggregated_proof_vkey_hash: B256,
+    ///
+    /// This is the proof that verifies the proposer provided aggregated span proof (aggregated full
+    /// execution proof for the block span).
+    #[serde(default = "default_agg_span_proof_vkey_hash")]
+    pub agg_span_proof_vkey_hash: B256,
 }
 
 impl Default for ProposerServiceConfig {
@@ -22,11 +25,11 @@ impl Default for ProposerServiceConfig {
         Self {
             client: ProposerClientConfig::default(),
             l1_rpc_endpoint: prover_alloy::default_l1_node_url(),
-            aggregated_proof_vkey_hash: default_aggregated_proof_vkey_hash(),
+            agg_span_proof_vkey_hash: default_agg_span_proof_vkey_hash(),
         }
     }
 }
 
-fn default_aggregated_proof_vkey_hash() -> B256 {
+fn default_agg_span_proof_vkey_hash() -> B256 {
     hex!("00441b614a713401ad1090cd7e59813e07352cb247172934f5a05dedb9e671bf").into()
 }

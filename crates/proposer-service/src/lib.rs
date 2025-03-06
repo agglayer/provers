@@ -23,8 +23,8 @@ pub struct ProposerService<L1Rpc, ProposerClient> {
 
     pub l1_rpc: Arc<L1Rpc>,
 
-    /// Expected aggregation proof verification key.
-    aggspan_vkey_hash: B256,
+    /// Expected aggregated span proof verification key.
+    agg_span_proof_vkey_hash: B256,
 }
 
 impl<L1Rpc, ProposerClient> Clone for ProposerService<L1Rpc, ProposerClient> {
@@ -32,7 +32,7 @@ impl<L1Rpc, ProposerClient> Clone for ProposerService<L1Rpc, ProposerClient> {
         Self {
             client: self.client.clone(),
             l1_rpc: self.l1_rpc.clone(),
-            aggspan_vkey_hash: self.aggspan_vkey_hash,
+            agg_span_proof_vkey_hash: self.agg_span_proof_vkey_hash,
         }
     }
 }
@@ -41,7 +41,7 @@ impl<L1Rpc> ProposerService<L1Rpc, proposer_client::Client<ProposerRpcClient, Ne
     pub fn new(config: &ProposerServiceConfig, l1_rpc: Arc<L1Rpc>) -> Result<Self, Error> {
         let proposer_rpc_client = ProposerRpcClient::new(config.client.proposer_endpoint.as_str())?;
         let network_prover = new_network_prover(config.client.sp1_cluster_endpoint.as_str());
-        let aggspan_vkey_hash = config.aggregated_proof_vkey_hash;
+        let agg_span_proof_vkey_hash = config.agg_span_proof_vkey_hash;
 
         Ok(Self {
             l1_rpc,
@@ -50,7 +50,7 @@ impl<L1Rpc> ProposerService<L1Rpc, proposer_client::Client<ProposerRpcClient, Ne
                 network_prover,
                 Some(config.client.proving_timeout),
             )?),
-            aggspan_vkey_hash,
+            agg_span_proof_vkey_hash,
         })
     }
 }
@@ -100,7 +100,7 @@ where
     ) -> Self::Future {
         let client = self.client.clone();
         let l1_rpc = self.l1_rpc.clone();
-        let expected_vkey_hash = self.aggspan_vkey_hash;
+        let expected_vkey_hash = self.agg_span_proof_vkey_hash;
 
         async move {
             let l1_block_hash = l1_rpc
