@@ -17,6 +17,7 @@ pub mod config;
 pub mod error;
 #[cfg(test)]
 mod tests;
+pub mod vkey_hash;
 
 pub struct ProposerService<L1Rpc, ProposerClient> {
     pub client: Arc<ProposerClient>,
