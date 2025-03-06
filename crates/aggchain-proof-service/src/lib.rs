@@ -1,6 +1,6 @@
 pub mod config;
 
-pub mod context;
+mod custom_chain_data;
 mod error;
 pub mod service;
 

@@ -3,12 +3,12 @@ use bincode::{
     DefaultOptions, Options,
 };
 
-pub mod compat;
+pub const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("generated/aggkit.prover.bin");
 
-#[allow(clippy::needless_lifetimes)]
-mod generated;
-pub use generated::aggkit::prover::v1;
-pub use generated::agglayer;
+#[path = "generated/aggkit.prover.v1.rs"]
+#[rustfmt::skip]
+#[allow(warnings)]
+pub mod v1;
 
 pub fn default_bincode_options(
 ) -> WithOtherIntEncoding<WithOtherEndian<DefaultOptions, BigEndian>, FixintEncoding> {
@@ -17,4 +17,4 @@ pub fn default_bincode_options(
         .with_fixint_encoding()
 }
 
-pub type Hash = [u8; 32];
+pub use aggchain_proof_core::Digest;

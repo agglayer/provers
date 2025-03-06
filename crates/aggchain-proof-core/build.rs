@@ -22,8 +22,8 @@ fn main() {
 
     let major_version = version.major.to_string();
 
-    let out_dir = "./src/context/";
-    let dest_path = Path::new(&out_dir).join("aggchain_proof_program_version.rs");
+    let out_dir = "./src/";
+    let dest_path = Path::new(&out_dir).join("version.rs");
     fs::write(
         &dest_path,
         format!(

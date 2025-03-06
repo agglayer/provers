@@ -41,4 +41,7 @@ pub enum Error {
 
     #[error("Error retrieving rollup config hash")]
     RollupConfigHashError(#[source] alloy::contract::Error),
+
+    #[error("Error retrieving aggchain vkey")]
+    AggchainVKeyRetrievalError(#[source] alloy::contract::Error),
 }
