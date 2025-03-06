@@ -6,7 +6,6 @@ license.workspace = true
 
 [dependencies]
 bincode.workspace = true
-pbjson.workspace = true
 prost.workspace = true
 serde.workspace = true
 sp1-sdk.workspace = true
@@ -18,3 +17,9 @@ tonic = { workspace = true, default-features = false, features = [
 ] }
 
 prover-executor.workspace = true
+
+[build-dependencies]
+tonic-build = { version = "0.12", default-features = false, features = [
+    "prost",
+    "transport",
+] }

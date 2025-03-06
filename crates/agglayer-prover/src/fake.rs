@@ -48,7 +48,7 @@ impl FakeProver {
             .await;
 
         let reflection = tonic_reflection::server::Builder::configure()
-            .register_encoded_file_descriptor_set(agglayer_prover_types::v1::FILE_DESCRIPTOR_SET)
+            .register_encoded_file_descriptor_set(agglayer_prover_types::FILE_DESCRIPTOR_SET)
             .build_v1alpha()
             .expect("Cannot build gRPC because of FILE_DESCRIPTOR_SET error");
 
@@ -107,9 +107,7 @@ impl PessimisticProofService for FakeProver {
                     .unwrap();
                 debug!("Proof generated successfully, size: {}B", proof.len());
                 Ok(tonic::Response::new(
-                    agglayer_prover_types::v1::GenerateProofResponse {
-                        proof: proof.into(),
-                    },
+                    agglayer_prover_types::v1::GenerateProofResponse { proof },
                 ))
             }
             Err(error) => {

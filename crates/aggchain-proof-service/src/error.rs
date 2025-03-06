@@ -18,9 +18,6 @@ pub enum Error {
     #[error("Unable to setup aggchain proof builder")]
     AggchainProofBuilderInitFailed(#[source] aggchain_proof_builder::Error),
 
-    #[error("Aggchain proof builder service returned an error during operation")]
-    AggchainProofBuilderServiceError(#[source] aggchain_proof_builder::Error),
-
     #[error("Aggchain proof builder service request failed")]
     AggchainProofBuilderRequestFailed(#[source] aggchain_proof_builder::Error),
 }

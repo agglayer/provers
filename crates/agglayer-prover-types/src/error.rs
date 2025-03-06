@@ -13,7 +13,7 @@ impl ErrorWrapper {
         let (code, message, details) = match value {
             Error::UnableToExecuteProver => {
                 let details = default_bincode_options().serialize(&GenerateProofError {
-                    error: vec![].into(),
+                    error: vec![],
                     error_type: ErrorKind::UnableToExecuteProver.into(),
                 })?;
 
@@ -25,16 +25,14 @@ impl ErrorWrapper {
             }
             Error::ProverFailed(_) => {
                 let details = default_bincode_options().serialize(&GenerateProofError {
-                    error: vec![].into(),
+                    error: vec![],
                     error_type: ErrorKind::ProverFailed.into(),
                 })?;
                 (tonic::Code::Internal, value.to_string(), details)
             }
             Error::ProofVerificationFailed(ref proof_verification_error) => {
                 let details = default_bincode_options().serialize(&GenerateProofError {
-                    error: default_bincode_options()
-                        .serialize(&proof_verification_error)?
-                        .into(),
+                    error: default_bincode_options().serialize(&proof_verification_error)?,
                     error_type: ErrorKind::ProofVerificationFailed.into(),
                 })?;
 
@@ -42,7 +40,7 @@ impl ErrorWrapper {
             }
             Error::ExecutorFailed(ref proof_error) => {
                 let details = default_bincode_options().serialize(&GenerateProofError {
-                    error: default_bincode_options().serialize(&proof_error)?.into(),
+                    error: default_bincode_options().serialize(&proof_error)?,
                     error_type: ErrorKind::ExecutorFailed.into(),
                 })?;
 

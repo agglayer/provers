@@ -147,7 +147,7 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
 
         self.aggchain_proof_builder
             .poll_ready(cx)
-            .map_err(Error::AggchainProofBuilderServiceError)
+            .map_err(Error::AggchainProofBuilderInitFailed)
     }
 
     fn call(&mut self, req: AggchainProofServiceRequest) -> Self::Future {
@@ -185,12 +185,12 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
             let aggchain_proof_response = proof_builder
                 .call(aggchain_proof_builder_request)
                 .await
-                .map_err(Error::AggchainProofBuilderServiceError)?;
+                .map_err(Error::AggchainProofBuilderRequestFailed)?;
 
             let custom_chain_data = customchaindata_builder
                 .call(CustomChainDataBuilderRequest {
                     l2_block_number: agg_span_proof_response.end_block,
-                    output_root: [1u8; 32],
+                    output_root: aggchain_proof_response.output_root,
                 })
                 .await
                 .map_err(Error::CustomChainDataBuilderError)?;

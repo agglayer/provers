@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use aggchain_proof_service::config::AggchainProofServiceConfig;
 use aggchain_proof_service::service::{AggchainProofService, AggchainProofServiceRequest};
-use aggkit_prover_types::agglayer::protocol::types::v1::FixedBytes32;
 use aggkit_prover_types::v1::{
     aggchain_proof_service_client::AggchainProofServiceClient,
     aggchain_proof_service_server::AggchainProofServiceServer, GenerateAggchainProofRequest,
@@ -79,9 +78,7 @@ async fn testing_rpc_failure() {
     let request = tonic::Request::new(GenerateAggchainProofRequest {
         start_block: 1000,
         max_end_block: 999,
-        l1_info_tree_root_hash: Some(FixedBytes32 {
-            value: Vec::new().into(),
-        }),
+        l1_info_tree_root_hash: Vec::new(),
         l1_info_tree_leaf: None,
         l1_info_tree_merkle_proof: Vec::new(),
         imported_bridge_exits: vec![],

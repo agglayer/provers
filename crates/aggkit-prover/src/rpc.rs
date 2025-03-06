@@ -53,22 +53,8 @@ impl AggchainProofGrpcService for GrpcService {
             ));
         }
 
-        let l1_info_tree_root_hash: Hash = request
-            .l1_info_tree_root_hash
-            .ok_or_else(|| {
-                let mut error_details = ErrorDetails::new();
-                error_details.add_bad_request_violation(
-                    "l1_info_tree_root_hash",
-                    "l1 info tree root hash must be defined",
-                );
-                Status::with_error_details(
-                    tonic::Code::InvalidArgument,
-                    "Missing l1 info tree root hash",
-                    error_details,
-                )
-            })?
-            .try_into()
-            .map_err(|_| {
+        let l1_info_tree_root_hash: Hash =
+            request.l1_info_tree_root_hash.try_into().map_err(|_| {
                 let mut error_details = ErrorDetails::new();
                 error_details.add_bad_request_violation(
                     "l1_info_tree_root_hash",
@@ -101,11 +87,11 @@ impl AggchainProofGrpcService for GrpcService {
                     .serialize(&response.proof)
                     .map_err(|e| Status::internal(format!("Unable to serialize proof: {e:?}")))?;
                 Ok(Response::new(GenerateAggchainProofResponse {
-                    aggchain_proof: aggchain_proof.into(),
+                    aggchain_proof,
                     start_block: response.start_block,
                     end_block: response.end_block,
-                    local_exit_root_hash: Some(response.local_exit_root_hash.into()),
-                    custom_chain_data: response.custom_chain_data.into(),
+                    local_exit_root_hash: response.local_exit_root_hash.into(),
+                    custom_chain_data: response.custom_chain_data,
                 }))
             }
             Err(e) => Err(Status::internal(e.to_string())),

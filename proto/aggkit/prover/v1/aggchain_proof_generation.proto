@@ -2,10 +2,6 @@ syntax = "proto3";
 
 package aggkit.prover.v1;
 
-import "agglayer/protocol/types/v1/bytes.proto";
-import "agglayer/protocol/types/v1/claim.proto";
-import "agglayer/protocol/types/v1/imported_bridge_exit.proto";
-
 // Service for generating aggchain proof.
 service AggchainProofService {
   // Generates a aggchain proof for a given start_block.
@@ -19,15 +15,15 @@ message GenerateAggchainProofRequest {
   // The max end block for which the aggchain proof is requested.
   uint64 max_end_block = 2;
   // L1 Info tree root. (hash)
-  agglayer.protocol.types.v1.FixedBytes32 l1_info_tree_root_hash = 3;
+  bytes l1_info_tree_root_hash = 3;
   // L1 Info tree leaf
-  agglayer.protocol.types.v1.L1InfoTreeLeaf l1_info_tree_leaf = 4;
+  L1InfoTreeLeaf l1_info_tree_leaf = 4;
   // L1 Info tree proof. ([32]hash)
   repeated bytes l1_info_tree_merkle_proof = 5;
   // Map of the GER with their ger leaf. Note: the GER (string) is a base64 encoded string of the GER digest.
   map<string, ClaimFromMainnet> ger_leaves = 6;
   // bridge exits
-  repeated agglayer.protocol.types.v1.ImportedBridgeExit imported_bridge_exits = 7;
+  repeated ImportedBridgeExit imported_bridge_exits = 7;
 }
 
 // The aggchain proof response message.
@@ -39,7 +35,7 @@ message GenerateAggchainProofResponse {
   // The end block of the aggchain proof.
   uint64 end_block = 3;
   // Local exit root hash.
-  agglayer.protocol.types.v1.FixedBytes32 local_exit_root_hash = 4;
+  bytes local_exit_root_hash = 4;
   // Custom chain data.
   bytes custom_chain_data = 5;
 }

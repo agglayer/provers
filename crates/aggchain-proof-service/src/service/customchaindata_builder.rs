@@ -3,6 +3,7 @@ use std::{
     task::{Context, Poll},
 };
 
+use educe::Educe;
 use futures::{future::BoxFuture, FutureExt as _};
 use tracing::error;
 
@@ -26,20 +27,12 @@ pub(crate) struct CustomChainDataBuilderResponse {
     pub custom_chain_data: [u8; 66],
 }
 
+#[derive(Educe)]
+#[educe(Clone)]
 pub(crate) struct CustomChainDataBuilderService<L1Rpc> {
     l1_rpc: Arc<L1Rpc>,
     network_id: u32,
     vkey: Arc<[u32; 8]>,
-}
-
-impl Clone for CustomChainDataBuilderService<L1Rpc> {
-    fn clone(&self) -> Self {
-        CustomChainDataBuilderService {
-            l1_rpc: self.l1_rpc.clone(),
-            network_id: self.network_id,
-            vkey: self.vkey.clone(),
-        }
-    }
 }
 
 impl<L1Rpc> CustomChainDataBuilderService<L1Rpc> {
