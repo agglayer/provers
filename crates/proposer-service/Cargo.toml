@@ -5,7 +5,8 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-anyhow = { workspace = true }
+alloy-primitives.workspace = true
+anyhow.workspace = true
 futures.workspace = true
 serde.workspace = true
 sp1-sdk.workspace = true
@@ -17,11 +18,10 @@ proposer-client.workspace = true
 prover-alloy.workspace = true
 
 [dev-dependencies]
-alloy-primitives = { workspace = true }
-mockall = { workspace = true }
+mockall.workspace = true
 proposer-client = { workspace = true, features = ["testutils"] }
 prover-alloy = { workspace = true, features = ["testutils"] }
-tokio = { workspace = true }
+tokio.workspace = true
 
 [lints]
 workspace = true

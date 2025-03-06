@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::{
     future::Future,
     pin::Pin,
@@ -8,8 +7,8 @@ use std::{
 
 use aggchain_proof_builder::AggchainProofBuilder;
 use aggchain_proof_contracts::AggchainContractsRpcClient;
-use aggchain_proof_core::Digest;
-use aggkit_prover_types::v1::{InclusionProof, L1InfoTreeLeaf};
+use aggchain_proof_types::{AggchainProofRequest, Digest};
+use alloy_primitives::B256;
 use futures::FutureExt as _;
 use proposer_service::{ProposerRequest, ProposerService};
 use sp1_sdk::SP1Proof;
@@ -22,23 +21,9 @@ use crate::error::Error;
 /// A request for the AggchainProofService to generate the
 /// aggchain proof for the range of blocks.
 #[derive(Default, Clone, Debug)]
-#[allow(unused)]
 pub struct AggchainProofServiceRequest {
-    /// Aggchain proof starting block
-    pub start_block: u64,
-    /// Max number of blocks that the aggchain proof is allowed to contain
-    pub max_block: u64,
-    /// Root hash of the L1 info tree.
-    pub l1_info_tree_root_hash: Digest,
-    /// Particular leaf of the l1 info tree corresponding
-    /// to the max_block.
-    pub l1_info_tree_leaf: L1InfoTreeLeaf,
-    /// Inclusion proof of the l1 info tree leaf to the
-    /// l1 info tree root.
-    pub l1_info_tree_merkle_proof: [Digest; 32],
-    /// Map of the Global Exit Roots with their inclusion proof.
-    /// Note: the GER (string) is a base64 encoded string of the GER digest.
-    pub ger_inclusion_proofs: HashMap<String, InclusionProof>,
+    /// Aggchain proof request information
+    pub aggchain_proof_request: AggchainProofRequest,
 }
 
 /// Resulting generated Aggchain proof
@@ -142,12 +127,16 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
     }
 
     fn call(&mut self, req: AggchainProofServiceRequest) -> Self::Future {
-        let l1_block_number = req.max_block;
+        let l1_block_hash = req
+            .aggchain_proof_request
+            .l1_info_tree_leaf
+            .inner_leaf
+            .block_hash;
 
         let proposer_request = ProposerRequest {
-            start_block: req.start_block,
-            max_block: req.max_block,
-            l1_block_number,
+            start_block: req.aggchain_proof_request.start_block,
+            max_block: req.aggchain_proof_request.max_end_block,
+            l1_block_hash: B256::from(l1_block_hash.0),
         };
 
         let mut proposer_service = self.proposer_service.clone();
@@ -164,12 +153,8 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
             let aggchain_proof_builder_request =
                 aggchain_proof_builder::AggchainProofBuilderRequest {
                     agg_span_proof: agg_span_proof_response.agg_span_proof,
-                    start_block: agg_span_proof_response.start_block,
                     end_block: agg_span_proof_response.end_block,
-                    l1_info_tree_merkle_proof: req.l1_info_tree_merkle_proof,
-                    l1_info_tree_leaf: req.l1_info_tree_leaf,
-                    l1_info_tree_root_hash: req.l1_info_tree_root_hash,
-                    ger_inclusion_proofs: req.ger_inclusion_proofs,
+                    aggchain_proof_request: req.aggchain_proof_request,
                 };
 
             let aggchain_proof_response = proof_builder

@@ -67,23 +67,23 @@ where
         ProposerRequest {
             start_block,
             max_block,
-            l1_block_number,
+            l1_block_hash,
         }: ProposerRequest,
     ) -> Self::Future {
         let client = self.client.clone();
         let l1_rpc = self.l1_rpc.clone();
 
         async move {
-            let l1_block_hash = l1_rpc
-                .get_block_hash(l1_block_number)
+            let l1_block_number = l1_rpc
+                .get_block_number(l1_block_hash)
                 .await
                 .map_err(Error::AlloyProviderError)?;
 
             // Request the AggSpanProof generation from the proposer.
             let response = client
                 .request_agg_proof(AggSpanProofProposerRequest {
-                    start: start_block,
-                    end: max_block,
+                    start_block,
+                    max_block,
                     l1_block_number,
                     l1_block_hash,
                 })

@@ -1,11 +1,12 @@
 use aggchain_proof_service::config::AggchainProofServiceConfig;
 use aggchain_proof_service::service::{AggchainProofService, AggchainProofServiceRequest};
+use aggchain_proof_types::AggchainProofRequest;
 use aggkit_prover_types::default_bincode_options;
+use aggkit_prover_types::error::AggchainProofRequestError;
 use aggkit_prover_types::v1::{
     aggchain_proof_service_server::AggchainProofService as AggchainProofGrpcService,
     GenerateAggchainProofRequest, GenerateAggchainProofResponse,
 };
-use aggkit_prover_types::Digest;
 use bincode::Options;
 use tonic::{Request, Response, Status};
 use tonic_types::{ErrorDetails, StatusExt};
@@ -54,25 +55,22 @@ impl AggchainProofGrpcService for GrpcService {
             ));
         }
 
-        let l1_info_tree_root_hash: Digest =
-            request.l1_info_tree_root_hash.try_into().map_err(|_| {
-                let mut error_details = ErrorDetails::new();
-                error_details.add_bad_request_violation(
-                    "l1_info_tree_root_hash",
-                    "l1 info tree root hash must be non empty and 32 bytes long",
-                );
-                Status::with_error_details(
-                    tonic::Code::InvalidArgument,
-                    "Invalid l1 info tree root hash",
-                    error_details,
-                )
-            })?;
+        let aggchain_proof_request: AggchainProofRequest =
+            request
+                .try_into()
+                .map_err(|error: AggchainProofRequestError| {
+                    let field = error.field_path();
+                    let mut error_details = ErrorDetails::new();
+                    error_details.add_bad_request_violation(field, error.to_string());
+                    Status::with_error_details(
+                        tonic::Code::InvalidArgument,
+                        "Invalid aggchain proof request data",
+                        error_details,
+                    )
+                })?;
 
         let proof_request = AggchainProofServiceRequest {
-            start_block: request.start_block,
-            max_block: request.max_end_block,
-            l1_info_tree_root_hash,
-            ..Default::default()
+            aggchain_proof_request,
         };
 
         let mut service = self.service.clone();

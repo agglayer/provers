@@ -23,7 +23,7 @@ tracing.workspace = true
 aggchain-proof-builder.workspace = true
 aggchain-proof-contracts.workspace = true
 aggchain-proof-core.workspace = true
-aggkit-prover-types.workspace = true
+aggchain-proof-types.workspace = true
 proposer-service.workspace = true
 prover-alloy.workspace = true
 

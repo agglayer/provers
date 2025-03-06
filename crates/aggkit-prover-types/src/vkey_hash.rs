@@ -1,4 +1,4 @@
-pub use aggchain_proof_core::vkey_hash::HashU32;
+pub use aggchain_proof_types::HashU32;
 use alloy_primitives::B256;
 use serde::{Deserialize, Serialize};
 

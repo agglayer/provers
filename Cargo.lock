@@ -34,9 +34,10 @@ version = "0.1.0"
 dependencies = [
  "aggchain-proof-contracts",
  "aggchain-proof-core",
- "aggkit-prover-types",
+ "aggchain-proof-types",
  "alloy",
  "futures",
+ "prover-alloy",
  "prover-config",
  "prover-executor",
  "serde",
@@ -50,7 +51,7 @@ dependencies = [
 name = "aggchain-proof-contracts"
 version = "0.1.0"
 dependencies = [
- "aggchain-proof-core",
+ "aggchain-proof-types",
  "alloy",
  "anyhow",
  "async-trait",
@@ -106,7 +107,7 @@ dependencies = [
  "aggchain-proof-builder",
  "aggchain-proof-contracts",
  "aggchain-proof-core",
- "aggkit-prover-types",
+ "aggchain-proof-types",
  "alloy-primitives",
  "anyhow",
  "async-trait",
@@ -126,10 +127,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "aggchain-proof-types"
+version = "0.1.0"
+dependencies = [
+ "aggchain-proof-core",
+ "alloy-primitives",
+ "anyhow",
+ "hex",
+ "serde",
+ "thiserror 2.0.11",
+ "tiny-keccak 2.0.2 (git+https://github.com/sp1-patches/tiny-keccak?tag=patch-2.0.2-sp1-4.0.0)",
+]
+
+[[package]]
 name = "aggkit-prover"
 version = "0.1.0"
 dependencies = [
  "aggchain-proof-service",
+ "aggchain-proof-types",
  "aggkit-prover-config",
  "aggkit-prover-types",
  "anyhow",
@@ -166,10 +181,11 @@ dependencies = [
 name = "aggkit-prover-types"
 version = "0.1.0"
 dependencies = [
- "aggchain-proof-core",
+ "aggchain-proof-types",
  "alloy-primitives",
  "anyhow",
  "bincode",
+ "hex",
  "prost",
  "serde",
  "sp1-sdk",
@@ -5173,6 +5189,7 @@ dependencies = [
  "alloy",
  "anyhow",
  "async-trait",
+ "ff 0.13.0",
  "mockall",
  "url",
 ]
