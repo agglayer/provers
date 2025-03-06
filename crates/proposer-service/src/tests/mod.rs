@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use alloy_primitives::{FixedBytes, B256};
+use alloy_primitives::{hex, FixedBytes, B256};
 use proposer_client::{rpc::AggSpanProofProposerRequest, MockProposerClient, ProposerRequest};
 use prover_alloy::MockProvider;
 use sp1_sdk::{HashableKey as _, Prover as _, SP1_CIRCUIT_VERSION};
@@ -78,6 +78,75 @@ async fn test_proposer_service() {
 
     let response = proposer_service.call(request).await.unwrap();
     assert_eq!(response.start_block, 0);
+}
+
+#[tokio::test]
+async fn test_vkey_hash_mismatch() {
+    let mut l1_rpc = MockProvider::new();
+    l1_rpc
+        .expect_get_block_hash()
+        .once()
+        .returning(|_| Box::pin(async { Ok(B256::ZERO) }));
+
+    let mut client = MockProposerClient::new();
+    client
+        .expect_request_agg_proof()
+        .once()
+        .returning(|request: AggSpanProofProposerRequest| {
+            Box::pin(async move {
+                Ok(proposer_client::rpc::AggSpanProofProposerResponse {
+                    proof_id: FixedBytes::new([0; 32]),
+                    start_block: request.start,
+                    end_block: request.end,
+                })
+            })
+        });
+
+    let stdin = sp1_sdk::SP1Stdin::new();
+
+    let (pk, public_values) = {
+        let client = sp1_sdk::ProverClient::builder().cpu().build();
+
+        let (pk, _vk) = client.setup(ELF);
+        let (public_values, _) = client.execute(&pk.elf, &stdin).run().unwrap();
+
+        (pk, public_values)
+    };
+
+    client.expect_wait_for_proof().once().return_once(move |_| {
+        Box::pin(async move {
+            Ok(sp1_sdk::SP1ProofWithPublicValues::create_mock_proof(
+                &pk,
+                public_values,
+                sp1_sdk::SP1ProofMode::Compressed,
+                SP1_CIRCUIT_VERSION,
+            ))
+        })
+    });
+
+    let vk_hash = hex!("aaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbccccccccccccccccdddddddddddddddd").into();
+
+    let client = Arc::new(client);
+    let l1_rpc = Arc::new(l1_rpc);
+    let mut proposer_service = ProposerService {
+        client,
+        l1_rpc,
+        agg_span_proof_vkey_hash: vk_hash,
+    };
+
+    let request = ProposerRequest {
+        start_block: 0,
+        max_block: 10,
+        l1_block_number: 0,
+    };
+
+    match proposer_service.call(request).await.unwrap_err() {
+        Error::AggProofVKeyMismatch { got, expected } => {
+            assert_ne!(got, expected);
+            assert_eq!(vk_hash, expected);
+        }
+        e => panic!("Unexpected error {e:?}"),
+    }
 }
 
 #[tokio::test]
