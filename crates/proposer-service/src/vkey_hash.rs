@@ -20,7 +20,7 @@ impl VKeyHash {
 
         let mut w = 0_usize;
         while w < 8 {
-            let b0 = bytes[4 * w + 0];
+            let b0 = bytes[4 * w];
             let b1 = bytes[4 * w + 1];
             let b2 = bytes[4 * w + 2];
             let b3 = bytes[4 * w + 3];
@@ -41,7 +41,7 @@ impl VKeyHash {
         let mut w = 0_usize;
         while w < 8 {
             let [b0, b1, b2, b3] = self.0[w].to_be_bytes();
-            bytes[4 * w + 0] = b0;
+            bytes[4 * w] = b0;
             bytes[4 * w + 1] = b1;
             bytes[4 * w + 2] = b2;
             bytes[4 * w + 3] = b3;
