@@ -1,5 +1,6 @@
-use alloy_primitives::B256;
 use proposer_client::error::Error as ProposerClientError;
+
+use crate::VKeyHash;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -13,5 +14,5 @@ pub enum Error {
     UnsupportedAggProofMode(sp1_sdk::SP1ProofMode),
 
     #[error("Aggregated span proof vkey mismatch (got: {got:?}, expected: {expected:?})")]
-    AggProofVKeyMismatch { got: B256, expected: B256 },
+    AggProofVKeyMismatch { got: VKeyHash, expected: VKeyHash },
 }

@@ -78,9 +78,7 @@ impl std::str::FromStr for VKeyHash {
 
 impl std::fmt::Debug for VKeyHash {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("VKeyHash::from_bytes")
-            .field(&self.to_bytes())
-            .finish()
+        self.to_bytes().fmt(f)
     }
 }
 

@@ -1,7 +1,6 @@
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
-use alloy_primitives::B256;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use proposer_client::network_prover::new_network_prover;
@@ -9,9 +8,10 @@ use proposer_client::rpc::{AggSpanProofProposerRequest, ProposerRpcClient};
 use proposer_client::ProofId;
 pub use proposer_client::{ProposerRequest, ProposerResponse};
 use prover_alloy::Provider;
-use sp1_sdk::{HashableKey as _, NetworkProver, SP1ProofWithPublicValues};
+use sp1_sdk::{NetworkProver, SP1ProofWithPublicValues};
 
 use crate::config::ProposerServiceConfig;
+pub use crate::vkey_hash::VKeyHash;
 
 pub mod config;
 pub mod error;
@@ -25,7 +25,7 @@ pub struct ProposerService<L1Rpc, ProposerClient> {
     pub l1_rpc: Arc<L1Rpc>,
 
     /// Expected aggregated span proof verification key.
-    agg_span_proof_vkey_hash: B256,
+    agg_span_proof_vkey_hash: VKeyHash,
 }
 
 impl<L1Rpc, ProposerClient> Clone for ProposerService<L1Rpc, ProposerClient> {
@@ -58,15 +58,14 @@ impl<L1Rpc> ProposerService<L1Rpc, proposer_client::Client<ProposerRpcClient, Ne
 
 fn check_aggspan_proof(
     sp1_proof: &SP1ProofWithPublicValues,
-    expected_vkey_hash: B256,
+    expected_vkey_hash: VKeyHash,
 ) -> Result<(), Error> {
     let sp1_proof = &sp1_proof.proof;
     let proof = &**sp1_proof
         .try_as_compressed_ref()
         .ok_or_else(|| Error::UnsupportedAggProofMode(sp1_proof.into()))?;
 
-    let vk = &proof.vk;
-    let vkey_hash = B256::from(vk.hash_bytes());
+    let vkey_hash = VKeyHash::from_vkey(&proof.vk);
     (vkey_hash == expected_vkey_hash)
         .then_some(())
         .ok_or(Error::AggProofVKeyMismatch {

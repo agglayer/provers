@@ -1,13 +1,12 @@
 use std::sync::Arc;
 
-use alloy_primitives::{hex, FixedBytes, B256};
+use alloy_primitives::{b256, FixedBytes, B256};
 use proposer_client::{rpc::AggSpanProofProposerRequest, MockProposerClient, ProposerRequest};
 use prover_alloy::MockProvider;
-use sp1_sdk::{HashableKey as _, Prover as _, SP1_CIRCUIT_VERSION};
+use sp1_sdk::{Prover as _, SP1_CIRCUIT_VERSION};
 use tower::Service as _;
 
-use crate::Error;
-use crate::ProposerService;
+use crate::{Error, ProposerService, VKeyHash};
 
 const ELF: &[u8] = include_bytes!("../../../prover-dummy-program/elf/riscv32im-succinct-zkvm-elf");
 
@@ -52,14 +51,14 @@ async fn test_proposer_service() {
             SP1_CIRCUIT_VERSION,
         );
         let compressed = mock_proof.proof.try_as_compressed_ref().unwrap();
-        let vk_hash = compressed.vk.hash_bytes();
+        let vk_hash = VKeyHash::from_vkey(&compressed.vk);
 
         client
             .expect_wait_for_proof()
             .once()
             .return_once(move |_| Box::pin(async move { Ok(mock_proof) }));
 
-        vk_hash.into()
+        vk_hash
     };
 
     let client = Arc::new(client);
@@ -124,7 +123,9 @@ async fn test_vkey_hash_mismatch() {
         })
     });
 
-    let vk_hash = hex!("aaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbccccccccccccccccdddddddddddddddd").into();
+    let vk_hash = VKeyHash::from_bytes(b256!(
+        "aaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbccccccccccccccccdddddddddddddddd"
+    ));
 
     let client = Arc::new(client);
     let l1_rpc = Arc::new(l1_rpc);
@@ -164,7 +165,7 @@ async fn unable_to_fetch_block_hash() {
     let mut proposer_service = ProposerService {
         client,
         l1_rpc,
-        agg_span_proof_vkey_hash: [0x91; 32].into(),
+        agg_span_proof_vkey_hash: B256::new([0x91; 32]).into(),
     };
 
     let request = ProposerRequest {
