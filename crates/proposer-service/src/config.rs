@@ -14,8 +14,8 @@ pub struct ProposerServiceConfig {
 
     /// Hash of the aggregated execution proof verification key.
     ///
-    /// This is the proof that verifies the proposer provided aggregated span proof (aggregated full
-    /// execution proof for the block span).
+    /// This is the proof that verifies the proposer provided aggregated span
+    /// proof (aggregated full execution proof for the block span).
     #[serde(default = "default_agg_span_proof_vkey_hash")]
     pub agg_span_proof_vkey_hash: B256,
 }
