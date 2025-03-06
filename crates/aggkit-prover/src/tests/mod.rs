@@ -78,11 +78,11 @@ async fn testing_rpc_failure() {
     let request = tonic::Request::new(GenerateAggchainProofRequest {
         start_block: 1000,
         max_end_block: 999,
-        l1_info_tree_root_hash: vec![],
+        l1_info_tree_root_hash: Vec::new(),
         l1_info_tree_leaf: None,
-        l1_info_tree_merkle_proof: vec![],
-        ger_leaves: HashMap::new(),
+        l1_info_tree_merkle_proof: Vec::new(),
         imported_bridge_exits: vec![],
+        ger_leaves: HashMap::new(),
     });
 
     let response = client.generate_aggchain_proof(request).await;

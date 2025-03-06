@@ -69,6 +69,8 @@ pub struct AggchainProofBuilderResponse {
     pub start_block: u64,
     /// Last block included in the aggchain proof.
     pub end_block: u64,
+    /// Output root
+    pub output_root: Hash,
 }
 
 /// This service is responsible for building an Aggchain proof.
