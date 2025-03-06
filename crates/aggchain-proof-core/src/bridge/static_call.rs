@@ -9,9 +9,9 @@ use crate::keccak::digest::Digest;
 #[derive(Clone, Copy, Debug)]
 pub enum HashChain {
     InsertedGER,
-    InsertedGlobalIndex,
-    DeletedGER,
-    DeletedGlobalIndex,
+    ClaimedGlobalIndex,
+    RemovedGER,
+    UnsetGlobalIndex,
 }
 
 /// Context giver about the stage of the error.
