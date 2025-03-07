@@ -60,7 +60,7 @@ pub enum BridgeConstraintsError {
     #[error("Mismatch on the hash chain of inserted GERs. computed: {computed}, input: {input}")]
     MismatchInsertedGERHashChain { computed: Digest, input: Digest },
 
-    /// The provided hash chain on inserted GER does not correspond with the computed
+    /// The provided hash chain on removed GER does not correspond with the computed
     /// one.
     #[error("Mismatch on the hash chain of removed GERs. computed: {computed}, input: {input}")]
     MismatchRemovedGERHashChain { computed: Digest, input: Digest },
@@ -95,7 +95,7 @@ pub enum BridgeConstraintsError {
     /// The provided inserted gers do not correspond with the
     /// computed ones.
     #[error(
-        "Mismatch on the constrained global indices. computed: {computed:?}, input: {input:?}"
+        "Mismatch on the constrained inserted GERs. computed: {computed:?}, input: {input:?}"
     )]
     MismatchConstrainedInsertedGers {
         computed: Vec<Digest>,
@@ -335,7 +335,6 @@ impl BridgeConstraintsInput {
 
     /// Verify the previous and new claimed global index hash chain and its
     /// reconstruction.
-    #[allow(unused)]
     fn verify_claimed_global_index_hash_chain(
         &self,
         bridge_address: Address,
@@ -365,7 +364,7 @@ impl BridgeConstraintsInput {
             decoded_return.hashChain.0.into()
         };
 
-        // 1.2 Get the state of the unset global index hash chain of the new block on L2
+        // 1.2 Get the state of the claimed global index hash chain of the new block on L2
         let new_hash_chain: Digest = {
             let (decoded_return, retrieved_block_hash) = execute_static_call(
                 &self
@@ -382,7 +381,7 @@ impl BridgeConstraintsInput {
             if retrieved_block_hash != self.new_l2_block_hash {
                 return Err(BridgeConstraintsError::MismatchBlockHash {
                     retrieved: retrieved_block_hash,
-                    input: self.prev_l2_block_hash,
+                    input: self.new_l2_block_hash,
                     stage: StaticCallStage::NewClaimedHashChain,
                 });
             }
@@ -458,7 +457,7 @@ impl BridgeConstraintsInput {
             if retrieved_block_hash != self.new_l2_block_hash {
                 return Err(BridgeConstraintsError::MismatchBlockHash {
                     retrieved: retrieved_block_hash,
-                    input: self.prev_l2_block_hash,
+                    input: self.new_l2_block_hash,
                     stage: StaticCallStage::NewUnsetHashChain,
                 });
             }
