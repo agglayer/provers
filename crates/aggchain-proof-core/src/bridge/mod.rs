@@ -644,7 +644,7 @@ mod tests {
     use crate::local_exit_tree::proof::LETMerkleProof;
 
     #[tokio::test(flavor = "multi_thread")]
-    //#[ignore = "e2e test, sepolia provider needed"]
+    #[ignore = "e2e test, sepolia provider needed"]
     async fn test_bridge_contraints() -> Result<(), Box<dyn std::error::Error>> {
         // Initialize the environment variables.
         dotenvy::dotenv().ok();
@@ -777,9 +777,21 @@ mod tests {
             })
             .collect();
 
-        let inserted_gers: Vec<Digest> = imported_l1_info_tree_leafs
+        let inserted_gers: Vec<Digest> = global_exit_roots
+            .as_array()
+            .unwrap()
             .iter()
-            .map(|ger| ger.l1_info_tree_leaf.global_exit_root)
+            .map(|ger| {
+                hex::decode(
+                    ger["globalExitRoot"]
+                        .as_str()
+                        .unwrap()
+                        .trim_start_matches("0x"),
+                )
+                .unwrap()
+                .try_into()
+                .unwrap()
+            })
             .collect();
 
         // remove the removed gers from the inserted GERS
@@ -808,7 +820,7 @@ mod tests {
 
         let block_number_initial = BlockNumberOrTag::Number(initial_block_number);
         let block_number_final = BlockNumberOrTag::Number(final_block_number);
-        
+
         // 1. Get the prev inserted GER hash chain (previous block on L2)
         println!("Step 1: Fetching previous inserted GER hash chain...");
         let provider_l2: RootProvider<alloy::network::AnyNetwork> =
@@ -826,7 +838,7 @@ mod tests {
             "Step 1: Received prev inserted GER hash chain: {:?}",
             _hash_chain
         );
-        
+
         let _decoded_hash_chain =
             GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall::abi_decode_returns(
                 &_hash_chain,
