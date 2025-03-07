@@ -7,6 +7,7 @@ use std::{
 
 use aggchain_proof_builder::{AggchainProofBuilder, AggchainProofBuilderResponse};
 use aggchain_proof_types::AggchainProofRequest;
+use alloy_primitives::B256;
 use futures::{FutureExt as _, TryFutureExt};
 use proposer_service::{ProposerRequest, ProposerService};
 use sp1_sdk::SP1Proof;
@@ -122,7 +123,7 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
         let proposer_request = ProposerRequest {
             start_block: req.aggchain_proof_request.start_block,
             max_block: req.aggchain_proof_request.max_end_block,
-            l1_block_hash,
+            l1_block_hash: B256::from(l1_block_hash.0),
         };
 
         let mut proof_builder = self.aggchain_proof_builder.clone();
@@ -134,6 +135,7 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
                 let aggchain_proof_builder_request =
                     aggchain_proof_builder::AggchainProofBuilderRequest {
                         agg_span_proof: agg_span_proof_response.agg_span_proof,
+                        end_block: agg_span_proof_response.end_block,
                         aggchain_proof_request: req.aggchain_proof_request,
                     };
 

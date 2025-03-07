@@ -4,6 +4,7 @@ use alloy_primitives::Address;
 use serde::{Deserialize, Serialize};
 
 use crate::keccak::digest::Digest;
+use crate::NetworkIndex;
 
 /// Inclusion proof for the L1 info tree.
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -72,8 +73,7 @@ pub struct BridgeExit {
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct GlobalIndex {
-    pub mainnet_flag: bool,
-    pub rollup_index: u32,
+    pub network_index: NetworkIndex,
     pub leaf_index: u32,
 }
 

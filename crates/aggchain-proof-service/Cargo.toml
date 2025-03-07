@@ -9,6 +9,7 @@ workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
+alloy-primitives.workspace = true
 futures.workspace = true
 serde.workspace = true
 sp1-sdk = { workspace = true }

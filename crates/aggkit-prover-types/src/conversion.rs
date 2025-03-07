@@ -19,8 +19,11 @@ impl TryFrom<v1::TokenInfo> for aggchain_proof_types::TokenInfo {
 impl From<v1::GlobalIndex> for aggchain_proof_types::GlobalIndex {
     fn from(value: v1::GlobalIndex) -> Self {
         aggchain_proof_types::GlobalIndex {
-            mainnet_flag: value.mainnet_flag,
-            rollup_index: value.rollup_index,
+            network_index: if value.mainnet_flag {
+                aggchain_proof_types::NetworkIndex::Mainnet
+            } else {
+                aggchain_proof_types::NetworkIndex::Rollup(value.rollup_index)
+            },
             leaf_index: value.leaf_index,
         }
     }

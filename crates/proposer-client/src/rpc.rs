@@ -43,8 +43,8 @@ impl AggSpanProofProposer for ProposerRpcClient {
         request: AggSpanProofProposerRequest,
     ) -> Result<AggSpanProofProposerResponse, Error> {
         let params = rpc_params![
-            request.start,
-            request.max,
+            request.start_block,
+            request.max_block,
             request.l1_block_number,
             request.l1_block_hash
         ];
@@ -70,10 +70,10 @@ impl AggSpanProofProposer for ProposerRpcClient {
 pub struct AggSpanProofProposerRequest {
     // Starting block number to request proof from
     #[serde(rename = "startBlock")]
-    pub start: u64,
+    pub start_block: u64,
     // Maximum block number on which the proof needs to be aggregated
     #[serde(rename = "maxBlock")]
-    pub max: u64,
+    pub max_block: u64,
     pub l1_block_number: u64,
     #[serde_as(as = "DisplayFromStr")]
     pub l1_block_hash: B256,

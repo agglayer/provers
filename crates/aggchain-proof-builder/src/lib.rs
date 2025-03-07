@@ -43,6 +43,10 @@ pub struct AggchainProofBuilderRequest {
     /// Aggregated full execution proof for the number of aggregated block
     /// spans.
     pub agg_span_proof: SP1ProofWithPublicValues,
+    /// Last block in the agg_span_proof provided by the proposer.
+    /// Could be different that max_end_block in the aggchain_proof_request,
+    /// requested byt the agg-sender.
+    pub end_block: u64,
     /// Aggchain proof request information, public inputs, bridge data,...
     pub aggchain_proof_request: AggchainProofRequest,
 }
@@ -118,7 +122,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .map_err(Error::L2ChainDataRetrievalError)?;
 
         let _new_local_exit_root = contracts_client
-            .get_l2_local_exit_root(request.aggchain_proof_request.max_end_block)
+            .get_l2_local_exit_root(request.end_block)
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 
@@ -128,7 +132,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .map_err(Error::L2ChainDataRetrievalError)?;
 
         let _claim_root_output_at_block = contracts_client
-            .get_l2_output_at_block(request.aggchain_proof_request.max_end_block)
+            .get_l2_output_at_block(request.end_block)
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 

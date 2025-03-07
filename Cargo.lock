@@ -99,6 +99,7 @@ version = "0.1.0"
 dependencies = [
  "aggchain-proof-builder",
  "aggchain-proof-types",
+ "alloy-primitives",
  "anyhow",
  "futures",
  "proposer-service",
@@ -4994,7 +4995,6 @@ dependencies = [
 name = "proposer-client"
 version = "0.1.0"
 dependencies = [
- "aggchain-proof-types",
  "alloy-primitives",
  "anyhow",
  "async-trait",

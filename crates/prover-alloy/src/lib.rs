@@ -8,7 +8,7 @@ use alloy::providers::fillers::{
 };
 use alloy::providers::Identity;
 use alloy::providers::{Provider as _, ProviderBuilder};
-use alloy::signers::k256::elliptic_curve::ff::derive::bitvec::macros::internal::funty::Fundamental;
+// use alloy::signers::k256::elliptic_curve::ff::derive::bitvec::macros::internal::funty::Fundamental;
 use alloy::transports::http::reqwest;
 use alloy::transports::layers::RetryBackoffLayer;
 use alloy::{providers::RootProvider, rpc::client::ClientBuilder};
@@ -132,8 +132,7 @@ impl Provider for AlloyProvider {
             .map_err(|error| anyhow::anyhow!("Failed to get L1 block number: {:?}", error))?
             .ok_or(anyhow::anyhow!("target block {block_hash} does not exist"))?
             .header
-            .number
-            .as_u64();
+            .number;
         Ok(number)
     }
 }

@@ -24,9 +24,7 @@ async fn service_can_be_called() {
     let mut service = AggchainProofService::new(&AggchainProofServiceConfig::default())
         .await
         .expect("create aggchain proof service");
-    let request = AggchainProofServiceRequest {
-        ..Default::default()
-    };
+    let request = AggchainProofServiceRequest::default();
     let response = service.call(request).await;
     assert!(response.is_ok());
 }

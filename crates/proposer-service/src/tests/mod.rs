@@ -27,8 +27,8 @@ async fn test_proposer_service() {
             Box::pin(async move {
                 Ok(proposer_client::rpc::AggSpanProofProposerResponse {
                     proof_id: FixedBytes::new([0; 32]),
-                    start_block: request.start,
-                    end_block: request.max,
+                    start_block: request.start_block,
+                    end_block: request.max_block,
                 })
             })
         });

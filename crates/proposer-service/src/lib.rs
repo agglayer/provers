@@ -1,7 +1,6 @@
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
-use alloy_primitives::B256;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use proposer_client::network_prover::new_network_prover;
@@ -75,7 +74,6 @@ where
         let l1_rpc = self.l1_rpc.clone();
 
         async move {
-            let l1_block_hash = B256::from(l1_block_hash.0);
             let l1_block_number = l1_rpc
                 .get_block_number(l1_block_hash)
                 .await
@@ -84,8 +82,8 @@ where
             // Request the AggSpanProof generation from the proposer.
             let response = client
                 .request_agg_proof(AggSpanProofProposerRequest {
-                    start: start_block,
-                    max: max_block,
+                    start_block,
+                    max_block,
                     l1_block_number,
                     l1_block_hash,
                 })
