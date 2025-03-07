@@ -1078,9 +1078,9 @@ mod tests {
         {
             let bridge_data_invalid = BridgeConstraintsInput {
                 bridge_witness: BridgeWitness {
-                    inserted_gers: bridge_data_input
+                    inserted_gers_hash_chain: bridge_data_input
                         .bridge_witness
-                        .inserted_gers
+                        .inserted_gers_hash_chain
                         .iter()
                         .take(1)
                         .cloned()
