@@ -1,5 +1,5 @@
 //! A program that verifies the bridge integrity
-use alloy_primitives::{address, Address, B256};
+use alloy_primitives::{address, Address};
 use alloy_sol_macro::sol;
 use inserted_ger::InsertedGER;
 use serde::{Deserialize, Serialize};
@@ -89,18 +89,12 @@ impl BridgeConstraintsError {
 pub struct BridgeWitness {
     /// List of inserted GER.
     pub inserted_gers: Vec<InsertedGER>,
-    /// List of the global index of each imported bridge exit.
-    pub global_indices: Vec<B256>,
     /// State sketch to retrieve the previous hash chain GER.
-    pub prev_hash_chain_ger_sketch: EVMStateSketch,
+    pub prev_hash_chain_sketch: EVMStateSketch,
     /// State sketch to retrieve the new hash chain GER.
-    pub new_hash_chain_ger_sketch: EVMStateSketch,
-    /// State sketch to retrieve the previous hash chain global index.
-    pub prev_hash_chain_global_index_sketch: EVMStateSketch,
-    /// State sketch to retrieve the new hash chain global index.
-    pub new_hash_chain_global_index_sketch: EVMStateSketch,
+    pub new_hash_chain_sketch: EVMStateSketch,
     /// State sketch to retrieve the bridge address.
-    pub bridge_address_sketch: EVMStateSketch,
+    pub get_bridge_address_sketch: EVMStateSketch,
     /// State sketch to retrieve the new LER.
     pub new_ler_sketch: EVMStateSketch,
 }
@@ -117,87 +111,12 @@ pub struct BridgeConstraintsInput {
 }
 
 impl BridgeConstraintsInput {
-    /// Verify the previous and new hash chain global index and its
-    /// reconstruction.
-    #[allow(unused)]
-    fn verify_hash_chain_global_index(&self) -> Result<(), BridgeConstraintsError> {
-        // 1.1 Get the state of the hash chain of the previous block on L2
-        let prev_hash_chain: Digest = {
-            let (decoded_return, retrieved_block_hash) = execute_static_call(
-                &self.bridge_witness.prev_hash_chain_global_index_sketch,
-                self.ger_addr,
-                // TODO: get previous hash chain global index
-                GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
-            )
-            .map_err(|e| {
-                BridgeConstraintsError::static_call_error(e, StaticCallStage::PrevHashChainGER)
-            })?;
-
-            // check on block hash
-            if retrieved_block_hash != self.prev_l2_block_hash {
-                return Err(BridgeConstraintsError::MismatchBlockHash {
-                    retrieved: retrieved_block_hash,
-                    input: self.prev_l2_block_hash,
-                    // TODO: Bring context (GER or Claims)
-                    stage: StaticCallStage::PrevHashChainGER,
-                });
-            }
-
-            decoded_return.hashChain.0.into()
-        };
-
-        // 1.2 Get the state of the hash chain of the new block on L2
-        let new_hash_chain: Digest = {
-            let (decoded_return, retrieved_block_hash) = execute_static_call(
-                &self.bridge_witness.new_hash_chain_global_index_sketch,
-                self.ger_addr,
-                // TODO: get new hash chain global index
-                GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
-            )
-            .map_err(|e| {
-                BridgeConstraintsError::static_call_error(
-                    e,
-                    StaticCallStage::NewHashChainGlobalIndex,
-                )
-            })?;
-
-            // check on block hash
-            if retrieved_block_hash != self.new_l2_block_hash {
-                return Err(BridgeConstraintsError::MismatchBlockHash {
-                    retrieved: retrieved_block_hash,
-                    input: self.new_l2_block_hash,
-                    stage: StaticCallStage::NewHashChainGlobalIndex,
-                });
-            }
-
-            decoded_return.hashChain.0.into()
-        };
-
-        // 1.3 Check that the rebuilt hash chain is equal to the new hash chain
-        let rebuilt_hash_chain_global_index = self
-            .bridge_witness
-            .global_indices
-            .iter()
-            .fold(prev_hash_chain, |acc, &global_index_hashed| {
-                keccak256_combine([acc, global_index_hashed.0.into()])
-            });
-
-        if rebuilt_hash_chain_global_index != new_hash_chain {
-            return Err(BridgeConstraintsError::MismatchHashChainGlobalIndex {
-                computed: rebuilt_hash_chain_global_index,
-                input: new_hash_chain,
-            });
-        }
-
-        Ok(())
-    }
-
     /// Verify the previous and new hash chain GER and its reconstruction.
     fn verify_hash_chain_ger(&self) -> Result<(), BridgeConstraintsError> {
         // 1.1 Get the state of the hash chain of the previous block on L2
         let prev_hash_chain: Digest = {
             let (decoded_return, retrieved_block_hash) = execute_static_call(
-                &self.bridge_witness.prev_hash_chain_ger_sketch,
+                &self.bridge_witness.prev_hash_chain_sketch,
                 self.ger_addr,
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
             )
@@ -220,7 +139,7 @@ impl BridgeConstraintsInput {
         // 1.2 Get the state of the hash chain of the new block on L2
         let new_hash_chain: Digest = {
             let (decoded_return, retrieved_block_hash) = execute_static_call(
-                &self.bridge_witness.new_hash_chain_ger_sketch,
+                &self.bridge_witness.new_hash_chain_sketch,
                 self.ger_addr,
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
             )
@@ -267,7 +186,7 @@ impl BridgeConstraintsInput {
         let bridge_address = {
             // Execute the static call
             let (decoded_return, retrieved_block_hash) = execute_static_call(
-                &self.bridge_witness.bridge_address_sketch,
+                &self.bridge_witness.get_bridge_address_sketch,
                 self.ger_addr,
                 GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
             )
@@ -548,13 +467,10 @@ mod tests {
             },
             bridge_witness: BridgeWitness {
                 inserted_gers: imported_l1_info_tree_leafs,
-                prev_hash_chain_ger_sketch: executor_prev_hash_chain_sketch.clone(),
-                new_hash_chain_ger_sketch: executor_new_hash_chain.clone(),
-                bridge_address_sketch: executor_get_bridge_address_sketch,
+                prev_hash_chain_sketch: executor_prev_hash_chain_sketch.clone(),
+                new_hash_chain_sketch: executor_new_hash_chain.clone(),
+                get_bridge_address_sketch: executor_get_bridge_address_sketch,
                 new_ler_sketch: executor_get_ler_sketch,
-                global_indices: Vec::new(), // TODO
-                prev_hash_chain_global_index_sketch: executor_new_hash_chain.clone(), // TODO
-                new_hash_chain_global_index_sketch: executor_new_hash_chain.clone(), // TODO
             },
         };
 

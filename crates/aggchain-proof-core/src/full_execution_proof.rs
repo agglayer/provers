@@ -81,8 +81,9 @@ impl FepPublicValues {
         }
     }
 
-    /// Verify the SP1 proof
+    /// Verify one ECDSA or the sp1 proof.
     pub fn verify(&self) -> Result<(), ProofError> {
+        // Verify only one ECDSA on the public inputs
         if let Some(signature) = self.signature_optimistic_mode {
             let recovered_signer = signature
                 .recover_address_from_prehash(&B256::new(self.hash()))

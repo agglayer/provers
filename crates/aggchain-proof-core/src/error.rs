@@ -8,6 +8,7 @@ pub enum ProofError {
     /// Error on the bridge constraints.
     #[error(transparent)]
     BridgeConstraintsError(#[from] BridgeConstraintsError),
+
     /// The L1 Head provided as public input of the FEP do not match the block
     /// hash contained in the L1 info tree leaf used to verify the inclusion
     /// proof to L1 info root.
@@ -19,6 +20,7 @@ pub enum ProofError {
         from_l1_info_tree_leaf: Digest,
         from_fep_public_values: Digest,
     },
+
     /// The inclusion proof of the L1 info tree leaf containing the L1 Head is
     /// invalid.
     #[error(

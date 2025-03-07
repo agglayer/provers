@@ -11,12 +11,6 @@ pub enum StaticCallStage {
     PrevHashChainGER,
     /// Related to the fetch of the hash chain on GER in the new L2 block.
     NewHashChainGER,
-    /// Related to the fetch of the hash chain on global indices in the previous
-    /// L2 block.
-    PrevHashChainGlobalIndex,
-    /// Related to the fetch of the hash chain on global indices in the new L2
-    /// block.
-    NewHashChainGlobalIndex,
     /// Related to the fetch of the bridge address from the GER smart contract.
     BridgeAddress,
     /// Related to the fetch of the new local exit root.
