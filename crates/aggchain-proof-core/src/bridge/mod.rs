@@ -92,7 +92,7 @@ pub enum BridgeConstraintsError {
         input: Vec<B256>,
     },
 
-     /// The provided inserted gers do not correspond with the
+    /// The provided inserted gers do not correspond with the
     /// computed ones.
     #[error(
         "Mismatch on the constrained global indices. computed: {computed:?}, input: {input:?}"
@@ -296,7 +296,7 @@ impl BridgeConstraintsInput {
         // 1.3 Check that the rebuilt hash chain is equal to the new hash chain
         let rebuilt_hash_chain: Digest = self
             .bridge_witness
-            .removed_gers_hash_chain 
+            .removed_gers_hash_chain
             .iter()
             .fold(prev_hash_chain, |acc, ger| keccak256_combine([acc, *ger]));
 
@@ -497,7 +497,9 @@ impl BridgeConstraintsInput {
         }
 
         // Iterate over claimed indices and remove (skip) one occurrence for each value in removal_map.
-        let filtered_claimed: Vec<B256> = self.bridge_witness.global_indices_claimed
+        let filtered_claimed: Vec<B256> = self
+            .bridge_witness
+            .global_indices_claimed
             .iter()
             .cloned()
             .filter(|value| {
@@ -511,7 +513,7 @@ impl BridgeConstraintsInput {
                 true // Otherwise, keep the value.
             })
             .collect();
-        
+
         // Check if the filtered claimed global indices are equal to the constrained global indices.
         if filtered_claimed != self.global_indices {
             return Err(BridgeConstraintsError::MismatchConstrainedGlobalIndices {
@@ -555,30 +557,34 @@ impl BridgeConstraintsInput {
 
     /// Verify the inclusion proofs of the inserted GERs up to the L1InfoRoot.
     fn verify_inserted_gers(&self) -> Result<(), BridgeConstraintsError> {
-         // Create a map that counts how many removals are needed for each value in global_indices_unset.
-         let mut removal_map: HashMap<Digest, usize> = HashMap::new();
-         for value in &self.bridge_witness.removed_gers_hash_chain {
-             *removal_map.entry(value.clone()).or_insert(0) += 1;
-         }
- 
-         // Iterate over claimed indices and remove (skip) one occurrence for each value in removal_map.
-         let filtered_hash_chain_gers: Vec<Digest> = self.bridge_witness.inserted_gers_hash_chain
-             .iter()
-             .cloned()
-             .filter(|value| {
-                 // If the value needs to be removed...
-                 if let Some(count) = removal_map.get_mut(value) {
-                     if *count > 0 {
-                         *count -= 1; // Remove one occurrence.
-                         return false; // Skip including this occurrence.
-                     }
-                 }
-                 true // Otherwise, keep the value.
-             })
-             .collect();
-            
-        // Check that the filtered_hash_chain_gers are equal to the inserted      
-        let inserted_gers_compare: Vec<Digest> = self.bridge_witness.inserted_gers
+        // Create a map that counts how many removals are needed for each value in global_indices_unset.
+        let mut removal_map: HashMap<Digest, usize> = HashMap::new();
+        for value in &self.bridge_witness.removed_gers_hash_chain {
+            *removal_map.entry(value.clone()).or_insert(0) += 1;
+        }
+
+        // Iterate over claimed indices and remove (skip) one occurrence for each value in removal_map.
+        let filtered_hash_chain_gers: Vec<Digest> = self
+            .bridge_witness
+            .inserted_gers_hash_chain
+            .iter()
+            .cloned()
+            .filter(|value| {
+                // If the value needs to be removed...
+                if let Some(count) = removal_map.get_mut(value) {
+                    if *count > 0 {
+                        *count -= 1; // Remove one occurrence.
+                        return false; // Skip including this occurrence.
+                    }
+                }
+                true // Otherwise, keep the value.
+            })
+            .collect();
+
+        // Check that the filtered_hash_chain_gers are equal to the inserted
+        let inserted_gers_compare: Vec<Digest> = self
+            .bridge_witness
+            .inserted_gers
             .iter()
             .map(|ger| ger.l1_info_tree_leaf.global_exit_root)
             .collect();
@@ -665,7 +671,8 @@ mod tests {
 
         // New extractions for the additional fields:
         let removed_gers: Vec<Digest> = json_data["removedGERs"]
-            .as_array().unwrap()
+            .as_array()
+            .unwrap()
             .iter()
             .map(|s| {
                 let s_str = s.as_str().unwrap();
@@ -675,7 +682,8 @@ mod tests {
             .collect();
 
         let claimed_global_indexes: Vec<B256> = json_data["claimedGlobalIndexes"]
-            .as_array().unwrap()
+            .as_array()
+            .unwrap()
             .iter()
             .map(|s| {
                 let s_str = s.as_str().unwrap();
@@ -686,7 +694,8 @@ mod tests {
             .collect();
 
         let unclaimed_global_indexes: Vec<B256> = json_data["unclaimedGlobalIndexes"]
-            .as_array().unwrap()
+            .as_array()
+            .unwrap()
             .iter()
             .map(|s| {
                 let s_str = s.as_str().unwrap();
@@ -724,51 +733,52 @@ mod tests {
             .iter()
             .enumerate()
             .map(|(index, ger)| InsertedGER {
-            proof: LETMerkleProof {
-                siblings: ger["proof"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|p| {
-                    hex::decode(p.as_str().unwrap().trim_start_matches("0x"))
-                    .unwrap()
-                    .try_into()
-                    .unwrap()
-                })
-                .collect::<Vec<_>>()
-                .try_into()
-                .expect("Expected 32 siblings in proof"),
-            },
-            l1_info_tree_leaf: L1InfoTreeLeaf {
-                global_exit_root: hex::decode(
-                ger["globalExitRoot"]
-                    .as_str()
-                    .unwrap()
-                    .trim_start_matches("0x"),
-                )
-                .unwrap()
-                .try_into()
-                .unwrap(),
-                block_hash: {
-                let bytes = hex::decode(
-                    ger["blockHash"].as_str().unwrap().trim_start_matches("0x"),
-                )
-                .unwrap();
-                let array: [u8; 32] =
-                    bytes.try_into().expect("Incorrect length for block hash");
-                array.into()
+                proof: LETMerkleProof {
+                    siblings: ger["proof"]
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .map(|p| {
+                            hex::decode(p.as_str().unwrap().trim_start_matches("0x"))
+                                .unwrap()
+                                .try_into()
+                                .unwrap()
+                        })
+                        .collect::<Vec<_>>()
+                        .try_into()
+                        .expect("Expected 32 siblings in proof"),
                 },
-                timestamp: ger["timestamp"].as_u64().unwrap(),
-            },
-            l1_info_tree_index: index as u32,
+                l1_info_tree_leaf: {
+                    L1InfoTreeLeaf {
+                        global_exit_root: hex::decode(
+                            ger["globalExitRoot"]
+                                .as_str()
+                                .unwrap()
+                                .trim_start_matches("0x"),
+                        )
+                        .unwrap()
+                        .try_into()
+                        .unwrap(),
+                        block_hash: {
+                            let bytes = hex::decode(
+                                ger["blockHash"].as_str().unwrap().trim_start_matches("0x"),
+                            )
+                            .unwrap();
+                            let array: [u8; 32] =
+                                bytes.try_into().expect("Incorrect length for block hash");
+                            array.into()
+                        },
+                        timestamp: ger["timestamp"].as_u64().unwrap(),
+                    }
+                },
+                l1_info_tree_index: index as u32,
             })
             .collect();
 
-
         let inserted_gers: Vec<Digest> = imported_l1_info_tree_leafs
-        .iter()
-        .map(|ger| ger.l1_info_tree_leaf.global_exit_root)
-        .collect();
+            .iter()
+            .map(|ger| ger.l1_info_tree_leaf.global_exit_root)
+            .collect();
 
         // remove the removed gers from the inserted GERS
         let mut removal_map: HashMap<Digest, usize> = HashMap::new();
@@ -778,14 +788,14 @@ mod tests {
         let final_imported_l1_info_tree_leafs: Vec<InsertedGER> = imported_l1_info_tree_leafs
             .into_iter()
             .filter(|ger| {
-            let digest = ger.l1_info_tree_leaf.global_exit_root;
-            if let Some(count) = removal_map.get_mut(&digest) {
-                if *count > 0 {
-                *count -= 1;
-                return false;
+                let digest = ger.l1_info_tree_leaf.global_exit_root;
+                if let Some(count) = removal_map.get_mut(&digest) {
+                    if *count > 0 {
+                        *count -= 1;
+                        return false;
+                    }
                 }
-            }
-            true
+                true
             })
             .collect();
 
@@ -797,26 +807,18 @@ mod tests {
         let block_number_initial = BlockNumberOrTag::Number(initial_block_number);
         let block_number_final = BlockNumberOrTag::Number(final_block_number);
 
-        // 1. Get the the prev hash chain of the previous block on L2
-
-        // Setup the provider and host executor for initial hash chain
+        // 1. Get the prev inserted GER hash chain (previous block on L2)
         let provider_l2: RootProvider<alloy::network::AnyNetwork> =
-            RootProvider::new_http(rpc_url_l2);
-
+            RootProvider::new_http(rpc_url_l2.clone());
         let mut executor_prev_hash_chain =
             HostExecutor::new(provider_l2.clone(), block_number_initial).await?;
-
-        let hash_chain_calldata =
-            GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {};
-
         let _hash_chain = executor_prev_hash_chain
             .execute(ContractInput::new_call(
                 ger_address,
                 Address::default(),
-                hash_chain_calldata.clone(),
+                GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
             ))
             .await?;
-
         let _decoded_hash_chain =
             GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall::abi_decode_returns(
                 &_hash_chain,
@@ -825,10 +827,9 @@ mod tests {
             .hashChain;
         let executor_prev_hash_chain_sketch = executor_prev_hash_chain.finalize().await?;
 
-        // 2. Get the new hash chain of the new block on L2
+        // 2. Get the new inserted GER hash chain (new block on L2)
         let mut executor_new_hash_chain =
             HostExecutor::new(provider_l2.clone(), block_number_final).await?;
-
         let _new_hash_chain = executor_new_hash_chain
             .execute(ContractInput::new_call(
                 ger_address,
@@ -836,13 +837,11 @@ mod tests {
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
             ))
             .await?;
-
         let executor_new_hash_chain = executor_new_hash_chain.finalize().await?;
 
-        // 3. Get the bridge address
+        // 3. Get the bridge address.
         let mut executor_get_bridge_address =
             HostExecutor::new(provider_l2.clone(), block_number_final).await?;
-
         let bridge_address_bytes = executor_get_bridge_address
             .execute(ContractInput::new_call(
                 ger_address,
@@ -850,20 +849,17 @@ mod tests {
                 GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
             ))
             .await?;
-
         let bridge_address =
             GlobalExitRootManagerL2SovereignChain::bridgeAddressCall::abi_decode_returns(
                 &bridge_address_bytes,
                 true,
             )?
             .bridgeAddress;
-
         let executor_get_bridge_address_sketch = executor_get_bridge_address.finalize().await?;
 
-        // 4. Get the new local exit root from the bridge on the new L2 block
+        // 4. Get the new local exit root from the bridge on the new L2 block.
         let mut executor_get_ler =
             HostExecutor::new(provider_l2.clone(), block_number_final).await?;
-
         let new_ler_bytes = executor_get_ler
             .execute(ContractInput::new_call(
                 bridge_address,
@@ -871,21 +867,90 @@ mod tests {
                 BridgeL2SovereignChain::getRootCall {},
             ))
             .await?;
-
         let new_ler: Digest =
             BridgeL2SovereignChain::getRootCall::abi_decode_returns(&new_ler_bytes, true)?
                 .lastRollupExitRoot
                 .0
                 .into();
-
         let expected_new_ler: Digest = {
             let bytes = hex::decode(local_exit_root.trim_start_matches("0x")).unwrap();
             let arr: [u8; 32] = bytes.try_into().unwrap();
             arr.into()
         };
         assert_eq!(new_ler, expected_new_ler);
-
         let executor_get_ler_sketch = executor_get_ler.finalize().await?;
+
+        // 5. Get the removed GER hash chain for the previous block.
+        let mut executor_prev_removed =
+            HostExecutor::new(provider_l2.clone(), block_number_initial).await?;
+        let _prev_removed = executor_prev_removed
+            .execute(ContractInput::new_call(
+                ger_address,
+                Address::default(),
+                GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
+            ))
+            .await?;
+        let executor_prev_removed_sketch = executor_prev_removed.finalize().await?;
+
+        // 6. Get the removed GER hash chain for the new block.
+        let mut executor_new_removed =
+            HostExecutor::new(provider_l2.clone(), block_number_final).await?;
+        let _new_removed = executor_new_removed
+            .execute(ContractInput::new_call(
+                ger_address,
+                Address::default(),
+                GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
+            ))
+            .await?;
+        let executor_new_removed_sketch = executor_new_removed.finalize().await?;
+
+        // 7. Get the claimed global index hash chain for the previous block.
+        let mut executor_prev_claimed =
+            HostExecutor::new(provider_l2.clone(), block_number_initial).await?;
+        let _prev_claimed = executor_prev_claimed
+            .execute(ContractInput::new_call(
+                bridge_address,
+                Address::default(),
+                BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
+            ))
+            .await?;
+        let executor_prev_claimed_sketch = executor_prev_claimed.finalize().await?;
+
+        // 8. Get the claimed global index hash chain for the new block.
+        let mut executor_new_claimed =
+            HostExecutor::new(provider_l2.clone(), block_number_final).await?;
+        let _new_claimed = executor_new_claimed
+            .execute(ContractInput::new_call(
+                ger_address,
+                Address::default(),
+                BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
+            ))
+            .await?;
+        let executor_new_claimed_sketch = executor_new_claimed.finalize().await?;
+
+        // 9. Get the unset global index hash chain for the previous block.
+        let mut executor_prev_unset =
+            HostExecutor::new(provider_l2.clone(), block_number_initial).await?;
+        let _prev_unset = executor_prev_unset
+            .execute(ContractInput::new_call(
+                bridge_address,
+                Address::default(),
+                BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
+            ))
+            .await?;
+        let executor_prev_unset_sketch = executor_prev_unset.finalize().await?;
+
+        // 10. Get the unset global index hash chain for the new block.
+        let mut executor_new_unset =
+            HostExecutor::new(provider_l2.clone(), block_number_final).await?;
+        let _new_unset = executor_new_unset
+            .execute(ContractInput::new_call(
+                ger_address,
+                Address::default(),
+                BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
+            ))
+            .await?;
+        let executor_new_unset_sketch = executor_new_unset.finalize().await?;
 
         // Commit the bridge proof.
         let bridge_data_input = BridgeConstraintsInput {
@@ -907,12 +972,12 @@ mod tests {
                 global_indices_unset: unclaimed_global_indexes,
                 prev_inserted_ger_hash_chain_sketch: executor_prev_hash_chain_sketch.clone(),
                 new_inserted_ger_hash_chain_sketch: executor_new_hash_chain.clone(),
-                prev_removed_ger_hash_chain_sketch: executor_new_hash_chain.clone(),
-                new_removed_ger_hash_chain_sketch: executor_new_hash_chain.clone(),
-                prev_claimed_hash_chain_global_index_sketch: executor_new_hash_chain.clone(),
-                new_claimed_hash_chain_global_index_sketch: executor_new_hash_chain.clone(),
-                prev_unset_hash_chain_global_index_sketch: executor_new_hash_chain.clone(),
-                new_unset_hash_chain_global_index_sketch: executor_new_hash_chain.clone(),
+                prev_removed_ger_hash_chain_sketch: executor_prev_removed_sketch,
+                new_removed_ger_hash_chain_sketch: executor_new_removed_sketch,
+                prev_claimed_hash_chain_global_index_sketch: executor_prev_claimed_sketch,
+                new_claimed_hash_chain_global_index_sketch: executor_new_claimed_sketch,
+                prev_unset_hash_chain_global_index_sketch: executor_prev_unset_sketch,
+                new_unset_hash_chain_global_index_sketch: executor_new_unset_sketch,
                 bridge_address_sketch: executor_get_bridge_address_sketch,
                 new_ler_sketch: executor_get_ler_sketch,
             },

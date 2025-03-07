@@ -82,8 +82,7 @@ impl AggchainProofWitness {
             l1_info_root: self.l1_info_root,
             origin_network: self.origin_network,
             commit_imported_bridge_exits: keccak256_combine(
-                self.bridge_witness
-                    .global_indices
+                self.global_indices
                     .iter()
                     .map(|idx| keccak256(idx.as_slice())),
             ),
@@ -100,6 +99,7 @@ impl AggchainProofWitness {
             new_l2_block_hash: self.fep.new_block_hash,
             new_local_exit_root: self.new_local_exit_root,
             l1_info_root: self.l1_info_root,
+            global_indices: self.global_indices.clone(),
             bridge_witness: self.bridge_witness.clone(),
         }
     }
