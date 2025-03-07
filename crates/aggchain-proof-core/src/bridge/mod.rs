@@ -1,15 +1,14 @@
 //! A program that verifies the bridge integrity
 use alloy_primitives::{address, Address};
 use alloy_sol_macro::sol;
+use inserted_ger::InsertedGER;
 use serde::{Deserialize, Serialize};
 use sp1_cc_client_executor::io::EVMStateSketch;
 use static_call::{execute_static_call, StaticCallError, StaticCallStage};
 
-use crate::bridge::inserted_ger::InsertedGER;
-use crate::keccak::digest::Digest;
-use crate::keccak::keccak256_combine;
+use crate::{keccak::keccak256_combine, Digest};
 
-mod inserted_ger;
+pub(crate) mod inserted_ger;
 mod static_call;
 
 /// NOTE: Won't work with Outpost networks as this address won't be constant.
@@ -52,9 +51,10 @@ pub enum BridgeConstraintsError {
         stage: StaticCallStage,
     },
 
-    /// The provided hash chain does not correspond with the computed one.
-    #[error("Mismatch on the hash chain. computed: {computed}, input: {input}")]
-    MismatchHashChain { computed: Digest, input: Digest },
+    /// The provided hash chain on GER does not correspond with the computed
+    /// one.
+    #[error("Mismatch on the hash chain of GERs. computed: {computed}, input: {input}")]
+    MismatchHashChainGER { computed: Digest, input: Digest },
 
     /// The provided new LER does not correspond with the one retrieved from
     /// contracts.
@@ -82,10 +82,15 @@ impl BridgeConstraintsError {
 /// Bridge data required to verify the BridgeConstraintsInput integrity.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BridgeWitness {
+    /// List of inserted GER.
     pub inserted_gers: Vec<InsertedGER>,
+    /// State sketch to retrieve the previous hash chain GER.
     pub prev_hash_chain_sketch: EVMStateSketch,
+    /// State sketch to retrieve the new hash chain GER.
     pub new_hash_chain_sketch: EVMStateSketch,
+    /// State sketch to retrieve the bridge address.
     pub get_bridge_address_sketch: EVMStateSketch,
+    /// State sketch to retrieve the new LER.
     pub new_ler_sketch: EVMStateSketch,
 }
 
@@ -101,8 +106,8 @@ pub struct BridgeConstraintsInput {
 }
 
 impl BridgeConstraintsInput {
-    /// Verify the previous and new hash chain and its reconstruction.
-    fn verify_hash_chain(&self) -> Result<(), BridgeConstraintsError> {
+    /// Verify the previous and new hash chain GER and its reconstruction.
+    fn verify_hash_chain_ger(&self) -> Result<(), BridgeConstraintsError> {
         // 1.1 Get the state of the hash chain of the previous block on L2
         let prev_hash_chain: Digest = {
             let (decoded_return, retrieved_block_hash) = execute_static_call(
@@ -111,7 +116,7 @@ impl BridgeConstraintsInput {
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
             )
             .map_err(|e| {
-                BridgeConstraintsError::static_call_error(e, StaticCallStage::PrevHashChain)
+                BridgeConstraintsError::static_call_error(e, StaticCallStage::PrevHashChainGER)
             })?;
 
             // check on block hash
@@ -119,7 +124,7 @@ impl BridgeConstraintsInput {
                 return Err(BridgeConstraintsError::MismatchBlockHash {
                     retrieved: retrieved_block_hash,
                     input: self.prev_l2_block_hash,
-                    stage: StaticCallStage::PrevHashChain,
+                    stage: StaticCallStage::PrevHashChainGER,
                 });
             }
 
@@ -134,7 +139,7 @@ impl BridgeConstraintsInput {
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
             )
             .map_err(|e| {
-                BridgeConstraintsError::static_call_error(e, StaticCallStage::NewHashChain)
+                BridgeConstraintsError::static_call_error(e, StaticCallStage::NewHashChainGER)
             })?;
 
             // check on block hash
@@ -142,24 +147,24 @@ impl BridgeConstraintsInput {
                 return Err(BridgeConstraintsError::MismatchBlockHash {
                     retrieved: retrieved_block_hash,
                     input: self.new_l2_block_hash,
-                    stage: StaticCallStage::NewHashChain,
+                    stage: StaticCallStage::NewHashChainGER,
                 });
             }
 
             decoded_return.hashChain.0.into()
         };
 
-        // 1.3 Check that the reconstructed hash chain is equal to the new hash chain
-        let reconstructed_hash_chain = self
+        // 1.3 Check that the rebuilt hash chain is equal to the new hash chain
+        let rebuilt_hash_chain = self
             .bridge_witness
             .inserted_gers
             .iter()
             .map(|inserted_ger| inserted_ger.ger())
             .fold(prev_hash_chain, |acc, ger| keccak256_combine([acc, ger]));
 
-        if reconstructed_hash_chain != new_hash_chain {
-            return Err(BridgeConstraintsError::MismatchHashChain {
-                computed: reconstructed_hash_chain,
+        if rebuilt_hash_chain != new_hash_chain {
+            return Err(BridgeConstraintsError::MismatchHashChainGER {
+                computed: rebuilt_hash_chain,
                 input: new_hash_chain,
             });
         }
@@ -252,7 +257,7 @@ impl BridgeConstraintsInput {
 
     /// Verify the bridge state.
     pub fn verify(&self) -> Result<(), BridgeConstraintsError> {
-        self.verify_hash_chain()?;
+        self.verify_hash_chain_ger()?;
         self.verify_new_ler()?;
         self.verify_inserted_gers()
     }
@@ -497,7 +502,7 @@ mod tests {
 
             assert!(matches!(
                 bridge_data_invalid.verify(),
-                Err(BridgeConstraintsError::MismatchHashChain { .. })
+                Err(BridgeConstraintsError::MismatchHashChainGER { .. })
             ));
         }
 

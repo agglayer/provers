@@ -9,7 +9,8 @@ use aggchain_proof_contracts::contracts::{
     L1RollupConfigHashFetcher, L2LocalExitRootFetcher, L2OutputAtBlockFetcher,
 };
 use aggchain_proof_contracts::{AggchainContractsClient, AggchainContractsRpcClient};
-use aggchain_proof_core::proof::{AggchainProofWitness, InclusionProof, L1InfoTreeLeaf};
+use aggchain_proof_core::proof::AggchainProofWitness;
+use aggkit_prover_types::v1::{InclusionProof, L1InfoTreeLeaf};
 use aggkit_prover_types::Hash;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
