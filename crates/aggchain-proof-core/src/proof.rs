@@ -1,4 +1,4 @@
-use alloy_primitives::keccak256;
+use alloy_primitives::{keccak256, B256};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -34,6 +34,8 @@ pub struct AggchainProofWitness {
     pub l1_info_tree_leaf: (u32, L1InfoTreeLeaf),
     /// Inclusion proof of the leaf to the l1 info root.
     pub l1_head_inclusion_proof: LETMerkleProof<Keccak256Hasher>,
+    /// List of the global index of each imported bridge exit.
+    pub global_indices: Vec<B256>,
     /// Bridge witness related data.
     pub bridge_witness: BridgeWitness,
 }

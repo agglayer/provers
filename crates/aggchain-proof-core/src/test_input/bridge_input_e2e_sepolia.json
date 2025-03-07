@@ -1,14 +1,14 @@
 {
-    "initialBlockNumber": 7749877,
-    "finalBlockNumber": 7749880,
-    "gerSovereignAddress": "0x338e31a51DBEF77f6A73cbDF10E544BD0D11C9Cd",
+    "initialBlockNumber": 7846278,
+    "finalBlockNumber": 7846287,
+    "gerSovereignAddress": "0xF3C5CBA43da98c7C1d6221983264563f3303028b",
     "globalExitRoots": [
      {
-      "globalExitRoot": "0x85888fe21259c92ed2c40742c8d450227702d916b3936efc5cba0b98b72268cf",
-      "blockHash": "0xadbcb9a996353ac88d3255eec82bff191101ba4a19fda82bd771416eb5621b1e",
-      "timestamp": 1740080808,
+      "globalExitRoot": "0x258702919dbdadc277c076de944ac8e65a6ca0044acb3aa7ea49397b88bd8522",
+      "blockHash": "0x527ff860736a477eef4ebae7e486e7e9cbe97231f107313702a9f960788cf861",
+      "timestamp": 1741282308,
       "proof": [
-       "0xfe4539bf2182012f6603518ddf8c071acfb6b2d0a4c63cb015a6864687782a97",
+       "0x7b7f3a855f2aae570cb34a9802cbdbed234fd26a8452c3440406cdf3b139a27e",
        "0xad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5",
        "0xb4c11951957c6f8f642c4af61cd6b24640fec6dc7fc607ee8206a99e92410d30",
        "0x21ddb9a356815c3fac1026b6dec5df3124afbadb485c9ba5a3e3398a04b7ba85",
@@ -43,11 +43,11 @@
       ]
      },
      {
-      "globalExitRoot": "0x6889e00c11e89e8dbc66f081b50d629017016e932193f064b518bebb5c61f284",
-      "blockHash": "0x0ab2a58bfc601da36d6cb4e69174e6ef1d0e1deefe1077d64cc4e79169d67930",
-      "timestamp": 1740080820,
+      "globalExitRoot": "0xa37d1143ca85f2abd71b053d167c0214825735079917bab447078811aca44f19",
+      "blockHash": "0xb9a93a7c4ea4763cc2a460e2657fe9751b6cd18f5dccdc1f5580ad1494aa90ff",
+      "timestamp": 1741282320,
       "proof": [
-       "0x2417c5cd8ed92f3abae998f9782ebacb8cf1e05402d5cc501ba2219c2480e240",
+       "0x1078f79e526009c20b634d9db25e14d9c4550ad8f5c03f998e29cf63ef3c22dd",
        "0xad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5",
        "0xb4c11951957c6f8f642c4af61cd6b24640fec6dc7fc607ee8206a99e92410d30",
        "0x21ddb9a356815c3fac1026b6dec5df3124afbadb485c9ba5a3e3398a04b7ba85",
@@ -80,9 +80,24 @@
        "0x93237c50ba75ee485f4c22adf2f741400bdf8d6a9cc7df7ecae576221665d735",
        "0x8448818bb4ae4562849e949e17ac16e0be16688e156b5cf15e098c627c0056a9"
       ]
+     },
+     {
+      "globalExitRoot": "0xcb3f8756eef4787773dc052a907be2a6049f08a1a1bddcd0f3ce928f284fedd6",
+      "blockHash": "0xa723ce6bb0f1633c773b8fbce501e97296cb5765f06e0362e59f6a3eac5140be",
+      "timestamp": 1741282332
      }
     ],
-    "localExitRoot": "0x00329cc57f3e8a08aaad2a44f9a8ada5d910e996699f6ec1db523d4b93063c3d",
-    "l1InfoRoot": "0xf82cac4ae30bcc95f42d3661dcfdd9432cd4026939faf1d1bd83ab735cdf6684",
-    "chainId": 11155111
+    "localExitRoot": "0x94b931a82d9f95b6ea777d16147ae3fc7674cbe2b3c388c1964c6080e151e5b3",
+    "l1InfoRoot": "0x34f748b78dd6c3309f1651fcb47a80366a815c3adeab7cc133e15f3883564ecf",
+    "chainId": 11155111,
+    "removedGERs": [
+     "0xcb3f8756eef4787773dc052a907be2a6049f08a1a1bddcd0f3ce928f284fedd6"
+    ],
+    "claimedGlobalIndexes": [
+     "0",
+     "1"
+    ],
+    "unclaimedGlobalIndexes": [
+     "0"
+    ]
 }
