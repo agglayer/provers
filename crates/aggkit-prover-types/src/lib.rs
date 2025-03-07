@@ -10,6 +10,7 @@ pub const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("generated/aggkit.prover.b
 #[allow(warnings)]
 pub mod v1;
 pub mod conversion;
+pub mod error;
 
 pub fn default_bincode_options(
 ) -> WithOtherIntEncoding<WithOtherEndian<DefaultOptions, BigEndian>, FixintEncoding> {

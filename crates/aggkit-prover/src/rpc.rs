@@ -1,7 +1,8 @@
 use aggchain_proof_service::config::AggchainProofServiceConfig;
 use aggchain_proof_service::service::{AggchainProofService, AggchainProofServiceRequest};
-use aggchain_proof_types::{AggchainProofRequest, AggchainProofRequestError};
+use aggchain_proof_types::AggchainProofRequest;
 use aggkit_prover_types::default_bincode_options;
+use aggkit_prover_types::error::AggchainProofRequestError;
 use aggkit_prover_types::v1::{
     aggchain_proof_service_server::AggchainProofService as AggchainProofGrpcService,
     GenerateAggchainProofRequest, GenerateAggchainProofResponse,
@@ -55,16 +56,18 @@ impl AggchainProofGrpcService for GrpcService {
         }
 
         let aggchain_proof_request: AggchainProofRequest =
-            request.try_into().map_err(|e: AggchainProofRequestError| {
-                let mut error_details = ErrorDetails::new();
-                error_details
-                    .add_bad_request_violation("GenerateAggchainProofRequest", e.to_string());
-                Status::with_error_details(
-                    tonic::Code::InvalidArgument,
-                    "Invalid aggchain proof request data",
-                    error_details,
-                )
-            })?;
+            request
+                .try_into()
+                .map_err(|error: AggchainProofRequestError| {
+                    let field = error.field_path();
+                    let mut error_details = ErrorDetails::new();
+                    error_details.add_bad_request_violation(field, error.to_string());
+                    Status::with_error_details(
+                        tonic::Code::InvalidArgument,
+                        "Invalid aggchain proof request data",
+                        error_details,
+                    )
+                })?;
 
         let proof_request = AggchainProofServiceRequest {
             aggchain_proof_request,

@@ -167,10 +167,9 @@ version = "0.1.0"
 dependencies = [
  "aggchain-proof-types",
  "alloy-primitives",
- "anyhow",
  "bincode",
+ "hex",
  "prost",
- "serde",
  "thiserror 2.0.11",
  "tonic",
  "tonic-build",

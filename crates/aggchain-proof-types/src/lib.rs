@@ -1,8 +1,6 @@
-mod error;
 mod keccak;
 mod proof;
 
-pub use error::*;
 pub use keccak::{digest::Digest, keccak256_combine};
 pub use proof::*;
 use serde::{Deserialize, Serialize};

@@ -44,8 +44,7 @@ pub struct AggchainProofBuilderRequest {
     /// spans.
     pub agg_span_proof: SP1ProofWithPublicValues,
     /// Last block in the agg_span_proof provided by the proposer.
-    /// Could be different that max_end_block in the aggchain_proof_request,
-    /// requested byt the agg-sender.
+    /// Could be different from the max_end_block requested by the agg-sender.
     pub end_block: u64,
     /// Aggchain proof request information, public inputs, bridge data,...
     pub aggchain_proof_request: AggchainProofRequest,
