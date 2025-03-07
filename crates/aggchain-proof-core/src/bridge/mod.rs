@@ -56,11 +56,6 @@ pub enum BridgeConstraintsError {
     #[error("Mismatch on the hash chain of GERs. computed: {computed}, input: {input}")]
     MismatchHashChainGER { computed: Digest, input: Digest },
 
-    /// The provided hash chain on global indices does not correspond with the
-    /// computed one.
-    #[error("Mismatch on the hash chain of global indices. computed: {computed}, input: {input}")]
-    MismatchHashChainGlobalIndex { computed: Digest, input: Digest },
-
     /// The provided new LER does not correspond with the one retrieved from
     /// contracts.
     #[error("Mismatch on the new LER. retrieved: {retrieved}, input: {input}")]

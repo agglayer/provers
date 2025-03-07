@@ -19,9 +19,9 @@ impl L1InfoTreeLeaf {
 /// Contents of one leaf of the L1 Info Tree.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct L1InfoTreeLeaf {
-    pub global_exit_root: Digest,
-    pub block_hash: Digest,
-    pub timestamp: u64,
+    pub(crate) global_exit_root: Digest,
+    pub(crate) block_hash: Digest,
+    pub(crate) timestamp: u64,
 }
 
 /// Data to verify the legitimacy of one inserted GER.

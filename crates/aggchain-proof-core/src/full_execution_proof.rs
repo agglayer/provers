@@ -12,6 +12,9 @@ type Vkey = [u32; 8];
 #[cfg(target_os = "zkvm")]
 pub const AGGREGATION_VKEY_HASH: Vkey = [0u32; 8]; // TODO: to put the right value
 
+/// Specific commitment for the range proofs.
+pub const RANGE_VKEY_COMMITMENT: [u8; 32] = [0u8; 32]; // TODO: to put the right value
+
 /// Hardcoded for now, might see if we might need it as input
 pub const OUTPUT_ROOT_VERSION: [u8; 32] = [0u8; 32];
 
@@ -21,7 +24,6 @@ pub struct FepPublicValues {
     pub l1_head: Digest,
     pub claim_block_num: u32,
     pub rollup_config_hash: Digest,
-    pub range_vkey_commitment: Digest,
     pub prev_state_root: Digest,
     pub prev_withdrawal_storage_root: Digest,
     pub prev_block_hash: Digest,
@@ -43,7 +45,7 @@ impl FepPublicValues {
             self.compute_claim_root().as_slice(),
             &self.claim_block_num.to_be_bytes(),
             self.rollup_config_hash.as_slice(),
-            self.range_vkey_commitment.as_slice(),
+            RANGE_VKEY_COMMITMENT.as_slice(),
         ]
         .concat();
 
@@ -83,8 +85,8 @@ impl FepPublicValues {
 
     /// Verify one ECDSA or the sp1 proof.
     pub fn verify(&self) -> Result<(), ProofError> {
-        // Verify only one ECDSA on the public inputs
         if let Some(signature) = self.signature_optimistic_mode {
+            // Verify only one ECDSA on the public inputs
             let recovered_signer = signature
                 .recover_address_from_prehash(&B256::new(self.hash()))
                 .map_err(|_| ProofError::InvalidSignature)?;
@@ -98,6 +100,7 @@ impl FepPublicValues {
 
             Ok(())
         } else {
+            // Verify the FEP stark proof.
             #[cfg(not(target_os = "zkvm"))]
             unreachable!("verify_sp1_proof is not callable outside of SP1");
 
