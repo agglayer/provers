@@ -7,10 +7,26 @@ use crate::keccak::digest::Digest;
 /// Context giver about the stage of the error.
 #[derive(Clone, Debug)]
 pub enum StaticCallStage {
-    /// Related to the hash chain fetch in the previous L2 block.
-    PrevHashChain,
-    /// Related to the hash chain fetch in the new L2 block.
-    NewHashChain,
+    /// Related to the fetch of the inserted GER hash chain in the previous L2 block.
+    PrevInsertedGERHashChain,
+    /// Related to the fetch of the inserted GER hash chain in the new L2 block.
+    NewInsertedGERHashChain,
+    ///Related to the fetch of the removed GER hash chain in the previous L2 block.
+    PrevRemovedGERHashChain,
+    /// Related to the fetch of the removed GER hash chain in the new L2 block.
+    NewRemovedGERHashChain,
+    /// Related to the fetch of the hash chain on global indices claimed in the previous
+    /// L2 block.
+    PrevClaimedHashChain,
+    /// Related to the fetch of the hash chain on global indices claimed in the new L2
+    /// block.
+    NewClaimedHashChain,
+    /// Related to the fetch of the hash chain on global indices unset in the previous
+    /// L2 block.
+    PrevUnsetHashChain,
+    /// Related to the fetch of the hash chain on global indices unset in the new L2
+    /// block.
+    NewUnsetHashChain,
     /// Related to the fetch of the bridge address from the GER smart contract.
     BridgeAddress,
     /// Related to the fetch of the new local exit root.

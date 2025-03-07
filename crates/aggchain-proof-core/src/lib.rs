@@ -5,4 +5,5 @@ mod keccak;
 mod local_exit_tree;
 pub mod proof;
 
+pub use bridge::inserted_ger::L1InfoTreeLeaf;
 pub use keccak::digest::Digest;
