@@ -1,8 +1,7 @@
+use aggchain_proof_types::Digest;
 use alloy_primitives::Address;
 use alloy_sol_types::SolCall;
 use sp1_cc_client_executor::{io::EVMStateSketch, ClientExecutor, ContractInput};
-
-use crate::keccak::digest::Digest;
 
 /// Context giver about the stage of the error.
 #[derive(Clone, Debug)]

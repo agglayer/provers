@@ -1,6 +1,5 @@
+use aggchain_proof_types::{keccak256_combine, Digest};
 use serde::{Deserialize, Serialize};
-
-use crate::keccak::{digest::Digest, keccak256_combine};
 
 /// A hasher used in constructing a [`super::LocalExitTree`].
 pub trait Hasher {

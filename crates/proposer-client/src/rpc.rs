@@ -9,7 +9,7 @@ use serde_with::serde_as;
 use serde_with::DisplayFromStr;
 use tracing::info;
 
-use crate::{error::Error, ProposerRequest};
+use crate::error::Error;
 
 /// Proposer client that requests the generation
 /// of the AggSpanProof from the proposer and gets
@@ -43,8 +43,8 @@ impl AggSpanProofProposer for ProposerRpcClient {
         request: AggSpanProofProposerRequest,
     ) -> Result<AggSpanProofProposerResponse, Error> {
         let params = rpc_params![
-            request.start,
-            request.end,
+            request.start_block,
+            request.max_block,
             request.l1_block_number,
             request.l1_block_hash
         ];
@@ -70,23 +70,13 @@ impl AggSpanProofProposer for ProposerRpcClient {
 pub struct AggSpanProofProposerRequest {
     // Starting block number to request proof from
     #[serde(rename = "startBlock")]
-    pub start: u64,
+    pub start_block: u64,
     // Maximum block number on which the proof needs to be aggregated
     #[serde(rename = "maxBlock")]
-    pub end: u64,
+    pub max_block: u64,
     pub l1_block_number: u64,
     #[serde_as(as = "DisplayFromStr")]
     pub l1_block_hash: B256,
-}
-
-impl From<AggSpanProofProposerRequest> for ProposerRequest {
-    fn from(request: AggSpanProofProposerRequest) -> Self {
-        ProposerRequest {
-            start_block: request.start,
-            max_block: request.end,
-            l1_block_number: request.l1_block_number,
-        }
-    }
 }
 
 /// Response for the external proposer `request_span_proof` call

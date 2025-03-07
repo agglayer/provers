@@ -9,6 +9,7 @@ workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
+alloy-primitives.workspace = true
 futures.workspace = true
 serde.workspace = true
 sp1-sdk = { workspace = true }
@@ -17,7 +18,6 @@ tower = { workspace = true, features = ["timeout"] }
 tracing.workspace = true
 
 aggchain-proof-builder.workspace = true
-aggchain-proof-core.workspace = true
-aggkit-prover-types.workspace = true
+aggchain-proof-types.workspace = true
 proposer-service.workspace = true
 prover-alloy.workspace = true

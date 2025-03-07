@@ -39,8 +39,8 @@ mod proposer_rpc {
         let service = ProposerRpcClient::new(&server.url()).unwrap();
 
         let request = AggSpanProofProposerRequest {
-            start: 110,
-            end: 200,
+            start_block: 110,
+            max_block: 200,
             l1_block_number: 230203,
             l1_block_hash: [23; 32].into(),
         };
