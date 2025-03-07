@@ -4,28 +4,28 @@ use hex::FromHexError;
 /// to generate the aggchain proof
 #[derive(thiserror::Error, Debug)]
 pub enum AggchainProofRequestError {
-    #[error("Missing bridge exit token info in the aggchain proof request")]
+    #[error("Missing bridge exit token info")]
     MissingTokenInfo { field_path: String },
 
-    #[error("Missing request bridge exit in the aggchain proof request")]
+    #[error("Missing request bridge exit")]
     MissingBridgeExit { field_path: String },
 
-    #[error("Missing request global index in the aggchain proof request")]
+    #[error("Missing request global index")]
     MissingGlobalIndex { field_path: String },
 
-    #[error("Missing inner l1 info tree leaf in the aggchain proof request")]
+    #[error("Missing inner l1 info tree leaf")]
     MissingL1InfoTreeLeafInner { field_path: String },
 
-    #[error("Missing l1 info tree leaf in the aggchain proof request")]
+    #[error("Missing l1 info tree leaf")]
     MissingL1InfoTreeLeaf { field_path: String },
 
-    #[error("Missing or invalid l1 info merkle tree proof in the aggchain proof request")]
+    #[error("Missing or invalid l1 info merkle tree proof")]
     MissingL1InfoTreeMerkleProof { field_path: String },
 
-    #[error("Invalid claim from mainet value in the aggchain proof request")]
+    #[error("Invalid claim from mainet value")]
     InvalidClaimFromMainnetConversion { field_path: String },
 
-    #[error("Missing inclusion proof in the aggchain proof request")]
+    #[error("Missing inclusion proof")]
     MissingInclusionProof { field_path: String },
 
     #[error("Invalid hex conversion")]
