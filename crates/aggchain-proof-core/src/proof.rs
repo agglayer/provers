@@ -31,10 +31,6 @@ pub struct AggchainProofWitness {
     pub origin_network: u32,
     /// Full execution proof with its metadata.
     pub fep: FepPublicValues,
-    /// L1 info tree leaf and index containing the `l1Head` as block hash.
-    pub l1_info_tree_leaf: (u32, L1InfoTreeLeaf),
-    /// Inclusion proof of the leaf to the l1 info root.
-    pub l1_head_inclusion_proof: LETMerkleProof<Keccak256Hasher>,
     /// Bridge witness related data.
     pub bridge_witness: BridgeWitness,
 }
@@ -44,30 +40,11 @@ impl AggchainProofWitness {
         // Verify the FEP proof or ECDSA signature.
         self.fep.verify()?;
 
-        // Verify that the `l1Head` considered by the FEP exists in the L1 Info Tree
-        {
-            if self.fep.l1_head != self.l1_info_tree_leaf.1.block_hash {
-                return Err(ProofError::MismatchL1Head {
-                    from_l1_info_tree_leaf: self.l1_info_tree_leaf.1.block_hash,
-                    from_fep_public_values: self.fep.l1_head,
-                });
-            }
-
-            if !self.l1_head_inclusion_proof.verify(
-                self.l1_info_tree_leaf.1.hash(),
-                self.l1_info_tree_leaf.0,
-                self.l1_info_root,
-            ) {
-                return Err(ProofError::InvalidInclusionProofL1Head {
-                    index: self.l1_info_tree_leaf.0,
-                    l1_leaf_hash: self.l1_info_tree_leaf.1.hash(),
-                    l1_info_root: self.l1_info_root,
-                });
-            }
-        }
-
         // Verify the bridge constraints
-        self.bridge_constraints_input().verify()?;
+        if(self.fep.optimistic_mode() == 1) {
+            self.fep.verify_l1_head(self.l1_info_root)?;
+            self.bridge_constraints_input().verify()?;
+        } 
 
         Ok(self.public_values())
     }
