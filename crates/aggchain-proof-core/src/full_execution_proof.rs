@@ -2,7 +2,13 @@ use alloy_primitives::{Address, PrimitiveSignature, B256};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest as Sha256Digest, Sha256};
 
-use crate::{error::ProofError, keccak::digest::Digest, keccak::keccak256_combine};
+use crate::{
+    error::ProofError,
+    keccak::digest::Digest,
+    keccak::keccak256_combine,
+    local_exit_tree::{hasher::Keccak256Hasher, proof::LETMerkleProof},
+    L1InfoTreeLeaf,
+};
 
 #[cfg(target_os = "zkvm")]
 type Vkey = [u32; 8];
@@ -30,7 +36,10 @@ pub struct FepPublicValues {
     pub new_state_root: Digest,
     pub new_withdrawal_storage_root: Digest,
     pub new_block_hash: Digest,
-
+    /// L1 info tree leaf and index containing the `l1Head` as block hash.
+    pub l1_info_tree_leaf: (u32, L1InfoTreeLeaf),
+    /// Inclusion proof of the leaf to the l1 info root.
+    pub l1_head_inclusion_proof: LETMerkleProof<Keccak256Hasher>,
     /// Trusted sequencer address.
     pub trusted_sequencer: Address,
     /// Signature in the "OptimisticMode" case.
@@ -63,23 +72,22 @@ enum OptimisticMode {
 impl FepPublicValues {
     /// Compute the chain-specific commitment forwarded to the PP.
     pub fn aggchain_params(&self) -> Digest {
-        let optimistic_mode: u8 = self.optimistic_mode() as u8;
 
         keccak256_combine([
             self.compute_l2_pre_root().as_slice(),
             self.compute_claim_root().as_slice(),
             &self.claim_block_num.to_be_bytes(),
             self.rollup_config_hash.as_slice(),
-            &optimistic_mode.to_be_bytes(),
+            &self.optimistic_mode().to_be_bytes(),
             self.trusted_sequencer.as_slice(),
         ])
     }
 
-    fn optimistic_mode(&self) -> OptimisticMode {
+    pub fn optimistic_mode(&self) -> u8 {
         if self.signature_optimistic_mode.is_some() {
-            OptimisticMode::Sp1
+            OptimisticMode::Sp1 as u8
         } else {
-            OptimisticMode::Ecdsa
+            OptimisticMode::Ecdsa as u8
         }
     }
 
@@ -99,7 +107,7 @@ impl FepPublicValues {
             }
 
             Ok(())
-        } else {
+        } else {     
             // Verify the FEP stark proof.
             #[cfg(not(target_os = "zkvm"))]
             unreachable!("verify_sp1_proof is not callable outside of SP1");
@@ -118,6 +126,30 @@ impl FepPublicValues {
 }
 
 impl FepPublicValues {
+    // Verify that the `l1Head` considered by the FEP exists in the L1 Info Tree
+    pub fn verify_l1_head(&self, l1_info_root: Digest) -> Result<(), ProofError> {
+        if self.l1_head != self.l1_info_tree_leaf.1.block_hash {
+            return Err(ProofError::MismatchL1Head {
+                from_l1_info_tree_leaf: self.l1_info_tree_leaf.1.block_hash,
+                from_fep_public_values: self.l1_head,
+            });
+        }
+
+        if !self.l1_head_inclusion_proof.verify(
+            self.l1_info_tree_leaf.1.hash(),
+            self.l1_info_tree_leaf.0,
+            l1_info_root,
+        ) {
+            return Err(ProofError::InvalidInclusionProofL1Head {
+                index: self.l1_info_tree_leaf.0,
+                l1_leaf_hash: self.l1_info_tree_leaf.1.hash(),
+                l1_info_root: l1_info_root,
+            });
+        }
+
+        Ok(())
+    }
+
     /// Compute l2 pre root.
     pub fn compute_l2_pre_root(&self) -> Digest {
         compute_output_root(
