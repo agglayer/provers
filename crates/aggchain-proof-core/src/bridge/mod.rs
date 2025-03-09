@@ -7,7 +7,7 @@ use alloy_sol_types::SolCall;
 use inserted_ger::InsertedGER;
 use serde::{Deserialize, Serialize};
 use sp1_cc_client_executor::io::EVMStateSketch;
-use static_call::{HashChain, StaticCallError, StaticCallStage, StaticCallWithContext};
+use static_call::{HashChainType, StaticCallError, StaticCallStage, StaticCallWithContext};
 
 use crate::{keccak::keccak256_combine, Digest};
 
@@ -64,7 +64,7 @@ pub enum BridgeConstraintsError {
     MismatchHashChain {
         computed: Digest,
         input: Digest,
-        hash_chain_type: HashChain,
+        hash_chain_type: HashChainType,
     },
 
     /// The provided new LER does not correspond with the one retrieved from
@@ -157,7 +157,7 @@ impl BridgeConstraintsInput {
     fn fetch_hash_chains<C: SolCall + Clone>(
         &self,
         hash_chain_sketch: &HashChainSketches,
-        hash_chain: HashChain,
+        hash_chain: HashChainType,
         address: Address,
         calldata: C,
     ) -> Result<(C::Return, C::Return), BridgeConstraintsError> {
@@ -184,7 +184,7 @@ impl BridgeConstraintsInput {
     fn verify_ger_hash_chains(&self) -> Result<(), BridgeConstraintsError> {
         // Verify the hash chain on inserted GER
         {
-            let hash_chain_type = HashChain::InsertedGER;
+            let hash_chain_type = HashChainType::InsertedGER;
             let (prev_hash_chain, new_hash_chain): (Digest, Digest) = self
                 .fetch_hash_chains(
                     &self.bridge_witness.inserted_ger_sketches,
@@ -204,7 +204,7 @@ impl BridgeConstraintsInput {
 
         // Verify the hash chain on removed GER
         {
-            let hash_chain_type = HashChain::RemovedGER;
+            let hash_chain_type = HashChainType::RemovedGER;
             let (prev_hash_chain, new_hash_chain): (Digest, Digest) = self
                 .fetch_hash_chains(
                     &self.bridge_witness.removed_ger_sketches,
@@ -232,7 +232,7 @@ impl BridgeConstraintsInput {
     ) -> Result<(), BridgeConstraintsError> {
         // Verify the hash chain on claimed global index
         {
-            let hash_chain_type = HashChain::ClaimedGlobalIndex;
+            let hash_chain_type = HashChainType::ClaimedGlobalIndex;
             let (prev_hash_chain, new_hash_chain): (Digest, Digest) = self
                 .fetch_hash_chains(
                     &self.bridge_witness.claimed_global_index_sketches,
@@ -255,7 +255,7 @@ impl BridgeConstraintsInput {
 
         // Verify the hash chain on unset global index
         {
-            let hash_chain_type = HashChain::UnsetGlobalIndex;
+            let hash_chain_type = HashChainType::UnsetGlobalIndex;
             let (prev_hash_chain, new_hash_chain): (Digest, Digest) = self
                 .fetch_hash_chains(
                     &self.bridge_witness.unset_global_index_sketches,
@@ -288,7 +288,7 @@ impl BridgeConstraintsInput {
         // global_indices_unset.
         let mut removal_map: HashMap<B256, usize> = HashMap::new();
         for value in &self.bridge_witness.global_indices_unset {
-            *removal_map.entry(value.clone()).or_insert(0) += 1;
+            *removal_map.entry(*value).or_insert(0) += 1;
         }
 
         // Iterate over claimed indices and remove (skip) one occurrence for each value
@@ -372,10 +372,10 @@ impl BridgeConstraintsInput {
     /// Verify the inclusion proofs of the inserted GERs up to the L1InfoRoot.
     fn verify_inserted_gers(&self) -> Result<(), BridgeConstraintsError> {
         // Create a map that counts how many removals are needed for each value in
-        // global_indices_unset.
+        // removed_gers_hash_chain.
         let mut removal_map: HashMap<Digest, usize> = HashMap::new();
         for value in &self.bridge_witness.removed_gers_hash_chain {
-            *removal_map.entry(value.clone()).or_insert(0) += 1;
+            *removal_map.entry(*value).or_insert(0) += 1;
         }
 
         // Iterate over claimed indices and remove (skip) one occurrence for each value
@@ -446,7 +446,7 @@ fn rebuild_hash_chain(
     hashes: impl Iterator<Item = Digest>,
     prev_hash_chain: Digest,
     new_hash_chain: Digest,
-    hash_chain_type: HashChain,
+    hash_chain_type: HashChainType,
 ) -> Result<(), BridgeConstraintsError> {
     let rebuilt_hash_chain =
         hashes.fold(prev_hash_chain, |acc, hash| keccak256_combine([acc, hash]));
@@ -464,6 +464,7 @@ fn rebuild_hash_chain(
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
     use std::fs::File;
     use std::io::BufReader;
     use std::str::FromStr;
@@ -541,10 +542,9 @@ mod tests {
             .collect();
 
         // Compute constrained global indices.
-        use std::collections::HashMap;
         let mut removal_map: HashMap<B256, usize> = HashMap::new();
         for idx in &unclaimed_global_indexes {
-            *removal_map.entry(idx.clone()).or_insert(0) += 1;
+            *removal_map.entry(*idx).or_insert(0) += 1;
         }
         let constrained_global_indices: Vec<B256> = claimed_global_indexes
             .iter()
@@ -635,7 +635,7 @@ mod tests {
         // remove the removed gers from the inserted GERS
         let mut removal_map: HashMap<Digest, usize> = HashMap::new();
         for value in &removed_gers {
-            *removal_map.entry(value.clone()).or_insert(0) += 1;
+            *removal_map.entry(*value).or_insert(0) += 1;
         }
         let final_imported_l1_info_tree_leafs: Vec<InsertedGER> = imported_l1_info_tree_leafs
             .into_iter()
@@ -898,7 +898,7 @@ mod tests {
 
         // Serialize bridge_data_input into JSON and write it to a file.
         let file_path = std::path::Path::new("src/test_input/bridge_constraints_input.json");
-        let file = std::fs::File::create(&file_path)
+        let file = std::fs::File::create(file_path)
             .expect("Failed to create the bridge constraints input file");
         serde_json::to_writer_pretty(file, &bridge_data_input)
             .expect("Failed to write bridge_data_input to file");
@@ -955,7 +955,8 @@ mod tests {
         let bridge_data_input: BridgeConstraintsInput = serde_json::from_reader(reader).unwrap();
 
         // Verify the bridge data input
-        println!("{:?}", bridge_data_input.verify());
-        assert!(bridge_data_input.verify().is_ok());
+        let res = bridge_data_input.verify();
+        println!("{:?}", res);
+        assert!(res.is_ok());
     }
 }
