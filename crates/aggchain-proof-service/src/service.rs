@@ -142,12 +142,12 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
         self.proposer_service
             .call(proposer_request)
             .map_err(Error::ProposerServiceRequestFailed)
-            .and_then(move |agg_span_proof_response| {
+            .and_then(move |aggregation_proof_response| {
                 let aggchain_proof_builder_request =
                     aggchain_proof_builder::AggchainProofBuilderRequest {
-                        agg_span_proof: agg_span_proof_response.agg_span_proof,
-                        start_block: agg_span_proof_response.start_block,
-                        end_block: agg_span_proof_response.end_block,
+                        aggregation_proof: aggregation_proof_response.aggregation_proof,
+                        start_block: aggregation_proof_response.start_block,
+                        end_block: aggregation_proof_response.end_block,
                         l1_info_tree_merkle_proof: req.l1_info_tree_merkle_proof,
                         l1_info_tree_leaf: req.l1_info_tree_leaf,
                         l1_info_tree_root_hash: req.l1_info_tree_root_hash,
@@ -158,12 +158,12 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
                     .call(aggchain_proof_builder_request)
                     .map_err(Error::AggchainProofBuilderRequestFailed)
                     .map(move |aggchain_proof_builder_result| {
-                        let agg_span_proof_response: AggchainProofBuilderResponse =
+                        let aggregation_proof_response: AggchainProofBuilderResponse =
                             aggchain_proof_builder_result?;
                         Ok(AggchainProofServiceResponse {
-                            proof: agg_span_proof_response.proof,
-                            start_block: agg_span_proof_response.start_block,
-                            end_block: agg_span_proof_response.end_block,
+                            proof: aggregation_proof_response.proof,
+                            start_block: aggregation_proof_response.start_block,
+                            end_block: aggregation_proof_response.end_block,
                             local_exit_root_hash: Default::default(),
                             custom_chain_data: Default::default(),
                         })
