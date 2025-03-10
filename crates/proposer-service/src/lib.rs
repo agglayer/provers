@@ -19,6 +19,9 @@ pub mod error;
 mod tests;
 pub mod vkey_hash;
 
+// TODO: Place the real value here.
+const AGG_SPAN_VKEY_HASH: VKeyHash = VKeyHash::from_hash_u32([0_u32; 8]);
+
 pub struct ProposerService<L1Rpc, ProposerClient> {
     pub client: Arc<ProposerClient>,
 
@@ -42,7 +45,6 @@ impl<L1Rpc> ProposerService<L1Rpc, proposer_client::Client<ProposerRpcClient, Ne
     pub fn new(config: &ProposerServiceConfig, l1_rpc: Arc<L1Rpc>) -> Result<Self, Error> {
         let proposer_rpc_client = ProposerRpcClient::new(config.client.proposer_endpoint.as_str())?;
         let network_prover = new_network_prover(config.client.sp1_cluster_endpoint.as_str());
-        let agg_span_proof_vkey_hash = config.agg_span_proof_vkey_hash;
 
         Ok(Self {
             l1_rpc,
@@ -51,7 +53,7 @@ impl<L1Rpc> ProposerService<L1Rpc, proposer_client::Client<ProposerRpcClient, Ne
                 network_prover,
                 Some(config.client.proving_timeout),
             )?),
-            agg_span_proof_vkey_hash,
+            agg_span_proof_vkey_hash: AGG_SPAN_VKEY_HASH,
         })
     }
 }
