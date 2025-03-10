@@ -29,7 +29,7 @@ prover-utils.workspace = true
 mockall = { workspace = true, optional = true }
 
 [dev-dependencies]
-mockito = "1.6.1"
+mockito = "1.7.0"
 serde_json = { workspace = true }
 tokio.workspace = true
 
