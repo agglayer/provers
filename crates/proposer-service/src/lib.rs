@@ -56,7 +56,7 @@ impl<L1Rpc> ProposerService<L1Rpc, proposer_client::Client<ProposerRpcClient, Ne
     }
 }
 
-fn check_aggspan_proof(
+fn check_agg_span_proof_vkey(
     sp1_proof: &SP1ProofWithPublicValues,
     expected_vkey_hash: VKeyHash,
 ) -> Result<(), Error> {
@@ -66,12 +66,14 @@ fn check_aggspan_proof(
         .ok_or_else(|| Error::UnsupportedAggProofMode(sp1_proof.into()))?;
 
     let vkey_hash = VKeyHash::from_vkey(&proof.vk);
-    (vkey_hash == expected_vkey_hash)
-        .then_some(())
-        .ok_or(Error::AggProofVKeyMismatch {
+    if vkey_hash != expected_vkey_hash {
+        return Err(Error::AggProofVKeyMismatch {
             got: vkey_hash,
             expected: expected_vkey_hash,
-        })
+        });
+    }
+
+    Ok(())
 }
 
 impl<L1Rpc, ProposerClient> tower::Service<ProposerRequest>
@@ -121,7 +123,7 @@ where
 
             // Wait for the prover to finish aggregating span proofs
             let proofs = client.wait_for_proof(proof_id).await?;
-            check_aggspan_proof(&proofs, expected_vkey_hash)?;
+            check_agg_span_proof_vkey(&proofs, expected_vkey_hash)?;
 
             Ok(ProposerResponse {
                 agg_span_proof: proofs,
