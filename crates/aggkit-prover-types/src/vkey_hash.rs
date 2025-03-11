@@ -1,7 +1,7 @@
 use alloy_primitives::B256;
 use serde::{Deserialize, Serialize};
 
-pub type HashU32 = [u32; 8];
+pub use aggchain_proof_core::vkey_hash::HashU32;
 
 /// SP1 verifying key hash.
 #[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
