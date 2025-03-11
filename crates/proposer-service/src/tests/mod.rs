@@ -66,7 +66,7 @@ async fn test_proposer_service() {
     let mut proposer_service = ProposerService {
         client,
         l1_rpc,
-        agg_span_proof_vkey_hash: vk_hash,
+        aggregation_vkey_hash: vk_hash,
     };
 
     let request = ProposerRequest {
@@ -132,7 +132,7 @@ async fn test_vkey_hash_mismatch() {
     let mut proposer_service = ProposerService {
         client,
         l1_rpc,
-        agg_span_proof_vkey_hash: vk_hash,
+        aggregation_vkey_hash: vk_hash,
     };
 
     let request = ProposerRequest {
@@ -165,7 +165,7 @@ async fn unable_to_fetch_block_hash() {
     let mut proposer_service = ProposerService {
         client,
         l1_rpc,
-        agg_span_proof_vkey_hash: B256::new([0x91; 32]).into(),
+        aggregation_vkey_hash: B256::new([0x91; 32]).into(),
     };
 
     let request = ProposerRequest {

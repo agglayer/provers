@@ -93,7 +93,7 @@ pub struct ProposerRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProposerResponse {
-    pub agg_span_proof: SP1ProofWithPublicValues,
+    pub aggregation_proof: SP1ProofWithPublicValues,
     pub start_block: u64,
     pub end_block: u64,
 }

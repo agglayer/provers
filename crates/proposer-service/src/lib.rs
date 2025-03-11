@@ -20,7 +20,7 @@ mod tests;
 pub mod vkey_hash;
 
 // TODO: Place the real value here.
-const AGG_SPAN_VKEY_HASH: VKeyHash = VKeyHash::from_hash_u32([0_u32; 8]);
+const AGGREGATION_VKEY_HASH: VKeyHash = VKeyHash::from_hash_u32([0_u32; 8]);
 
 pub struct ProposerService<L1Rpc, ProposerClient> {
     pub client: Arc<ProposerClient>,
@@ -28,7 +28,7 @@ pub struct ProposerService<L1Rpc, ProposerClient> {
     pub l1_rpc: Arc<L1Rpc>,
 
     /// Expected aggregated span proof verification key.
-    agg_span_proof_vkey_hash: VKeyHash,
+    aggregation_vkey_hash: VKeyHash,
 }
 
 impl<L1Rpc, ProposerClient> Clone for ProposerService<L1Rpc, ProposerClient> {
@@ -36,7 +36,7 @@ impl<L1Rpc, ProposerClient> Clone for ProposerService<L1Rpc, ProposerClient> {
         Self {
             client: self.client.clone(),
             l1_rpc: self.l1_rpc.clone(),
-            agg_span_proof_vkey_hash: self.agg_span_proof_vkey_hash,
+            aggregation_vkey_hash: self.aggregation_vkey_hash,
         }
     }
 }
@@ -53,12 +53,12 @@ impl<L1Rpc> ProposerService<L1Rpc, proposer_client::Client<ProposerRpcClient, Ne
                 network_prover,
                 Some(config.client.proving_timeout),
             )?),
-            agg_span_proof_vkey_hash: AGG_SPAN_VKEY_HASH,
+            aggregation_vkey_hash: AGGREGATION_VKEY_HASH,
         })
     }
 }
 
-fn check_agg_span_proof_vkey(
+fn check_aggregation_vkey(
     sp1_proof: &SP1ProofWithPublicValues,
     expected_vkey_hash: VKeyHash,
 ) -> Result<(), Error> {
@@ -104,7 +104,7 @@ where
     ) -> Self::Future {
         let client = self.client.clone();
         let l1_rpc = self.l1_rpc.clone();
-        let expected_vkey_hash = self.agg_span_proof_vkey_hash;
+        let expected_vkey_hash = self.aggregation_vkey_hash;
 
         async move {
             let l1_block_hash = l1_rpc
@@ -125,10 +125,10 @@ where
 
             // Wait for the prover to finish aggregating span proofs
             let proofs = client.wait_for_proof(proof_id).await?;
-            check_agg_span_proof_vkey(&proofs, expected_vkey_hash)?;
+            check_aggregation_vkey(&proofs, expected_vkey_hash)?;
 
             Ok(ProposerResponse {
-                agg_span_proof: proofs,
+                aggregation_proof: proofs,
                 start_block: response.start_block,
                 end_block: response.end_block,
             })
