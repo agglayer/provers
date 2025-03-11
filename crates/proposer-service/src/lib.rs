@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
+use aggkit_prover_types::vkey_hash::VKeyHash;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use proposer_client::network_prover::new_network_prover;
@@ -11,13 +12,11 @@ use prover_alloy::Provider;
 use sp1_sdk::{NetworkProver, SP1ProofWithPublicValues};
 
 use crate::config::ProposerServiceConfig;
-pub use crate::vkey_hash::VKeyHash;
 
 pub mod config;
 pub mod error;
 #[cfg(test)]
 mod tests;
-pub mod vkey_hash;
 
 // TODO: Place the real value here.
 const AGGREGATION_VKEY_HASH: VKeyHash = VKeyHash::from_hash_u32([0_u32; 8]);

@@ -5006,6 +5006,7 @@ dependencies = [
 name = "proposer-service"
 version = "0.1.0"
 dependencies = [
+ "aggkit-prover-types",
  "alloy-primitives",
  "anyhow",
  "futures",
