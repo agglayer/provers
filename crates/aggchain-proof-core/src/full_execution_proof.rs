@@ -77,9 +77,9 @@ impl FepPublicValues {
 
     fn optimistic_mode(&self) -> OptimisticMode {
         if self.signature_optimistic_mode.is_some() {
-            OptimisticMode::Sp1
-        } else {
             OptimisticMode::Ecdsa
+        } else {
+            OptimisticMode::Sp1
         }
     }
 
