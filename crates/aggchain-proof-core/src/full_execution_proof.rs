@@ -3,9 +3,9 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest as Sha256Digest, Sha256};
 use sp1_zkvm::lib::utils::words_to_bytes_le;
 
-use crate::{error::ProofError, keccak::digest::Digest, keccak::keccak256_combine};
-
-type Vkey = [u32; 8];
+use crate::{
+    error::ProofError, keccak::digest::Digest, keccak::keccak256_combine, vkey_hash::HashU32,
+};
 
 // Hardcoded for now, might see if we might need it as input
 pub const OUTPUT_ROOT_VERSION: [u8; 32] = [0u8; 32];
@@ -45,7 +45,7 @@ impl FepPublicValues {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FepWithPublicValues {
     pub(crate) public_values: FepPublicValues,
-    pub(crate) aggregation_vkey: Vkey,
+    pub(crate) aggregation_vkey: HashU32,
 }
 
 impl FepWithPublicValues {
