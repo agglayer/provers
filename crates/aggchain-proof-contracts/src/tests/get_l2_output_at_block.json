@@ -1,0 +1,119 @@
+{
+  "jsonrpc": "2.0",
+  "id": 0,
+  "result": {
+    "version": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "outputRoot": "0x0151d2aa6a406444c37ebb2a155201863f1626018e1b43a16ca7a160380417b1",
+    "blockRef": {
+      "hash": "0x23b4dee9110bcd5e4befdb5b112a91298ed0058bfb933bdcc8abedce8affa3ff",
+      "number": 16,
+      "parentHash": "0xe6dd9f1b4226427e8921affb7882b710f9d3865f74aa710376981ff0201c7eef",
+      "timestamp": 1741185812,
+      "l1origin": {
+        "hash": "0xe1aafecedaab501145a0273f0f1ff9be1ab60973e87b9c8ab3c54954d6a73f5f",
+        "number": 13
+      },
+      "sequenceNumber": 8
+    },
+    "withdrawalStorageRoot": "0x8ed4baae3a927be3dea54996b4d5899f8c01e7594bf50b17dc1e741388ce3d12",
+    "stateRoot": "0x119ba90b2c0086a7e6520cc9ceacba505e10909820dc115b933f37b08343edcc",
+    "syncStatus": {
+      "current_l1": {
+        "hash": "0x722c70358d6b2ea4c3353d9490907128e3f4eca1f99b9ddfb984f4418fa0a3f4",
+        "number": 149,
+        "parentHash": "0x279854203f996618b021c8c95ce0ec01ee4d6d0a2ecd71a3b21f5000d5c6df84",
+        "timestamp": 1741186608
+      },
+      "current_l1_finalized": {
+        "hash": "0x0c357b1a0af6309d8ab78b3ef2f4a9daf59b4729e7ab04512afb8913086beef8",
+        "number": 124,
+        "parentHash": "0x34fe2a51cf3055c5ecb4bf34d6894c1997b55a9c285b75ac865585b1e0836bd0",
+        "timestamp": 1741186458
+      },
+      "head_l1": {
+        "hash": "0x8429b918847d0ab021a189c63a3afe3ced05f52d4183e49cc3517f89ccab72a4",
+        "number": 150,
+        "parentHash": "0x722c70358d6b2ea4c3353d9490907128e3f4eca1f99b9ddfb984f4418fa0a3f4",
+        "timestamp": 1741186614
+      },
+      "safe_l1": {
+        "hash": "0x503dba01b3660227612864f3d25cca5d8093edc55ad50384e9db4209aad1f092",
+        "number": 132,
+        "parentHash": "0x96d08e94b9de28096bfefb672e1d30d3edd85d065d56a27a66678933bdff354c",
+        "timestamp": 1741186506
+      },
+      "finalized_l1": {
+        "hash": "0x0c357b1a0af6309d8ab78b3ef2f4a9daf59b4729e7ab04512afb8913086beef8",
+        "number": 124,
+        "parentHash": "0x34fe2a51cf3055c5ecb4bf34d6894c1997b55a9c285b75ac865585b1e0836bd0",
+        "timestamp": 1741186458
+      },
+      "unsafe_l2": {
+        "hash": "0x740213cefd9f67e92cd4b11ce080aa3df2588fbea322180907c3be1b556f9037",
+        "number": 421,
+        "parentHash": "0x985e03ddac97a61e8bf4b578924224c533595dd28f93581c442889ebea3f5cdb",
+        "timestamp": 1741186622,
+        "l1origin": {
+          "hash": "0x279854203f996618b021c8c95ce0ec01ee4d6d0a2ecd71a3b21f5000d5c6df84",
+          "number": 148
+        },
+        "sequenceNumber": 1
+      },
+      "safe_l2": {
+        "hash": "0xec96bf1dfd70a487eb3294b1c9671df069ea9649946d0084716b5ca87dde120f",
+        "number": 402,
+        "parentHash": "0xd8b7d0bfbe6ef48c8ac11b6aab41a21b10a44c63677a151cd8673fa25a741261",
+        "timestamp": 1741186584,
+        "l1origin": {
+          "hash": "0x0dfea5633654803ef2a49c22a668702fe513ff9d33ce0a0195a8c32da913ea0d",
+          "number": 142
+        },
+        "sequenceNumber": 0
+      },
+      "finalized_l2": {
+        "hash": "0xcad397496ca47129895282a0d687551c361ec27dadfd6487b099528138aa4a5e",
+        "number": 330,
+        "parentHash": "0xdefc7a6dd302f4d0fe0850578c35cf3586f738094e13229a2dcd029f017650ac",
+        "timestamp": 1741186440,
+        "l1origin": {
+          "hash": "0x25bfbedfdc3807233c2f232095b92079635d0dae16c8c29545656a84b104651f",
+          "number": 118
+        },
+        "sequenceNumber": 0
+      },
+      "pending_safe_l2": {
+        "hash": "0xec96bf1dfd70a487eb3294b1c9671df069ea9649946d0084716b5ca87dde120f",
+        "number": 402,
+        "parentHash": "0xd8b7d0bfbe6ef48c8ac11b6aab41a21b10a44c63677a151cd8673fa25a741261",
+        "timestamp": 1741186584,
+        "l1origin": {
+          "hash": "0x0dfea5633654803ef2a49c22a668702fe513ff9d33ce0a0195a8c32da913ea0d",
+          "number": 142
+        },
+        "sequenceNumber": 0
+      },
+      "cross_unsafe_l2": {
+        "hash": "0x740213cefd9f67e92cd4b11ce080aa3df2588fbea322180907c3be1b556f9037",
+        "number": 421,
+        "parentHash": "0x985e03ddac97a61e8bf4b578924224c533595dd28f93581c442889ebea3f5cdb",
+        "timestamp": 1741186622,
+        "l1origin": {
+          "hash": "0x279854203f996618b021c8c95ce0ec01ee4d6d0a2ecd71a3b21f5000d5c6df84",
+          "number": 148
+        },
+        "sequenceNumber": 1
+      },
+      "local_safe_l2": {
+        "hash": "0xec96bf1dfd70a487eb3294b1c9671df069ea9649946d0084716b5ca87dde120f",
+        "number": 402,
+        "parentHash": "0xd8b7d0bfbe6ef48c8ac11b6aab41a21b10a44c63677a151cd8673fa25a741261",
+        "timestamp": 1741186584,
+        "l1origin": {
+          "hash": "0x0dfea5633654803ef2a49c22a668702fe513ff9d33ce0a0195a8c32da913ea0d",
+          "number": 142
+        },
+        "sequenceNumber": 0
+      }
+    }
+  }
+}
