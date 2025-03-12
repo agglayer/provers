@@ -2,13 +2,13 @@ use alloy_primitives::{Address, PrimitiveSignature, B256};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest as Sha256Digest, Sha256};
 
-use crate::{error::ProofError, keccak::digest::Digest, keccak::keccak256_combine};
-
-type Vkey = [u32; 8];
+use crate::{
+    error::ProofError, keccak::digest::Digest, keccak::keccak256_combine, vkey_hash::HashU32,
+};
 
 /// Hardcoded hash of the "aggregation vkey".
 /// NOTE: Format being `hash_u32()` of the `SP1StarkVerifyingKey`.
-pub const AGGREGATION_VKEY_HASH: Vkey = [0u32; 8]; // TODO: to put the right value
+pub const AGGREGATION_VKEY_HASH: HashU32 = [0u32; 8]; // TODO: to put the right value
 
 /// Specific commitment for the range proofs.
 pub const RANGE_VKEY_COMMITMENT: [u8; 32] = [0u8; 32]; // TODO: to put the right value
