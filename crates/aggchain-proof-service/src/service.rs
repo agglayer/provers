@@ -8,8 +8,8 @@ use std::{
 
 use aggchain_proof_builder::AggchainProofBuilder;
 use aggchain_proof_contracts::AggchainContractsRpcClient;
-use aggchain_proof_core::proof::{InclusionProof, L1InfoTreeLeaf};
 use aggchain_proof_core::Digest;
+use aggkit_prover_types::v1::{InclusionProof, L1InfoTreeLeaf};
 use futures::FutureExt as _;
 use proposer_service::{ProposerRequest, ProposerService};
 use sp1_sdk::SP1Proof;

@@ -8,6 +8,8 @@ pub mod vkey_hash;
 
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
+pub use bridge::inserted_ger::L1InfoTreeLeaf;
+pub use full_execution_proof::AGGREGATION_VKEY_HASH;
 pub use keccak::digest::Digest;
 
 pub const AGGCHAIN_TYPE: u16 = 0x0001;
