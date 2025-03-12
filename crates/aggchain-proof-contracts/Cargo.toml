@@ -20,7 +20,11 @@ aggchain-proof-core.workspace = true
 prover-alloy.workspace = true
 prover-utils.workspace = true
 
+[dev-dependencies]
+hex.workspace = true
 mockall = { workspace = true, optional = true }
+mockito.workspace = true
+test-log.workspace = true
 
 [lints]
 workspace = true
