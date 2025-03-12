@@ -8,13 +8,12 @@ use std::task::{Context, Poll};
 use aggchain_proof_contracts::contracts::{
     L1RollupConfigHashFetcher, L2LocalExitRootFetcher, L2OutputAtBlockFetcher,
 };
-use aggchain_proof_contracts::{AggchainContractsClient, AggchainContractsRpcClient};
+use aggchain_proof_contracts::AggchainContractsClient;
 use aggchain_proof_core::proof::AggchainProofWitness;
+use aggchain_proof_core::Digest;
 use aggkit_prover_types::v1::{InclusionProof, L1InfoTreeLeaf};
-use aggkit_prover_types::Hash;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
-use prover_alloy::AlloyFillProvider;
 use prover_executor::Executor;
 use sp1_sdk::{SP1Proof, SP1ProofWithPublicValues, SP1VerifyingKey};
 use tower::buffer::Buffer;
@@ -50,13 +49,13 @@ pub struct AggchainProofBuilderRequest {
     pub end_block: u64,
     /// Root hash of the l1 info tree, containing all relevant GER.
     /// Provided by agg-sender.
-    pub l1_info_tree_root_hash: Hash,
+    pub l1_info_tree_root_hash: Digest,
     /// Particular leaf of the l1 info tree corresponding
     /// to the max_block.
     pub l1_info_tree_leaf: L1InfoTreeLeaf,
     /// Inclusion proof of the l1 info tree leaf to the
     /// l1 info tree root
-    pub l1_info_tree_merkle_proof: [Hash; 32],
+    pub l1_info_tree_merkle_proof: [Digest; 32],
     /// Map of the Global Exit Roots with their inclusion proof.
     /// Note: the GER (string) is a base64 encoded string of the GER digest.
     pub ger_inclusion_proofs: HashMap<String, InclusionProof>,
@@ -70,6 +69,8 @@ pub struct AggchainProofBuilderResponse {
     pub start_block: u64,
     /// Last block included in the aggchain proof.
     pub end_block: u64,
+    /// Output root
+    pub output_root: Digest,
 }
 
 /// This service is responsible for building an Aggchain proof.
@@ -90,8 +91,11 @@ pub struct AggchainProofBuilder<ContractsClient> {
     aggchain_proof_vkey: SP1VerifyingKey,
 }
 
-impl AggchainProofBuilder<AggchainContractsRpcClient<AlloyFillProvider>> {
-    pub async fn new(config: &AggchainProofBuilderConfig) -> Result<Self, Error> {
+impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
+    pub async fn new(
+        config: &AggchainProofBuilderConfig,
+        contracts_client: Arc<ContractsClient>,
+    ) -> Result<Self, Error> {
         let executor = tower::ServiceBuilder::new()
             .service(Executor::new(
                 &config.primary_prover,
@@ -104,19 +108,13 @@ impl AggchainProofBuilder<AggchainContractsRpcClient<AlloyFillProvider>> {
         let aggchain_proof_vkey = Executor::get_vkey(ELF);
 
         Ok(AggchainProofBuilder {
-            contracts_client: Arc::new(
-                AggchainContractsRpcClient::new(config.network_id, &config.contracts)
-                    .await
-                    .map_err(Error::ContractsClientInitFailed)?,
-            ),
+            contracts_client,
             prover,
             network_id: config.network_id,
             aggchain_proof_vkey,
         })
     }
-}
 
-impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     /// Retrieve l1 and l2 public data needed for aggchain proof generation.
     /// Combine with the rest of the inputs to form an `AggchainProverInputs`.
     pub(crate) async fn retrieve_chain_data(

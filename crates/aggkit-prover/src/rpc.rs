@@ -1,10 +1,11 @@
 use aggchain_proof_service::config::AggchainProofServiceConfig;
 use aggchain_proof_service::service::{AggchainProofService, AggchainProofServiceRequest};
+use aggkit_prover_types::default_bincode_options;
 use aggkit_prover_types::v1::{
     aggchain_proof_service_server::AggchainProofService as AggchainProofGrpcService,
     GenerateAggchainProofRequest, GenerateAggchainProofResponse,
 };
-use aggkit_prover_types::{default_bincode_options, Hash};
+use aggkit_prover_types::Digest;
 use bincode::Options;
 use tonic::{Request, Response, Status};
 use tonic_types::{ErrorDetails, StatusExt};
@@ -53,7 +54,7 @@ impl AggchainProofGrpcService for GrpcService {
             ));
         }
 
-        let l1_info_tree_root_hash: Hash =
+        let l1_info_tree_root_hash: Digest =
             request.l1_info_tree_root_hash.try_into().map_err(|_| {
                 let mut error_details = ErrorDetails::new();
                 error_details.add_bad_request_violation(
@@ -90,8 +91,8 @@ impl AggchainProofGrpcService for GrpcService {
                     aggchain_proof,
                     start_block: response.start_block,
                     end_block: response.end_block,
-                    local_exit_root_hash: Vec::new(),
-                    custom_chain_data: Vec::new(),
+                    local_exit_root_hash: response.local_exit_root_hash.into(),
+                    custom_chain_data: response.custom_chain_data,
                 }))
             }
             Err(e) => Err(Status::internal(e.to_string())),
