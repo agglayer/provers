@@ -1,3 +1,5 @@
+use crate::WitnessGeneration;
+
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("Failed to retrieve l2 chain data")]
@@ -11,4 +13,7 @@ pub enum Error {
 
     #[error("Prover service returned the error: {0}")]
     ProverServiceError(String),
+
+    #[error("Prover witness generation error: {0}")]
+    ProverWitnessGenerationError(#[source] WitnessGeneration),
 }

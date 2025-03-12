@@ -10,14 +10,6 @@ use crate::{
     L1InfoTreeLeaf,
 };
 
-/// Aggchain proof is generated from the FEP proof and additional
-/// bridge information.
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct AggchainProof {
-    //pub proof: SP1ProofWithPublicValues,
-    //TODO add all necessary fields
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AggchainProofWitness {
     /// Previous local exit root.
