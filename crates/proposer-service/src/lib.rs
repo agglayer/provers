@@ -18,8 +18,8 @@ pub mod error;
 #[cfg(test)]
 mod tests;
 
-// TODO: Place the real value here.
-const AGGREGATION_VKEY_HASH: VKeyHash = VKeyHash::from_hash_u32([0_u32; 8]);
+const AGGREGATION_VKEY_HASH: VKeyHash =
+    VKeyHash::from_hash_u32(aggchain_proof_core::AGGREGATION_VKEY_HASH);
 
 pub struct ProposerService<L1Rpc, ProposerClient> {
     pub client: Arc<ProposerClient>,

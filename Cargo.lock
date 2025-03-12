@@ -5030,6 +5030,7 @@ dependencies = [
 name = "proposer-service"
 version = "0.1.0"
 dependencies = [
+ "aggchain-proof-core",
  "aggkit-prover-types",
  "alloy-primitives",
  "anyhow",
