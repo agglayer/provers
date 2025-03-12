@@ -1,11 +1,13 @@
-use std::fs;
 use std::path::Path;
+use std::{env, fs};
 
 use semver::Version;
 use toml::Value;
 
 fn main() {
+    println!("cargo:rerun-if-changed=Cargo.toml");
     let cargo_toml_path = Path::new("../aggchain-proof-program/Cargo.toml");
+    println!("cargo:rerun-if-changed={}", cargo_toml_path.display());
     let cargo_toml = fs::read_to_string(cargo_toml_path).expect("Failed to read Cargo.toml");
     let parsed_toml: Value = cargo_toml.parse().expect("Failed to parse Cargo.toml");
 
@@ -22,8 +24,7 @@ fn main() {
 
     let major_version = version.major.to_string();
 
-    let out_dir = "./src/";
-    let dest_path = Path::new(&out_dir).join("version.rs");
+    let dest_path = Path::new(&env::var_os("OUT_DIR").expect("OUT_DIR not set")).join("version.rs");
     fs::write(
         &dest_path,
         format!(
@@ -31,7 +32,5 @@ fn main() {
             major_version
         ),
     )
-    .expect("Failed to write aggchain_proof_program_version.rs");
-
-    println!("cargo:rerun-if-changed=Cargo.toml");
+    .expect("Failed to write aggchain-proof-core version.rs");
 }

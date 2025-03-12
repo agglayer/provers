@@ -119,7 +119,7 @@ fn test_aggchain_selector() {
 
     for TestVectorEntry { input, output } in data {
         assert_eq!(
-            compute_aggchain_vkey_selector(input.aggchain_v_key_selector, input.aggchain_type),
+            VKeySelector::new(input.aggchain_v_key_selector, input.aggchain_type).to_be_bytes(),
             output.final_aggchain_v_key_selector.to_be_bytes()
         );
     }

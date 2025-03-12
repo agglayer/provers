@@ -11,7 +11,7 @@ dependencies = [
     { name = "contracts-download-PolygonRollupManager" },
     { name = "contracts-download-PolygonZkEVM" },
     { name = "contracts-download-PolygonZkEVMGlobalExitRootV2" },
-    { name = "contracts-download-AggchainFEP" }
+    { name = "contracts-download-AggchainFEP" },
 ]
 
 [tasks.contracts-download-AggchainFEP]

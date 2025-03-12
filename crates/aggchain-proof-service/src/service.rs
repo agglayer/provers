@@ -187,6 +187,7 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
                 proof: aggchain_proof_response.proof,
                 start_block: agg_span_proof_response.start_block,
                 end_block: agg_span_proof_response.end_block,
+                // TODO: Replace with actual value when available
                 local_exit_root_hash: Default::default(),
                 custom_chain_data,
             })
