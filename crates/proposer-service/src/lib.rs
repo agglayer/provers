@@ -34,7 +34,9 @@ impl<L1Rpc, ProposerClient> Clone for ProposerService<L1Rpc, ProposerClient> {
 impl<L1Rpc> ProposerService<L1Rpc, proposer_client::Client<ProposerRpcClient, NetworkProver>> {
     pub fn new(config: &ProposerServiceConfig, l1_rpc: Arc<L1Rpc>) -> Result<Self, Error> {
         let proposer_rpc_client = ProposerRpcClient::new(config.client.proposer_endpoint.as_str())?;
-        let network_prover = new_network_prover(config.client.sp1_cluster_endpoint.as_str());
+        let network_prover = new_network_prover(config.client.sp1_cluster_endpoint.as_str())
+            .map_err(Error::UnableToCreateNetworkProver)?;
+
         Ok(Self {
             l1_rpc,
             client: Arc::new(proposer_client::Client::new(

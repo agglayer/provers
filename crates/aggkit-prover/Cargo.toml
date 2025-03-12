@@ -10,9 +10,15 @@ workspace = true
 [dependencies]
 anyhow.workspace = true
 bincode.workspace = true
+clap = { workspace = true, features = ["derive", "env", "string"] }
+dotenvy.workspace = true
+hex.workspace = true
 http = "1.2.0"
+sp1-sdk.workspace = true
+sp1-zkvm.workspace = true
 tokio = { workspace = true, features = ["full"] }
 tokio-util.workspace = true
+toml.workspace = true
 tonic = { workspace = true, features = ["zstd"] }
 tonic-types = { workspace = true }
 tower = { workspace = true, features = ["timeout"] }
@@ -22,11 +28,15 @@ aggchain-proof-service.workspace = true
 aggkit-prover-config.workspace = true
 aggkit-prover-types.workspace = true
 prover-engine.workspace = true
+prover-executor.workspace = true
 prover-logger.workspace = true
 
 [dev-dependencies]
 hyper-util = "0.1.10"
 tokio-stream = { workspace = true, features = ["sync"] }
+
+[build-dependencies]
+vergen-git2 = { version = "1.0.0", features = ["build"] }
 
 [features]
 default = []

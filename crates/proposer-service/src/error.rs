@@ -7,4 +7,7 @@ pub enum Error {
 
     #[error("Proposer client error: {0}")]
     Client(#[from] ProposerClientError),
+
+    #[error("Unable to create network prover")]
+    UnableToCreateNetworkProver(#[source] anyhow::Error),
 }

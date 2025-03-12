@@ -13,8 +13,7 @@ WORKDIR /app
 FROM chef AS planner
 
 COPY --link crates crates
-# Needed for cargo-chef to build, but not use during the compilation due to `--bin agglayer`
-COPY --link tests/integrations tests/integrations
+COPY --link proto proto
 COPY --link Cargo.toml Cargo.toml
 COPY --link Cargo.lock Cargo.lock
 
@@ -44,6 +43,7 @@ COPY --from=planner /app/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
 
 COPY --link crates crates
+COPY --link proto proto
 COPY --link Cargo.toml Cargo.toml
 COPY --link Cargo.lock Cargo.lock
 
@@ -57,7 +57,7 @@ RUN cargo build --release --bin aggkit-prover
 FROM --platform=${BUILDPLATFORM} debian:bullseye-slim
 
 RUN apt-get update && apt-get install -y ca-certificates
-COPY --from=builder /app/target/release/agglayer /usr/local/bin/
+COPY --from=builder /app/target/release/aggkit-prover /usr/local/bin/
 COPY --from=builder /root/.sp1/circuits /root/.sp1/circuits
 
 CMD ["/usr/local/bin/aggkit-prover"]

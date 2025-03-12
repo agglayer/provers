@@ -4,6 +4,7 @@
 # Allow Rust source code
 !src
 !crates
+!proto
 !xtask
 !tests
 !Cargo.*
