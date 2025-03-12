@@ -54,11 +54,13 @@ impl AggchainProofWitness {
                 });
             }
 
-            if !self.l1_head_inclusion_proof.verify(
+            let inclusion_proof_valid = self.l1_head_inclusion_proof.verify(
                 self.l1_info_tree_leaf.1.hash(),
                 self.l1_info_tree_leaf.0,
                 self.l1_info_root,
-            ) {
+            );
+
+            if !inclusion_proof_valid {
                 return Err(ProofError::InvalidInclusionProofL1Head {
                     index: self.l1_info_tree_leaf.0,
                     l1_leaf_hash: self.l1_info_tree_leaf.1.hash(),

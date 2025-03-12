@@ -46,13 +46,13 @@ pub struct StaticCallWithContext {
 
 impl StaticCallWithContext {
     /// Returns the decoded output values of a static call.
-    pub fn execute_static_call<C: SolCall>(
+    pub fn execute<C: SolCall>(
         &self,
         state_sketch: &EVMStateSketch,
         calldata: C,
     ) -> Result<C::Return, BridgeConstraintsError> {
         let (decoded_return, retrieved_block_hash) = self
-            .execute_static_call_helper(state_sketch, calldata)
+            .execute_helper(state_sketch, calldata)
             .map_err(|e| BridgeConstraintsError::static_call_error(e, self.stage))?;
 
         // check on block hash
@@ -75,7 +75,7 @@ impl StaticCallWithContext {
     /// special precompiled contracts are supported.
     /// Even though the current example satisfies these constraints, it's
     /// important to keep them in mind when updating the code.
-    fn execute_static_call_helper<C: SolCall>(
+    fn execute_helper<C: SolCall>(
         &self,
         state_sketch: &EVMStateSketch,
         calldata: C,

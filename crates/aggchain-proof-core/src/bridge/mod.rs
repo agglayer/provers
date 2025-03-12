@@ -168,7 +168,7 @@ impl BridgeConstraintsInput {
             stage: StaticCallStage::PrevHashChain(hash_chain),
             block_hash: self.prev_l2_block_hash,
         }
-        .execute_static_call(&hash_chain_sketch.prev_sketch, calldata.clone())?;
+        .execute(&hash_chain_sketch.prev_sketch, calldata.clone())?;
 
         // Get the state of the hash chain of the new block on L2
         let new_hash_chain = StaticCallWithContext {
@@ -176,7 +176,7 @@ impl BridgeConstraintsInput {
             stage: StaticCallStage::NewHashChain(hash_chain),
             block_hash: self.new_l2_block_hash,
         }
-        .execute_static_call(&hash_chain_sketch.new_sketch, calldata)?;
+        .execute(&hash_chain_sketch.new_sketch, calldata)?;
 
         Ok((prev_hash_chain, new_hash_chain))
     }
@@ -195,7 +195,7 @@ impl BridgeConstraintsInput {
                 )
                 .map(|(prev, new)| (prev.hashChain.0.into(), new.hashChain.0.into()))?;
 
-            rebuild_hash_chain(
+            validate_hash_chain(
                 self.bridge_witness.inserted_gers_hash_chain.iter().cloned(),
                 prev_hash_chain,
                 new_hash_chain,
@@ -215,7 +215,7 @@ impl BridgeConstraintsInput {
                 )
                 .map(|(prev, new)| (prev.hashChain.0.into(), new.hashChain.0.into()))?;
 
-            rebuild_hash_chain(
+            validate_hash_chain(
                 self.bridge_witness.removed_gers_hash_chain.iter().cloned(),
                 prev_hash_chain,
                 new_hash_chain,
@@ -243,7 +243,7 @@ impl BridgeConstraintsInput {
                 )
                 .map(|(prev, new)| (prev.hashChain.0.into(), new.hashChain.0.into()))?;
 
-            rebuild_hash_chain(
+            validate_hash_chain(
                 self.bridge_witness
                     .global_indices_claimed
                     .iter()
@@ -266,7 +266,7 @@ impl BridgeConstraintsInput {
                 )
                 .map(|(prev, new)| (prev.hashChain.0.into(), new.hashChain.0.into()))?;
 
-            rebuild_hash_chain(
+            validate_hash_chain(
                 self.bridge_witness
                     .global_indices_unset
                     .iter()
@@ -288,7 +288,7 @@ impl BridgeConstraintsInput {
             stage: StaticCallStage::NewLer,
             block_hash: self.new_l2_block_hash,
         }
-        .execute_static_call(
+        .execute(
             &self.bridge_witness.new_ler_sketch,
             BridgeL2SovereignChain::getRootCall {},
         )?
@@ -318,7 +318,7 @@ impl BridgeConstraintsInput {
             stage: StaticCallStage::BridgeAddress,
             block_hash: self.new_l2_block_hash,
         }
-        .execute_static_call(
+        .execute(
             &self.bridge_witness.bridge_address_sketch,
             GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
         )?
@@ -327,7 +327,7 @@ impl BridgeConstraintsInput {
         Ok(bridge_address)
     }
 
-    /// Verify the claimed global indexes extracting the unset global indexes
+    /// Verify that the claimed global indexes minus the unset global indexes
     /// are equal to the Constrained global indexes.
     fn verify_constrained_global_indices(&self) -> Result<(), BridgeConstraintsError> {
         let filtered_claimed = filter_values(
@@ -400,8 +400,8 @@ impl BridgeConstraintsInput {
     }
 }
 
-/// Check that the rebuilt hash chain is equal to the new hash chain.
-fn rebuild_hash_chain(
+/// Validate that the rebuilt hash chain is equal to the new hash chain.
+fn validate_hash_chain(
     hashes: impl Iterator<Item = Digest>,
     prev_hash_chain: Digest,
     new_hash_chain: Digest,
@@ -431,7 +431,6 @@ fn filter_values<I: Eq + Hash + Copy>(removed: &[I], values: &[I]) -> Vec<I> {
     // Iterate over values and remove (skip) one occurrence for each removed value
     values
         .iter()
-        .cloned()
         .filter(|value| {
             // If the value needs to be removed...
             if let Some(count) = removal_map.get_mut(value) {
@@ -442,6 +441,7 @@ fn filter_values<I: Eq + Hash + Copy>(removed: &[I], values: &[I]) -> Vec<I> {
             }
             true // Otherwise, keep the value.
         })
+        .copied()
         .collect()
 }
 

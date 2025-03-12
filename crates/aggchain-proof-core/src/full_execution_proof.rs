@@ -4,12 +4,10 @@ use sha2::{Digest as Sha256Digest, Sha256};
 
 use crate::{error::ProofError, keccak::digest::Digest, keccak::keccak256_combine};
 
-#[cfg(target_os = "zkvm")]
 type Vkey = [u32; 8];
 
 /// Hardcoded hash of the "aggregation vkey".
 /// NOTE: Format being `hash_u32()` of the `SP1StarkVerifyingKey`.
-#[cfg(target_os = "zkvm")]
 pub const AGGREGATION_VKEY_HASH: Vkey = [0u32; 8]; // TODO: to put the right value
 
 /// Specific commitment for the range proofs.
