@@ -25,7 +25,7 @@ pub enum Commands {
 
     ValidateConfig {
         /// The path to the aggkit-prover configuration file.
-        #[arg(value_hint = ValueHint::DirPath)]
+        #[arg(value_hint = ValueHint::FilePath)]
         config_path: PathBuf,
     },
 
