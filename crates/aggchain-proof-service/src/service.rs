@@ -14,6 +14,7 @@ use futures::FutureExt as _;
 use proposer_service::{ProposerRequest, ProposerService};
 use sp1_sdk::SP1Proof;
 use tower::{util::BoxCloneService, ServiceExt as _};
+use tracing::debug;
 
 use crate::config::AggchainProofServiceConfig;
 use crate::custom_chain_data::compute_custom_chain_data;
@@ -84,6 +85,7 @@ pub struct AggchainProofService {
 
 impl AggchainProofService {
     pub async fn new(config: &AggchainProofServiceConfig) -> Result<Self, Error> {
+        debug!("Initializing AggchainProofService");
         let client = prover_alloy::AlloyProvider::new(
             &config.proposer_service.l1_rpc_endpoint,
             prover_alloy::DEFAULT_HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
@@ -91,6 +93,8 @@ impl AggchainProofService {
         )
         .map_err(Error::AlloyProviderInitializationFailed)?;
         let l1_rpc_client = Arc::new(client);
+        debug!("L1 RPC client initialized");
+
         let contract_l1_client = Arc::new(
             AggchainContractsRpcClient::new(
                 config.aggchain_proof_builder.network_id,
@@ -99,6 +103,7 @@ impl AggchainProofService {
             .await
             .map_err(Error::ContractsClientInitFailed)?,
         );
+        debug!("Contract L1 client initialized");
 
         let proposer_service = tower::ServiceBuilder::new()
             .service(
@@ -106,6 +111,7 @@ impl AggchainProofService {
                     .map_err(Error::ProposerServiceInitFailed)?,
             )
             .boxed_clone();
+        debug!("ProposerService initialized");
 
         let aggchain_proof_builder = tower::ServiceBuilder::new()
             .service(
@@ -117,6 +123,7 @@ impl AggchainProofService {
                 .map_err(Error::AggchainProofBuilderInitFailed)?,
             )
             .boxed_clone();
+        debug!("AggchainProofBuilder initialized");
 
         Ok(AggchainProofService {
             proposer_service,

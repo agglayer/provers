@@ -23,7 +23,7 @@ use tower::ServiceExt as _;
 use crate::config::AggchainProofBuilderConfig;
 
 const MAX_CONCURRENT_REQUESTS: usize = 100;
-const ELF: &[u8] =
+pub const ELF: &[u8] =
     include_bytes!("../../../crates/aggchain-proof-program/elf/riscv32im-succinct-zkvm-elf");
 
 pub(crate) type ProverService = Buffer<

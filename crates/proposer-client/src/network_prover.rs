@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use alloy_primitives::B256;
-use anyhow::Error;
+use anyhow::{Context, Error};
 use sp1_sdk::{NetworkProver, SP1ProofWithPublicValues};
 
 /// This prover waits for the SP1 cluster generated
@@ -26,9 +26,13 @@ impl AggSpanProver for NetworkProver {
     }
 }
 
-pub fn new_network_prover(endpoint: &str) -> NetworkProver {
-    sp1_sdk::ProverClient::builder()
+pub fn new_network_prover(endpoint: &str) -> anyhow::Result<NetworkProver> {
+    Ok(sp1_sdk::ProverClient::builder()
         .network()
         .rpc_url(endpoint)
-        .build()
+        .private_key(&std::env::var("PROPOSER_NETWORK_PRIVATE_KEY").context(
+            "Failed to get PROPOSER_NETWORK_PRIVATE_KEY, when building NetworkProver for \
+             proposer-client",
+        )?)
+        .build())
 }
