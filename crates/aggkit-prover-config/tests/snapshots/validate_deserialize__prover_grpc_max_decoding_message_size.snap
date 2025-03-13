@@ -1,6 +1,7 @@
 ---
 source: crates/aggkit-prover-config/tests/validate_deserialize.rs
 expression: config
+snapshot_kind: text
 ---
 grpc-endpoint = "127.0.0.1:8081"
 
