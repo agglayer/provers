@@ -1,6 +1,6 @@
 use aggchain_proof_service::config::AggchainProofServiceConfig;
 use aggchain_proof_service::service::{AggchainProofService, AggchainProofServiceRequest};
-use aggchain_proof_types::AggchainProofRequest;
+use aggchain_proof_types::AggchainProofInputs;
 use aggkit_prover_types::default_bincode_options;
 use aggkit_prover_types::error::AggchainProofRequestError;
 use aggkit_prover_types::v1::{
@@ -55,7 +55,7 @@ impl AggchainProofGrpcService for GrpcService {
             ));
         }
 
-        let aggchain_proof_request: AggchainProofRequest =
+        let aggchain_proof_inputs: AggchainProofInputs =
             request
                 .try_into()
                 .map_err(|error: AggchainProofRequestError| {
@@ -70,7 +70,7 @@ impl AggchainProofGrpcService for GrpcService {
                 })?;
 
         let proof_request = AggchainProofServiceRequest {
-            aggchain_proof_request,
+            aggchain_proof_inputs,
         };
 
         let mut service = self.service.clone();

@@ -9,7 +9,7 @@ use aggchain_proof_contracts::contracts::{
 };
 use aggchain_proof_contracts::AggchainContractsClient;
 use aggchain_proof_core::proof::AggchainProofWitness;
-use aggchain_proof_types::{AggchainProofRequest, Digest};
+use aggchain_proof_types::{AggchainProofInputs, Digest};
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use prover_executor::Executor;
@@ -45,7 +45,7 @@ pub struct AggchainProofBuilderRequest {
     /// Could be different from the max_end_block requested by the agg-sender.
     pub end_block: u64,
     /// Aggchain proof request information, public inputs, bridge data,...
-    pub aggchain_proof_request: AggchainProofRequest,
+    pub aggchain_proof_inputs: AggchainProofInputs,
 }
 
 #[derive(Clone, Debug)]
@@ -113,7 +113,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             L2LocalExitRootFetcher + L2OutputAtBlockFetcher + L1RollupConfigHashFetcher,
     {
         let _prev_local_exit_root = contracts_client
-            .get_l2_local_exit_root(request.aggchain_proof_request.start_block - 1)
+            .get_l2_local_exit_root(request.aggchain_proof_inputs.start_block - 1)
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 
@@ -123,7 +123,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .map_err(Error::L2ChainDataRetrievalError)?;
 
         let _l2_pre_root_output_at_block = contracts_client
-            .get_l2_output_at_block(request.aggchain_proof_request.start_block - 1)
+            .get_l2_output_at_block(request.aggchain_proof_inputs.start_block - 1)
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 

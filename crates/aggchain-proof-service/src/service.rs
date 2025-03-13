@@ -7,7 +7,7 @@ use std::{
 
 use aggchain_proof_builder::AggchainProofBuilder;
 use aggchain_proof_contracts::AggchainContractsRpcClient;
-use aggchain_proof_types::{AggchainProofRequest, Digest};
+use aggchain_proof_types::{AggchainProofInputs, Digest};
 use alloy_primitives::B256;
 use futures::FutureExt as _;
 use proposer_service::{ProposerRequest, ProposerService};
@@ -23,7 +23,7 @@ use crate::error::Error;
 #[derive(Default, Clone, Debug)]
 pub struct AggchainProofServiceRequest {
     /// Aggchain proof request information
-    pub aggchain_proof_request: AggchainProofRequest,
+    pub aggchain_proof_inputs: AggchainProofInputs,
 }
 
 /// Resulting generated Aggchain proof
@@ -128,14 +128,14 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
 
     fn call(&mut self, req: AggchainProofServiceRequest) -> Self::Future {
         let l1_block_hash = req
-            .aggchain_proof_request
+            .aggchain_proof_inputs
             .l1_info_tree_leaf
             .inner_leaf
             .block_hash;
 
         let proposer_request = ProposerRequest {
-            start_block: req.aggchain_proof_request.start_block,
-            max_block: req.aggchain_proof_request.max_end_block,
+            start_block: req.aggchain_proof_inputs.start_block,
+            max_block: req.aggchain_proof_inputs.max_end_block,
             l1_block_hash: B256::from(l1_block_hash.0),
         };
 
@@ -154,7 +154,7 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
                 aggchain_proof_builder::AggchainProofBuilderRequest {
                     aggregation_proof: aggregation_proof_response.aggregation_proof,
                     end_block: aggregation_proof_response.end_block,
-                    aggchain_proof_request: req.aggchain_proof_request,
+                    aggchain_proof_inputs: req.aggchain_proof_inputs,
                 };
 
             let aggchain_proof_response = proof_builder

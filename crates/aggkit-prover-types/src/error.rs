@@ -32,7 +32,7 @@ pub enum AggchainProofRequestError {
     InvalidHexConversion {
         field_path: String,
         #[source]
-        error: FromHexError,
+        source: FromHexError,
     },
 }
 

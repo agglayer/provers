@@ -65,7 +65,7 @@ pub struct TokenInfo {
 
 /// Data needed as the input for the aggchain proof generation.
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct AggchainProofRequest {
+pub struct AggchainProofInputs {
     ///  The start block for which the aggchain proof is requested.
     pub start_block: u64,
     /// The max end block for which the aggchain proof is requested.
