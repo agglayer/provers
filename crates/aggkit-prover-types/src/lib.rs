@@ -18,4 +18,4 @@ pub fn default_bincode_options(
         .with_fixint_encoding()
 }
 
-pub type Hash = [u8; 32];
+pub use aggchain_proof_core::Digest;

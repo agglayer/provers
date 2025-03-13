@@ -6,15 +6,17 @@ use std::{
     task::{Context, Poll},
 };
 
-use aggchain_proof_builder::{AggchainProofBuilder, AggchainProofBuilderResponse};
+use aggchain_proof_builder::AggchainProofBuilder;
+use aggchain_proof_contracts::AggchainContractsRpcClient;
+use aggchain_proof_core::Digest;
 use aggkit_prover_types::v1::{InclusionProof, L1InfoTreeLeaf};
-use aggkit_prover_types::Hash;
-use futures::{FutureExt as _, TryFutureExt};
+use futures::FutureExt as _;
 use proposer_service::{ProposerRequest, ProposerService};
 use sp1_sdk::SP1Proof;
 use tower::{util::BoxCloneService, ServiceExt as _};
 
 use crate::config::AggchainProofServiceConfig;
+use crate::custom_chain_data::compute_custom_chain_data;
 use crate::error::Error;
 
 /// A request for the AggchainProofService to generate the
@@ -27,13 +29,13 @@ pub struct AggchainProofServiceRequest {
     /// Max number of blocks that the aggchain proof is allowed to contain
     pub max_block: u64,
     /// Root hash of the L1 info tree.
-    pub l1_info_tree_root_hash: Hash,
+    pub l1_info_tree_root_hash: Digest,
     /// Particular leaf of the l1 info tree corresponding
     /// to the max_block.
     pub l1_info_tree_leaf: L1InfoTreeLeaf,
     /// Inclusion proof of the l1 info tree leaf to the
     /// l1 info tree root.
-    pub l1_info_tree_merkle_proof: [Hash; 32],
+    pub l1_info_tree_merkle_proof: [Digest; 32],
     /// Map of the Global Exit Roots with their inclusion proof.
     /// Note: the GER (string) is a base64 encoded string of the GER digest.
     pub ger_inclusion_proofs: HashMap<String, InclusionProof>,
@@ -52,7 +54,7 @@ pub struct AggchainProofServiceResponse {
     /// changes included in the proof. Mismatch between LER calculation on the
     /// agglayer and the L2 is possible due to the field -
     /// `forceUpdateGlobalExitRoot`.
-    pub local_exit_root_hash: Vec<u8>,
+    pub local_exit_root_hash: Digest,
     /// Custom chain data calculated by the `aggkit-prover`, required by the
     /// agg-sender to fill in related certificate field.
     /// Consists off the two bytes for aggchain selector, 32 bytes for the
@@ -89,6 +91,14 @@ impl AggchainProofService {
         )
         .map_err(Error::AlloyProviderInitializationFailed)?;
         let l1_rpc_client = Arc::new(client);
+        let contract_l1_client = Arc::new(
+            AggchainContractsRpcClient::new(
+                config.aggchain_proof_builder.network_id,
+                &config.aggchain_proof_builder.contracts,
+            )
+            .await
+            .map_err(Error::ContractsClientInitFailed)?,
+        );
 
         let proposer_service = tower::ServiceBuilder::new()
             .service(
@@ -99,9 +109,12 @@ impl AggchainProofService {
 
         let aggchain_proof_builder = tower::ServiceBuilder::new()
             .service(
-                AggchainProofBuilder::new(&config.aggchain_proof_builder)
-                    .map_err(Error::AggchainProofBuilderInitFailed)
-                    .await?,
+                AggchainProofBuilder::new(
+                    &config.aggchain_proof_builder,
+                    contract_l1_client.clone(),
+                )
+                .await
+                .map_err(Error::AggchainProofBuilderInitFailed)?,
             )
             .boxed_clone();
 
@@ -125,7 +138,7 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
 
         self.aggchain_proof_builder
             .poll_ready(cx)
-            .map_err(Error::AggchainProofBuilderServiceError)
+            .map_err(Error::AggchainProofBuilderInitFailed)
     }
 
     fn call(&mut self, req: AggchainProofServiceRequest) -> Self::Future {
@@ -137,38 +150,48 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
             l1_block_number,
         };
 
+        let mut proposer_service = self.proposer_service.clone();
         let mut proof_builder = self.aggchain_proof_builder.clone();
 
-        self.proposer_service
-            .call(proposer_request)
-            .map_err(Error::ProposerServiceRequestFailed)
-            .and_then(move |aggregation_proof_response| {
-                let aggchain_proof_builder_request =
-                    aggchain_proof_builder::AggchainProofBuilderRequest {
-                        aggregation_proof: aggregation_proof_response.aggregation_proof,
-                        start_block: aggregation_proof_response.start_block,
-                        end_block: aggregation_proof_response.end_block,
-                        l1_info_tree_merkle_proof: req.l1_info_tree_merkle_proof,
-                        l1_info_tree_leaf: req.l1_info_tree_leaf,
-                        l1_info_tree_root_hash: req.l1_info_tree_root_hash,
-                        ger_inclusion_proofs: req.ger_inclusion_proofs,
-                    };
+        async move {
+            // The ProposerResponse contains the start and end block number
+            // It also contains the generated proof.
+            let aggregation_proof_response = proposer_service
+                .call(proposer_request)
+                .await
+                .map_err(Error::ProposerServiceError)?;
 
-                proof_builder
-                    .call(aggchain_proof_builder_request)
-                    .map_err(Error::AggchainProofBuilderRequestFailed)
-                    .map(move |aggchain_proof_builder_result| {
-                        let aggregation_proof_response: AggchainProofBuilderResponse =
-                            aggchain_proof_builder_result?;
-                        Ok(AggchainProofServiceResponse {
-                            proof: aggregation_proof_response.proof,
-                            start_block: aggregation_proof_response.start_block,
-                            end_block: aggregation_proof_response.end_block,
-                            local_exit_root_hash: Default::default(),
-                            custom_chain_data: Default::default(),
-                        })
-                    })
+            let aggchain_proof_builder_request =
+                aggchain_proof_builder::AggchainProofBuilderRequest {
+                    aggregation_proof: aggregation_proof_response.aggregation_proof,
+                    start_block: aggregation_proof_response.start_block,
+                    end_block: aggregation_proof_response.end_block,
+                    l1_info_tree_merkle_proof: req.l1_info_tree_merkle_proof,
+                    l1_info_tree_leaf: req.l1_info_tree_leaf,
+                    l1_info_tree_root_hash: req.l1_info_tree_root_hash,
+                    ger_inclusion_proofs: req.ger_inclusion_proofs,
+                };
+
+            let aggchain_proof_response = proof_builder
+                .call(aggchain_proof_builder_request)
+                .await
+                .map_err(Error::AggchainProofBuilderRequestFailed)?;
+
+            let custom_chain_data = compute_custom_chain_data(
+                aggchain_proof_response.output_root,
+                aggregation_proof_response.end_block,
+            )
+            .map_err(Error::UnableToSerializeCustomChainData)?;
+
+            Ok(AggchainProofServiceResponse {
+                proof: aggchain_proof_response.proof,
+                start_block: aggregation_proof_response.start_block,
+                end_block: aggregation_proof_response.end_block,
+                // TODO: Replace with actual value when available
+                local_exit_root_hash: Default::default(),
+                custom_chain_data,
             })
-            .boxed()
+        }
+        .boxed()
     }
 }
