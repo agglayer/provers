@@ -26,38 +26,11 @@ impl From<v1::GlobalIndex> for aggchain_proof_types::GlobalIndex {
     }
 }
 
-impl TryFrom<v1::BridgeExit> for aggchain_proof_types::BridgeExit {
-    type Error = Error;
-
-    fn try_from(value: v1::BridgeExit) -> Result<Self, Self::Error> {
-        Ok(aggchain_proof_types::BridgeExit {
-            leaf_type: value.leaf_type,
-            token_info: value
-                .token_info
-                .ok_or(Error::MissingTokenInfo {
-                    field_path: "imported_bridge_exits.bridge_exit.token_info".to_string(),
-                })?
-                .try_into()?,
-            destination_network: value.destination_network,
-            destination_address: Address::from_slice(&value.destination_address),
-            amount: value.amount,
-            is_metadata_hashed: value.is_metadata_hashed,
-            metadata: value.metadata,
-        })
-    }
-}
-
 impl TryFrom<v1::ImportedBridgeExit> for aggchain_proof_types::ImportedBridgeExit {
     type Error = Error;
 
     fn try_from(value: v1::ImportedBridgeExit) -> Result<Self, Self::Error> {
         Ok(aggchain_proof_types::ImportedBridgeExit {
-            bridge_exit: value
-                .bridge_exit
-                .ok_or(Error::MissingBridgeExit {
-                    field_path: "imported_bridge_exits.bridge_exit".to_string(),
-                })?
-                .try_into()?,
             global_index: value
                 .global_index
                 .ok_or(Error::MissingGlobalIndex {

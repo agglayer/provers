@@ -6,13 +6,7 @@ license.workspace = true
 
 [dependencies]
 alloy-primitives.workspace = true
-anyhow.workspace = true
-hex.workspace = true
 serde.workspace = true
-thiserror.workspace = true
-tiny-keccak = { git = "https://github.com/sp1-patches/tiny-keccak", tag = "patch-2.0.2-sp1-4.0.0", features = [
-    "keccak",
-] }
 
 aggchain-proof-core.workspace = true
 

@@ -22,7 +22,7 @@ pub enum AggchainProofRequestError {
     #[error("Missing or invalid l1 info merkle tree proof")]
     MissingL1InfoTreeMerkleProof { field_path: String },
 
-    #[error("Invalid claim from mainet value")]
+    #[error("Invalid claim from mainnet value")]
     InvalidClaimFromMainnetConversion { field_path: String },
 
     #[error("Missing inclusion proof")]

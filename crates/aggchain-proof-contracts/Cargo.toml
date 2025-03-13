@@ -22,7 +22,6 @@ prover-utils.workspace = true
 mockall = { workspace = true, optional = true }
 
 [dev-dependencies]
-hex.workspace = true
 mockito.workspace = true
 test-log.workspace = true
 

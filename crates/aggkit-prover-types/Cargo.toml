@@ -9,7 +9,6 @@ sp1 = ["dep:sp1-sdk"]
 
 [dependencies]
 alloy-primitives.workspace = true
-anyhow.workspace = true
 bincode.workspace = true
 hex.workspace = true
 prost = "0.13.4"

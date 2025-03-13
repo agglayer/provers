@@ -5,18 +5,15 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-alloy.workspace = true
 futures.workspace = true
 thiserror.workspace = true
 tower = { workspace = true, features = ["timeout"] }
 serde = { workspace = true, features = ["derive"] }
 sp1-sdk.workspace = true
-url.workspace = true
 
 aggchain-proof-contracts.workspace = true
 aggchain-proof-core.workspace = true
 aggchain-proof-types.workspace = true
-prover-alloy.workspace = true
 prover-config.workspace = true
 prover-executor.workspace = true
 

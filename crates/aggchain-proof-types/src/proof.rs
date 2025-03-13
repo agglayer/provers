@@ -42,32 +42,8 @@ pub struct L1InfoTreeLeafInner {
 /// the current network.
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct ImportedBridgeExit {
-    /// The bridge exit initiated on another network, called the "sending"
-    /// network. Need to verify that the destination network matches the
-    /// current network, and that the bridge exit is included in an imported
-    /// LER.
-    pub bridge_exit: BridgeExit,
     /// The global index of the imported bridge exit.
     pub global_index: GlobalIndex,
-}
-
-/// Represents a token bridge exit from the network.
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct BridgeExit {
-    /// The type of the leaf.
-    pub leaf_type: i32,
-    /// Unique ID for the token being transferred.
-    pub token_info: TokenInfo,
-    /// Network which the token is transferred to.
-    pub destination_network: u32,
-    /// Address which will own the received token.
-    pub destination_address: Address,
-    /// Token amount sent.
-    pub amount: String,
-    /// Is metadata hashed.
-    pub is_metadata_hashed: bool,
-    /// Metadata for the bridge exit.
-    pub metadata: Vec<u8>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]

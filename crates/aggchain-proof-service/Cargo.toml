@@ -10,7 +10,6 @@ workspace = true
 [dependencies]
 alloy-primitives.workspace = true
 anyhow.workspace = true
-async-trait.workspace = true
 bincode.workspace = true
 futures.workspace = true
 serde.workspace = true
@@ -27,9 +26,9 @@ aggchain-proof-types.workspace = true
 proposer-service.workspace = true
 prover-alloy.workspace = true
 
-educe = { workspace = true, features = ["Clone"] }
+
 
 [dev-dependencies]
 aggchain-proof-contracts = { workspace = true, features = ["testutils"] }
-mockall.workspace = true
+
 serde_json.workspace = true
