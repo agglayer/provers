@@ -156,16 +156,16 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
         async move {
             // The ProposerResponse contains the start and end block number
             // It also contains the generated proof.
-            let agg_span_proof_response = proposer_service
+            let aggregation_proof_response = proposer_service
                 .call(proposer_request)
                 .await
                 .map_err(Error::ProposerServiceError)?;
 
             let aggchain_proof_builder_request =
                 aggchain_proof_builder::AggchainProofBuilderRequest {
-                    agg_span_proof: agg_span_proof_response.agg_span_proof,
-                    start_block: agg_span_proof_response.start_block,
-                    end_block: agg_span_proof_response.end_block,
+                    aggregation_proof: aggregation_proof_response.aggregation_proof,
+                    start_block: aggregation_proof_response.start_block,
+                    end_block: aggregation_proof_response.end_block,
                     l1_info_tree_merkle_proof: req.l1_info_tree_merkle_proof,
                     l1_info_tree_leaf: req.l1_info_tree_leaf,
                     l1_info_tree_root_hash: req.l1_info_tree_root_hash,
@@ -179,14 +179,14 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
 
             let custom_chain_data = compute_custom_chain_data(
                 aggchain_proof_response.output_root,
-                agg_span_proof_response.end_block,
+                aggregation_proof_response.end_block,
             )
             .map_err(Error::UnableToSerializeCustomChainData)?;
 
             Ok(AggchainProofServiceResponse {
                 proof: aggchain_proof_response.proof,
-                start_block: agg_span_proof_response.start_block,
-                end_block: agg_span_proof_response.end_block,
+                start_block: aggregation_proof_response.start_block,
+                end_block: aggregation_proof_response.end_block,
                 // TODO: Replace with actual value when available
                 local_exit_root_hash: Default::default(),
                 custom_chain_data,

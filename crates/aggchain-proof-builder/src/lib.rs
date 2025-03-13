@@ -42,7 +42,7 @@ pub struct AggchainProverInputs {
 pub struct AggchainProofBuilderRequest {
     /// Aggregated full execution proof for the number of aggregated block
     /// spans.
-    pub agg_span_proof: SP1ProofWithPublicValues,
+    pub aggregation_proof: SP1ProofWithPublicValues,
     /// First block in the aggregated span.
     pub start_block: u64,
     /// Last block in the aggregated span (inclusive).
