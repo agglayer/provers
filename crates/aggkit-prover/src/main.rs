@@ -1,46 +1,43 @@
-use std::sync::Arc;
-
-use aggkit_prover::rpc::GrpcService;
-use aggkit_prover_types::v1::aggchain_proof_service_server::AggchainProofServiceServer;
-use prover_engine::ProverEngine;
-use tokio_util::sync::CancellationToken;
-use tracing::info;
+use aggkit_prover::version;
+use anyhow::Context as _;
+use clap::Parser as _;
+use sp1_sdk::HashableKey as _;
+use sp1_zkvm::lib::utils::words_to_bytes_le;
 
 fn main() -> anyhow::Result<()> {
-    let config = Arc::new(aggkit_prover_config::ProverConfig::default());
+    dotenvy::dotenv().ok();
 
-    // Initialize the logger
-    prover_logger::tracing(&config.log);
+    let cli = aggkit_prover::cli::Cli::parse();
 
-    let global_cancellation_token = CancellationToken::new();
+    match cli.cmd {
+        aggkit_prover::cli::Commands::Run { config_path } => {
+            aggkit_prover::runtime(config_path, &version())?
+        }
+        aggkit_prover::cli::Commands::Config => {
+            let config = toml::to_string_pretty(&aggkit_prover_config::ProverConfig::default())
+                .context("Failed to serialize ProverConfig to TOML")?;
 
-    info!("Starting AggKit Prover on {}", config.grpc_endpoint);
+            println!("{config}");
+        }
+        aggkit_prover::cli::Commands::ValidateConfig { config_path } => {
+            match aggkit_prover_config::ProverConfig::try_load(config_path.as_path()) {
+                Ok(config) => {
+                    let config = toml::to_string_pretty(&config)
+                        .context("Failed to serialize ProverConfig to TOML")?;
 
-    let prover_runtime = tokio::runtime::Builder::new_multi_thread()
-        .thread_name("aggkit-prover-runtime")
-        .enable_all()
-        .build()?;
+                    println!("{config}");
+                }
+                Err(error) => eprintln!("{error}"),
+            }
+        }
+        aggkit_prover::cli::Commands::Vkey => {
+            let vkey =
+                prover_executor::Executor::get_vkey(aggchain_proof_service::AGGCHAIN_PROOF_ELF);
+            let vkey_hex = hex::encode(words_to_bytes_le(&vkey.hash_u32()));
 
-    let metrics_runtime = tokio::runtime::Builder::new_multi_thread()
-        .thread_name("metrics-runtime")
-        .worker_threads(2)
-        .enable_all()
-        .build()?;
-
-    let aggchain_proof_service = prover_runtime.block_on(async {
-        let grpc_service = GrpcService::new(&config.aggchain_proof_service).await?;
-        Ok::<AggchainProofServiceServer<GrpcService>, aggchain_proof_service::Error>(
-            AggchainProofServiceServer::new(grpc_service),
-        )
-    })?;
-
-    _ = ProverEngine::builder()
-        .add_rpc_service(aggchain_proof_service)
-        .add_reflection_service(aggkit_prover_types::FILE_DESCRIPTOR_SET)
-        .set_rpc_runtime(prover_runtime)
-        .set_metrics_runtime(metrics_runtime)
-        .set_cancellation_token(global_cancellation_token)
-        .start();
+            println!("aggchain_proof_vkey: 0x{vkey_hex}");
+        }
+    }
 
     Ok(())
 }

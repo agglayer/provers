@@ -39,11 +39,11 @@ pub struct ProverConfig {
     #[serde(default)]
     pub aggchain_proof_service: AggchainProofServiceConfig,
 
-    /// The primary prover to be used for generation of the pessimistic proof
+    /// The primary prover to be used for generation proofs
     #[serde(default)]
     pub primary_prover: ProverType,
 
-    /// The fallback prover to be used for generation of the pessimistic proof
+    /// The fallback prover to be used for generation proofs
     #[serde(default)]
     pub fallback_prover: Option<ProverType>,
 }

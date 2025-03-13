@@ -10,6 +10,9 @@ pub enum Error {
     #[error("Proposer client error: {0}")]
     Client(#[from] ProposerClientError),
 
+    #[error("Unable to create network prover")]
+    UnableToCreateNetworkProver(#[source] anyhow::Error),
+
     #[error("Unsupported aggregation proof mode {0:?}")]
     UnsupportedAggregationProofMode(sp1_sdk::SP1ProofMode),
 

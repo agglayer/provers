@@ -51,9 +51,10 @@ pub fn main(cfg: PathBuf, version: &str, program: &'static [u8]) -> anyhow::Resu
 
     Ok(())
 }
+
 pub fn get_vkey(program: &'static [u8]) -> String {
     let vkey = prover_executor::Executor::get_vkey(program);
-    vkey.bytes32().to_string()
+    vkey.bytes32()
 }
 
 #[cfg(feature = "testutils")]

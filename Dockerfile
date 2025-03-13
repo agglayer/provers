@@ -13,7 +13,7 @@ WORKDIR /app
 FROM chef AS planner
 
 COPY --link crates crates
-# Needed for cargo-chef to build, but not use during the compilation due to `--bin agglayer`
+COPY --link proto proto
 COPY --link Cargo.toml Cargo.toml
 COPY --link Cargo.lock Cargo.lock
 
@@ -43,6 +43,7 @@ COPY --from=planner /app/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
 
 COPY --link crates crates
+COPY --link proto proto
 COPY --link Cargo.toml Cargo.toml
 COPY --link Cargo.lock Cargo.lock
 
