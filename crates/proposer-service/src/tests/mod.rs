@@ -142,7 +142,7 @@ async fn test_vkey_hash_mismatch() {
     };
 
     match proposer_service.call(request).await.unwrap_err() {
-        Error::AggProofVKeyMismatch { got, expected } => {
+        Error::AggregationVKeyMismatch { got, expected } => {
             assert_ne!(got, expected);
             assert_eq!(vk_hash, expected);
         }

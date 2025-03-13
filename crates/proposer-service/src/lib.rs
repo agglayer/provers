@@ -64,11 +64,11 @@ fn check_aggregation_vkey(
     let sp1_proof = &sp1_proof.proof;
     let proof = &**sp1_proof
         .try_as_compressed_ref()
-        .ok_or_else(|| Error::UnsupportedAggProofMode(sp1_proof.into()))?;
+        .ok_or_else(|| Error::UnsupportedAggregationProofMode(sp1_proof.into()))?;
 
     let vkey_hash = VKeyHash::from_vkey(&proof.vk);
     if vkey_hash != expected_vkey_hash {
-        return Err(Error::AggProofVKeyMismatch {
+        return Err(Error::AggregationVKeyMismatch {
             got: vkey_hash,
             expected: expected_vkey_hash,
         });
