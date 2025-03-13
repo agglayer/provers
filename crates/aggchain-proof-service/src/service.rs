@@ -152,7 +152,7 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
 
             let aggchain_proof_builder_request =
                 aggchain_proof_builder::AggchainProofBuilderRequest {
-                    aggregation_proof: aggregation_proof_response.agg_span_proof,
+                    aggregation_proof: aggregation_proof_response.aggregation_proof,
                     end_block: aggregation_proof_response.end_block,
                     aggchain_proof_request: req.aggchain_proof_request,
                 };

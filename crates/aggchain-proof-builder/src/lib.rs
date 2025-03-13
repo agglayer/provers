@@ -40,7 +40,7 @@ pub struct AggchainProverInputs {
 pub struct AggchainProofBuilderRequest {
     /// Aggregated full execution proof for the number of aggregated block
     /// spans.
-    pub agg_span_proof: SP1ProofWithPublicValues,
+    pub aggregation_proof: SP1ProofWithPublicValues,
     /// Last block in the agg_span_proof provided by the proposer.
     /// Could be different from the max_end_block requested by the agg-sender.
     pub end_block: u64,
