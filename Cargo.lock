@@ -181,7 +181,6 @@ dependencies = [
  "aggchain-proof-types",
  "alloy-primitives",
  "bincode",
- "hex",
  "prost",
  "serde",
  "sp1-sdk",
