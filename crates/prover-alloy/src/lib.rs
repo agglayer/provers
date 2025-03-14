@@ -53,15 +53,9 @@ pub fn build_alloy_fill_provider(
 #[async_trait]
 #[cfg_attr(feature = "testutils", mockall::automock)]
 pub trait Provider {
-    async fn get_block_hash(
-        &self,
-        block_number: u64,
-    ) -> Result<alloy::primitives::B256, anyhow::Error>;
+    async fn get_block_hash(&self, block_number: u64) -> anyhow::Result<alloy::primitives::B256>;
 
-    async fn get_block_number(
-        &self,
-        block_hash: alloy::primitives::B256,
-    ) -> Result<u64, anyhow::Error>;
+    async fn get_block_number(&self, block_hash: alloy::primitives::B256) -> anyhow::Result<u64>;
 }
 
 /// Wrapper around alloy `Provider` client.
