@@ -1,4 +1,4 @@
-use hex::FromHexError;
+use aggchain_proof_types::digest::DigestError;
 
 /// Represents the errors that could happen with the grpc request
 /// to generate the aggchain proof
@@ -32,7 +32,7 @@ pub enum AggchainProofRequestError {
     InvalidHexConversion {
         field_path: String,
         #[source]
-        source: FromHexError,
+        source: DigestError,
     },
 }
 

@@ -6,6 +6,13 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 #[derive(Default, Hash, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub struct Digest(pub [u8; 32]);
 
+#[derive(thiserror::Error, Debug)]
+pub enum DigestError {
+    /// Invalid conversion from vector
+    #[error("Could not convert to Digest, invalid vector length: {0}")]
+    FromVecError(usize),
+}
+
 impl Deref for Digest {
     type Target = [u8; 32];
     fn deref(&self) -> &Self::Target {
@@ -114,13 +121,16 @@ impl Serialize for Digest {
 }
 
 impl TryFrom<Vec<u8>> for Digest {
-    type Error = hex::FromHexError;
+    type Error = DigestError;
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         let mut bytes = [0u8; 32];
         let len = value.len();
-        bytes[..len].copy_from_slice(&value);
-
-        Ok(Digest(bytes))
+        if len != 32 {
+            Err(DigestError::FromVecError(len))
+        } else {
+            bytes[..len].copy_from_slice(&value);
+            Ok(Digest(bytes))
+        }
     }
 }
 
