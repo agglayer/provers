@@ -9,7 +9,7 @@ use sp1_sdk::{
 use tower::timeout::TimeoutLayer;
 use tower::{service_fn, Service, ServiceBuilder, ServiceExt};
 
-use crate::{Executor, LocalExecutor, Request, Response};
+use crate::{Executor, LocalExecutor, ProofType, Request, Response};
 const ELF: &[u8] = include_bytes!("../../prover-dummy-program/elf/riscv32im-succinct-zkvm-elf");
 
 fn mock_proof(stdin: SP1Stdin) -> SP1ProofWithPublicValues {
@@ -48,6 +48,7 @@ async fn executor_normal_behavior() {
     let result = executor
         .call(Request {
             stdin: SP1Stdin::new(),
+            proof_type: ProofType::Plonk,
         })
         .await;
 
@@ -71,6 +72,7 @@ async fn executor_normal_behavior_only_network() {
     let result = executor
         .call(Request {
             stdin: SP1Stdin::new(),
+            proof_type: ProofType::Plonk,
         })
         .await;
 
@@ -100,6 +102,7 @@ async fn executor_fallback_behavior_cpu() {
     let result = executor
         .call(Request {
             stdin: SP1Stdin::new(),
+            proof_type: ProofType::Plonk,
         })
         .await;
 
@@ -136,6 +139,7 @@ async fn executor_fallback_because_of_timeout_cpu() {
     let result = executor
         .call(Request {
             stdin: SP1Stdin::new(),
+            proof_type: ProofType::Plonk,
         })
         .await;
 
@@ -175,6 +179,7 @@ async fn executor_fails_because_of_timeout_cpu() {
     let result = executor
         .call(Request {
             stdin: SP1Stdin::new(),
+            proof_type: ProofType::Plonk,
         })
         .await;
 
@@ -219,6 +224,7 @@ async fn executor_fails_because_of_concurrency_cpu() {
             .unwrap()
             .call(Request {
                 stdin: SP1Stdin::new(),
+                proof_type: ProofType::Plonk,
             })
             .await
     });
@@ -229,6 +235,7 @@ async fn executor_fails_because_of_concurrency_cpu() {
         .unwrap()
         .call(Request {
             stdin: SP1Stdin::new(),
+            proof_type: ProofType::Plonk,
         })
         .await;
     assert!(result.is_err());
@@ -254,6 +261,7 @@ async fn executor_normal_behavior_mock_prover() {
     let result = executor
         .call(Request {
             stdin: SP1Stdin::new(),
+            proof_type: ProofType::Plonk,
         })
         .await;
 

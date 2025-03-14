@@ -8,7 +8,7 @@ use agglayer_telemetry::prover::{
     PROVING_REQUEST_FAILED, PROVING_REQUEST_RECV, PROVING_REQUEST_SUCCEEDED,
 };
 use bincode::Options;
-use prover_executor::{Request, Response};
+use prover_executor::{ProofType, Request, Response};
 use sp1_sdk::SP1Stdin;
 use tonic::Status;
 use tower::{buffer::Buffer, util::BoxService, Service, ServiceExt};
@@ -53,7 +53,13 @@ impl PessimisticProofService for ProverRPC {
             .await
             .map_err(|_error| tonic::Status::internal("Unable to get proof executor"))?;
 
-        match executor.call(Request { stdin }).await {
+        match executor
+            .call(Request {
+                stdin,
+                proof_type: ProofType::Plonk,
+            })
+            .await
+        {
             Ok(result) => {
                 let response = agglayer_prover_types::v1::GenerateProofResponse {
                     proof: agglayer_prover_types::default_bincode_options()

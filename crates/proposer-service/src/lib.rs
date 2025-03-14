@@ -6,12 +6,21 @@ pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use proposer_client::network_prover::new_network_prover;
 use proposer_client::rpc::{AggSpanProofProposerRequest, ProposerRpcClient};
+pub use proposer_client::FEPProposerRequest as ProposerRequest;
 use proposer_client::ProofId;
-pub use proposer_client::{ProposerRequest, ProposerResponse};
 use prover_alloy::Provider;
-use sp1_sdk::{NetworkProver, SP1ProofWithPublicValues};
+use sp1_sdk::NetworkProver;
 
 use crate::config::ProposerServiceConfig;
+
+type AggregationProof = sp1_core_executor::SP1ReduceProof<sp1_prover::InnerSC>;
+
+#[derive(Debug)]
+pub struct ProposerResponse {
+    pub aggregation_proof: AggregationProof,
+    pub start_block: u64,
+    pub end_block: u64,
+}
 
 pub mod config;
 pub mod error;
@@ -59,14 +68,9 @@ impl<L1Rpc> ProposerService<L1Rpc, proposer_client::Client<ProposerRpcClient, Ne
 }
 
 fn check_aggregation_vkey(
-    sp1_proof: &SP1ProofWithPublicValues,
+    proof: &AggregationProof,
     expected_vkey_hash: VKeyHash,
 ) -> Result<(), Error> {
-    let sp1_proof = &sp1_proof.proof;
-    let proof = &**sp1_proof
-        .try_as_compressed_ref()
-        .ok_or_else(|| Error::UnsupportedAggregationProofMode(sp1_proof.into()))?;
-
     let vkey_hash = VKeyHash::from_vkey(&proof.vk);
     if vkey_hash != expected_vkey_hash {
         return Err(Error::AggregationVKeyMismatch {
@@ -125,10 +129,17 @@ where
 
             // Wait for the prover to finish aggregating span proofs
             let proofs = client.wait_for_proof(proof_id).await?;
-            check_aggregation_vkey(&proofs, expected_vkey_hash)?;
+            let proof_mode: sp1_sdk::SP1ProofMode = (&proofs.proof).into();
+            let aggregation_proof: AggregationProof = proofs
+                .proof
+                .try_as_compressed()
+                .map(|proof| *proof)
+                .ok_or_else(|| Error::UnsupportedAggregationProofMode(proof_mode))?;
+
+            check_aggregation_vkey(&aggregation_proof, expected_vkey_hash)?;
 
             Ok(ProposerResponse {
-                aggregation_proof: proofs,
+                aggregation_proof,
                 start_block: response.start_block,
                 end_block: response.end_block,
             })
