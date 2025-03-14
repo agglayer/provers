@@ -150,8 +150,15 @@ impl Executor {
 }
 
 #[derive(Debug, Clone)]
+pub enum ProofType {
+    Stark,
+    Plonk,
+}
+
+#[derive(Debug, Clone)]
 pub struct Request {
     pub stdin: SP1Stdin,
+    pub proof_type: ProofType,
 }
 
 #[derive(Debug, Clone)]
@@ -221,9 +228,14 @@ impl Service<Request> for LocalExecutor {
         Box::pin(
             spawn_blocking(move || {
                 debug!("Starting the proving of the requested MultiBatchHeader");
-                let proof = prover
-                    .prove(&proving_key, &stdin)
-                    .plonk()
+                let proof_request = prover.prove(&proving_key, &stdin);
+
+                let proof_request = match req.proof_type {
+                    ProofType::Plonk => proof_request.plonk(),
+                    ProofType::Stark => proof_request.compressed(),
+                };
+
+                let proof = proof_request
                     .run()
                     .map_err(|error| Error::ProverFailed(error.to_string()))?;
 
@@ -272,9 +284,14 @@ impl Service<Request> for NetworkExecutor {
         debug!("Proving with network prover with timeout: {:?}", timeout);
         let fut = async move {
             debug!("Starting the proving of the requested MultiBatchHeader");
-            let proof = prover
-                .prove(&proving_key, &stdin)
-                .plonk()
+            let proof_request = prover.prove(&proving_key, &stdin);
+
+            let proof_request = match req.proof_type {
+                ProofType::Plonk => proof_request.plonk(),
+                ProofType::Stark => proof_request.compressed(),
+            };
+
+            let proof = proof_request
                 .timeout(timeout)
                 .strategy(FulfillmentStrategy::Reserved)
                 .run_async()

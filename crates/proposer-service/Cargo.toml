@@ -9,6 +9,8 @@ alloy-primitives.workspace = true
 anyhow.workspace = true
 futures.workspace = true
 serde.workspace = true
+sp1-core-executor.workspace = true
+sp1-prover.workspace = true
 sp1-sdk.workspace = true
 tower = { workspace = true, features = ["timeout"] }
 thiserror.workspace = true

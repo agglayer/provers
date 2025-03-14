@@ -7,6 +7,7 @@ license.workspace = true
 [dependencies]
 alloy-primitives.workspace = true
 serde.workspace = true
+sp1-core-executor.workspace = true
 
 aggchain-proof-core.workspace = true
 

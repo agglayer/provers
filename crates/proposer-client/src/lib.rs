@@ -85,14 +85,14 @@ where
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct ProposerRequest {
+pub struct FEPProposerRequest {
     pub start_block: u64,
     pub max_block: u64,
     pub l1_block_hash: B256,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProposerResponse {
+pub struct FEPProposerResponse {
     pub aggregation_proof: SP1ProofWithPublicValues,
     pub start_block: u64,
     pub end_block: u64,

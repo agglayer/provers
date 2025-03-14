@@ -11,4 +11,13 @@ pub enum Error {
 
     #[error("Prover service returned the error: {0}")]
     ProverServiceError(String),
+
+    #[error("Prover failed to prove the transaction")]
+    ProverFailedToExecute(#[source] anyhow::Error),
+
+    #[error("Generated proof is not Compressed one (STARK)")]
+    GeneratedProofIsNotCompressed,
+
+    #[error("Unable to serialize proof")]
+    UnableToSerializeProof(#[source] bincode::Error),
 }
