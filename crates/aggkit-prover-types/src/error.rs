@@ -28,8 +28,8 @@ pub enum AggchainProofRequestError {
     #[error("Missing inclusion proof")]
     MissingInclusionProof { field_path: String },
 
-    #[error("Invalid hex conversion")]
-    InvalidHexConversion {
+    #[error("Invalid digest")]
+    InvalidDigest {
         field_path: String,
         #[source]
         source: DigestError,
@@ -47,7 +47,7 @@ impl AggchainProofRequestError {
             | AggchainProofRequestError::MissingL1InfoTreeMerkleProof { field_path }
             | AggchainProofRequestError::InvalidClaimFromMainnetConversion { field_path }
             | AggchainProofRequestError::MissingInclusionProof { field_path }
-            | AggchainProofRequestError::InvalidHexConversion { field_path, .. } => field_path,
+            | AggchainProofRequestError::InvalidDigest { field_path, .. } => field_path,
         }
     }
 }

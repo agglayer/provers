@@ -47,13 +47,13 @@ impl TryFrom<v1::L1InfoTreeLeafInner> for aggchain_proof_types::L1InfoTreeLeafIn
     fn try_from(value: v1::L1InfoTreeLeafInner) -> Result<Self, Self::Error> {
         Ok(aggchain_proof_types::L1InfoTreeLeafInner {
             global_exit_root: value.global_exit_root.try_into().map_err(|error| {
-                Error::InvalidHexConversion {
+                Error::InvalidDigest {
                     field_path: "l1_info_tree_leaf.inner.global_exit_root".to_string(),
                     source: error,
                 }
             })?,
             block_hash: value.block_hash.try_into().map_err(|error| {
-                Error::InvalidHexConversion {
+                Error::InvalidDigest {
                     field_path: "l1_info_tree_leaf.inner.block_hash".to_string(),
                     source: error,
                 }
@@ -70,13 +70,13 @@ impl TryFrom<v1::L1InfoTreeLeaf> for aggchain_proof_types::L1InfoTreeLeaf {
         Ok(aggchain_proof_types::L1InfoTreeLeaf {
             l1_info_tree_index: value.l1_info_tree_index,
             rollup_exit_root: value.rer.try_into().map_err(|error| {
-                Error::InvalidHexConversion {
+                Error::InvalidDigest {
                     field_path: "l1_info_tree_leaf.rer".to_string(),
                     source: error,
                 }
             })?,
             mainnet_exit_root: value.mer.try_into().map_err(|error| {
-                Error::InvalidHexConversion {
+                Error::InvalidDigest {
                     field_path: "l1_info_tree_leaf.mer".to_string(),
                     source: error,
                 }
@@ -100,7 +100,7 @@ impl TryFrom<v1::InclusionProof> for aggchain_proof_types::InclusionProof {
                 .siblings
                 .into_iter()
                 .map(|x| {
-                    x.try_into().map_err(|error| Error::InvalidHexConversion {
+                    x.try_into().map_err(|error| Error::InvalidDigest {
                         field_path: "ger_leaves.claim_from_mainnet.inclusion_proof".to_string(),
                         source: error,
                     })
@@ -140,7 +140,7 @@ impl TryFrom<v1::GenerateAggchainProofRequest> for aggchain_proof_types::Aggchai
             .l1_info_tree_merkle_proof
             .into_iter()
             .map(|x| {
-                x.try_into().map_err(|error| Error::InvalidHexConversion {
+                x.try_into().map_err(|error| Error::InvalidDigest {
                     field_path: "l1_info_tree_merkle_proof".to_string(),
                     source: error,
                 })
@@ -155,7 +155,7 @@ impl TryFrom<v1::GenerateAggchainProofRequest> for aggchain_proof_types::Aggchai
             start_block: value.start_block,
             max_end_block: value.max_end_block,
             l1_info_tree_root_hash: value.l1_info_tree_root_hash.try_into().map_err(|error| {
-                Error::InvalidHexConversion {
+                Error::InvalidDigest {
                     field_path: "l1_info_tree_root_hash".to_string(),
                     source: error,
                 }
