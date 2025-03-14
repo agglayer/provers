@@ -52,12 +52,13 @@ impl TryFrom<v1::L1InfoTreeLeafInner> for aggchain_proof_types::L1InfoTreeLeafIn
                     source: error,
                 }
             })?,
-            block_hash: value.block_hash.try_into().map_err(|error| {
-                Error::InvalidDigest {
+            block_hash: value
+                .block_hash
+                .try_into()
+                .map_err(|error| Error::InvalidDigest {
                     field_path: "l1_info_tree_leaf.inner.block_hash".to_string(),
                     source: error,
-                }
-            })?,
+                })?,
             timestamp: value.timestamp,
         })
     }
@@ -69,17 +70,13 @@ impl TryFrom<v1::L1InfoTreeLeaf> for aggchain_proof_types::L1InfoTreeLeaf {
     fn try_from(value: v1::L1InfoTreeLeaf) -> Result<Self, Self::Error> {
         Ok(aggchain_proof_types::L1InfoTreeLeaf {
             l1_info_tree_index: value.l1_info_tree_index,
-            rollup_exit_root: value.rer.try_into().map_err(|error| {
-                Error::InvalidDigest {
-                    field_path: "l1_info_tree_leaf.rer".to_string(),
-                    source: error,
-                }
+            rollup_exit_root: value.rer.try_into().map_err(|error| Error::InvalidDigest {
+                field_path: "l1_info_tree_leaf.rer".to_string(),
+                source: error,
             })?,
-            mainnet_exit_root: value.mer.try_into().map_err(|error| {
-                Error::InvalidDigest {
-                    field_path: "l1_info_tree_leaf.mer".to_string(),
-                    source: error,
-                }
+            mainnet_exit_root: value.mer.try_into().map_err(|error| Error::InvalidDigest {
+                field_path: "l1_info_tree_leaf.mer".to_string(),
+                source: error,
             })?,
             inner_leaf: value
                 .inner
