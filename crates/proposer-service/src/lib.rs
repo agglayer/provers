@@ -99,7 +99,7 @@ where
         ProposerRequest {
             start_block,
             max_block,
-            l1_block_number,
+            l1_block_hash,
         }: ProposerRequest,
     ) -> Self::Future {
         let client = self.client.clone();
@@ -107,16 +107,16 @@ where
         let expected_vkey_hash = self.aggregation_vkey_hash;
 
         async move {
-            let l1_block_hash = l1_rpc
-                .get_block_hash(l1_block_number)
+            let l1_block_number = l1_rpc
+                .get_block_number(l1_block_hash)
                 .await
                 .map_err(Error::AlloyProviderError)?;
 
             // Request the AggSpanProof generation from the proposer.
             let response = client
                 .request_agg_proof(AggSpanProofProposerRequest {
-                    start: start_block,
-                    end: max_block,
+                    start_block,
+                    max_block,
                     l1_block_number,
                     l1_block_hash,
                 })

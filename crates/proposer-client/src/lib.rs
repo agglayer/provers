@@ -88,7 +88,7 @@ where
 pub struct ProposerRequest {
     pub start_block: u64,
     pub max_block: u64,
-    pub l1_block_number: u64,
+    pub l1_block_hash: B256,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -25,6 +25,7 @@ tower = { workspace = true, features = ["timeout"] }
 tracing.workspace = true
 
 aggchain-proof-service.workspace = true
+aggchain-proof-types.workspace = true
 aggkit-prover-config.workspace = true
 aggkit-prover-types.workspace = true
 prover-engine.workspace = true

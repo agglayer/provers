@@ -1,7 +1,6 @@
 pub mod config;
 mod error;
 
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
@@ -10,8 +9,7 @@ use aggchain_proof_contracts::contracts::{
 };
 use aggchain_proof_contracts::AggchainContractsClient;
 use aggchain_proof_core::proof::AggchainProofWitness;
-use aggchain_proof_core::Digest;
-use aggkit_prover_types::v1::{InclusionProof, L1InfoTreeLeaf};
+use aggchain_proof_types::{AggchainProofInputs, Digest};
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use prover_executor::Executor;
@@ -43,22 +41,11 @@ pub struct AggchainProofBuilderRequest {
     /// Aggregated full execution proof for the number of aggregated block
     /// spans.
     pub aggregation_proof: SP1ProofWithPublicValues,
-    /// First block in the aggregated span.
-    pub start_block: u64,
-    /// Last block in the aggregated span (inclusive).
+    /// Last block in the agg_span_proof provided by the proposer.
+    /// Could be different from the max_end_block requested by the agg-sender.
     pub end_block: u64,
-    /// Root hash of the l1 info tree, containing all relevant GER.
-    /// Provided by agg-sender.
-    pub l1_info_tree_root_hash: Digest,
-    /// Particular leaf of the l1 info tree corresponding
-    /// to the max_block.
-    pub l1_info_tree_leaf: L1InfoTreeLeaf,
-    /// Inclusion proof of the l1 info tree leaf to the
-    /// l1 info tree root
-    pub l1_info_tree_merkle_proof: [Digest; 32],
-    /// Map of the Global Exit Roots with their inclusion proof.
-    /// Note: the GER (string) is a base64 encoded string of the GER digest.
-    pub ger_inclusion_proofs: HashMap<String, InclusionProof>,
+    /// Aggchain proof request information, public inputs, bridge data,...
+    pub aggchain_proof_inputs: AggchainProofInputs,
 }
 
 #[derive(Clone, Debug)]
@@ -126,7 +113,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             L2LocalExitRootFetcher + L2OutputAtBlockFetcher + L1RollupConfigHashFetcher,
     {
         let _prev_local_exit_root = contracts_client
-            .get_l2_local_exit_root(request.start_block - 1)
+            .get_l2_local_exit_root(request.aggchain_proof_inputs.start_block - 1)
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 
@@ -136,7 +123,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .map_err(Error::L2ChainDataRetrievalError)?;
 
         let _l2_pre_root_output_at_block = contracts_client
-            .get_l2_output_at_block(request.start_block - 1)
+            .get_l2_output_at_block(request.aggchain_proof_inputs.start_block - 1)
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 
