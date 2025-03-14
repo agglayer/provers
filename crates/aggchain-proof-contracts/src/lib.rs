@@ -8,7 +8,7 @@ mod tests;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use aggchain_proof_core::Digest;
+use aggchain_proof_types::Digest;
 use alloy::primitives::B256;
 use jsonrpsee::core::client::ClientT;
 use jsonrpsee::http_client::HttpClient;

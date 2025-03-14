@@ -14,9 +14,9 @@ const ELF: &[u8] = include_bytes!("../../../prover-dummy-program/elf/riscv32im-s
 async fn test_proposer_service() {
     let mut l1_rpc = MockProvider::new();
     l1_rpc
-        .expect_get_block_hash()
+        .expect_get_block_number()
         .once()
-        .returning(|_| Box::pin(async { Ok(B256::ZERO) }));
+        .returning(|_| Box::pin(async { Ok(10) }));
 
     let mut client = MockProposerClient::new();
     client
@@ -26,8 +26,8 @@ async fn test_proposer_service() {
             Box::pin(async move {
                 Ok(proposer_client::rpc::AggSpanProofProposerResponse {
                     proof_id: FixedBytes::new([0; 32]),
-                    start_block: request.start,
-                    end_block: request.end,
+                    start_block: request.start_block,
+                    end_block: request.max_block,
                 })
             })
         });
@@ -72,7 +72,7 @@ async fn test_proposer_service() {
     let request = ProposerRequest {
         start_block: 0,
         max_block: 10,
-        l1_block_number: 0,
+        l1_block_hash: Default::default(),
     };
 
     let response = proposer_service.call(request).await.unwrap();
@@ -83,9 +83,9 @@ async fn test_proposer_service() {
 async fn test_vkey_hash_mismatch() {
     let mut l1_rpc = MockProvider::new();
     l1_rpc
-        .expect_get_block_hash()
+        .expect_get_block_number()
         .once()
-        .returning(|_| Box::pin(async { Ok(B256::ZERO) }));
+        .returning(|_| Box::pin(async { Ok(10) }));
 
     let mut client = MockProposerClient::new();
     client
@@ -95,8 +95,8 @@ async fn test_vkey_hash_mismatch() {
             Box::pin(async move {
                 Ok(proposer_client::rpc::AggSpanProofProposerResponse {
                     proof_id: FixedBytes::new([0; 32]),
-                    start_block: request.start,
-                    end_block: request.end,
+                    start_block: request.start_block,
+                    end_block: request.max_block,
                 })
             })
         });
@@ -138,7 +138,7 @@ async fn test_vkey_hash_mismatch() {
     let request = ProposerRequest {
         start_block: 0,
         max_block: 10,
-        l1_block_number: 0,
+        l1_block_hash: Default::default(),
     };
 
     match proposer_service.call(request).await.unwrap_err() {
@@ -154,9 +154,9 @@ async fn test_vkey_hash_mismatch() {
 async fn unable_to_fetch_block_hash() {
     let mut l1_rpc = MockProvider::new();
     l1_rpc
-        .expect_get_block_hash()
+        .expect_get_block_number()
         .once()
-        .returning(|_| Box::pin(async { anyhow::bail!("Failed to fetch block hash") }));
+        .returning(|_| Box::pin(async { anyhow::bail!("Failed to fetch block number") }));
 
     let client = MockProposerClient::new();
 
@@ -171,7 +171,7 @@ async fn unable_to_fetch_block_hash() {
     let request = ProposerRequest {
         start_block: 0,
         max_block: 10,
-        l1_block_number: 0,
+        l1_block_hash: Default::default(),
     };
 
     let response = proposer_service.call(request).await;
