@@ -94,7 +94,7 @@ rstest = "0.22.0"
 test-log = "0.2.16"
 
 # SP1 dependencies
-sindri = { git = "https://github.com/Sindri-Labs/sindri-rust", tag="v0.2.0", features = ["sp1-v4"] }
+sindri = { version = "0.2.2", features = ["sp1-v4"] }
 sp1-core-machine = "=4.1.2"
 sp1-sdk = "=4.1.2"
 sp1-prover = "=4.1.2"

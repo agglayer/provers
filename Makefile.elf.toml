@@ -41,11 +41,9 @@ description = "Install Sindri CLI"
 command = "cargo"
 args = [
     "install",
-    "--git",
-    "https://github.com/Sindri-Labs/sindri-rust",
-    "--tag",
-    "v0.2.0",
-    "sindri-cli"
+    "sindri-cli@0.2.2"
+    "--force",
+    "--locked"
 ]
 
 [tasks.ap-elf-sindri-upload]
