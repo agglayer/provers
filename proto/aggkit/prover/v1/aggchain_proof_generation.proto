@@ -26,9 +26,9 @@ message GenerateAggchainProofRequest {
   // L1 Info tree proof. ([32]hash)
   agglayer.protocol.types.v1.MerkleProof l1_info_tree_merkle_proof = 5;
   // Map of the GER with their ger leaf. Note: the GER (string) is a base64 encoded string of the GER digest.
-  map<string, agglayer.protocol.types.v1.ClaimFromMainnet> ger_leaves = 6;
+  map<string, InsertedGERWithBlockNum> inserted_ger_leaves = 6;
   // bridge exits
-  repeated agglayer.protocol.types.v1.ImportedBridgeExit imported_bridge_exits = 7;
+  repeated ImportedBridgeExitWithBlockNum imported_bridge_exits = 7;
 }
 
 // The aggchain proof response message.
@@ -43,4 +43,25 @@ message GenerateAggchainProofResponse {
   agglayer.protocol.types.v1.FixedBytes32 local_exit_root_hash = 4;
   // Custom chain data.
   bytes custom_chain_data = 5;
+}
+
+message ImportedBridgeExitWithBlockNum {
+  // The block number of the imported bridge exit.
+  uint64 block_number = 1;
+  // The imported bridge exit.
+  agglayer.protocol.types.v1.ImportedBridgeExit imported_bridge_exit = 2;
+}
+
+message InsertedGERWithBlockNum {
+  // The block number of the ger.
+  uint64 block_number = 1;
+  // The insert ger leaf.
+  InsertedGer inserted_ger_leaf = 2;
+}
+
+message InsertedGer {
+  // Proof from GER to L1Root
+  agglayer.protocol.types.v1.MerkleProof proof_ger_l1root = 1;
+  // L1InfoTree leaf
+  agglayer.protocol.types.v1.L1InfoTreeLeafWithContext l1_leaf = 2;
 }

@@ -22,7 +22,7 @@ impl serde::Serialize for GenerateAggchainProofRequest {
         if self.l1_info_tree_merkle_proof.is_some() {
             len += 1;
         }
-        if !self.ger_leaves.is_empty() {
+        if !self.inserted_ger_leaves.is_empty() {
             len += 1;
         }
         if !self.imported_bridge_exits.is_empty() {
@@ -48,8 +48,8 @@ impl serde::Serialize for GenerateAggchainProofRequest {
         if let Some(v) = self.l1_info_tree_merkle_proof.as_ref() {
             struct_ser.serialize_field("l1InfoTreeMerkleProof", v)?;
         }
-        if !self.ger_leaves.is_empty() {
-            struct_ser.serialize_field("gerLeaves", &self.ger_leaves)?;
+        if !self.inserted_ger_leaves.is_empty() {
+            struct_ser.serialize_field("insertedGerLeaves", &self.inserted_ger_leaves)?;
         }
         if !self.imported_bridge_exits.is_empty() {
             struct_ser.serialize_field("importedBridgeExits", &self.imported_bridge_exits)?;
@@ -74,8 +74,8 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
             "l1InfoTreeLeaf",
             "l1_info_tree_merkle_proof",
             "l1InfoTreeMerkleProof",
-            "ger_leaves",
-            "gerLeaves",
+            "inserted_ger_leaves",
+            "insertedGerLeaves",
             "imported_bridge_exits",
             "importedBridgeExits",
         ];
@@ -87,7 +87,7 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
             L1InfoTreeRootHash,
             L1InfoTreeLeaf,
             L1InfoTreeMerkleProof,
-            GerLeaves,
+            InsertedGerLeaves,
             ImportedBridgeExits,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
@@ -115,7 +115,7 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
                             "l1InfoTreeRootHash" | "l1_info_tree_root_hash" => Ok(GeneratedField::L1InfoTreeRootHash),
                             "l1InfoTreeLeaf" | "l1_info_tree_leaf" => Ok(GeneratedField::L1InfoTreeLeaf),
                             "l1InfoTreeMerkleProof" | "l1_info_tree_merkle_proof" => Ok(GeneratedField::L1InfoTreeMerkleProof),
-                            "gerLeaves" | "ger_leaves" => Ok(GeneratedField::GerLeaves),
+                            "insertedGerLeaves" | "inserted_ger_leaves" => Ok(GeneratedField::InsertedGerLeaves),
                             "importedBridgeExits" | "imported_bridge_exits" => Ok(GeneratedField::ImportedBridgeExits),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
@@ -141,7 +141,7 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
                 let mut l1_info_tree_root_hash__ = None;
                 let mut l1_info_tree_leaf__ = None;
                 let mut l1_info_tree_merkle_proof__ = None;
-                let mut ger_leaves__ = None;
+                let mut inserted_ger_leaves__ = None;
                 let mut imported_bridge_exits__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
@@ -179,11 +179,11 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
                             }
                             l1_info_tree_merkle_proof__ = map_.next_value()?;
                         }
-                        GeneratedField::GerLeaves => {
-                            if ger_leaves__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("gerLeaves"));
+                        GeneratedField::InsertedGerLeaves => {
+                            if inserted_ger_leaves__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("insertedGerLeaves"));
                             }
-                            ger_leaves__ = Some(
+                            inserted_ger_leaves__ = Some(
                                 map_.next_value::<std::collections::HashMap<_, _>>()?
                             );
                         }
@@ -201,7 +201,7 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
                     l1_info_tree_root_hash: l1_info_tree_root_hash__,
                     l1_info_tree_leaf: l1_info_tree_leaf__,
                     l1_info_tree_merkle_proof: l1_info_tree_merkle_proof__,
-                    ger_leaves: ger_leaves__.unwrap_or_default(),
+                    inserted_ger_leaves: inserted_ger_leaves__.unwrap_or_default(),
                     imported_bridge_exits: imported_bridge_exits__.unwrap_or_default(),
                 })
             }
@@ -387,5 +387,343 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofResponse {
             }
         }
         deserializer.deserialize_struct("aggkit.prover.v1.GenerateAggchainProofResponse", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for ImportedBridgeExitWithBlockNum {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.block_number != 0 {
+            len += 1;
+        }
+        if self.imported_bridge_exit.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("aggkit.prover.v1.ImportedBridgeExitWithBlockNum", len)?;
+        if self.block_number != 0 {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("blockNumber", ToString::to_string(&self.block_number).as_str())?;
+        }
+        if let Some(v) = self.imported_bridge_exit.as_ref() {
+            struct_ser.serialize_field("importedBridgeExit", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for ImportedBridgeExitWithBlockNum {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "block_number",
+            "blockNumber",
+            "imported_bridge_exit",
+            "importedBridgeExit",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            BlockNumber,
+            ImportedBridgeExit,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "blockNumber" | "block_number" => Ok(GeneratedField::BlockNumber),
+                            "importedBridgeExit" | "imported_bridge_exit" => Ok(GeneratedField::ImportedBridgeExit),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = ImportedBridgeExitWithBlockNum;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct aggkit.prover.v1.ImportedBridgeExitWithBlockNum")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ImportedBridgeExitWithBlockNum, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut block_number__ = None;
+                let mut imported_bridge_exit__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::BlockNumber => {
+                            if block_number__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("blockNumber"));
+                            }
+                            block_number__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::ImportedBridgeExit => {
+                            if imported_bridge_exit__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("importedBridgeExit"));
+                            }
+                            imported_bridge_exit__ = map_.next_value()?;
+                        }
+                    }
+                }
+                Ok(ImportedBridgeExitWithBlockNum {
+                    block_number: block_number__.unwrap_or_default(),
+                    imported_bridge_exit: imported_bridge_exit__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("aggkit.prover.v1.ImportedBridgeExitWithBlockNum", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for InsertedGerWithBlockNum {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.block_number != 0 {
+            len += 1;
+        }
+        if self.inserted_ger_leaf.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("aggkit.prover.v1.InsertedGERWithBlockNum", len)?;
+        if self.block_number != 0 {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("blockNumber", ToString::to_string(&self.block_number).as_str())?;
+        }
+        if let Some(v) = self.inserted_ger_leaf.as_ref() {
+            struct_ser.serialize_field("insertedGerLeaf", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for InsertedGerWithBlockNum {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "block_number",
+            "blockNumber",
+            "inserted_ger_leaf",
+            "insertedGerLeaf",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            BlockNumber,
+            InsertedGerLeaf,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "blockNumber" | "block_number" => Ok(GeneratedField::BlockNumber),
+                            "insertedGerLeaf" | "inserted_ger_leaf" => Ok(GeneratedField::InsertedGerLeaf),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = InsertedGerWithBlockNum;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct aggkit.prover.v1.InsertedGERWithBlockNum")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<InsertedGerWithBlockNum, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut block_number__ = None;
+                let mut inserted_ger_leaf__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::BlockNumber => {
+                            if block_number__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("blockNumber"));
+                            }
+                            block_number__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::InsertedGerLeaf => {
+                            if inserted_ger_leaf__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("insertedGerLeaf"));
+                            }
+                            inserted_ger_leaf__ = map_.next_value()?;
+                        }
+                    }
+                }
+                Ok(InsertedGerWithBlockNum {
+                    block_number: block_number__.unwrap_or_default(),
+                    inserted_ger_leaf: inserted_ger_leaf__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("aggkit.prover.v1.InsertedGERWithBlockNum", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for InsertedGer {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if self.proof_ger_l1root.is_some() {
+            len += 1;
+        }
+        if self.l1_leaf.is_some() {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("aggkit.prover.v1.InsertedGer", len)?;
+        if let Some(v) = self.proof_ger_l1root.as_ref() {
+            struct_ser.serialize_field("proofGerL1root", v)?;
+        }
+        if let Some(v) = self.l1_leaf.as_ref() {
+            struct_ser.serialize_field("l1Leaf", v)?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for InsertedGer {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "proof_ger_l1root",
+            "proofGerL1root",
+            "l1_leaf",
+            "l1Leaf",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            ProofGerL1root,
+            L1Leaf,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "proofGerL1root" | "proof_ger_l1root" => Ok(GeneratedField::ProofGerL1root),
+                            "l1Leaf" | "l1_leaf" => Ok(GeneratedField::L1Leaf),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = InsertedGer;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct aggkit.prover.v1.InsertedGer")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<InsertedGer, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut proof_ger_l1root__ = None;
+                let mut l1_leaf__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::ProofGerL1root => {
+                            if proof_ger_l1root__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("proofGerL1root"));
+                            }
+                            proof_ger_l1root__ = map_.next_value()?;
+                        }
+                        GeneratedField::L1Leaf => {
+                            if l1_leaf__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("l1Leaf"));
+                            }
+                            l1_leaf__ = map_.next_value()?;
+                        }
+                    }
+                }
+                Ok(InsertedGer {
+                    proof_ger_l1root: proof_ger_l1root__,
+                    l1_leaf: l1_leaf__,
+                })
+            }
+        }
+        deserializer.deserialize_struct("aggkit.prover.v1.InsertedGer", FIELDS, GeneratedVisitor)
     }
 }
