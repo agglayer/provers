@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::keccak::{digest::Digest, keccak256_combine};
+use crate::keccak::keccak256_combine;
+use crate::Digest;
 
 /// A hasher used in constructing a [`super::LocalExitTree`].
 pub trait Hasher {

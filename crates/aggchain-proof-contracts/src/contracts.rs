@@ -1,4 +1,4 @@
-use aggchain_proof_types::Digest;
+use agglayer_interop::types::Digest;
 use alloy::network::Ethereum;
 use alloy::sol;
 

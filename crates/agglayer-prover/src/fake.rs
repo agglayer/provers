@@ -107,7 +107,9 @@ impl PessimisticProofService for FakeProver {
                     .unwrap();
                 debug!("Proof generated successfully, size: {}B", proof.len());
                 Ok(tonic::Response::new(
-                    agglayer_prover_types::v1::GenerateProofResponse { proof },
+                    agglayer_prover_types::v1::GenerateProofResponse {
+                        proof: proof.into(),
+                    },
                 ))
             }
             Err(error) => {

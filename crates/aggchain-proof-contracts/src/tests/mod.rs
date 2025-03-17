@@ -1,6 +1,7 @@
 mod aggchain_contracts_rpc_client {
     use std::str::FromStr;
 
+    use agglayer_interop::types::Digest;
     use alloy::primitives::{address, B256};
     use mockito::ServerGuard;
     use prover_alloy::AlloyFillProvider;
@@ -235,7 +236,7 @@ mod aggchain_contracts_rpc_client {
         let local_exit_root = result?;
         assert_eq!(
             local_exit_root,
-            aggchain_proof_types::Digest(
+            Digest(
                 B256::from_str(
                     "0x27ae5ba08d7291c96c8cbddcc148bf48a6d68c7974b94356f53754ef6171d757"
                 )?
@@ -335,7 +336,7 @@ mod aggchain_contracts_rpc_client {
         let rollup_config_hash = result?;
         assert_eq!(
             rollup_config_hash,
-            aggchain_proof_types::Digest(
+            Digest(
                 B256::from_str(
                     "0xaaaeffa0811291c96c8cbddcc148bf48a6d68c7974b94356f53754ef617122dd"
                 )?

@@ -2,6 +2,11 @@ syntax = "proto3";
 
 package aggkit.prover.v1;
 
+import "agglayer/interop/types/v1/bytes.proto";
+import "agglayer/interop/types/v1/claim.proto";
+import "agglayer/interop/types/v1/imported_bridge_exit.proto";
+import "agglayer/interop/types/v1/merkle_proof.proto";
+
 // Service for generating aggchain proof.
 service AggchainProofService {
   // Generates a aggchain proof for a given start_block.
@@ -15,15 +20,15 @@ message GenerateAggchainProofRequest {
   // The max end block for which the aggchain proof is requested.
   uint64 max_end_block = 2;
   // L1 Info tree root. (hash)
-  bytes l1_info_tree_root_hash = 3;
+  agglayer.interop.types.v1.FixedBytes32 l1_info_tree_root_hash = 3;
   // L1 Info tree leaf
-  L1InfoTreeLeaf l1_info_tree_leaf = 4;
+  agglayer.interop.types.v1.L1InfoTreeLeafWithContext l1_info_tree_leaf = 4;
   // L1 Info tree proof. ([32]hash)
-  repeated bytes l1_info_tree_merkle_proof = 5;
+  agglayer.interop.types.v1.MerkleProof l1_info_tree_merkle_proof = 5;
   // Map of the GER with their ger leaf. Note: the GER (string) is a base64 encoded string of the GER digest.
-  map<string, ClaimFromMainnet> ger_leaves = 6;
+  map<string, InsertedGERWithBlockNumber> ger_leaves = 6;
   // bridge exits
-  repeated ImportedBridgeExit imported_bridge_exits = 7;
+  repeated ImportedBridgeExitWithBlockNumber imported_bridge_exits = 7;
 }
 
 // The aggchain proof response message.
@@ -35,106 +40,30 @@ message GenerateAggchainProofResponse {
   // The end block of the aggchain proof.
   uint64 end_block = 3;
   // Local exit root hash.
-  bytes local_exit_root_hash = 4;
+  agglayer.interop.types.v1.FixedBytes32 local_exit_root_hash = 4;
   // Custom chain data.
   bytes custom_chain_data = 5;
 }
 
-// Represents a claim.
-message ClaimFromMainnet {
-  // Proof from GER to Root
-  InclusionProof inclusion_proof = 1;
+// Imported bridge exit with block number.
+message ImportedBridgeExitWithBlockNumber {
+  // The block number of the imported bridge exit.
+  uint64 block_number = 1;
+  // The imported bridge exit.
+  agglayer.interop.types.v1.ImportedBridgeExit imported_bridge_exit = 2;
+}
+
+// Inserted GER with block number.
+message InsertedGERWithBlockNumber {
+  // The block number of the ger.
+  uint64 block_number = 1;
+  // The insert GER leaf.
+  InsertedGER inserted_ger_leaf = 2;
+}
+
+message InsertedGER {
+  // Proof from GER to L1Root
+  agglayer.interop.types.v1.MerkleProof proof_ger_l1root = 1;
   // L1InfoTree leaf
-  L1InfoTreeLeaf l1_leaf = 2;
-}
-
-message GerLeaf {
-  // leaf data
-  L1InfoTreeLeaf l1_info_tree_leaf = 1;
-  // Inclusion proof
-  InclusionProof inclusion_proof = 2;
-}
-
-message InclusionProof {
-  // Siblings.
-  repeated bytes siblings = 1;
-}
-
-// Represents a leaf in the L1InfoTree.
-message L1InfoTreeLeaf {
-  // l1 info tree leaf index
-  uint32 l1_info_tree_index = 1;
-  // Rollup exit root
-  bytes rer = 2;
-  // Mainnet exit root
-  bytes mer = 3;
-  // Inner leaf
-  L1InfoTreeLeafInner inner = 4;
-}
-
-// Represents the inner part of a leaf in the L1InfoTree.
-message L1InfoTreeLeafInner {
-  // The global exit root.
-  bytes global_exit_root = 1;
-  // Block hash.
-  bytes block_hash = 2;
-  // Timestamp.
-  uint64 timestamp = 3;
-}
-
-// Represents a token bridge exit originating on another network but claimed on
-// the current network.
-message ImportedBridgeExit {
-  /// The bridge exit initiated on another network, called the "sending"
-  /// network. Need to verify that the destination network matches the
-  /// current network, and that the bridge exit is included in an imported
-  /// LER
-  BridgeExit bridge_exit = 1;
-  /// The global index of the imported bridge exit.
-  GlobalIndex global_index = 2;
-}
-
-// Represents a token bridge exit from the network.
-message BridgeExit {
-  // The type of the leaf.
-  LeafType leaf_type = 1;
-  // Unique ID for the token being transferred.
-  TokenInfo token_info = 2;
-  // Network which the token is transferred to
-  uint32 destination_network = 3;
-  // Address which will own the received token
-  bytes destination_address = 4;
-  // Token amount sent
-  string amount = 5;
-  // is metadata hashed
-  bool is_metadata_hashed = 6;
-  // Metadata for the bridge exit
-  bytes metadata = 7;
-}
-
-message GlobalIndex {
-  // mainnet flag
-  bool mainnet_flag = 1;
-  // rollup index
-  uint32 rollup_index = 2;
-  // leaf index
-  uint32 leaf_index = 3;
-}
-
-enum LeafType {
-  // Unspecified leaf type.
-  LEAF_TYPE_UNSPECIFIED = 0;
-  // Transfer leaf type.
-  LEAF_TYPE_TRANSFER = 1;
-  // Message leaf type.
-  LEAF_TYPE_MESSAGE = 2;
-}
-
-// Encapsulates the information to uniquely identify a token on the origin
-// network.
-message TokenInfo {
-  // Network which the token originates from
-  uint32 origin_network = 1;
-  // The address of the token on the origin network
-  bytes origin_token_address = 2;
+  agglayer.interop.types.v1.L1InfoTreeLeafWithContext l1_leaf = 2;
 }

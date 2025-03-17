@@ -9,7 +9,8 @@ use aggchain_proof_contracts::contracts::{
 };
 use aggchain_proof_contracts::AggchainContractsClient;
 use aggchain_proof_core::proof::AggchainProofWitness;
-use aggchain_proof_types::{AggchainProofInputs, Digest};
+use aggchain_proof_core::Digest;
+use aggchain_proof_types::AggchainProofInputs;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use prover_executor::Executor;

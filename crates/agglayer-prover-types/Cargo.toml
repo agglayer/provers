@@ -16,7 +16,9 @@ tonic = { workspace = true, default-features = false, features = [
     "transport",
 ] }
 
+agglayer-interop = { workspace = true, features = ["grpc-compat"] }
 prover-executor.workspace = true
+pbjson.workspace = true
 
 [build-dependencies]
 tonic-build = { version = "0.12", default-features = false, features = [

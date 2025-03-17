@@ -11,6 +11,7 @@ workspace = true
 anyhow.workspace = true
 bincode.workspace = true
 buildstructor.workspace = true
+prost.workspace = true
 sp1-sdk.workspace = true
 tokio = { workspace = true, features = ["full"] }
 tokio-util.workspace = true

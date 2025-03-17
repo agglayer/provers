@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 
+use crate::Digest;
 use crate::{
-    keccak::{digest::Digest, keccak256_combine},
+    keccak::keccak256_combine,
     local_exit_tree::{hasher::Keccak256Hasher, proof::LETMerkleProof},
 };
 

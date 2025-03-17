@@ -3,8 +3,6 @@ use bincode::{
     DefaultOptions, Options,
 };
 
-pub const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("generated/aggkit.prover.bin");
-
 #[path = "generated/aggkit.prover.v1.rs"]
 #[rustfmt::skip]
 #[allow(warnings)]
@@ -20,4 +18,4 @@ pub fn default_bincode_options(
         .with_fixint_encoding()
 }
 
-pub use aggchain_proof_types::Digest;
+pub use agglayer_interop::types::Digest;
