@@ -109,37 +109,24 @@ impl BridgeConstraintsError {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct HashChainSketches {
-    prev_sketch: EVMStateSketch,
-    new_sketch: EVMStateSketch,
-}
-
 /// Bridge data required to verify the BridgeConstraintsInput integrity.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BridgeWitness {
-    /// List of inserted GER.
+    /// List of inserted GER minus the removed ones.
     pub inserted_gers: Vec<InsertedGER>,
-    /// List of inserted GER.
-    pub inserted_gers_hash_chain: Vec<Digest>,
+    /// Raw list of inserted GERs which includes also the ones which get
+    /// removed.
+    pub raw_inserted_gers: Vec<Digest>,
     /// List of removed GER.
-    pub removed_gers_hash_chain: Vec<Digest>,
+    pub removed_gers: Vec<Digest>,
     /// List of the global index of each imported bridge exit.
     pub global_indices_claimed: Vec<B256>,
     /// List of the global index of each unset bridge exit.
     pub global_indices_unset: Vec<B256>,
-    /// State sketches to retrieve the inserted GER hash chain.
-    pub inserted_ger_sketches: HashChainSketches,
-    /// State sketches to retrieve the removed GER hash chain.
-    pub removed_ger_sketches: HashChainSketches,
-    /// State sketches to retrieve the claims hash chain.
-    pub claimed_global_index_sketches: HashChainSketches,
-    /// State sketches to retrieve the unset hash chain.
-    pub unset_global_index_sketches: HashChainSketches,
-    /// State sketch to retrieve the bridge address.
-    pub bridge_address_sketch: EVMStateSketch,
-    /// State sketch to retrieve the new LER.
-    pub new_ler_sketch: EVMStateSketch,
+    /// State sketch for the prev L2 block.
+    pub prev_l2_block_sketch: EVMStateSketch,
+    /// State sketch for the new L2 block.
+    pub new_l2_block_sketch: EVMStateSketch,
 }
 
 /// Bridge data required to verify the bridge smart contract integrity.
@@ -157,7 +144,6 @@ pub struct BridgeConstraintsInput {
 impl BridgeConstraintsInput {
     fn fetch_hash_chains<C: SolCall + Clone>(
         &self,
-        hash_chain_sketch: &HashChainSketches,
         hash_chain: HashChainType,
         address: Address,
         calldata: C,
@@ -168,7 +154,7 @@ impl BridgeConstraintsInput {
             stage: StaticCallStage::PrevHashChain(hash_chain),
             block_hash: self.prev_l2_block_hash,
         }
-        .execute(&hash_chain_sketch.prev_sketch, calldata.clone())?;
+        .execute(&self.bridge_witness.prev_l2_block_sketch, calldata.clone())?;
 
         // Get the state of the hash chain of the new block on L2
         let new_hash_chain = StaticCallWithContext {
@@ -176,7 +162,7 @@ impl BridgeConstraintsInput {
             stage: StaticCallStage::NewHashChain(hash_chain),
             block_hash: self.new_l2_block_hash,
         }
-        .execute(&hash_chain_sketch.new_sketch, calldata)?;
+        .execute(&self.bridge_witness.new_l2_block_sketch, calldata)?;
 
         Ok((prev_hash_chain, new_hash_chain))
     }
@@ -188,7 +174,6 @@ impl BridgeConstraintsInput {
             let hash_chain_type = HashChainType::InsertedGER;
             let (prev_hash_chain, new_hash_chain): (Digest, Digest) = self
                 .fetch_hash_chains(
-                    &self.bridge_witness.inserted_ger_sketches,
                     hash_chain_type,
                     self.ger_addr,
                     GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
@@ -196,7 +181,7 @@ impl BridgeConstraintsInput {
                 .map(|(prev, new)| (prev.hashChain.0.into(), new.hashChain.0.into()))?;
 
             validate_hash_chain(
-                self.bridge_witness.inserted_gers_hash_chain.iter().cloned(),
+                self.bridge_witness.raw_inserted_gers.iter().cloned(),
                 prev_hash_chain,
                 new_hash_chain,
                 hash_chain_type,
@@ -208,7 +193,6 @@ impl BridgeConstraintsInput {
             let hash_chain_type = HashChainType::RemovedGER;
             let (prev_hash_chain, new_hash_chain): (Digest, Digest) = self
                 .fetch_hash_chains(
-                    &self.bridge_witness.removed_ger_sketches,
                     hash_chain_type,
                     self.ger_addr,
                     GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
@@ -216,7 +200,7 @@ impl BridgeConstraintsInput {
                 .map(|(prev, new)| (prev.hashChain.0.into(), new.hashChain.0.into()))?;
 
             validate_hash_chain(
-                self.bridge_witness.removed_gers_hash_chain.iter().cloned(),
+                self.bridge_witness.removed_gers.iter().cloned(),
                 prev_hash_chain,
                 new_hash_chain,
                 hash_chain_type,
@@ -236,7 +220,6 @@ impl BridgeConstraintsInput {
             let hash_chain_type = HashChainType::ClaimedGlobalIndex;
             let (prev_hash_chain, new_hash_chain): (Digest, Digest) = self
                 .fetch_hash_chains(
-                    &self.bridge_witness.claimed_global_index_sketches,
                     hash_chain_type,
                     bridge_address,
                     BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
@@ -259,7 +242,6 @@ impl BridgeConstraintsInput {
             let hash_chain_type = HashChainType::UnsetGlobalIndex;
             let (prev_hash_chain, new_hash_chain): (Digest, Digest) = self
                 .fetch_hash_chains(
-                    &self.bridge_witness.unset_global_index_sketches,
                     hash_chain_type,
                     bridge_address,
                     BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
@@ -289,7 +271,7 @@ impl BridgeConstraintsInput {
             block_hash: self.new_l2_block_hash,
         }
         .execute(
-            &self.bridge_witness.new_ler_sketch,
+            &self.bridge_witness.new_l2_block_sketch,
             BridgeL2SovereignChain::getRootCall {},
         )?
         .lastRollupExitRoot
@@ -319,7 +301,7 @@ impl BridgeConstraintsInput {
             block_hash: self.new_l2_block_hash,
         }
         .execute(
-            &self.bridge_witness.bridge_address_sketch,
+            &self.bridge_witness.new_l2_block_sketch,
             GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
         )?
         .bridgeAddress;
@@ -352,8 +334,8 @@ impl BridgeConstraintsInput {
         // Iterate over claimed indices and remove (skip) one occurrence for each value
         // in removal_map.
         let filtered_hash_chain_gers = filter_values(
-            &self.bridge_witness.removed_gers_hash_chain,
-            &self.bridge_witness.inserted_gers_hash_chain,
+            &self.bridge_witness.removed_gers,
+            &self.bridge_witness.raw_inserted_gers,
         );
 
         // Check that the filtered_hash_chain_gers are equal to the inserted
@@ -598,7 +580,7 @@ mod tests {
             })
             .collect();
 
-        let inserted_gers: Vec<Digest> = global_exit_roots
+        let raw_inserted_gers: Vec<Digest> = global_exit_roots
             .as_array()
             .unwrap()
             .iter()
@@ -634,21 +616,34 @@ mod tests {
             })
             .collect();
 
-        let rpc_url_l2 = std::env::var(format!("RPC_{}", chain_id_l2))
-            .expect("RPC URL must be defined")
-            .parse::<Url>()
-            .expect("Invalid URL format");
+        // Instantiate the HostExecutor for the prev and new L2 blocks
+        let (mut prev_l2_block_executor, mut new_l2_block_executor) = {
+            let rpc_url_l2 = std::env::var(format!("RPC_{}", chain_id_l2))
+                .expect("RPC URL must be defined")
+                .parse::<Url>()
+                .expect("Invalid URL format");
 
-        let block_number_initial = BlockNumberOrTag::Number(initial_block_number);
-        let block_number_final = BlockNumberOrTag::Number(final_block_number);
+            let provider_l2: RootProvider<alloy::network::AnyNetwork> =
+                RootProvider::new_http(rpc_url_l2.clone());
+
+            let prev = HostExecutor::new(
+                provider_l2.clone(),
+                BlockNumberOrTag::Number(initial_block_number),
+            )
+            .await?;
+
+            let new = HostExecutor::new(
+                provider_l2.clone(),
+                BlockNumberOrTag::Number(final_block_number),
+            )
+            .await?;
+
+            (prev, new)
+        };
 
         // 1. Get the prev inserted GER hash chain (previous block on L2)
         println!("Step 1: Fetching previous inserted GER hash chain...");
-        let provider_l2: RootProvider<alloy::network::AnyNetwork> =
-            RootProvider::new_http(rpc_url_l2.clone());
-        let mut executor_prev_hash_chain =
-            HostExecutor::new(provider_l2.clone(), block_number_initial).await?;
-        let _hash_chain = executor_prev_hash_chain
+        let hash_chain = prev_l2_block_executor
             .execute(ContractInput::new_call(
                 ger_address,
                 Address::default(),
@@ -657,22 +652,12 @@ mod tests {
             .await?;
         println!(
             "Step 1: Received prev inserted GER hash chain: {:?}",
-            _hash_chain
+            hash_chain
         );
-
-        let _decoded_hash_chain =
-            GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall::abi_decode_returns(
-                &_hash_chain,
-                true,
-            )?
-            .hashChain;
-        let executor_prev_hash_chain_sketch = executor_prev_hash_chain.finalize().await?;
 
         // 2. Get the new inserted GER hash chain (new block on L2)
         println!("Step 2: Fetching new inserted GER hash chain...");
-        let mut executor_new_hash_chain =
-            HostExecutor::new(provider_l2.clone(), block_number_final).await?;
-        let _new_hash_chain = executor_new_hash_chain
+        let new_hash_chain = new_l2_block_executor
             .execute(ContractInput::new_call(
                 ger_address,
                 Address::default(),
@@ -681,15 +666,12 @@ mod tests {
             .await?;
         println!(
             "Step 2: Received new inserted GER hash chain: {:?}",
-            _new_hash_chain
+            new_hash_chain
         );
-        let executor_new_hash_chain = executor_new_hash_chain.finalize().await?;
 
         // 3. Get the bridge address.
         println!("Step 3: Fetching bridge address...");
-        let mut executor_get_bridge_address =
-            HostExecutor::new(provider_l2.clone(), block_number_final).await?;
-        let bridge_address_bytes = executor_get_bridge_address
+        let bridge_address_bytes = new_l2_block_executor
             .execute(ContractInput::new_call(
                 ger_address,
                 Address::default(),
@@ -706,13 +688,10 @@ mod tests {
                 true,
             )?
             .bridgeAddress;
-        let executor_get_bridge_address_sketch = executor_get_bridge_address.finalize().await?;
 
         // 4. Get the new local exit root from the bridge on the new L2 block.
         println!("Step 4: Fetching new local exit root from bridge...");
-        let mut executor_get_ler =
-            HostExecutor::new(provider_l2.clone(), block_number_final).await?;
-        let new_ler_bytes = executor_get_ler
+        let new_ler_bytes = new_l2_block_executor
             .execute(ContractInput::new_call(
                 bridge_address,
                 Address::default(),
@@ -734,13 +713,10 @@ mod tests {
             arr.into()
         };
         assert_eq!(new_ler, expected_new_ler);
-        let executor_get_ler_sketch = executor_get_ler.finalize().await?;
 
         // 5. Get the removed GER hash chain for the previous block.
         println!("Step 5: Fetching previous removed GER hash chain...");
-        let mut executor_prev_removed =
-            HostExecutor::new(provider_l2.clone(), block_number_initial).await?;
-        let _prev_removed = executor_prev_removed
+        let prev_removed = prev_l2_block_executor
             .execute(ContractInput::new_call(
                 ger_address,
                 Address::default(),
@@ -749,15 +725,12 @@ mod tests {
             .await?;
         println!(
             "Step 5: Received previous removed GER hash chain: {:?}",
-            _prev_removed
+            prev_removed
         );
-        let executor_prev_removed_sketch = executor_prev_removed.finalize().await?;
 
         // 6. Get the removed GER hash chain for the new block.
         println!("Step 6: Fetching new removed GER hash chain...");
-        let mut executor_new_removed =
-            HostExecutor::new(provider_l2.clone(), block_number_final).await?;
-        let _new_removed = executor_new_removed
+        let new_removed = new_l2_block_executor
             .execute(ContractInput::new_call(
                 ger_address,
                 Address::default(),
@@ -766,15 +739,12 @@ mod tests {
             .await?;
         println!(
             "Step 6: Received new removed GER hash chain: {:?}",
-            _new_removed
+            new_removed
         );
-        let executor_new_removed_sketch = executor_new_removed.finalize().await?;
 
         // 7. Get the claimed global index hash chain for the previous block.
         println!("Step 7: Fetching previous claimed global index hash chain...");
-        let mut executor_prev_claimed =
-            HostExecutor::new(provider_l2.clone(), block_number_initial).await?;
-        let _prev_claimed = executor_prev_claimed
+        let prev_claimed = prev_l2_block_executor
             .execute(ContractInput::new_call(
                 bridge_address,
                 Address::default(),
@@ -783,15 +753,12 @@ mod tests {
             .await?;
         println!(
             "Step 7: Received previous claimed global index hash chain: {:?}",
-            _prev_claimed
+            prev_claimed
         );
-        let executor_prev_claimed_sketch = executor_prev_claimed.finalize().await?;
 
         // 8. Get the claimed global index hash chain for the new block.
         println!("Step 8: Fetching new claimed global index hash chain...");
-        let mut executor_new_claimed =
-            HostExecutor::new(provider_l2.clone(), block_number_final).await?;
-        let _new_claimed = executor_new_claimed
+        let new_claimed = new_l2_block_executor
             .execute(ContractInput::new_call(
                 bridge_address,
                 Address::default(),
@@ -800,15 +767,12 @@ mod tests {
             .await?;
         println!(
             "Step 8: Received new claimed global index hash chain: {:?}",
-            _new_claimed
+            new_claimed
         );
-        let executor_new_claimed_sketch = executor_new_claimed.finalize().await?;
 
         // 9. Get the unset global index hash chain for the previous block.
         println!("Step 9: Fetching previous unset global index hash chain...");
-        let mut executor_prev_unset =
-            HostExecutor::new(provider_l2.clone(), block_number_initial).await?;
-        let _prev_unset = executor_prev_unset
+        let prev_unset = prev_l2_block_executor
             .execute(ContractInput::new_call(
                 bridge_address,
                 Address::default(),
@@ -817,15 +781,12 @@ mod tests {
             .await?;
         println!(
             "Step 9: Received previous unset global index hash chain: {:?}",
-            _prev_unset
+            prev_unset
         );
-        let executor_prev_unset_sketch = executor_prev_unset.finalize().await?;
 
         // 10. Get the unset global index hash chain for the new block.
         println!("Step 10: Fetching new unset global index hash chain...");
-        let mut executor_new_unset =
-            HostExecutor::new(provider_l2.clone(), block_number_final).await?;
-        let _new_unset = executor_new_unset
+        let new_unset = new_l2_block_executor
             .execute(ContractInput::new_call(
                 bridge_address,
                 Address::default(),
@@ -834,15 +795,18 @@ mod tests {
             .await?;
         println!(
             "Step 10: Received new unset global index hash chain: {:?}",
-            _new_unset
+            new_unset
         );
-        let executor_new_unset_sketch = executor_new_unset.finalize().await?;
+
+        // Finalize the sketches
+        let prev_l2_block_sketch = prev_l2_block_executor.finalize().await?;
+        let new_l2_block_sketch = new_l2_block_executor.finalize().await?;
 
         // Commit the bridge proof.
         let bridge_data_input = BridgeConstraintsInput {
             ger_addr: ger_address,
-            prev_l2_block_hash: executor_prev_hash_chain_sketch.header.hash_slow().0.into(),
-            new_l2_block_hash: executor_new_hash_chain.header.hash_slow().0.into(),
+            prev_l2_block_hash: prev_l2_block_sketch.header.hash_slow().0.into(),
+            new_l2_block_hash: new_l2_block_sketch.header.hash_slow().0.into(),
             new_local_exit_root: expected_new_ler,
             l1_info_root: {
                 let bytes = hex::decode(l1_info_root.trim_start_matches("0x")).unwrap();
@@ -852,28 +816,12 @@ mod tests {
             global_indices: constrained_global_indices, // Constrained indices
             bridge_witness: BridgeWitness {
                 inserted_gers: final_imported_l1_info_tree_leafs,
-                inserted_gers_hash_chain: inserted_gers,
-                removed_gers_hash_chain: removed_gers,
-                bridge_address_sketch: executor_get_bridge_address_sketch,
-                new_ler_sketch: executor_get_ler_sketch,
+                raw_inserted_gers,
+                removed_gers,
                 global_indices_claimed: claimed_global_indexes,
                 global_indices_unset: unclaimed_global_indexes,
-                inserted_ger_sketches: HashChainSketches {
-                    prev_sketch: executor_prev_hash_chain_sketch,
-                    new_sketch: executor_new_hash_chain,
-                },
-                claimed_global_index_sketches: HashChainSketches {
-                    prev_sketch: executor_prev_claimed_sketch,
-                    new_sketch: executor_new_claimed_sketch,
-                },
-                removed_ger_sketches: HashChainSketches {
-                    prev_sketch: executor_prev_removed_sketch,
-                    new_sketch: executor_new_removed_sketch,
-                },
-                unset_global_index_sketches: HashChainSketches {
-                    prev_sketch: executor_prev_unset_sketch,
-                    new_sketch: executor_new_unset_sketch,
-                },
+                prev_l2_block_sketch,
+                new_l2_block_sketch,
             },
         };
 
@@ -888,6 +836,12 @@ mod tests {
 
         println!("Bridge constraints input file created at: {:?}", file_path);
 
+        verify_bridge_data(bridge_data_input);
+
+        Ok(())
+    }
+
+    fn verify_bridge_data(bridge_data_input: BridgeConstraintsInput) {
         assert!(bridge_data_input.verify().is_ok());
 
         // Invalid l1 info root
@@ -907,9 +861,9 @@ mod tests {
         {
             let bridge_data_invalid = BridgeConstraintsInput {
                 bridge_witness: BridgeWitness {
-                    inserted_gers_hash_chain: bridge_data_input
+                    raw_inserted_gers: bridge_data_input
                         .bridge_witness
-                        .inserted_gers_hash_chain
+                        .raw_inserted_gers
                         .iter()
                         .take(1)
                         .cloned()
@@ -924,8 +878,6 @@ mod tests {
                 Err(BridgeConstraintsError::MismatchHashChain { .. })
             ));
         }
-
-        Ok(())
     }
 
     #[test]
@@ -937,7 +889,6 @@ mod tests {
         let reader = BufReader::new(file);
         let bridge_data_input: BridgeConstraintsInput = serde_json::from_reader(reader).unwrap();
 
-        // Verify the bridge data input
-        assert!(bridge_data_input.verify().is_ok());
+        verify_bridge_data(bridge_data_input);
     }
 }
