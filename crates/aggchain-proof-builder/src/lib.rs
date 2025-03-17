@@ -1,19 +1,17 @@
 pub mod config;
 mod error;
 
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
 use aggchain_proof_contracts::contracts::{
     L1RollupConfigHashFetcher, L2LocalExitRootFetcher, L2OutputAtBlockFetcher,
 };
-use aggchain_proof_contracts::{AggchainContractsClient, AggchainContractsRpcClient};
-use aggchain_proof_core::proof::{AggchainProofWitness, InclusionProof, L1InfoTreeLeaf};
-use aggkit_prover_types::Hash;
+use aggchain_proof_contracts::AggchainContractsClient;
+use aggchain_proof_core::proof::AggchainProofWitness;
+use aggchain_proof_types::{AggchainProofInputs, Digest};
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
-use prover_alloy::AlloyFillProvider;
 use prover_executor::Executor;
 use sp1_sdk::{SP1Proof, SP1ProofWithPublicValues, SP1VerifyingKey};
 use tower::buffer::Buffer;
@@ -23,7 +21,7 @@ use tower::ServiceExt as _;
 use crate::config::AggchainProofBuilderConfig;
 
 const MAX_CONCURRENT_REQUESTS: usize = 100;
-const ELF: &[u8] =
+pub const ELF: &[u8] =
     include_bytes!("../../../crates/aggchain-proof-program/elf/riscv32im-succinct-zkvm-elf");
 
 pub(crate) type ProverService = Buffer<
@@ -42,23 +40,12 @@ pub struct AggchainProverInputs {
 pub struct AggchainProofBuilderRequest {
     /// Aggregated full execution proof for the number of aggregated block
     /// spans.
-    pub agg_span_proof: SP1ProofWithPublicValues,
-    /// First block in the aggregated span.
-    pub start_block: u64,
-    /// Last block in the aggregated span (inclusive).
+    pub aggregation_proof: SP1ProofWithPublicValues,
+    /// Last block in the agg_span_proof provided by the proposer.
+    /// Could be different from the max_end_block requested by the agg-sender.
     pub end_block: u64,
-    /// Root hash of the l1 info tree, containing all relevant GER.
-    /// Provided by agg-sender.
-    pub l1_info_tree_root_hash: Hash,
-    /// Particular leaf of the l1 info tree corresponding
-    /// to the max_block.
-    pub l1_info_tree_leaf: L1InfoTreeLeaf,
-    /// Inclusion proof of the l1 info tree leaf to the
-    /// l1 info tree root
-    pub l1_info_tree_merkle_proof: [Hash; 32],
-    /// Map of the Global Exit Roots with their inclusion proof.
-    /// Note: the GER (string) is a base64 encoded string of the GER digest.
-    pub ger_inclusion_proofs: HashMap<String, InclusionProof>,
+    /// Aggchain proof request information, public inputs, bridge data,...
+    pub aggchain_proof_inputs: AggchainProofInputs,
 }
 
 #[derive(Clone, Debug)]
@@ -69,6 +56,8 @@ pub struct AggchainProofBuilderResponse {
     pub start_block: u64,
     /// Last block included in the aggchain proof.
     pub end_block: u64,
+    /// Output root
+    pub output_root: Digest,
 }
 
 /// This service is responsible for building an Aggchain proof.
@@ -89,8 +78,11 @@ pub struct AggchainProofBuilder<ContractsClient> {
     aggchain_proof_vkey: SP1VerifyingKey,
 }
 
-impl AggchainProofBuilder<AggchainContractsRpcClient<AlloyFillProvider>> {
-    pub async fn new(config: &AggchainProofBuilderConfig) -> Result<Self, Error> {
+impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
+    pub async fn new(
+        config: &AggchainProofBuilderConfig,
+        contracts_client: Arc<ContractsClient>,
+    ) -> Result<Self, Error> {
         let executor = tower::ServiceBuilder::new()
             .service(Executor::new(
                 &config.primary_prover,
@@ -103,19 +95,13 @@ impl AggchainProofBuilder<AggchainContractsRpcClient<AlloyFillProvider>> {
         let aggchain_proof_vkey = Executor::get_vkey(ELF);
 
         Ok(AggchainProofBuilder {
-            contracts_client: Arc::new(
-                AggchainContractsRpcClient::new(config.network_id, &config.contracts)
-                    .await
-                    .map_err(Error::ContractsClientInitFailed)?,
-            ),
+            contracts_client,
             prover,
             network_id: config.network_id,
             aggchain_proof_vkey,
         })
     }
-}
 
-impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     /// Retrieve l1 and l2 public data needed for aggchain proof generation.
     /// Combine with the rest of the inputs to form an `AggchainProverInputs`.
     pub(crate) async fn retrieve_chain_data(
@@ -127,7 +113,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             L2LocalExitRootFetcher + L2OutputAtBlockFetcher + L1RollupConfigHashFetcher,
     {
         let _prev_local_exit_root = contracts_client
-            .get_l2_local_exit_root(request.start_block - 1)
+            .get_l2_local_exit_root(request.aggchain_proof_inputs.start_block - 1)
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 
@@ -137,7 +123,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .map_err(Error::L2ChainDataRetrievalError)?;
 
         let _l2_pre_root_output_at_block = contracts_client
-            .get_l2_output_at_block(request.start_block - 1)
+            .get_l2_output_at_block(request.aggchain_proof_inputs.start_block - 1)
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 

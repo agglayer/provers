@@ -16,10 +16,12 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 
 [workspace.dependencies]
 # Project dependencies
+aggchain-customchaindata-builder = { path = "crates/aggchain-customchaindata-builder" }
 aggchain-proof-builder = { path = "crates/aggchain-proof-builder" }
 aggchain-proof-contracts = { path = "crates/aggchain-proof-contracts" }
 aggchain-proof-core = { path = "crates/aggchain-proof-core" }
 aggchain-proof-service = { path = "crates/aggchain-proof-service" }
+aggchain-proof-types = { path = "crates/aggchain-proof-types" }
 aggkit-prover = { path = "crates/aggkit-prover" }
 aggkit-prover-config = { path = "crates/aggkit-prover-config" }
 aggkit-prover-types = { path = "crates/aggkit-prover-types" }
@@ -49,6 +51,7 @@ buildstructor = "0.5.4"
 clap = { version = "4.5.23", features = ["derive", "env"] }
 dirs = "5.0.1"
 dotenvy = "0.15.7"
+educe = "0.6"
 ethers = "2.0.14"
 ethers-gcp-kms-signer = "0.1.5"
 ethers-signers = "2.0.14"
@@ -58,8 +61,10 @@ hyper = "1.5.2"
 jsonrpsee = { version = "0.24.7", features = ["full"] }
 lazy_static = "1.5.0"
 parking_lot = "0.12.3"
+pbjson = "0.7.0"
 prost = "0.13.4"
 reqwest = "0.12"
+semver = "1.0"
 serde = { version = "1.0.216", features = ["derive"] }
 serde_json = "1.0.133"
 serde_with = "3.11.0"
@@ -83,12 +88,14 @@ insta = { git = "https://github.com/freyskeyd/insta", branch = "chore/updating-d
     "yaml",
 ] }
 mockall = "0.13.1"
+mockito = "1.6.1"
 rand = "0.8.5"
 rstest = "0.22.0"
 test-log = "0.2.16"
 
 # SP1 dependencies
 sindri = { git = "https://github.com/Sindri-Labs/sindri-rust", tag="v0.2.0", features = ["sp1-v4"] }
-sp1-core-machine = "=4.0.0"
-sp1-sdk = { version="=4.0.0", features = ["native-gnark"] }
-sp1-prover = "=4.0.0"
+sp1-core-machine = "=4.1.2"
+sp1-sdk = "=4.1.2"
+sp1-prover = "=4.1.2"
+sp1-zkvm = "=4.1.2"

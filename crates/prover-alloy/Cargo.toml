@@ -8,6 +8,7 @@ license.workspace = true
 alloy.workspace = true
 async-trait = { workspace = true }
 anyhow.workspace = true
+ff = { version = "0.13", features = ["derive"] }
 url.workspace = true
 
 mockall = { workspace = true, optional = true }

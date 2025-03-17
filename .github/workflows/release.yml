@@ -14,8 +14,8 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  REGISTRY_IMAGE: ghcr.io/${{ github.repository }}
-  REGEX_IMAGE: ${{ github.repository }}:\\d+.\\d+.\\d+
+  REGISTRY_IMAGE: ghcr.io/agglayer/aggkit-prover
+  REGEX_IMAGE: agglayer/aggkit-prover:\\d+.\\d+.\\d+
 
 jobs:
   build:
@@ -128,4 +128,4 @@ jobs:
 
       - name: Inspect image
         run: |
-          docker buildx imagetools inspect ${{ needs.build.outputs.IMAGE_NAME }}:${{ needs.build.outputs.VERSION }} 
+          docker buildx imagetools inspect ${{ needs.build.outputs.IMAGE_NAME }}:${{ needs.build.outputs.VERSION }}

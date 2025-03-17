@@ -88,12 +88,12 @@ where
 pub struct ProposerRequest {
     pub start_block: u64,
     pub max_block: u64,
-    pub l1_block_number: u64,
+    pub l1_block_hash: B256,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProposerResponse {
-    pub agg_span_proof: SP1ProofWithPublicValues,
+    pub aggregation_proof: SP1ProofWithPublicValues,
     pub start_block: u64,
     pub end_block: u64,
 }

@@ -1,6 +1,5 @@
-use aggchain_proof_core::Digest;
+use aggchain_proof_types::Digest;
 use alloy::network::Ethereum;
-use alloy::primitives::B256;
 use alloy::sol;
 
 use crate::Error;
@@ -64,7 +63,7 @@ pub trait L1RollupConfigHashFetcher {
 /// L2 output at block data structure.
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct L2OutputAtBlock {
-    pub version: B256,
+    pub version: Digest,
     pub state_root: Digest,
     pub withdrawal_storage_root: Digest,
     pub latest_block_hash: Digest,

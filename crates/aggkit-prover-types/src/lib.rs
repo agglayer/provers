@@ -9,6 +9,9 @@ pub const FILE_DESCRIPTOR_SET: &[u8] = include_bytes!("generated/aggkit.prover.b
 #[rustfmt::skip]
 #[allow(warnings)]
 pub mod v1;
+pub mod conversion;
+pub mod error;
+pub mod vkey_hash;
 
 pub fn default_bincode_options(
 ) -> WithOtherIntEncoding<WithOtherEndian<DefaultOptions, BigEndian>, FixintEncoding> {
@@ -17,4 +20,4 @@ pub fn default_bincode_options(
         .with_fixint_encoding()
 }
 
-pub type Hash = [u8; 32];
+pub use aggchain_proof_types::Digest;
