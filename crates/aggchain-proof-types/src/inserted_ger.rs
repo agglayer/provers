@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 pub struct InsertedGerWithBlockNumber {
     // The block number of the ger.
     pub block_number: u64,
-    // The insert ger leaf.
-    pub inserted_ger_leaf: InsertedGer,
+    // The insert ger.
+    pub inserted_ger: InsertedGer,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

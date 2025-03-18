@@ -503,7 +503,7 @@ impl<'de> serde::Deserialize<'de> for ImportedBridgeExitWithBlockNumber {
         deserializer.deserialize_struct("aggkit.prover.v1.ImportedBridgeExitWithBlockNumber", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for InsertedGer {
+impl serde::Serialize for ProvenInsertedGer {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -517,7 +517,7 @@ impl serde::Serialize for InsertedGer {
         if self.l1_leaf.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("aggkit.prover.v1.InsertedGER", len)?;
+        let mut struct_ser = serializer.serialize_struct("aggkit.prover.v1.ProvenInsertedGER", len)?;
         if let Some(v) = self.proof_ger_l1root.as_ref() {
             struct_ser.serialize_field("proofGerL1root", v)?;
         }
@@ -527,7 +527,7 @@ impl serde::Serialize for InsertedGer {
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for InsertedGer {
+impl<'de> serde::Deserialize<'de> for ProvenInsertedGer {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -576,13 +576,13 @@ impl<'de> serde::Deserialize<'de> for InsertedGer {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = InsertedGer;
+            type Value = ProvenInsertedGer;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct aggkit.prover.v1.InsertedGER")
+                formatter.write_str("struct aggkit.prover.v1.ProvenInsertedGER")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<InsertedGer, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ProvenInsertedGer, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
@@ -604,16 +604,16 @@ impl<'de> serde::Deserialize<'de> for InsertedGer {
                         }
                     }
                 }
-                Ok(InsertedGer {
+                Ok(ProvenInsertedGer {
                     proof_ger_l1root: proof_ger_l1root__,
                     l1_leaf: l1_leaf__,
                 })
             }
         }
-        deserializer.deserialize_struct("aggkit.prover.v1.InsertedGER", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("aggkit.prover.v1.ProvenInsertedGER", FIELDS, GeneratedVisitor)
     }
 }
-impl serde::Serialize for InsertedGerWithBlockNumber {
+impl serde::Serialize for ProvenInsertedGerWithBlockNumber {
     #[allow(deprecated)]
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -624,22 +624,22 @@ impl serde::Serialize for InsertedGerWithBlockNumber {
         if self.block_number != 0 {
             len += 1;
         }
-        if self.inserted_ger_leaf.is_some() {
+        if self.proven_inserted_ger.is_some() {
             len += 1;
         }
-        let mut struct_ser = serializer.serialize_struct("aggkit.prover.v1.InsertedGERWithBlockNumber", len)?;
+        let mut struct_ser = serializer.serialize_struct("aggkit.prover.v1.ProvenInsertedGERWithBlockNumber", len)?;
         if self.block_number != 0 {
             #[allow(clippy::needless_borrow)]
             #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("blockNumber", ToString::to_string(&self.block_number).as_str())?;
         }
-        if let Some(v) = self.inserted_ger_leaf.as_ref() {
-            struct_ser.serialize_field("insertedGerLeaf", v)?;
+        if let Some(v) = self.proven_inserted_ger.as_ref() {
+            struct_ser.serialize_field("provenInsertedGer", v)?;
         }
         struct_ser.end()
     }
 }
-impl<'de> serde::Deserialize<'de> for InsertedGerWithBlockNumber {
+impl<'de> serde::Deserialize<'de> for ProvenInsertedGerWithBlockNumber {
     #[allow(deprecated)]
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -648,14 +648,14 @@ impl<'de> serde::Deserialize<'de> for InsertedGerWithBlockNumber {
         const FIELDS: &[&str] = &[
             "block_number",
             "blockNumber",
-            "inserted_ger_leaf",
-            "insertedGerLeaf",
+            "proven_inserted_ger",
+            "provenInsertedGer",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             BlockNumber,
-            InsertedGerLeaf,
+            ProvenInsertedGer,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -678,7 +678,7 @@ impl<'de> serde::Deserialize<'de> for InsertedGerWithBlockNumber {
                     {
                         match value {
                             "blockNumber" | "block_number" => Ok(GeneratedField::BlockNumber),
-                            "insertedGerLeaf" | "inserted_ger_leaf" => Ok(GeneratedField::InsertedGerLeaf),
+                            "provenInsertedGer" | "proven_inserted_ger" => Ok(GeneratedField::ProvenInsertedGer),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -688,18 +688,18 @@ impl<'de> serde::Deserialize<'de> for InsertedGerWithBlockNumber {
         }
         struct GeneratedVisitor;
         impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = InsertedGerWithBlockNumber;
+            type Value = ProvenInsertedGerWithBlockNumber;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct aggkit.prover.v1.InsertedGERWithBlockNumber")
+                formatter.write_str("struct aggkit.prover.v1.ProvenInsertedGERWithBlockNumber")
             }
 
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<InsertedGerWithBlockNumber, V::Error>
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<ProvenInsertedGerWithBlockNumber, V::Error>
                 where
                     V: serde::de::MapAccess<'de>,
             {
                 let mut block_number__ = None;
-                let mut inserted_ger_leaf__ = None;
+                let mut proven_inserted_ger__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::BlockNumber => {
@@ -710,20 +710,20 @@ impl<'de> serde::Deserialize<'de> for InsertedGerWithBlockNumber {
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
-                        GeneratedField::InsertedGerLeaf => {
-                            if inserted_ger_leaf__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("insertedGerLeaf"));
+                        GeneratedField::ProvenInsertedGer => {
+                            if proven_inserted_ger__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("provenInsertedGer"));
                             }
-                            inserted_ger_leaf__ = map_.next_value()?;
+                            proven_inserted_ger__ = map_.next_value()?;
                         }
                     }
                 }
-                Ok(InsertedGerWithBlockNumber {
+                Ok(ProvenInsertedGerWithBlockNumber {
                     block_number: block_number__.unwrap_or_default(),
-                    inserted_ger_leaf: inserted_ger_leaf__,
+                    proven_inserted_ger: proven_inserted_ger__,
                 })
             }
         }
-        deserializer.deserialize_struct("aggkit.prover.v1.InsertedGERWithBlockNumber", FIELDS, GeneratedVisitor)
+        deserializer.deserialize_struct("aggkit.prover.v1.ProvenInsertedGERWithBlockNumber", FIELDS, GeneratedVisitor)
     }
 }

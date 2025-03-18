@@ -3,30 +3,30 @@ use aggchain_proof_types::inserted_ger::{InsertedGer, InsertedGerWithBlockNumber
 use crate::error::AggchainProofRequestError as Error;
 use crate::v1;
 
-impl TryFrom<v1::InsertedGerWithBlockNumber> for InsertedGerWithBlockNumber {
+impl TryFrom<v1::ProvenInsertedGerWithBlockNumber> for InsertedGerWithBlockNumber {
     type Error = Error;
 
-    fn try_from(value: v1::InsertedGerWithBlockNumber) -> Result<Self, Self::Error> {
+    fn try_from(value: v1::ProvenInsertedGerWithBlockNumber) -> Result<Self, Self::Error> {
         Ok(Self {
             block_number: value.block_number,
-            inserted_ger_leaf: value
-                .inserted_ger_leaf
-                .ok_or_else(|| Error::MissingImportedBridgeExit {
-                    field_path: "inserted_ger_leaf".to_string(),
+            inserted_ger: value
+                .proven_inserted_ger
+                .ok_or_else(|| Error::MissingInsertedGer {
+                    field_path: "proven_inserted_ger".to_string(),
                 })?
                 .try_into()
-                .map_err(|error| Error::InvalidImportedBridgeExit {
-                    field_path: "inserted_ger_leaf".to_string(),
+                .map_err(|error| Error::InvalidInsertedGer {
+                    field_path: "proven_inserted_ger".to_string(),
                     source: anyhow::Error::from(error),
                 })?,
         })
     }
 }
 
-impl TryFrom<v1::InsertedGer> for InsertedGer {
+impl TryFrom<v1::ProvenInsertedGer> for InsertedGer {
     type Error = Error;
 
-    fn try_from(value: v1::InsertedGer) -> Result<Self, Self::Error> {
+    fn try_from(value: v1::ProvenInsertedGer) -> Result<Self, Self::Error> {
         Ok(Self {
             proof_ger_l1root: value
                 .proof_ger_l1root

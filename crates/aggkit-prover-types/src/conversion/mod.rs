@@ -10,19 +10,7 @@ impl TryFrom<v1::GenerateAggchainProofRequest> for AggchainProofInputs {
     type Error = Error;
 
     fn try_from(value: v1::GenerateAggchainProofRequest) -> Result<Self, Self::Error> {
-        // Parse l1 info tree proof, of type  [Digest; 32].
-        let l1_info_tree_merkle_proof: agglayer_interop::types::MerkleProof = value
-            .l1_info_tree_merkle_proof
-            .ok_or_else(|| Error::MissingL1InfoTreeMerkleProof {
-                field_path: "l1_info_tree_merkle_proof".to_string(),
-            })?
-            .try_into()
-            .map_err(|source| Error::InvalidL1InfoTreeMerkleProof {
-                field_path: "l1_info_tree_merkle_proof".to_string(),
-                source: anyhow::Error::from(source),
-            })?;
-
-        Ok(AggchainProofInputs {
+        Ok(Self {
             start_block: value.start_block,
             max_end_block: value.max_end_block,
             l1_info_tree_root_hash: value
@@ -45,7 +33,16 @@ impl TryFrom<v1::GenerateAggchainProofRequest> for AggchainProofInputs {
                     field_path: "l1_info_tree_leaf".to_string(),
                     source: anyhow::Error::from(error),
                 })?,
-            l1_info_tree_merkle_proof,
+            l1_info_tree_merkle_proof: value
+                .l1_info_tree_merkle_proof
+                .ok_or_else(|| Error::MissingL1InfoTreeMerkleProof {
+                    field_path: "l1_info_tree_merkle_proof".to_string(),
+                })?
+                .try_into()
+                .map_err(|source| Error::InvalidL1InfoTreeMerkleProof {
+                    field_path: "l1_info_tree_merkle_proof".to_string(),
+                    source: anyhow::Error::from(source),
+                })?,
             ger_leaves: value
                 .ger_leaves
                 .into_iter()
