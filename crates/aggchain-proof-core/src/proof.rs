@@ -7,8 +7,6 @@ use crate::{
     error::ProofError,
     full_execution_proof::FepPublicValues,
     keccak::keccak256_combine,
-    local_exit_tree::{hasher::Keccak256Hasher, proof::LETMerkleProof},
-    L1InfoTreeLeaf,
 };
 
 /// Aggchain proof is generated from the FEP proof and additional
@@ -31,10 +29,6 @@ pub struct AggchainProofWitness {
     pub origin_network: u32,
     /// Full execution proof with its metadata.
     pub fep: FepPublicValues,
-    /// L1 info tree leaf and index containing the `l1Head` as block hash.
-    pub l1_info_tree_leaf: (u32, L1InfoTreeLeaf),
-    /// Inclusion proof of the leaf to the l1 info root.
-    pub l1_head_inclusion_proof: LETMerkleProof<Keccak256Hasher>,
     /// List of the global index of each imported bridge exit.
     pub global_indices: Vec<B256>,
     /// Bridge witness related data.
@@ -44,31 +38,11 @@ pub struct AggchainProofWitness {
 impl AggchainProofWitness {
     pub fn verify_aggchain_inputs(&self) -> Result<AggchainProofPublicValues, ProofError> {
         // Verify the FEP proof or ECDSA signature.
-        self.fep.verify()?;
-
-        // Verify that the `l1Head` considered by the FEP exists in the L1 Info Tree
-        {
-            if self.fep.l1_head != self.l1_info_tree_leaf.1.block_hash {
-                return Err(ProofError::MismatchL1Head {
-                    from_l1_info_tree_leaf: self.l1_info_tree_leaf.1.block_hash,
-                    from_fep_public_values: self.fep.l1_head,
-                });
-            }
-
-            let inclusion_proof_valid = self.l1_head_inclusion_proof.verify(
-                self.l1_info_tree_leaf.1.hash(),
-                self.l1_info_tree_leaf.0,
-                self.l1_info_root,
-            );
-
-            if !inclusion_proof_valid {
-                return Err(ProofError::InvalidInclusionProofL1Head {
-                    index: self.l1_info_tree_leaf.0,
-                    l1_leaf_hash: self.l1_info_tree_leaf.1.hash(),
-                    l1_info_root: self.l1_info_root,
-                });
-            }
-        }
+        self.fep.verify(
+            self.l1_info_root,
+            self.new_local_exit_root,
+            compute_commit_imported_bridge_exits(&self.global_indices),
+        )?;
 
         // Verify the bridge constraints
         self.bridge_constraints_input().verify()?;
@@ -84,10 +58,8 @@ impl AggchainProofWitness {
             new_local_exit_root: self.new_local_exit_root,
             l1_info_root: self.l1_info_root,
             origin_network: self.origin_network,
-            commit_imported_bridge_exits: keccak256_combine(
-                self.global_indices
-                    .iter()
-                    .map(|idx| keccak256(idx.as_slice())),
+            commit_imported_bridge_exits: compute_commit_imported_bridge_exits(
+                &self.global_indices,
             ),
             aggchain_params: self.fep.aggchain_params(),
         }
@@ -123,4 +95,9 @@ pub struct AggchainProofPublicValues {
     pub commit_imported_bridge_exits: Digest,
     /// Chain-specific commitment forwarded by the PP.
     pub aggchain_params: Digest,
+}
+
+/// Helper function to compute the commitment for global indices.
+pub fn compute_commit_imported_bridge_exits(global_indices: &[B256]) -> Digest {
+    keccak256_combine(global_indices.iter().map(|idx| keccak256(idx.as_slice())))
 }

@@ -3,8 +3,13 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest as Sha256Digest, Sha256};
 
 use crate::Digest;
-use crate::{error::ProofError, keccak::keccak256_combine, vkey_hash::HashU32};
-
+use crate::{
+    error::ProofError,
+    keccak::keccak256_combine,
+    local_exit_tree::{hasher::Keccak256Hasher, proof::LETMerkleProof},
+    vkey_hash::HashU32,
+    L1InfoTreeLeaf,
+};
 /// Hardcoded hash of the "aggregation vkey".
 /// NOTE: Format being `hash_u32()` of the `SP1StarkVerifyingKey`.
 pub const AGGREGATION_VKEY_HASH: HashU32 = [0u32; 8]; // TODO: to put the right value
@@ -18,6 +23,7 @@ pub const OUTPUT_ROOT_VERSION: [u8; 32] = [0u8; 32];
 /// Public values to verify the FEP.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FepPublicValues {
+    /// OP succint values.
     pub l1_head: Digest,
     pub claim_block_num: u32,
     pub rollup_config_hash: Digest,
@@ -28,6 +34,10 @@ pub struct FepPublicValues {
     pub new_withdrawal_storage_root: Digest,
     pub new_block_hash: Digest,
 
+    /// L1 info tree leaf and index containing the `l1Head` as block hash.
+    pub l1_info_tree_leaf: (u32, L1InfoTreeLeaf),
+    /// Inclusion proof of the leaf to the l1 info root.
+    pub l1_head_inclusion_proof: LETMerkleProof<Keccak256Hasher>,
     /// Trusted sequencer address.
     pub trusted_sequencer: Address,
     /// Signature in the "OptimisticMode" case.
@@ -81,11 +91,22 @@ impl FepPublicValues {
     }
 
     /// Verify one ECDSA or the sp1 proof.
-    pub fn verify(&self) -> Result<(), ProofError> {
+    pub fn verify(
+        &self,
+        l1_info_root: Digest,
+        new_local_exit_root: Digest,
+        commit_imported_bridge_exits: Digest,
+    ) -> Result<(), ProofError> {
         if let Some(signature) = self.signature_optimistic_mode {
             // Verify only one ECDSA on the public inputs
+            let signature_commitment = keccak256_combine([
+                self.hash(),
+                new_local_exit_root.0,
+                commit_imported_bridge_exits.0,
+            ]);
+
             let recovered_signer = signature
-                .recover_address_from_prehash(&B256::new(self.hash()))
+                .recover_address_from_prehash(&B256::new(signature_commitment.0))
                 .map_err(|_| ProofError::InvalidSignature)?;
 
             if recovered_signer != self.trusted_sequencer {
@@ -97,6 +118,9 @@ impl FepPublicValues {
 
             Ok(())
         } else {
+            // Verify l1 head
+            self.verify_l1_head(l1_info_root)?;
+
             // Verify the FEP stark proof.
             #[cfg(not(target_os = "zkvm"))]
             unreachable!("verify_sp1_proof is not callable outside of SP1");
@@ -115,6 +139,32 @@ impl FepPublicValues {
 }
 
 impl FepPublicValues {
+    // Verify that the `l1Head` considered by the FEP exists in the L1 Info Tree
+    pub fn verify_l1_head(&self, l1_info_root: Digest) -> Result<(), ProofError> {
+        if self.l1_head != self.l1_info_tree_leaf.1.block_hash {
+            return Err(ProofError::MismatchL1Head {
+                from_l1_info_tree_leaf: self.l1_info_tree_leaf.1.block_hash,
+                from_fep_public_values: self.l1_head,
+            });
+        }
+
+        let inclusion_proof_valid = self.l1_head_inclusion_proof.verify(
+            self.l1_info_tree_leaf.1.hash(),
+            self.l1_info_tree_leaf.0,
+            l1_info_root,
+        );
+
+        if !inclusion_proof_valid {
+            return Err(ProofError::InvalidInclusionProofL1Head {
+                index: self.l1_info_tree_leaf.0,
+                l1_leaf_hash: self.l1_info_tree_leaf.1.hash(),
+                l1_info_root,
+            });
+        }
+
+        Ok(())
+    }
+
     /// Compute l2 pre root.
     pub fn compute_l2_pre_root(&self) -> Digest {
         compute_output_root(
