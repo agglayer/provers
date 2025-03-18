@@ -1,0 +1,8 @@
+{
+    "$schema": "https://sindri.app/api/v1/sindri-manifest-schema.json",
+    "name": "pessimistic-proof",
+    "circuitType": "sp1",
+    "provingScheme": "plonk",
+    "sp1Version": "4.0.0",
+    "elfPath": "elf/riscv32im-succinct-zkvm-elf"
+  }
