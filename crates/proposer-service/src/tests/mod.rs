@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use alloy_primitives::{b256, FixedBytes, B256};
-use proposer_client::{rpc::AggSpanProofProposerRequest, MockProposerClient, ProposerRequest};
+use proposer_client::{rpc::AggSpanProofProposerRequest, FepProposerRequest, MockProposerClient};
 use prover_alloy::MockProvider;
 use sp1_sdk::{Prover as _, SP1_CIRCUIT_VERSION};
 use tower::Service as _;
@@ -69,7 +69,7 @@ async fn test_proposer_service() {
         aggregation_vkey_hash: vk_hash,
     };
 
-    let request = ProposerRequest {
+    let request = FepProposerRequest {
         start_block: 0,
         max_block: 10,
         l1_block_hash: Default::default(),
@@ -135,7 +135,7 @@ async fn test_vkey_hash_mismatch() {
         aggregation_vkey_hash: vk_hash,
     };
 
-    let request = ProposerRequest {
+    let request = FepProposerRequest {
         start_block: 0,
         max_block: 10,
         l1_block_hash: Default::default(),
@@ -168,7 +168,7 @@ async fn unable_to_fetch_block_hash() {
         aggregation_vkey_hash: B256::new([0x91; 32]).into(),
     };
 
-    let request = ProposerRequest {
+    let request = FepProposerRequest {
         start_block: 0,
         max_block: 10,
         l1_block_hash: Default::default(),

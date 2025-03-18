@@ -8,13 +8,14 @@ use aggchain_proof_contracts::contracts::{
     L1RollupConfigHashFetcher, L2LocalExitRootFetcher, L2OutputAtBlockFetcher,
 };
 use aggchain_proof_contracts::AggchainContractsClient;
-use aggchain_proof_core::proof::AggchainProofWitness;
+use aggchain_proof_core::proof::{AggchainProofPublicValues, AggchainProofWitness};
 use aggchain_proof_core::Digest;
 use aggchain_proof_types::AggchainProofInputs;
+use bincode::Options;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
-use prover_executor::Executor;
-use sp1_sdk::{SP1Proof, SP1ProofWithPublicValues, SP1VerifyingKey};
+use prover_executor::{Executor, ProofType};
+use sp1_sdk::{SP1Stdin, SP1VerifyingKey};
 use tower::buffer::Buffer;
 use tower::util::BoxService;
 use tower::ServiceExt as _;
@@ -34,6 +35,7 @@ pub(crate) type ProverService = Buffer<
 /// proof generation. Collected from various sources.
 pub struct AggchainProverInputs {
     pub proof_witness: AggchainProofWitness,
+    pub stdin: SP1Stdin,
     pub start_block: u64,
     pub end_block: u64,
 }
@@ -41,7 +43,7 @@ pub struct AggchainProverInputs {
 pub struct AggchainProofBuilderRequest {
     /// Aggregated full execution proof for the number of aggregated block
     /// spans.
-    pub aggregation_proof: SP1ProofWithPublicValues,
+    pub aggregation_proof: Box<sp1_core_executor::SP1ReduceProof<sp1_prover::InnerSC>>,
     /// Last block in the agg_span_proof provided by the proposer.
     /// Could be different from the max_end_block requested by the agg-sender.
     pub end_block: u64,
@@ -52,7 +54,9 @@ pub struct AggchainProofBuilderRequest {
 #[derive(Clone, Debug)]
 pub struct AggchainProofBuilderResponse {
     /// Generated aggchain proof for the block range.
-    pub proof: SP1Proof,
+    pub proof: Vec<u8>,
+    /// Aggchain params
+    pub aggchain_params: Vec<u8>,
     /// First block included in the aggchain proof.
     pub start_block: u64,
     /// Last block included in the aggchain proof.
@@ -108,6 +112,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     pub(crate) async fn retrieve_chain_data(
         contracts_client: Arc<ContractsClient>,
         request: AggchainProofBuilderRequest,
+        _network_id: u32,
     ) -> Result<AggchainProverInputs, Error>
     where
         ContractsClient:
@@ -138,15 +143,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .await
             .map_err(Error::L1ChainDataRetrievalError)?;
 
-        todo!()
-    }
-
-    /// Generate aggchain proof
-    pub(crate) async fn generate_aggchain_proof(
-        mut _prover: ProverService,
-        _inputs: AggchainProverInputs,
-    ) -> Result<AggchainProofBuilderResponse, Error> {
-        todo!()
+        todo!("Fill the proof witness struct with the retrieved data");
     }
 }
 
@@ -173,14 +170,49 @@ where
 
     fn call(&mut self, req: AggchainProofBuilderRequest) -> Self::Future {
         let contracts_client = self.contracts_client.clone();
-        let prover = self.prover.clone();
+        let mut prover = self.prover.clone();
+        let network_id = self.network_id;
         async move {
+            let start_block = req.aggchain_proof_inputs.start_block;
+            let end_block = req.end_block;
             // Retrieve all the necessary public inputs. Combine with
             // the data provided by the agg-sender in the request.
-            let aggchain_prover_inputs = Self::retrieve_chain_data(contracts_client, req).await?;
+            let aggchain_prover_inputs =
+                Self::retrieve_chain_data(contracts_client, req, network_id).await?;
 
-            // Generate aggchain proof.
-            Self::generate_aggchain_proof(prover, aggchain_prover_inputs).await
+            let result = prover
+                .call(prover_executor::Request {
+                    stdin: aggchain_prover_inputs.stdin,
+                    proof_type: ProofType::Stark,
+                })
+                .await
+                .map_err(|error| Error::ProverFailedToExecute(anyhow::Error::from_boxed(error)));
+
+            match result {
+                Ok(prover_executor::Response { proof }) => {
+                    let public_input: AggchainProofPublicValues =
+                        bincode::deserialize(proof.public_values.as_slice()).unwrap();
+
+                    let stark = proof
+                        .proof
+                        .try_as_compressed()
+                        .ok_or(Error::GeneratedProofIsNotCompressed)?;
+
+                    Ok(AggchainProofBuilderResponse {
+                        proof: bincode::DefaultOptions::new()
+                            .with_big_endian()
+                            .with_fixint_encoding()
+                            .serialize(&stark)
+                            .map_err(Error::UnableToSerializeProof)?,
+                        aggchain_params: public_input.aggchain_params.to_vec(),
+                        start_block,
+                        end_block,
+                        // TODO: Define the output root with the witness data
+                        output_root: Default::default(),
+                    })
+                }
+                Err(_) => todo!(),
+            }
         }
         .boxed()
     }
