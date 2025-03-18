@@ -52,10 +52,12 @@ impl TryFrom<v1::GenerateAggchainProofRequest> for AggchainProofInputs {
                 .map(|(k, v)| {
                     Ok((
                         k,
-                        v.try_into()
-                            .map_err(|_| Error::InvalidClaimFromMainnetConversion {
+                        v.try_into().map_err(|error| {
+                            Error::InvalidInsertedGerWithBlockNumberConversion {
                                 field_path: "ger_leaves".to_string(),
-                            })?,
+                                source: anyhow::Error::from(error),
+                            }
+                        })?,
                     ))
                 })
                 .collect::<Result<_, _>>()?,

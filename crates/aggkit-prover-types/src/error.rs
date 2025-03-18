@@ -35,8 +35,11 @@ pub enum AggchainProofRequestError {
         field_path: String,
     },
 
-    #[error("Invalid claim from mainnet value")]
-    InvalidClaimFromMainnetConversion { field_path: String },
+    #[error("Invalid inserted GER with block number conversion")]
+    InvalidInsertedGerWithBlockNumberConversion {
+        field_path: String,
+        source: anyhow::Error,
+    },
 
     #[error("Missing inclusion proof")]
     MissingInclusionProof { field_path: String },
@@ -74,7 +77,10 @@ impl AggchainProofRequestError {
             | AggchainProofRequestError::MissingL1InfoTreeLeaf { field_path }
             | AggchainProofRequestError::MissingL1InfoTreeMerkleProof { field_path }
             | AggchainProofRequestError::InvalidL1InfoTreeMerkleProof { field_path, .. }
-            | AggchainProofRequestError::InvalidClaimFromMainnetConversion { field_path }
+            | AggchainProofRequestError::InvalidInsertedGerWithBlockNumberConversion {
+                field_path,
+                ..
+            }
             | AggchainProofRequestError::InvalidImportedBridgeExit { field_path, .. }
             | AggchainProofRequestError::InvalidL1InfoTreeLeaf { field_path, .. }
             | AggchainProofRequestError::MissingL1InfoTreeRootHash { field_path }
