@@ -32,9 +32,9 @@ pub(crate) type ProverService = Buffer<
 
 /// All the data `aggchain-proof-builder` needs for the agghchain
 /// proof generation. Collected from various sources.
-#[derive()]
 pub struct AggchainProverInputs {
     pub proof_witness: AggchainProofWitness,
+    pub stdin: SP1Stdin,
     pub start_block: u64,
     pub end_block: u64,
 }
@@ -42,7 +42,7 @@ pub struct AggchainProverInputs {
 pub struct AggchainProofBuilderRequest {
     /// Aggregated full execution proof for the number of aggregated block
     /// spans.
-    pub aggregation_proof: sp1_core_executor::SP1ReduceProof<sp1_prover::InnerSC>,
+    pub aggregation_proof: Box<sp1_core_executor::SP1ReduceProof<sp1_prover::InnerSC>>,
     /// Last block in the agg_span_proof provided by the proposer.
     /// Could be different from the max_end_block requested by the agg-sender.
     pub end_block: u64,
@@ -112,13 +112,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         contracts_client: Arc<ContractsClient>,
         request: AggchainProofBuilderRequest,
         _network_id: u32,
-    ) -> Result<
-        (
-            AggchainProofWitness,
-            sp1_core_executor::SP1ReduceProof<sp1_prover::InnerSC>,
-        ),
-        Error,
-    >
+    ) -> Result<AggchainProverInputs, Error>
     where
         ContractsClient:
             L2LocalExitRootFetcher + L2OutputAtBlockFetcher + L1RollupConfigHashFetcher,
@@ -182,19 +176,12 @@ where
             let end_block = req.end_block;
             // Retrieve all the necessary public inputs. Combine with
             // the data provided by the agg-sender in the request.
-            let (aggchain_proof_witness, proof) =
+            let aggchain_prover_inputs =
                 Self::retrieve_chain_data(contracts_client, req, network_id).await?;
-
-            let mut stdin = SP1Stdin::new();
-
-            let vkey = proof.vk.clone();
-
-            stdin.write(&aggchain_proof_witness);
-            stdin.write_proof(proof, vkey);
 
             let result = prover
                 .call(prover_executor::Request {
-                    stdin,
+                    stdin: aggchain_prover_inputs.stdin,
                     proof_type: ProofType::Stark,
                 })
                 .await

@@ -53,13 +53,12 @@ impl PessimisticProofService for ProverRPC {
             .await
             .map_err(|_error| tonic::Status::internal("Unable to get proof executor"))?;
 
-        match executor
-            .call(Request {
-                stdin,
-                proof_type: ProofType::Plonk,
-            })
-            .await
-        {
+        let request = Request {
+            stdin,
+            proof_type: ProofType::Plonk,
+        };
+
+        match executor.call(request).await {
             Ok(result) => {
                 let response = agglayer_prover_types::v1::GenerateProofResponse {
                     proof: agglayer_prover_types::default_bincode_options()

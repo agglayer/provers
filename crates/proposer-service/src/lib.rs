@@ -6,14 +6,14 @@ pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use proposer_client::network_prover::new_network_prover;
 use proposer_client::rpc::{AggSpanProofProposerRequest, ProposerRpcClient};
-pub use proposer_client::FEPProposerRequest as ProposerRequest;
+pub use proposer_client::FepProposerRequest as ProposerRequest;
 use proposer_client::ProofId;
 use prover_alloy::Provider;
 use sp1_sdk::NetworkProver;
 
 use crate::config::ProposerServiceConfig;
 
-type AggregationProof = sp1_core_executor::SP1ReduceProof<sp1_prover::InnerSC>;
+type AggregationProof = Box<sp1_core_executor::SP1ReduceProof<sp1_prover::InnerSC>>;
 
 #[derive(Debug)]
 pub struct ProposerResponse {
@@ -133,7 +133,6 @@ where
             let aggregation_proof: AggregationProof = proofs
                 .proof
                 .try_as_compressed()
-                .map(|proof| *proof)
                 .ok_or_else(|| Error::UnsupportedAggregationProofMode(proof_mode))?;
 
             check_aggregation_vkey(&aggregation_proof, expected_vkey_hash)?;
