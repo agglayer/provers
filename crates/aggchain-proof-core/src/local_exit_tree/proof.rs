@@ -19,6 +19,14 @@ where
     pub siblings: [H::Digest; TREE_DEPTH],
 }
 
+impl<H, const TREE_DEPTH: usize> LETMerkleProof<H, TREE_DEPTH>
+where
+    H: Hasher,
+    H::Digest: Serialize + DeserializeOwned,
+{
+    pub const TREE_DEPTH: usize = TREE_DEPTH;
+}
+
 #[cfg(test)]
 impl Default for LETMerkleProof<Keccak256Hasher> {
     fn default() -> Self {
