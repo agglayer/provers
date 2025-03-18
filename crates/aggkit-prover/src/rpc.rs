@@ -86,11 +86,11 @@ impl AggchainProofGrpcService for GrpcService {
                     .serialize(&response.proof)
                     .map_err(|e| Status::internal(format!("Unable to serialize proof: {e:?}")))?;
                 Ok(Response::new(GenerateAggchainProofResponse {
-                    aggchain_proof,
+                    aggchain_proof: aggchain_proof.into(),
                     start_block: response.start_block,
                     end_block: response.end_block,
-                    local_exit_root_hash: response.local_exit_root_hash.into(),
-                    custom_chain_data: response.custom_chain_data,
+                    local_exit_root_hash: Some(response.local_exit_root_hash.into()),
+                    custom_chain_data: response.custom_chain_data.into(),
                 }))
             }
             Err(e) => Err(Status::internal(e.to_string())),

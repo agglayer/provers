@@ -1,11 +1,12 @@
 use alloy_primitives::{keccak256, B256};
 use serde::{Deserialize, Serialize};
 
+use crate::Digest;
 use crate::{
     bridge::{BridgeConstraintsInput, BridgeWitness, L2_GER_ADDR},
     error::ProofError,
     full_execution_proof::FepPublicValues,
-    keccak::{digest::Digest, keccak256_combine},
+    keccak::keccak256_combine,
     local_exit_tree::{hasher::Keccak256Hasher, proof::LETMerkleProof},
     L1InfoTreeLeaf,
 };
