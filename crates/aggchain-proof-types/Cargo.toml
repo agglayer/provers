@@ -10,6 +10,7 @@ serde.workspace = true
 sp1-core-executor.workspace = true
 
 aggchain-proof-core.workspace = true
+agglayer-interop.workspace = true
 
 [lints]
 workspace = true

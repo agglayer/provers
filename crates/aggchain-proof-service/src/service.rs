@@ -7,7 +7,8 @@ use std::{
 
 use aggchain_proof_builder::AggchainProofBuilder;
 use aggchain_proof_contracts::AggchainContractsRpcClient;
-use aggchain_proof_types::{AggchainProofInputs, Digest};
+use aggchain_proof_core::Digest;
+use aggchain_proof_types::AggchainProofInputs;
 use alloy_primitives::B256;
 use futures::FutureExt as _;
 use proposer_service::{ProposerRequest, ProposerService};
@@ -20,7 +21,7 @@ use crate::error::Error;
 
 /// A request for the AggchainProofService to generate the
 /// aggchain proof for the range of blocks.
-#[derive(Default, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct AggchainProofServiceRequest {
     /// Aggchain proof request information
     pub aggchain_proof_inputs: AggchainProofInputs,
@@ -135,11 +136,7 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
     }
 
     fn call(&mut self, req: AggchainProofServiceRequest) -> Self::Future {
-        let l1_block_hash = req
-            .aggchain_proof_inputs
-            .l1_info_tree_leaf
-            .inner_leaf
-            .block_hash;
+        let l1_block_hash = req.aggchain_proof_inputs.l1_info_tree_leaf.inner.block_hash;
 
         let proposer_request = ProposerRequest {
             start_block: req.aggchain_proof_inputs.start_block,

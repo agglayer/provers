@@ -2,10 +2,13 @@ use std::collections::HashMap;
 
 use aggchain_proof_service::config::AggchainProofServiceConfig;
 use aggchain_proof_service::service::{AggchainProofService, AggchainProofServiceRequest};
+use aggchain_proof_types::AggchainProofInputs;
 use aggkit_prover_types::v1::{
     aggchain_proof_service_client::AggchainProofServiceClient,
     aggchain_proof_service_server::AggchainProofServiceServer, GenerateAggchainProofRequest,
 };
+use aggkit_prover_types::Digest;
+use agglayer_interop::types::{L1InfoTreeLeaf, L1InfoTreeLeafInner, MerkleProof};
 use http::Uri;
 use hyper_util::rt::TokioIo;
 use tonic::transport::{Endpoint, Server};
@@ -24,7 +27,26 @@ async fn service_can_be_called() {
     let mut service = AggchainProofService::new(&AggchainProofServiceConfig::default())
         .await
         .expect("create aggchain proof service");
-    let request = AggchainProofServiceRequest::default();
+    let request = AggchainProofServiceRequest {
+        aggchain_proof_inputs: AggchainProofInputs {
+            start_block: 0,
+            max_end_block: 100,
+            l1_info_tree_root_hash: Default::default(),
+            l1_info_tree_leaf: L1InfoTreeLeaf {
+                l1_info_tree_index: 1,
+                rer: Default::default(),
+                mer: Default::default(),
+                inner: L1InfoTreeLeafInner {
+                    global_exit_root: Default::default(),
+                    block_hash: Default::default(),
+                    timestamp: 0u64,
+                },
+            },
+            l1_info_tree_merkle_proof: MerkleProof::new(Digest::default(), [Digest::default(); 32]),
+            ger_leaves: Default::default(),
+            imported_bridge_exits: Default::default(),
+        },
+    };
     let response = service.call(request).await;
     assert!(response.is_ok());
 }
@@ -74,9 +96,9 @@ async fn testing_rpc_failure() {
     let request = tonic::Request::new(GenerateAggchainProofRequest {
         start_block: 1000,
         max_end_block: 999,
-        l1_info_tree_root_hash: vec![],
+        l1_info_tree_root_hash: None,
         l1_info_tree_leaf: None,
-        l1_info_tree_merkle_proof: vec![],
+        l1_info_tree_merkle_proof: None,
         ger_leaves: HashMap::new(),
         imported_bridge_exits: vec![],
     });

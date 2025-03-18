@@ -65,7 +65,8 @@ impl PessimisticProofService for ProverRPC {
                         .serialize(&agglayer_prover_types::Proof::SP1(result.proof))
                         .map_err(|_| {
                             tonic::Status::internal("Unable to serialize generated proof")
-                        })?,
+                        })?
+                        .into(),
                 };
 
                 PROVING_REQUEST_SUCCEEDED.add(1, metrics_attrs);

@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+agglayer-primitives.workspace = true
+
 # alloy
 alloy-primitives.workspace = true
 alloy-sol-macro = "0.8.21"

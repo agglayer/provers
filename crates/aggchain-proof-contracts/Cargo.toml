@@ -16,6 +16,8 @@ tokio.workspace = true
 tracing.workspace = true
 url.workspace = true
 
+agglayer-primitives.workspace = true
+agglayer-interop.workspace = true
 aggchain-proof-types.workspace = true
 prover-alloy.workspace = true
 prover-utils.workspace = true

@@ -18,6 +18,7 @@ sp1-sdk.workspace = true
 aggchain-proof-contracts.workspace = true
 aggchain-proof-core.workspace = true
 aggchain-proof-types.workspace = true
+agglayer-interop.workspace = true
 prover-config.workspace = true
 prover-executor.workspace = true
 

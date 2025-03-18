@@ -1,7 +1,6 @@
-use digest::Digest;
 use tiny_keccak::{Hasher, Keccak};
 
-pub mod digest;
+use crate::Digest;
 
 /// Hashes the input items using a Keccak hasher with a 256-bit security level.
 /// Safety: This function should only be called with fixed-size items to avoid
