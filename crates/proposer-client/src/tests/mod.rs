@@ -40,7 +40,10 @@ mod proposer_rpc {
             )
             .create();
 
-        let service = ProposerRpcClient::new(&server.url(), Duration::from_millis(500)).unwrap();
+        let service =
+            ProposerRpcClient::new(server.url().try_into().unwrap(), Duration::from_millis(500))
+                .await
+                .unwrap();
 
         let request = AggregationProofProposerRequest {
             last_proven_block: 110,
