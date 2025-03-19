@@ -36,7 +36,7 @@ mod proposer_rpc {
             )
             .create();
 
-        let service = ProposerRpcClient::new(&server.url()).unwrap();
+        let service = ProposerRpcClient::new(&server.url()).await.unwrap();
 
         let request = AggSpanProofProposerRequest {
             start_block: 110,
