@@ -28,15 +28,15 @@ pub trait AggregationProofProposer {
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct AggregationProofProposerRequest {
-    /// Starting block number to request proof from
+    /// Starting block number to request proof from.
     #[serde(rename = "startBlock")]
     pub start_block: u64,
-    /// Maximum block number on which the proof needs to be aggregated
+    /// Maximum block number for the aggregation proof.
     #[serde(rename = "maxBlock")]
     pub max_block: u64,
-    /// L1 block number corresponding to max_block
+    /// L1 block number corresponding to max_block.
     pub l1_block_number: u64,
-    /// L1 block hash
+    /// L1 block hash.
     #[serde_as(as = "DisplayFromStr")]
     pub l1_block_hash: B256,
 }
