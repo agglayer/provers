@@ -1,5 +1,5 @@
 pub mod grpc {
-    tonic::include_proto!("proofs");
+    tonic::include_proto!("agglayer.proposer.v1");
 }
 
 pub use grpc::proofs_client::ProofsClient;
@@ -19,33 +19,27 @@ fn convert_field<T, U: TryFrom<T, Error = E>, E: Into<anyhow::Error>>(
     })
 }
 
-impl TryFrom<AggregationProofProposerRequest> for grpc::AggProofRequest {
-    type Error = GrpcConversionError;
-
-    fn try_from(request: AggregationProofProposerRequest) -> Result<Self, GrpcConversionError> {
-        let request = grpc::AggProofRequest {
-            start: convert_field("start", request.last_proven_block)?,
-            end: convert_field("end", request.requested_end_block)?,
-            l1_block_number: convert_field("l1_block_number", request.l1_block_number)?,
+impl From<AggregationProofProposerRequest> for grpc::AggregationProofRequest {
+    fn from(request: AggregationProofProposerRequest) -> Self {
+        grpc::AggregationProofRequest {
+            last_proven_block: request.last_proven_block,
+            requested_end_block: request.requested_end_block,
+            l1_block_number: request.l1_block_number,
             l1_block_hash: request.l1_block_hash.to_vec(),
-        };
-        Ok(request)
+        }
     }
 }
 
-impl TryFrom<grpc::AggProofResponse> for AggregationProofProposerResponse {
+impl TryFrom<grpc::AggregationProofResponse> for AggregationProofProposerResponse {
     type Error = ProofRequestError;
 
-    fn try_from(response: grpc::AggProofResponse) -> Result<Self, Self::Error> {
-        if response.success {
-            let (request_id, start_block, end_block) = Default::default(); // TODO
-            Ok(AggregationProofProposerResponse {
-                request_id,
-                last_proven_block: start_block,
-                end_block,
-            })
-        } else {
-            Err(ProofRequestError::Failed(response.error))
-        }
+    fn try_from(response: grpc::AggregationProofResponse) -> Result<Self, Self::Error> {
+        let request_id = convert_field("request_id", response.request_id.as_slice())
+            .map_err(ProofRequestError::ParsingResponse)?;
+        Ok(AggregationProofProposerResponse {
+            request_id,
+            last_proven_block: response.last_proven_block,
+            end_block: response.end_block,
+        })
     }
 }

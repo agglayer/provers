@@ -88,12 +88,11 @@ impl AggregationProofProposer for ProposerRpcClient {
         &self,
         request: AggregationProofProposerRequest,
     ) -> Result<AggregationProofProposerResponse, Error> {
-        let request = proofs_service_types::grpc::AggProofRequest::try_from(request)
-            .map_err(|e| Error::Requesting(ProofRequestError::ComposingRequest(e)))?;
+        let request = proofs_service_types::grpc::AggregationProofRequest::from(request);
 
         let mut client = self.client.clone();
         let response: AggregationProofProposerResponse = client
-            .request_agg_proof(request)
+            .request_aggregation_proof(request)
             .await
             .map_err(ProofRequestError::Grpc)
             .and_then(|resp| resp.into_inner().try_into())
