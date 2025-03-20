@@ -14,9 +14,6 @@ pub enum Error {
 
 #[derive(Debug, thiserror::Error)]
 pub enum ProofRequestError {
-    #[error("Cannot compose grpc request")]
-    ComposingRequest(#[source] GrpcConversionError),
-
     #[error("Cannot parse grpc response")]
     ParsingResponse(#[source] GrpcConversionError),
 
