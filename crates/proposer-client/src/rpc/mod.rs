@@ -40,8 +40,7 @@ impl AggSpanProofProposer for ProposerRpcClient {
         &self,
         request: AggSpanProofProposerRequest,
     ) -> Result<AggSpanProofProposerResponse, Error> {
-        let request = proofs_service_types::grpc::AggProofRequest::try_from(request)
-            .map_err(|e| Error::Requesting(ProofRequestError::ComposingRequest(e)))?;
+        let request = proofs_service_types::grpc::AggProofRequest::from(request);
 
         let mut client = self.client.clone();
         let response: AggSpanProofProposerResponse = client
