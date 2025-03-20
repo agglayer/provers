@@ -14,13 +14,16 @@ const DEFAULT_SP1_CLUSTER_ENDPOINT: &str = "https://rpc.production.succinct.xyz/
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct ProposerClientConfig {
-    /// The proposer service http endpoint
+    /// The proposer service http endpoint.
     #[serde(default = "default_proposer_service_endpoint")]
     pub proposer_endpoint: Url,
-    /// The sp1 proving cluster endpoint
+    /// The sp1 proving cluster endpoint.
     #[serde(default = "default_sp1_cluster_endpoint")]
     pub sp1_cluster_endpoint: Url,
-    /// Proving timeout in seconds
+    /// Proposer request timeout in seconds.
+    #[serde(default = "default_request_timeout")]
+    pub request_timeout: Duration,
+    /// Proving timeout in seconds.
     #[serde(default = "default_timeout")]
     pub proving_timeout: Duration,
 }
@@ -30,6 +33,7 @@ impl Default for ProposerClientConfig {
         Self {
             proposer_endpoint: default_proposer_service_endpoint(),
             sp1_cluster_endpoint: default_sp1_cluster_endpoint(),
+            request_timeout: default_request_timeout(),
             proving_timeout: default_timeout(),
         }
     }
@@ -49,6 +53,10 @@ fn default_sp1_cluster_endpoint() -> Url {
     )
 }
 
-fn default_timeout() -> Duration {
+pub fn default_request_timeout() -> Duration {
+    Duration::from_secs(600)
+}
+
+pub fn default_timeout() -> Duration {
     Duration::from_secs(3600)
 }

@@ -5,11 +5,12 @@ use aggkit_prover_types::vkey_hash::VKeyHash;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use proposer_client::network_prover::new_network_prover;
-use proposer_client::rpc::{AggSpanProofProposerRequest, ProposerRpcClient};
+use proposer_client::rpc::{AggregationProofProposerRequest, ProposerRpcClient};
 pub use proposer_client::FepProposerRequest as ProposerRequest;
-use proposer_client::ProofId;
+use proposer_client::RequestId;
 use prover_alloy::Provider;
 use sp1_sdk::NetworkProver;
+use tracing::info;
 
 use crate::config::ProposerServiceConfig;
 
@@ -24,6 +25,7 @@ pub struct ProposerResponse {
 
 pub mod config;
 pub mod error;
+
 #[cfg(test)]
 mod tests;
 
@@ -49,15 +51,20 @@ impl<L1Rpc, ProposerClient> Clone for ProposerService<L1Rpc, ProposerClient> {
     }
 }
 
-impl<L1Rpc> ProposerService<L1Rpc, proposer_client::Client<ProposerRpcClient, NetworkProver>> {
+impl<L1Rpc>
+    ProposerService<L1Rpc, proposer_client::client::Client<ProposerRpcClient, NetworkProver>>
+{
     pub fn new(config: &ProposerServiceConfig, l1_rpc: Arc<L1Rpc>) -> Result<Self, Error> {
-        let proposer_rpc_client = ProposerRpcClient::new(config.client.proposer_endpoint.as_str())?;
+        let proposer_rpc_client = ProposerRpcClient::new(
+            config.client.proposer_endpoint.as_str(),
+            config.client.request_timeout,
+        )?;
         let network_prover = new_network_prover(config.client.sp1_cluster_endpoint.as_str())
             .map_err(Error::UnableToCreateNetworkProver)?;
 
         Ok(Self {
             l1_rpc,
-            client: Arc::new(proposer_client::Client::new(
+            client: Arc::new(proposer_client::client::Client::new(
                 proposer_rpc_client,
                 network_prover,
                 Some(config.client.proving_timeout),
@@ -118,17 +125,18 @@ where
 
             // Request the AggSpanProof generation from the proposer.
             let response = client
-                .request_agg_proof(AggSpanProofProposerRequest {
+                .request_agg_proof(AggregationProofProposerRequest {
                     start_block,
                     max_block,
                     l1_block_number,
                     l1_block_hash,
                 })
                 .await?;
-            let proof_id = ProofId(response.proof_id);
+            let request_id = RequestId(response.request_id);
+            info!("Aggregation proof request submitted: {}", request_id);
 
             // Wait for the prover to finish aggregating span proofs
-            let proofs = client.wait_for_proof(proof_id).await?;
+            let proofs = client.wait_for_proof(request_id).await?;
             let proof_mode: sp1_sdk::SP1ProofMode = (&proofs.proof).into();
             let aggregation_proof: AggregationProof = proofs
                 .proof

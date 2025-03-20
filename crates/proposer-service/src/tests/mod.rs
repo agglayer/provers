@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
 use alloy_primitives::{b256, FixedBytes, B256};
-use proposer_client::{rpc::AggSpanProofProposerRequest, FepProposerRequest, MockProposerClient};
+use proposer_client::{
+    rpc::AggregationProofProposerRequest, FepProposerRequest, MockProposerClient,
+};
 use prover_alloy::MockProvider;
 use sp1_sdk::{Prover as _, SP1_CIRCUIT_VERSION};
 use tower::Service as _;
@@ -19,18 +21,17 @@ async fn test_proposer_service() {
         .returning(|_| Box::pin(async { Ok(10) }));
 
     let mut client = MockProposerClient::new();
-    client
-        .expect_request_agg_proof()
-        .once()
-        .returning(|request: AggSpanProofProposerRequest| {
+    client.expect_request_agg_proof().once().returning(
+        |request: AggregationProofProposerRequest| {
             Box::pin(async move {
-                Ok(proposer_client::rpc::AggSpanProofProposerResponse {
-                    proof_id: FixedBytes::new([0; 32]),
+                Ok(proposer_client::rpc::AggregationProofProposerResponse {
+                    request_id: FixedBytes::new([0; 32]),
                     start_block: request.start_block,
                     end_block: request.max_block,
                 })
             })
-        });
+        },
+    );
 
     let stdin = sp1_sdk::SP1Stdin::new();
 
@@ -88,18 +89,17 @@ async fn test_vkey_hash_mismatch() {
         .returning(|_| Box::pin(async { Ok(10) }));
 
     let mut client = MockProposerClient::new();
-    client
-        .expect_request_agg_proof()
-        .once()
-        .returning(|request: AggSpanProofProposerRequest| {
+    client.expect_request_agg_proof().once().returning(
+        |request: AggregationProofProposerRequest| {
             Box::pin(async move {
-                Ok(proposer_client::rpc::AggSpanProofProposerResponse {
-                    proof_id: FixedBytes::new([0; 32]),
+                Ok(proposer_client::rpc::AggregationProofProposerResponse {
+                    request_id: FixedBytes::new([0; 32]),
                     start_block: request.start_block,
                     end_block: request.max_block,
                 })
             })
-        });
+        },
+    );
 
     let stdin = sp1_sdk::SP1Stdin::new();
 
