@@ -84,7 +84,10 @@ pub async fn main() -> anyhow::Result<()> {
     };
     match proposer_service.call(request).await {
         Ok(response) => {
-            info!("Proposer response: {:?}", response);
+            info!(
+                "Successfully retrieved proof, proposer response: {:?}",
+                response
+            );
         }
         Err(e) => {
             info!("Error: {:?}", e);

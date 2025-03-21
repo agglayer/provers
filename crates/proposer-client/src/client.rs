@@ -1,9 +1,9 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use sp1_sdk::SP1ProofWithPublicValues;
+use sp1_sdk::{SP1ProofWithPublicValues, SP1VerifyingKey};
 
-use crate::network_prover::AggSpanProver;
+use crate::network_prover::AggregatedProver;
 use crate::rpc::{
     AggregationProofProposer, AggregationProofProposerRequest, AggregationProofProposerResponse,
 };
@@ -28,7 +28,7 @@ pub struct Client<Proposer, Prover> {
 impl<Proposer, Prover> Client<Proposer, Prover>
 where
     Proposer: AggregationProofProposer,
-    Prover: AggSpanProver,
+    Prover: AggregatedProver,
 {
     pub fn new(
         proposer: Proposer,
@@ -47,7 +47,7 @@ where
 impl<Proposer, Prover> ProposerClient for Client<Proposer, Prover>
 where
     Proposer: AggregationProofProposer + Sync + Send,
-    Prover: AggSpanProver + Sync + Send,
+    Prover: AggregatedProver + Sync + Send,
 {
     async fn request_agg_proof(
         &self,
@@ -64,5 +64,16 @@ where
             .wait_for_proof(request_id.0, self.proving_timeout)
             .await
             .map_err(|e| Error::Proving(request_id, e.to_string()))
+    }
+
+    fn verify_agg_proof(
+        &self,
+        request_id: RequestId,
+        proof: &SP1ProofWithPublicValues,
+        vkey: &SP1VerifyingKey,
+    ) -> Result<(), Error> {
+        self.prover_rpc
+            .verify_aggregated_proof(proof, vkey)
+            .map_err(|source| Error::Verification { request_id, source })
     }
 }

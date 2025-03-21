@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
@@ -9,6 +10,7 @@ use proposer_client::rpc::{AggregationProofProposerRequest, ProposerRpcClient};
 pub use proposer_client::FepProposerRequest as ProposerRequest;
 use proposer_client::RequestId;
 use prover_alloy::Provider;
+use sp1_prover::SP1VerifyingKey;
 use sp1_sdk::NetworkProver;
 use tracing::info;
 
@@ -69,7 +71,11 @@ impl<L1Rpc>
                 network_prover,
                 Some(config.client.proving_timeout),
             )?),
-            aggregation_vkey_hash: AGGREGATION_VKEY_HASH,
+            // aggregation_vkey_hash: AGGREGATION_VKEY_HASH,
+            aggregation_vkey_hash: VKeyHash::from_str(
+                "3f2bbca23ecbc5e552a398d657526f450a8c81dd77b1831529199e5c48ec429c",
+            )
+            .expect("valid vkey hash"),
         })
     }
 }
@@ -136,14 +142,25 @@ where
             info!("Aggregation proof request submitted: {}", request_id);
 
             // Wait for the prover to finish aggregating span proofs
-            let proofs = client.wait_for_proof(request_id).await?;
+            let proofs = client.wait_for_proof(request_id.clone()).await?;
+
             let proof_mode: sp1_sdk::SP1ProofMode = (&proofs.proof).into();
             let aggregation_proof: AggregationProof = proofs
                 .proof
+                .clone()
                 .try_as_compressed()
                 .ok_or_else(|| Error::UnsupportedAggregationProofMode(proof_mode))?;
 
             check_aggregation_vkey(&aggregation_proof, expected_vkey_hash)?;
+
+            // Verify received proof
+            // self.client.verify_agg_proof(
+            //     request_id,
+            //     &proofs,
+            //     &SP1VerifyingKey {
+            //         vk: aggregation_proof.vk.clone(),
+            //     },
+            // )?;
 
             Ok(ProposerResponse {
                 aggregation_proof,
