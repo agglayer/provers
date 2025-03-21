@@ -2,24 +2,36 @@ use crate::ProofId;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("Unable to create RPC client")]
-    UnableToCreateRPCClient(#[source] jsonrpsee::core::client::Error),
-
-    #[error("An error occurred while requesting an aggregated proof")]
-    AggProofRequestFailed(#[source] jsonrpsee::core::client::Error),
-
-    #[error("Reqwest http error: {0}")]
-    Reqwest(#[from] reqwest::Error),
-
-    #[error("Invalid proof_id: {0:?}")]
-    InvalidProofId(String),
-
-    #[error("Proof request with proof_id: {0} timeout")]
-    Timeout(ProofId),
-
-    #[error("Proof request with proof_id: {0} is unfulfillable")]
-    ProofRequestUnfulfillable(ProofId),
+    #[error("Error requesting proof")]
+    Requesting(#[source] ProofRequestError),
 
     #[error("Proof request with proof_id {0} error: {1:?}")]
     Proving(ProofId, String),
+
+    #[error("Error initializing grpc connection")]
+    Connect(tonic::transport::Error),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum ProofRequestError {
+    #[error("Cannot compose grpc request")]
+    ComposingRequest(#[source] GrpcConversionError),
+
+    #[error("Cannot parse grpc response")]
+    ParsingResponse(#[source] GrpcConversionError),
+
+    #[error("Request failed: {0}")]
+    Failed(String),
+
+    #[error("Grpc request error")]
+    Grpc(#[source] tonic::Status),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum GrpcConversionError {
+    #[error("Conversion of `{field}` failed")]
+    Conversion {
+        field: &'static str,
+        source: anyhow::Error,
+    },
 }
