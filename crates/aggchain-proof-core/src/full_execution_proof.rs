@@ -22,30 +22,32 @@ pub const OUTPUT_ROOT_VERSION: [u8; 32] = [0u8; 32];
 
 /// Public values to verify the FEP.
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct FepPublicValues {
-    /// OP succint values.
+pub struct FepInputs {
+    /// OP succinct values.
     pub l1_head: Digest,
     pub claim_block_num: u32,
     pub rollup_config_hash: Digest,
+    /// Pre root values.
     pub prev_state_root: Digest,
     pub prev_withdrawal_storage_root: Digest,
     pub prev_block_hash: Digest,
+    /// Claim root values.
     pub new_state_root: Digest,
     pub new_withdrawal_storage_root: Digest,
     pub new_block_hash: Digest,
 
-    /// L1 info tree leaf and index containing the `l1Head` as block hash.
-    pub l1_info_tree_leaf: (u32, L1InfoTreeLeaf),
-    /// Inclusion proof of the leaf to the l1 info root.
-    pub l1_head_inclusion_proof: LETMerkleProof<Keccak256Hasher>,
     /// Trusted sequencer address.
     pub trusted_sequencer: Address,
     /// Signature in the "OptimisticMode" case.
     pub signature_optimistic_mode: Option<PrimitiveSignature>,
+    /// L1 info tree leaf and index containing the `l1Head` as block hash.
+    pub l1_info_tree_leaf: (u32, L1InfoTreeLeaf),
+    /// Inclusion proof of the leaf to the l1 info root.
+    pub l1_head_inclusion_proof: LETMerkleProof<Keccak256Hasher>,
 }
 
-impl FepPublicValues {
-    pub fn hash(&self) -> [u8; 32] {
+impl FepInputs {
+    pub fn sha256_public_values(&self) -> [u8; 32] {
         let public_values = [
             self.l1_head.as_slice(),
             self.compute_l2_pre_root().as_slice(),
@@ -67,7 +69,7 @@ enum OptimisticMode {
     Ecdsa = 1,
 }
 
-impl FepPublicValues {
+impl FepInputs {
     /// Compute the chain-specific commitment forwarded to the PP.
     pub fn aggchain_params(&self) -> Digest {
         let optimistic_mode: u8 = self.optimistic_mode() as u8;
@@ -100,7 +102,7 @@ impl FepPublicValues {
         if let Some(signature) = self.signature_optimistic_mode {
             // Verify only one ECDSA on the public inputs
             let signature_commitment = keccak256_combine([
-                self.hash(),
+                self.sha256_public_values(),
                 new_local_exit_root.0,
                 commit_imported_bridge_exits.0,
             ]);
@@ -138,8 +140,8 @@ impl FepPublicValues {
     }
 }
 
-impl FepPublicValues {
-    // Verify that the `l1Head` considered by the FEP exists in the L1 Info Tree
+impl FepInputs {
+    /// Verify that the `l1Head` considered by the FEP exists in the L1 Info Tree
     pub fn verify_l1_head(&self, l1_info_root: Digest) -> Result<(), ProofError> {
         if self.l1_head != self.l1_info_tree_leaf.1.block_hash {
             return Err(ProofError::MismatchL1Head {

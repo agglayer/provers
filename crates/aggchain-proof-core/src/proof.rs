@@ -5,7 +5,7 @@ use crate::Digest;
 use crate::{
     bridge::{BridgeConstraintsInput, BridgeWitness, L2_GER_ADDR},
     error::ProofError,
-    full_execution_proof::FepPublicValues,
+    full_execution_proof::FepInputs,
     keccak::keccak256_combine,
 };
 
@@ -28,7 +28,7 @@ pub struct AggchainProofWitness {
     /// Origin network for which the proof was generated.
     pub origin_network: u32,
     /// Full execution proof with its metadata.
-    pub fep: FepPublicValues,
+    pub fep: FepInputs,
     /// List of the global index of each imported bridge exit.
     pub global_indices: Vec<B256>,
     /// Bridge witness related data.
