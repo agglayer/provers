@@ -9,7 +9,8 @@ use proposer_client::rpc::{AggregationProofProposerRequest, ProposerRpcClient};
 pub use proposer_client::FepProposerRequest as ProposerRequest;
 use proposer_client::RequestId;
 use prover_alloy::Provider;
-use sp1_sdk::NetworkProver;
+use sp1_prover::SP1VerifyingKey;
+use sp1_sdk::{NetworkProver, Prover};
 use tracing::info;
 
 use crate::config::ProposerServiceConfig;
@@ -29,16 +30,15 @@ pub mod error;
 #[cfg(test)]
 mod tests;
 
-const AGGREGATION_VKEY_HASH: VKeyHash =
-    VKeyHash::from_hash_u32(aggchain_proof_core::AGGREGATION_VKEY_HASH);
+pub const AGGREGATION_ELF: &[u8] = include_bytes!("../elf/aggregation-elf");
 
 pub struct ProposerService<L1Rpc, ProposerClient> {
     pub client: Arc<ProposerClient>,
 
     pub l1_rpc: Arc<L1Rpc>,
 
-    /// Expected aggregated span proof verification key.
-    aggregation_vkey_hash: VKeyHash,
+    /// Aggregated span proof verification key.
+    aggregation_vkey_hash: SP1VerifyingKey,
 }
 
 impl<L1Rpc, ProposerClient> Clone for ProposerService<L1Rpc, ProposerClient> {
@@ -46,7 +46,7 @@ impl<L1Rpc, ProposerClient> Clone for ProposerService<L1Rpc, ProposerClient> {
         Self {
             client: self.client.clone(),
             l1_rpc: self.l1_rpc.clone(),
-            aggregation_vkey_hash: self.aggregation_vkey_hash,
+            aggregation_vkey_hash: self.aggregation_vkey_hash.clone(),
         }
     }
 }
@@ -62,6 +62,8 @@ impl<L1Rpc>
         let network_prover = new_network_prover(config.client.sp1_cluster_endpoint.as_str())
             .map_err(Error::UnableToCreateNetworkProver)?;
 
+        let aggregation_vkey_hash = Self::extract_aggregation_vkey(AGGREGATION_ELF)?;
+
         Ok(Self {
             l1_rpc,
             client: Arc::new(proposer_client::client::Client::new(
@@ -69,24 +71,16 @@ impl<L1Rpc>
                 network_prover,
                 Some(config.client.proving_timeout),
             )?),
-            aggregation_vkey_hash: AGGREGATION_VKEY_HASH,
+            // aggregation_vkey_hash: AGGREGATION_VKEY_HASH,
+            aggregation_vkey_hash,
         })
     }
-}
 
-fn check_aggregation_vkey(
-    proof: &AggregationProof,
-    expected_vkey_hash: VKeyHash,
-) -> Result<(), Error> {
-    let vkey_hash = VKeyHash::from_vkey(&proof.vk);
-    if vkey_hash != expected_vkey_hash {
-        return Err(Error::AggregationVKeyMismatch {
-            got: vkey_hash,
-            expected: expected_vkey_hash,
-        });
+    fn extract_aggregation_vkey(elf: &[u8]) -> Result<SP1VerifyingKey, Error> {
+        let client = sp1_sdk::ProverClient::builder().network().build();
+        let (_pkey, vkey) = client.setup(elf);
+        Ok(vkey)
     }
-
-    Ok(())
 }
 
 impl<L1Rpc, ProposerClient> tower::Service<ProposerRequest>
@@ -115,7 +109,7 @@ where
     ) -> Self::Future {
         let client = self.client.clone();
         let l1_rpc = self.l1_rpc.clone();
-        let expected_vkey_hash = self.aggregation_vkey_hash;
+        let aggregation_vkey_hash = self.aggregation_vkey_hash.clone();
 
         async move {
             let l1_block_number = l1_rpc
@@ -136,14 +130,17 @@ where
             info!("Aggregation proof request submitted: {}", request_id);
 
             // Wait for the prover to finish aggregating span proofs
-            let proofs = client.wait_for_proof(request_id).await?;
+            let proofs = client.wait_for_proof(request_id.clone()).await?;
+
+            // Verify received proof
+            client.verify_agg_proof(request_id, &proofs, &aggregation_vkey_hash)?;
+
             let proof_mode: sp1_sdk::SP1ProofMode = (&proofs.proof).into();
             let aggregation_proof: AggregationProof = proofs
                 .proof
+                .clone()
                 .try_as_compressed()
                 .ok_or_else(|| Error::UnsupportedAggregationProofMode(proof_mode))?;
-
-            check_aggregation_vkey(&aggregation_proof, expected_vkey_hash)?;
 
             Ok(ProposerResponse {
                 aggregation_proof,

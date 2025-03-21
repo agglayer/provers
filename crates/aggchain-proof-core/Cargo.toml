@@ -13,7 +13,7 @@ alloy-sol-types = "0.8.21"
 alloy-rlp = "0.3.10"
 
 # sp1
-sp1-zkvm = { version = "=4.1.2", features = ["verify"] }
+sp1-zkvm = { version = "=4.1.4", features = ["verify"] }
 sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "c9bdace" }
 
 eyre = "0.6.12"
