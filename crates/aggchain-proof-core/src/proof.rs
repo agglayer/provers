@@ -1,12 +1,10 @@
-use alloy_primitives::{keccak256, B256};
 use serde::{Deserialize, Serialize};
 
 use crate::Digest;
 use crate::{
     bridge::{BridgeConstraintsInput, BridgeWitness, L2_GER_ADDR},
     error::ProofError,
-    full_execution_proof::FepInputs,
-    keccak::keccak256_combine,
+    full_execution_proof::FepInputs
 };
 
 /// Aggchain proof is generated from the FEP proof and additional
@@ -30,7 +28,7 @@ pub struct AggchainProofWitness {
     /// Full execution proof with its metadata.
     pub fep: FepInputs,
     /// List of the global index of each imported bridge exit.
-    pub global_indices: Vec<B256>,
+    pub committed_imported_bridge_exits: Digest,
     /// Bridge witness related data.
     pub bridge_witness: BridgeWitness,
 }
@@ -41,7 +39,7 @@ impl AggchainProofWitness {
         self.fep.verify(
             self.l1_info_root,
             self.new_local_exit_root,
-            compute_commit_imported_bridge_exits(&self.global_indices),
+            self.committed_imported_bridge_exits,
         )?;
 
         // Verify the bridge constraints
@@ -58,9 +56,7 @@ impl AggchainProofWitness {
             new_local_exit_root: self.new_local_exit_root,
             l1_info_root: self.l1_info_root,
             origin_network: self.origin_network,
-            commit_imported_bridge_exits: compute_commit_imported_bridge_exits(
-                &self.global_indices,
-            ),
+            commit_imported_bridge_exits: self.committed_imported_bridge_exits,
             aggchain_params: self.fep.aggchain_params(),
         }
     }
@@ -74,7 +70,7 @@ impl AggchainProofWitness {
             new_l2_block_hash: self.fep.new_block_hash,
             new_local_exit_root: self.new_local_exit_root,
             l1_info_root: self.l1_info_root,
-            global_indices: self.global_indices.clone(),
+            committed_imported_bridge_exits: self.committed_imported_bridge_exits,
             bridge_witness: self.bridge_witness.clone(),
         }
     }
@@ -95,9 +91,4 @@ pub struct AggchainProofPublicValues {
     pub commit_imported_bridge_exits: Digest,
     /// Chain-specific commitment forwarded by the PP.
     pub aggchain_params: Digest,
-}
-
-/// Helper function to compute the commitment for global indices.
-pub fn compute_commit_imported_bridge_exits(global_indices: &[B256]) -> Digest {
-    keccak256_combine(global_indices.iter().map(|idx| keccak256(idx.as_slice())))
 }
