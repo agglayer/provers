@@ -131,7 +131,7 @@ impl FepInputs {
             {
                 sp1_zkvm::lib::verify::verify_sp1_proof(
                     &AGGREGATION_VKEY_HASH,
-                    &self.hash().into(),
+                    &self.sha256_public_values().into(),
                 );
 
                 return Ok(());
