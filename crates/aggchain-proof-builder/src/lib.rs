@@ -152,6 +152,8 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             + L2EVMStateSketchesFetched
             + L1RollupConfigHashFetcher,
     {
+        let block_range = request.aggchain_proof_inputs.start_block..request.end_block; // Handle +-1
+
         // Fetch from RPCs
         let prev_local_exit_root = contracts_client
             .get_l2_local_exit_root(request.aggchain_proof_inputs.start_block - 1)
@@ -190,39 +192,39 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 
+        let trusted_sequencer = Address::default(); // TODO: from config or l1
+
         // From the request
         let inserted_gers: Vec<InsertedGER> = request
             .aggchain_proof_inputs
             .ger_leaves
             .values()
+            .filter(|inserted_ger| block_range.contains(&inserted_ger.block_number))
             .cloned()
-            .map(|claim_data| {
+            .map(|elmt| {
                 Ok(InsertedGER {
-                    proof: claim_data.inserted_ger.proof_ger_l1root,
-                    l1_info_tree_leaf: claim_data.inserted_ger.l1_leaf,
+                    proof: elmt.inserted_ger.proof_ger_l1root,
+                    l1_info_tree_leaf: elmt.inserted_ger.l1_leaf,
                 })
             })
             .collect::<Result<Vec<_>, _>>()?;
 
+        // NOTE: Corresponds to all of them because we do not have removed GERs yet.
         let inserted_gers_hash_chain = inserted_gers
             .iter()
             .map(|inserted_ger| inserted_ger.ger())
             .collect();
 
+        // NOTE: Corresponds to all of them because we do not have unset claims yet.
         let global_indices: Vec<B256> = request
             .aggchain_proof_inputs
             .imported_bridge_exits
             .iter()
+            .filter(|ib| block_range.contains(&ib.block_number))
             .map(|ib| encoded_global_index(&ib.imported_bridge_exit.global_index))
             .collect();
 
         let l1_info_tree_leaf = request.aggchain_proof_inputs.l1_info_tree_leaf;
-
-        // Considered empty for now
-        let (removed_gers_hash_chain, global_indices_unset) = (vec![], vec![]);
-
-        let trusted_sequencer = Address::default(); // TODO: from config or l1
-
         let fep = FepPublicValues {
             l1_head: l1_info_tree_leaf.inner.block_hash,
             claim_block_num: request.end_block as u32,
@@ -249,9 +251,9 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             bridge_witness: BridgeWitness {
                 inserted_gers,
                 global_indices_claimed: global_indices,
-                global_indices_unset,
+                global_indices_unset: vec![], // NOTE: no unset yet.
                 raw_inserted_gers: inserted_gers_hash_chain,
-                removed_gers: removed_gers_hash_chain,
+                removed_gers: vec![], // NOTE: no removed GERs yet.
                 prev_l2_block_sketch,
                 new_l2_block_sketch,
             },

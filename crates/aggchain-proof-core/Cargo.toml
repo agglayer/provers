@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 agglayer-primitives.workspace = true
-agglayer-interop.workspace = true
+agglayer-interop = { git = "https://github.com/agglayer/interop.git", package = "agglayer-interop" }
 
 # alloy
 alloy-primitives.workspace = true
