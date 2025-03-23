@@ -1,3 +1,5 @@
+use aggchain_proof_core::bridge::static_call::StaticCallStage;
+
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("Unable to create alloy node provider")]
@@ -44,4 +46,22 @@ pub enum Error {
 
     #[error("Error retrieving aggchain vkey")]
     AggchainVKeyRetrievalError(#[source] alloy::contract::Error),
+
+    #[error("Invalid host static call at stage: {stage:?}")]
+    InvalidHostStaticCall {
+        source: eyre::Report,
+        stage: StaticCallStage,
+    },
+
+    #[error("Invalid sketch finalization for the pre L2 block.")]
+    InvalidPreBlockSketchFinalization(#[source] eyre::Report),
+
+    #[error("Invalid sketch finalization for the new L2 block.")]
+    InvalidNewBlockSketchFinalization(#[source] eyre::Report),
+
+    #[error("Failure on the initialization of the HostExecutor for pre L2 block.")]
+    HostExecutorPreBlockInitialization(#[source] eyre::Report),
+
+    #[error("Failure on the initialization of the HostExecutor for new L2 block.")]
+    HostExecutorNewBlockInitialization(#[source] eyre::Report),
 }

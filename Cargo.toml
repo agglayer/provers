@@ -42,7 +42,7 @@ agglayer-primitives = { git = "https://github.com/agglayer/interop.git" }
 agglayer-interop = { git = "https://github.com/agglayer/interop.git" }
 
 # Core dependencies
-alloy = { version = '0.11.0', features = ["full"] }
+alloy = { version = '0.12.6', features = ["full"] }
 alloy-primitives = { version = "0.8.15", features = ["serde", "k256"] }
 anyhow = "1.0.94"
 arc-swap = "1.7.1"
@@ -57,6 +57,7 @@ educe = "0.6"
 ethers = "2.0.14"
 ethers-gcp-kms-signer = "0.1.5"
 ethers-signers = "2.0.14"
+eyre = "0.6.12"
 futures = "0.3.31"
 hex = "0.4.3"
 hyper = "1.5.2"
@@ -101,5 +102,5 @@ sp1-core-machine = "=4.1.2"
 sp1-sdk = "=4.1.2"
 sp1-prover = "=4.1.2"
 sp1-zkvm = "=4.1.2"
-sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "c9bdace" }
-sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "c9bdace" }
+sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", branch = "aurelien/gro2-382-update-sp1-contract-call-to-latest-rsp" }
+sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", branch = "aurelien/gro2-382-update-sp1-contract-call-to-latest-rsp" }

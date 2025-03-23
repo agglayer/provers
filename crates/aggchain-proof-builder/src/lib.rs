@@ -278,6 +278,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     }
 
     /// Generate aggchain proof
+    #[allow(unused)]
     pub(crate) async fn generate_aggchain_proof(
         mut _prover: ProverService,
         _inputs: AggchainProverInputs,

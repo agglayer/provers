@@ -47,6 +47,13 @@ pub(crate) type PolygonRollupManagerRpcClient<RpcProvider> =
 pub(crate) type AggchainFepRpcClient<RpcProvider> =
     AggchainFep::AggchainFepInstance<(), RpcProvider, Ethereum>;
 
+pub(crate) type GlobalExitRootManagerL2SovereignChainRpcClient<RpcProvider> =
+    GlobalExitRootManagerL2SovereignChain::GlobalExitRootManagerL2SovereignChainInstance<
+        (),
+        RpcProvider,
+        Ethereum,
+    >;
+
 #[async_trait::async_trait]
 pub trait L2LocalExitRootFetcher {
     async fn get_l2_local_exit_root(&self, block_number: u64) -> Result<Digest, Error>;

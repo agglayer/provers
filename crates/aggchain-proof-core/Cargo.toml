@@ -17,7 +17,7 @@ alloy-rlp = "0.3.10"
 sp1-zkvm = { version = "=4.1.2", features = ["verify"] }
 sp1-cc-client-executor.workspace = true
 
-eyre = "0.6.12"
+eyre.workspace = true
 hex.workspace = true
 k256 = "0.13.4"
 serde.workspace = true

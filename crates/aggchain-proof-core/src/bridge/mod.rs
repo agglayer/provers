@@ -14,7 +14,7 @@ use static_call::{HashChainType, StaticCallError, StaticCallStage, StaticCallWit
 use crate::keccak256_combine;
 
 pub mod inserted_ger;
-mod static_call;
+pub mod static_call;
 
 /// NOTE: Won't work with Outpost networks as this address won't be constant.
 /// Address of the GlobalExitRootManagerL2SovereignChain smart contract.
