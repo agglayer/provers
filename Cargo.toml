@@ -101,3 +101,5 @@ sp1-core-machine = "=4.1.2"
 sp1-sdk = "=4.1.2"
 sp1-prover = "=4.1.2"
 sp1-zkvm = "=4.1.2"
+sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "c9bdace" }
+sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "c9bdace" }

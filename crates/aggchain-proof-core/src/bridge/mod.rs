@@ -2,6 +2,7 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 
+use agglayer_primitives::digest::Digest;
 use alloy_primitives::{address, Address, B256};
 use alloy_sol_macro::sol;
 use alloy_sol_types::SolCall;
@@ -10,9 +11,9 @@ use serde::{Deserialize, Serialize};
 use sp1_cc_client_executor::io::EVMStateSketch;
 use static_call::{HashChainType, StaticCallError, StaticCallStage, StaticCallWithContext};
 
-use crate::{keccak::keccak256_combine, Digest};
+use crate::keccak256_combine;
 
-pub(crate) mod inserted_ger;
+pub mod inserted_ger;
 mod static_call;
 
 /// NOTE: Won't work with Outpost networks as this address won't be constant.
@@ -363,7 +364,7 @@ impl BridgeConstraintsInput {
         if let Some(wrong_ger) = maybe_wrong_inserted_ger {
             return Err(BridgeConstraintsError::InvalidMerklePathGERToL1Root {
                 inserted_ger: wrong_ger.ger(),
-                l1_info_leaf_index: wrong_ger.l1_info_tree_index,
+                l1_info_leaf_index: wrong_ger.l1_info_tree_leaf.l1_info_tree_index,
                 l1_info_root: self.l1_info_root,
             });
         }

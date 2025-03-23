@@ -36,6 +36,8 @@ dependencies = [
  "aggchain-proof-core",
  "aggchain-proof-types",
  "agglayer-interop",
+ "alloy",
+ "alloy-primitives",
  "anyhow",
  "bincode",
  "futures",
@@ -66,6 +68,8 @@ dependencies = [
  "prover-utils",
  "serde",
  "serde_json",
+ "sp1-cc-client-executor",
+ "sp1-cc-host-executor",
  "test-log",
  "thiserror 2.0.11",
  "tokio",
@@ -77,6 +81,7 @@ dependencies = [
 name = "aggchain-proof-core"
 version = "0.1.0"
 dependencies = [
+ "agglayer-interop",
  "agglayer-primitives",
  "alloy",
  "alloy-primitives",
@@ -136,6 +141,7 @@ dependencies = [
  "alloy-primitives",
  "serde",
  "sp1-core-executor",
+ "thiserror 2.0.11",
 ]
 
 [[package]]

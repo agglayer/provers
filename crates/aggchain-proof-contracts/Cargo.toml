@@ -23,6 +23,10 @@ prover-alloy.workspace = true
 prover-utils.workspace = true
 mockall = { workspace = true, optional = true }
 
+# SP1 dependencies
+sp1-cc-client-executor.workspace = true
+sp1-cc-host-executor.workspace = true
+
 [dev-dependencies]
 mockito.workspace = true
 test-log.workspace = true

@@ -5,16 +5,24 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 
 use aggchain_proof_contracts::contracts::{
-    L1RollupConfigHashFetcher, L2LocalExitRootFetcher, L2OutputAtBlockFetcher,
+    L1RollupConfigHashFetcher, L2EVMStateSketchesFetched, L2LocalExitRootFetcher,
+    L2OutputAtBlockFetcher,
 };
 use aggchain_proof_contracts::AggchainContractsClient;
+use aggchain_proof_core::bridge::inserted_ger::InsertedGER;
+use aggchain_proof_core::bridge::BridgeWitness;
+use aggchain_proof_core::full_execution_proof::FepPublicValues;
 use aggchain_proof_core::proof::{AggchainProofPublicValues, AggchainProofWitness};
 use aggchain_proof_core::Digest;
 use aggchain_proof_types::AggchainProofInputs;
+use agglayer_interop::types::GlobalIndex;
+use alloy::eips::BlockNumberOrTag;
+use alloy_primitives::{Address, FixedBytes};
 use bincode::Options;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use prover_executor::{Executor, ProofType};
+use sp1_sdk::network::B256;
 use sp1_sdk::{SP1Stdin, SP1VerifyingKey};
 use tower::buffer::Buffer;
 use tower::util::BoxService;
@@ -83,6 +91,30 @@ pub struct AggchainProofBuilder<ContractsClient> {
     aggchain_proof_vkey: SP1VerifyingKey,
 }
 
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum WitnessGeneration {
+    #[error("Invalid inserted GER.")]
+    InvalidInsertedGer,
+    #[error("Cannot interpret the aggregation proof as 'compressed' type.")]
+    WrongAggregationProofType,
+}
+
+pub fn encoded_global_index(value: &GlobalIndex) -> FixedBytes<32> {
+    let mut bytes = [0u8; 32];
+
+    let leaf_bytes = value.leaf_index.to_le_bytes();
+    bytes[0..4].copy_from_slice(&leaf_bytes);
+
+    let rollup_bytes = value.rollup_index.to_le_bytes();
+    bytes[4..8].copy_from_slice(&rollup_bytes);
+
+    if value.mainnet_flag {
+        bytes[8] |= 0x01;
+    }
+
+    bytes.into()
+}
+
 impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     pub async fn new(
         config: &AggchainProofBuilderConfig,
@@ -112,38 +144,143 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     pub(crate) async fn retrieve_chain_data(
         contracts_client: Arc<ContractsClient>,
         request: AggchainProofBuilderRequest,
-        _network_id: u32,
+        network_id: u32,
     ) -> Result<AggchainProverInputs, Error>
     where
-        ContractsClient:
-            L2LocalExitRootFetcher + L2OutputAtBlockFetcher + L1RollupConfigHashFetcher,
+        ContractsClient: L2LocalExitRootFetcher
+            + L2OutputAtBlockFetcher
+            + L2EVMStateSketchesFetched
+            + L1RollupConfigHashFetcher,
     {
-        let _prev_local_exit_root = contracts_client
+        // Fetch from RPCs
+        let prev_local_exit_root = contracts_client
             .get_l2_local_exit_root(request.aggchain_proof_inputs.start_block - 1)
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 
-        let _new_local_exit_root = contracts_client
+        let new_local_exit_root = contracts_client
             .get_l2_local_exit_root(request.end_block)
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 
-        let _l2_pre_root_output_at_block = contracts_client
+        let l2_pre_root_output_at_block = contracts_client
             .get_l2_output_at_block(request.aggchain_proof_inputs.start_block - 1)
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 
-        let _claim_root_output_at_block = contracts_client
+        let claim_root_output_at_block = contracts_client
             .get_l2_output_at_block(request.end_block)
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 
-        let _rollup_config_hash = contracts_client
+        let rollup_config_hash = contracts_client
             .get_rollup_config_hash()
             .await
             .map_err(Error::L1ChainDataRetrievalError)?;
 
-        todo!("Fill the proof witness struct with the retrieved data");
+        let prev_l2_block_sketch = contracts_client
+            .get_prev_l2_block_sketch(BlockNumberOrTag::Number(
+                request.aggchain_proof_inputs.start_block,
+            ))
+            .await
+            .map_err(Error::L2ChainDataRetrievalError)?;
+
+        let new_l2_block_sketch = contracts_client
+            .get_new_l2_block_sketch(BlockNumberOrTag::Number(request.end_block))
+            .await
+            .map_err(Error::L2ChainDataRetrievalError)?;
+
+        // From the request
+        let inserted_gers: Vec<InsertedGER> = request
+            .aggchain_proof_inputs
+            .ger_leaves
+            .values()
+            .cloned()
+            .map(|claim_data| {
+                Ok(InsertedGER {
+                    proof: claim_data.inserted_ger.proof_ger_l1root,
+                    l1_info_tree_leaf: claim_data.inserted_ger.l1_leaf,
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let inserted_gers_hash_chain = inserted_gers
+            .iter()
+            .map(|inserted_ger| inserted_ger.ger())
+            .collect();
+
+        let global_indices: Vec<B256> = request
+            .aggchain_proof_inputs
+            .imported_bridge_exits
+            .iter()
+            .map(|ib| encoded_global_index(&ib.imported_bridge_exit.global_index))
+            .collect();
+
+        let l1_info_tree_leaf = request.aggchain_proof_inputs.l1_info_tree_leaf;
+
+        // Considered empty for now
+        let (removed_gers_hash_chain, global_indices_unset) = (vec![], vec![]);
+
+        let trusted_sequencer = Address::default(); // TODO: from config or l1
+
+        let fep = FepPublicValues {
+            l1_head: l1_info_tree_leaf.inner.block_hash,
+            claim_block_num: request.end_block as u32,
+            rollup_config_hash,
+            prev_state_root: l2_pre_root_output_at_block.state_root,
+            prev_withdrawal_storage_root: l2_pre_root_output_at_block.withdrawal_storage_root,
+            prev_block_hash: l2_pre_root_output_at_block.latest_block_hash,
+            new_state_root: claim_root_output_at_block.state_root,
+            new_withdrawal_storage_root: claim_root_output_at_block.withdrawal_storage_root,
+            new_block_hash: claim_root_output_at_block.latest_block_hash,
+            trusted_sequencer,
+            signature_optimistic_mode: None, // unsupported for now
+        };
+
+        let prover_witness = AggchainProofWitness {
+            prev_local_exit_root,
+            new_local_exit_root,
+            l1_info_root: request.aggchain_proof_inputs.l1_info_tree_root_hash,
+            origin_network: network_id,
+            fep,
+            l1_info_tree_leaf,
+            l1_head_inclusion_proof: request.aggchain_proof_inputs.l1_info_tree_merkle_proof,
+            global_indices: global_indices.clone(),
+            bridge_witness: BridgeWitness {
+                inserted_gers,
+                global_indices_claimed: global_indices,
+                global_indices_unset,
+                raw_inserted_gers: inserted_gers_hash_chain,
+                removed_gers: removed_gers_hash_chain,
+                prev_l2_block_sketch,
+                new_l2_block_sketch,
+            },
+        };
+
+        let aggregation_proof = request.aggregation_proof;
+        let aggregation_vkey = aggregation_proof.vk.clone();
+        let witness = prover_witness.clone();
+        let sp1_stdin = {
+            let mut stdin = SP1Stdin::new();
+            stdin.write(&prover_witness);
+            stdin.write_proof(*aggregation_proof, aggregation_vkey);
+            stdin
+        };
+
+        Ok(AggchainProverInputs {
+            start_block: request.aggchain_proof_inputs.start_block,
+            end_block: request.end_block,
+            stdin: sp1_stdin,
+            proof_witness: witness,
+        })
+    }
+
+    /// Generate aggchain proof
+    pub(crate) async fn generate_aggchain_proof(
+        mut _prover: ProverService,
+        _inputs: AggchainProverInputs,
+    ) -> Result<AggchainProofBuilderResponse, Error> {
+        todo!()
     }
 }
 

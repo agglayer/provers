@@ -9,12 +9,20 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use agglayer_interop::types::Digest;
-use alloy::primitives::B256;
+use alloy::eips::BlockNumberOrTag;
+use alloy::network::AnyNetwork;
+use alloy::primitives::{Address, B256};
+use alloy::providers::RootProvider;
+use contracts::L2EVMStateSketchesFetched;
 use jsonrpsee::core::client::ClientT;
 use jsonrpsee::http_client::HttpClient;
 use jsonrpsee::rpc_params;
 use prover_alloy::{build_alloy_fill_provider, AlloyFillProvider};
+use sp1_cc_client_executor::io::EVMStateSketch;
+use sp1_cc_client_executor::ContractInput;
+use sp1_cc_host_executor::HostExecutor;
 use tracing::info;
+use url::Url;
 
 use crate::config::AggchainProofContractsConfig;
 use crate::contracts::{
@@ -27,7 +35,10 @@ pub use crate::error::Error;
 /// `AggchainContractsClient` is a trait for interacting with the smart
 /// contracts relevant for the aggchain prover.
 pub trait AggchainContractsClient:
-    L2LocalExitRootFetcher + L2OutputAtBlockFetcher + L1RollupConfigHashFetcher
+    L2LocalExitRootFetcher
+    + L2OutputAtBlockFetcher
+    + L1RollupConfigHashFetcher
+    + L2EVMStateSketchesFetched
 {
 }
 
@@ -40,6 +51,9 @@ pub struct AggchainContractsRpcClient<RpcProvider> {
 
     /// L2 rpc execution layer client.
     _l2_el_client: Arc<RpcProvider>,
+
+    /// L2 rpc execution layer client.
+    l2_archive_endpoint: Url, // TODO: put directly RootProvider
 
     /// L2 rpc consensus layer client (rollup node).
     l2_cl_client: Arc<HttpClient>,
@@ -102,6 +116,45 @@ where
             .map_err(Error::RollupConfigHashError)?;
 
         Ok((*response._0).into())
+    }
+}
+
+#[async_trait::async_trait]
+impl<RpcProvider> L2EVMStateSketchesFetched for AggchainContractsRpcClient<RpcProvider>
+where
+    RpcProvider: alloy::providers::Provider + Send + Sync,
+{
+    async fn get_prev_l2_block_sketch(
+        &self,
+        prev_l2_block: BlockNumberOrTag,
+    ) -> Result<EVMStateSketch, Error> {
+        let root_provider = RootProvider::<AnyNetwork>::new_http(self.l2_archive_endpoint.clone());
+        let mut executor: HostExecutor<RootProvider<AnyNetwork>> =
+            HostExecutor::new(root_provider, prev_l2_block)
+                .await
+                .expect("d");
+
+        let _ = executor
+            .execute(ContractInput::new_call(
+                Address::default(), // should be ger
+                Address::default(),
+                GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
+            ))
+            .await
+            .expect("todo");
+
+        //let bridge_address_sketch = executor.finalize().await.expect("todo");
+
+        let prev_l2_block_sketch: EVMStateSketch = todo!();
+
+        Ok(prev_l2_block_sketch)
+    }
+
+    async fn get_new_l2_block_sketch(
+        &self,
+        _new_l2_block: BlockNumberOrTag,
+    ) -> Result<EVMStateSketch, Error> {
+        todo!()
     }
 }
 
@@ -204,6 +257,7 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             l2_cl_client,
             polygon_zkevm_bridge_v2,
             aggchain_fep,
+            l2_archive_endpoint: config.l2_execution_layer_rpc_endpoint.clone(),
         })
     }
 }

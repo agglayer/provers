@@ -1,23 +1,14 @@
+use agglayer_interop::types::{L1InfoTreeLeaf, MerkleProof};
+use agglayer_primitives::digest::Digest;
 use alloy_primitives::{keccak256, B256};
 use serde::{Deserialize, Serialize};
 
-use crate::Digest;
 use crate::{
     bridge::{BridgeConstraintsInput, BridgeWitness, L2_GER_ADDR},
     error::ProofError,
     full_execution_proof::FepPublicValues,
-    keccak::keccak256_combine,
-    local_exit_tree::{hasher::Keccak256Hasher, proof::LETMerkleProof},
-    L1InfoTreeLeaf,
+    keccak256_combine,
 };
-
-/// Aggchain proof is generated from the FEP proof and additional
-/// bridge information.
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct AggchainProof {
-    //pub proof: SP1ProofWithPublicValues,
-    //TODO add all necessary fields
-}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AggchainProofWitness {
@@ -31,10 +22,10 @@ pub struct AggchainProofWitness {
     pub origin_network: u32,
     /// Full execution proof with its metadata.
     pub fep: FepPublicValues,
-    /// L1 info tree leaf and index containing the `l1Head` as block hash.
-    pub l1_info_tree_leaf: (u32, L1InfoTreeLeaf),
+    /// L1 info tree leaf containing the `l1Head` as block hash.
+    pub l1_info_tree_leaf: L1InfoTreeLeaf,
     /// Inclusion proof of the leaf to the l1 info root.
-    pub l1_head_inclusion_proof: LETMerkleProof<Keccak256Hasher>,
+    pub l1_head_inclusion_proof: MerkleProof,
     /// List of the global index of each imported bridge exit.
     pub global_indices: Vec<B256>,
     /// Bridge witness related data.
@@ -48,23 +39,23 @@ impl AggchainProofWitness {
 
         // Verify that the `l1Head` considered by the FEP exists in the L1 Info Tree
         {
-            if self.fep.l1_head != self.l1_info_tree_leaf.1.block_hash {
+            if self.fep.l1_head != self.l1_info_tree_leaf.inner.block_hash {
                 return Err(ProofError::MismatchL1Head {
-                    from_l1_info_tree_leaf: self.l1_info_tree_leaf.1.block_hash,
+                    from_l1_info_tree_leaf: self.l1_info_tree_leaf.inner.block_hash,
                     from_fep_public_values: self.fep.l1_head,
                 });
             }
 
             let inclusion_proof_valid = self.l1_head_inclusion_proof.verify(
-                self.l1_info_tree_leaf.1.hash(),
-                self.l1_info_tree_leaf.0,
-                self.l1_info_root,
+                self.l1_info_tree_leaf.hash(),
+                self.l1_info_tree_leaf.l1_info_tree_index,
             );
 
-            if !inclusion_proof_valid {
+            // TODO: proper error
+            if !(inclusion_proof_valid && self.l1_info_root == self.l1_head_inclusion_proof.root) {
                 return Err(ProofError::InvalidInclusionProofL1Head {
-                    index: self.l1_info_tree_leaf.0,
-                    l1_leaf_hash: self.l1_info_tree_leaf.1.hash(),
+                    index: self.l1_info_tree_leaf.l1_info_tree_index,
+                    l1_leaf_hash: self.l1_info_tree_leaf.hash(),
                     l1_info_root: self.l1_info_root,
                 });
             }

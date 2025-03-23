@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 agglayer-primitives.workspace = true
+agglayer-interop.workspace = true
 
 # alloy
 alloy-primitives.workspace = true
@@ -14,7 +15,7 @@ alloy-rlp = "0.3.10"
 
 # sp1
 sp1-zkvm = { version = "=4.1.2", features = ["verify"] }
-sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "c9bdace" }
+sp1-cc-client-executor.workspace = true
 
 eyre = "0.6.12"
 hex.workspace = true
@@ -32,10 +33,12 @@ alloy.workspace = true
 dotenvy.workspace = true
 mockall.workspace = true
 serde_json.workspace = true
-sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "c9bdace" }
-sp1-sdk.workspace = true
 tokio.workspace = true
 url.workspace = true
+
+# sp1
+sp1-cc-host-executor.workspace = true
+sp1-sdk.workspace = true
 
 [build-dependencies]
 semver.workspace = true

@@ -2,8 +2,8 @@ use alloy_primitives::{Address, PrimitiveSignature, B256};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest as Sha256Digest, Sha256};
 
-use crate::Digest;
-use crate::{error::ProofError, keccak::keccak256_combine, vkey_hash::HashU32};
+use crate::{keccak256_combine, Digest};
+use crate::{error::ProofError, vkey_hash::HashU32};
 
 /// Hardcoded hash of the "aggregation vkey".
 /// NOTE: Format being `hash_u32()` of the `SP1StarkVerifyingKey`.
