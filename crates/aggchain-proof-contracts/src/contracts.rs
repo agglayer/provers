@@ -1,6 +1,8 @@
 use agglayer_interop::types::Digest;
+use alloy::eips::BlockNumberOrTag;
 use alloy::network::Ethereum;
 use alloy::sol;
+use sp1_cc_client_executor::io::EVMStateSketch;
 
 use crate::Error;
 
@@ -45,6 +47,13 @@ pub(crate) type PolygonRollupManagerRpcClient<RpcProvider> =
 pub(crate) type AggchainFepRpcClient<RpcProvider> =
     AggchainFep::AggchainFepInstance<(), RpcProvider, Ethereum>;
 
+pub(crate) type GlobalExitRootManagerL2SovereignChainRpcClient<RpcProvider> =
+    GlobalExitRootManagerL2SovereignChain::GlobalExitRootManagerL2SovereignChainInstance<
+        (),
+        RpcProvider,
+        Ethereum,
+    >;
+
 #[async_trait::async_trait]
 pub trait L2LocalExitRootFetcher {
     async fn get_l2_local_exit_root(&self, block_number: u64) -> Result<Digest, Error>;
@@ -58,6 +67,19 @@ pub trait L2OutputAtBlockFetcher {
 #[async_trait::async_trait]
 pub trait L1RollupConfigHashFetcher {
     async fn get_rollup_config_hash(&self) -> Result<Digest, Error>;
+}
+
+#[async_trait::async_trait]
+pub trait L2EVMStateSketchesFetched {
+    async fn get_prev_l2_block_sketch(
+        &self,
+        prev_l2_block: BlockNumberOrTag,
+    ) -> Result<EVMStateSketch, Error>;
+
+    async fn get_new_l2_block_sketch(
+        &self,
+        new_l2_block: BlockNumberOrTag,
+    ) -> Result<EVMStateSketch, Error>;
 }
 
 /// L2 output at block data structure.

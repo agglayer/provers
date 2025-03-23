@@ -1,15 +1,30 @@
-mod bridge;
+pub mod bridge;
 pub mod error;
-mod full_execution_proof;
-pub mod keccak;
-mod local_exit_tree;
+pub mod full_execution_proof;
 pub mod proof;
 pub mod vkey_hash;
 
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
 pub use agglayer_primitives::digest::Digest;
-pub use bridge::inserted_ger::L1InfoTreeLeaf;
-pub use full_execution_proof::AGGREGATION_VKEY_HASH;
+use tiny_keccak::{Hasher, Keccak};
 
 pub const AGGCHAIN_TYPE: u16 = 0x0001;
+
+/// Hashes the input items using a Keccak hasher with a 256-bit security level.
+/// Safety: This function should only be called with fixed-size items to avoid
+/// collisions.
+pub fn keccak256_combine<I, T>(items: I) -> Digest
+where
+    I: IntoIterator<Item = T>,
+    T: AsRef<[u8]>,
+{
+    let mut hasher = Keccak::v256();
+    for data in items {
+        hasher.update(data.as_ref());
+    }
+
+    let mut output = [0u8; 32];
+    hasher.finalize(&mut output);
+    Digest(output)
+}

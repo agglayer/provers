@@ -1,3 +1,5 @@
+use crate::WitnessGeneration;
+
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("Failed to retrieve l2 chain data")]
@@ -20,4 +22,7 @@ pub enum Error {
 
     #[error("Unable to serialize proof")]
     UnableToSerializeProof(#[source] bincode::Error),
+
+    #[error("Prover witness generation error: {0}")]
+    ProverWitnessGenerationError(#[source] WitnessGeneration),
 }

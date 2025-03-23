@@ -8,12 +8,22 @@ mod tests;
 use std::str::FromStr;
 use std::sync::Arc;
 
+use aggchain_proof_core::bridge::static_call::{HashChainType, StaticCallStage};
+use aggchain_proof_core::bridge::BridgeL2SovereignChain;
 use agglayer_interop::types::Digest;
-use alloy::primitives::B256;
+use alloy::eips::BlockNumberOrTag;
+use alloy::network::AnyNetwork;
+use alloy::primitives::{Address, B256};
+use alloy::providers::{Provider, RootProvider};
+use alloy::sol_types::SolCall;
+use contracts::{GlobalExitRootManagerL2SovereignChainRpcClient, L2EVMStateSketchesFetched};
 use jsonrpsee::core::client::ClientT;
 use jsonrpsee::http_client::HttpClient;
 use jsonrpsee::rpc_params;
 use prover_alloy::{build_alloy_fill_provider, AlloyFillProvider};
+use sp1_cc_client_executor::io::EVMStateSketch;
+use sp1_cc_client_executor::ContractInput;
+use sp1_cc_host_executor::HostExecutor;
 use tracing::info;
 
 use crate::config::AggchainProofContractsConfig;
@@ -27,7 +37,10 @@ pub use crate::error::Error;
 /// `AggchainContractsClient` is a trait for interacting with the smart
 /// contracts relevant for the aggchain prover.
 pub trait AggchainContractsClient:
-    L2LocalExitRootFetcher + L2OutputAtBlockFetcher + L1RollupConfigHashFetcher
+    L2LocalExitRootFetcher
+    + L2OutputAtBlockFetcher
+    + L1RollupConfigHashFetcher
+    + L2EVMStateSketchesFetched
 {
 }
 
@@ -41,11 +54,17 @@ pub struct AggchainContractsRpcClient<RpcProvider> {
     /// L2 rpc execution layer client.
     _l2_el_client: Arc<RpcProvider>,
 
+    /// L2 rpc execution layer client.
+    l2_root_provider: RootProvider<AnyNetwork>,
+
     /// L2 rpc consensus layer client (rollup node).
     l2_cl_client: Arc<HttpClient>,
 
     /// Polygon zkevm bridge contract on the l2 network.
     polygon_zkevm_bridge_v2: ZkevmBridgeRpcClient<RpcProvider>,
+
+    /// GER contract on the l2 network.
+    global_exit_root_manager_l2: GlobalExitRootManagerL2SovereignChainRpcClient<RpcProvider>,
 
     /// Aggchain FEP contract on the l1 network.
     aggchain_fep: AggchainFepRpcClient<RpcProvider>,
@@ -103,6 +122,162 @@ where
 
         Ok((*response._0).into())
     }
+}
+
+#[async_trait::async_trait]
+impl<RpcProvider> L2EVMStateSketchesFetched for AggchainContractsRpcClient<RpcProvider>
+where
+    RpcProvider: alloy::providers::Provider + Send + Sync,
+{
+    async fn get_prev_l2_block_sketch(
+        &self,
+        prev_l2_block: BlockNumberOrTag,
+    ) -> Result<EVMStateSketch, Error> {
+        let mut executor: HostExecutor<RootProvider<AnyNetwork>> =
+            HostExecutor::new(self.l2_root_provider.clone(), prev_l2_block)
+                .await
+                .map_err(Error::HostExecutorPreBlockInitialization)?;
+
+        let ger_address = *self.global_exit_root_manager_l2.address();
+        let bridge_address = *self.polygon_zkevm_bridge_v2.address();
+
+        // Static calls on the hash chains
+        {
+            _ = host_execute(
+                ger_address,
+                &mut executor,
+                GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
+                StaticCallStage::PrevHashChain(HashChainType::InsertedGER),
+            )
+            .await?;
+
+            _ = host_execute(
+                ger_address,
+                &mut executor,
+                GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
+                StaticCallStage::PrevHashChain(HashChainType::RemovedGER),
+            )
+            .await?;
+
+            _ = host_execute(
+                bridge_address,
+                &mut executor,
+                BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
+                StaticCallStage::PrevHashChain(HashChainType::ClaimedGlobalIndex),
+            )
+            .await?;
+
+            _ = host_execute(
+                bridge_address,
+                &mut executor,
+                BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
+                StaticCallStage::PrevHashChain(HashChainType::UnsetGlobalIndex),
+            )
+            .await?;
+        }
+
+        // Finalize to retrieve the EVMStateSketch
+        let prev_l2_block_sketch = executor
+            .finalize()
+            .await
+            .map_err(Error::InvalidPreBlockSketchFinalization)?;
+
+        Ok(prev_l2_block_sketch)
+    }
+
+    async fn get_new_l2_block_sketch(
+        &self,
+        new_l2_block: BlockNumberOrTag,
+    ) -> Result<EVMStateSketch, Error> {
+        let mut executor: HostExecutor<RootProvider<AnyNetwork>> =
+            HostExecutor::new(self.l2_root_provider.clone(), new_l2_block)
+                .await
+                .map_err(Error::HostExecutorNewBlockInitialization)?;
+
+        let ger_address = *self.global_exit_root_manager_l2.address();
+        let bridge_address = *self.polygon_zkevm_bridge_v2.address();
+
+        // Static call on the bridge address
+        _ = host_execute(
+            ger_address,
+            &mut executor,
+            GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
+            StaticCallStage::BridgeAddress,
+        )
+        .await?;
+
+        // Static call on the new LER
+        _ = host_execute(
+            bridge_address,
+            &mut executor,
+            BridgeL2SovereignChain::getRootCall {},
+            StaticCallStage::NewHashChain(HashChainType::InsertedGER),
+        )
+        .await?;
+
+        // Static calls on the hash chains
+        {
+            _ = host_execute(
+                ger_address,
+                &mut executor,
+                GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
+                StaticCallStage::NewHashChain(HashChainType::InsertedGER),
+            )
+            .await?;
+
+            _ = host_execute(
+                ger_address,
+                &mut executor,
+                GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
+                StaticCallStage::NewHashChain(HashChainType::RemovedGER),
+            )
+            .await?;
+
+            _ = host_execute(
+                bridge_address,
+                &mut executor,
+                BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
+                StaticCallStage::NewHashChain(HashChainType::ClaimedGlobalIndex),
+            )
+            .await?;
+
+            _ = host_execute(
+                bridge_address,
+                &mut executor,
+                BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
+                StaticCallStage::NewHashChain(HashChainType::UnsetGlobalIndex),
+            )
+            .await?;
+        }
+
+        // Finalize to retrieve the EVMStateSketch
+        let new_l2_block_sketch = executor
+            .finalize()
+            .await
+            .map_err(Error::InvalidNewBlockSketchFinalization)?;
+
+        Ok(new_l2_block_sketch)
+    }
+}
+
+async fn host_execute<C: SolCall, P: Provider<AnyNetwork> + Clone>(
+    contract_address: Address,
+    host_executor: &mut HostExecutor<P>,
+    calldata: C,
+    stage: StaticCallStage,
+) -> Result<(), Error> {
+    let caller_address = Address::default(); // irrelevant caller address
+
+    let _ = host_executor
+        .execute(ContractInput::new_call(
+            contract_address,
+            caller_address,
+            calldata,
+        ))
+        .await
+        .map_err(|source| Error::InvalidHostStaticCall { source, stage })?;
+
+    Ok(())
 }
 
 impl<RpcProvider> AggchainContractsRpcClient<RpcProvider> {
@@ -192,6 +367,9 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
         // Create client for AggchainFep smart contract.
         let aggchain_fep = AggchainFep::new(aggchain_fep_address, l1_client.clone());
 
+        let l2_root_provider =
+            RootProvider::<AnyNetwork>::new_http(config.l2_execution_layer_rpc_endpoint.clone());
+
         info!(global_exit_root_manager_l2=%config.global_exit_root_manager_v2_sovereign_chain,
             polygon_zkevm_bridge_v2=%polygon_zkevm_bridge_v2.address(),
             polygon_rollup_manager=%config.polygon_rollup_manager,
@@ -204,6 +382,8 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             l2_cl_client,
             polygon_zkevm_bridge_v2,
             aggchain_fep,
+            l2_root_provider,
+            global_exit_root_manager_l2,
         })
     }
 }

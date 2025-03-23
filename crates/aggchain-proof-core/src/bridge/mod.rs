@@ -2,6 +2,7 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 
+use agglayer_primitives::digest::Digest;
 use alloy_primitives::{address, Address, B256};
 use alloy_sol_macro::sol;
 use alloy_sol_types::SolCall;
@@ -10,10 +11,10 @@ use serde::{Deserialize, Serialize};
 use sp1_cc_client_executor::io::EVMStateSketch;
 use static_call::{HashChainType, StaticCallError, StaticCallStage, StaticCallWithContext};
 
-use crate::{keccak::keccak256_combine, Digest};
+use crate::keccak256_combine;
 
-pub(crate) mod inserted_ger;
-mod static_call;
+pub mod inserted_ger;
+pub mod static_call;
 
 /// NOTE: Won't work with Outpost networks as this address won't be constant.
 /// Address of the GlobalExitRootManagerL2SovereignChain smart contract.
@@ -110,17 +111,20 @@ impl BridgeConstraintsError {
     }
 }
 
-/// Bridge exit data
+/// Refers to one claim as per its global index and the hash of the underlying
+/// bridge exit.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct BridgeExit {
-    global_index: B256,
-    leaf_hash: Digest,
+pub struct GlobalIndexWithLeafHash {
+    /// Global index of the claimed bridge exit.
+    pub global_index: B256,
+    /// Hash of the claimed bridge exit.
+    pub bridge_exit_hash: Digest,
 }
 
-impl BridgeExit {
+impl GlobalIndexWithLeafHash {
     /// Compute the bridge exit commitment.
     pub fn compute_bridge_exit_commitment(&self) -> Digest {
-        keccak256_combine([self.global_index.0.into(), self.leaf_hash])
+        keccak256_combine([self.global_index.0.into(), self.bridge_exit_hash])
     }
 }
 
@@ -136,7 +140,7 @@ pub struct BridgeWitness {
     pub removed_gers: Vec<Digest>,
     /// List of the each imported bridge exit containing the global index and
     /// the leaf hash.
-    pub bridge_exits_claimed: Vec<BridgeExit>,
+    pub bridge_exits_claimed: Vec<GlobalIndexWithLeafHash>,
     /// List of the global index of each unset bridge exit.
     pub global_indices_unset: Vec<B256>,
     /// State sketch for the prev L2 block.
@@ -331,13 +335,15 @@ impl BridgeConstraintsInput {
         let filtered_claimed = filter_values(
             &self.bridge_witness.global_indices_unset,
             &self.bridge_witness.bridge_exits_claimed,
-            |exit: &BridgeExit| -> B256 { exit.global_index },
+            |exit: &GlobalIndexWithLeafHash| -> B256 { exit.global_index },
         )?;
 
+        println!("input: {:?}", self.bridge_witness.bridge_exits_claimed);
+        println!("filtered: {:?}", filtered_claimed);
         // Check if the filtered claimed global indices are equal to the constrained
         // global indices.
         let computed_commit_imported_bridge_exits =
-            compute_imported_bridge_exits_commitment(filtered_claimed);
+            compute_imported_bridge_exits_commitment(&filtered_claimed);
 
         if computed_commit_imported_bridge_exits != self.committed_imported_bridge_exits {
             return Err(BridgeConstraintsError::MismatchConstrainedBridgeExits {
@@ -384,7 +390,7 @@ impl BridgeConstraintsInput {
         if let Some(wrong_ger) = maybe_wrong_inserted_ger {
             return Err(BridgeConstraintsError::InvalidMerklePathGERToL1Root {
                 inserted_ger: wrong_ger.ger(),
-                l1_info_leaf_index: wrong_ger.l1_info_tree_index,
+                l1_info_leaf_index: wrong_ger.l1_info_tree_leaf.l1_info_tree_index,
                 l1_info_root: self.l1_info_root,
             });
         }
@@ -457,10 +463,12 @@ fn filter_values<K: Eq + Hash + Copy, V: Copy>(
     Ok(result)
 }
 
-pub fn compute_imported_bridge_exits_commitment(bridge_exits_claimed: Vec<BridgeExit>) -> Digest {
+pub fn compute_imported_bridge_exits_commitment(
+    bridge_exits_claimed: &[GlobalIndexWithLeafHash],
+) -> Digest {
     keccak256_combine(
         bridge_exits_claimed
-            .into_iter() // iter()
+            .iter()
             .map(|exit| exit.compute_bridge_exit_commitment()),
     )
 }
@@ -472,6 +480,7 @@ mod tests {
     use std::io::BufReader;
     use std::str::FromStr;
 
+    use agglayer_interop::types::{L1InfoTreeLeaf, L1InfoTreeLeafInner, MerkleProof};
     use alloy::providers::RootProvider;
     use alloy::rpc::types::BlockNumberOrTag;
     use alloy_primitives::hex;
@@ -482,8 +491,6 @@ mod tests {
     use url::Url;
 
     use super::*;
-    use crate::bridge::inserted_ger::L1InfoTreeLeaf;
-    use crate::local_exit_tree::proof::LETMerkleProof;
 
     #[tokio::test(flavor = "multi_thread")]
     #[ignore = "e2e test, sepolia provider needed"]
@@ -519,6 +526,13 @@ mod tests {
             })
             .collect();
 
+        let l1_info_root: Digest = {
+            let bytes = hex::decode(l1_info_root.trim_start_matches("0x")).unwrap();
+            let arr: [u8; 32] = bytes.try_into().unwrap();
+            arr.into()
+        };
+
+        // New extractions for the additional fields:
         let removed_gers: Vec<Digest> = json_data["removedGERs"]
             .as_array()
             .unwrap()
@@ -585,8 +599,9 @@ mod tests {
                     None
                 } else {
                     Some(InsertedGER {
-                        proof: LETMerkleProof {
-                            siblings: ger["proof"]
+                        proof: MerkleProof::new(
+                            l1_info_root,
+                            ger["proof"]
                                 .as_array()
                                 .unwrap()
                                 .iter()
@@ -599,29 +614,33 @@ mod tests {
                                 .collect::<Vec<_>>()
                                 .try_into()
                                 .expect("Expected 32 siblings in proof"),
-                        },
+                        ),
                         l1_info_tree_leaf: L1InfoTreeLeaf {
-                            global_exit_root: hex::decode(
-                                ger["globalExitRoot"]
-                                    .as_str()
-                                    .unwrap()
-                                    .trim_start_matches("0x"),
-                            )
-                            .unwrap()
-                            .try_into()
-                            .unwrap(),
-                            block_hash: {
-                                let bytes = hex::decode(
-                                    ger["blockHash"].as_str().unwrap().trim_start_matches("0x"),
+                            rer: Digest::default(),
+                            mer: Digest::default(),
+                            l1_info_tree_index: index as u32,
+                            inner: L1InfoTreeLeafInner {
+                                global_exit_root: hex::decode(
+                                    ger["globalExitRoot"]
+                                        .as_str()
+                                        .unwrap()
+                                        .trim_start_matches("0x"),
                                 )
-                                .unwrap();
-                                let array: [u8; 32] =
-                                    bytes.try_into().expect("Incorrect length for block hash");
-                                array.into()
+                                .unwrap()
+                                .try_into()
+                                .unwrap(),
+                                block_hash: {
+                                    let bytes = hex::decode(
+                                        ger["blockHash"].as_str().unwrap().trim_start_matches("0x"),
+                                    )
+                                    .unwrap();
+                                    let array: [u8; 32] =
+                                        bytes.try_into().expect("Incorrect length for block hash");
+                                    array.into()
+                                },
+                                timestamp: ger["timestamp"].as_u64().unwrap(),
                             },
-                            timestamp: ger["timestamp"].as_u64().unwrap(),
                         },
-                        l1_info_tree_index: index as u32,
                     })
                 }
             })
@@ -652,7 +671,7 @@ mod tests {
         let final_imported_l1_info_tree_leafs: Vec<InsertedGER> = imported_l1_info_tree_leafs
             .into_iter()
             .filter(|ger| {
-                let digest = ger.l1_info_tree_leaf.global_exit_root;
+                let digest = ger.l1_info_tree_leaf.inner.global_exit_root;
                 if let Some(count) = removal_map.get_mut(&digest) {
                     if *count > 0 {
                         *count -= 1;
@@ -845,12 +864,12 @@ mod tests {
             new_unset
         );
 
-        let bridge_exits_claimed: Vec<BridgeExit> = claimed_global_indexes
+        let bridge_exits_claimed: Vec<GlobalIndexWithLeafHash> = claimed_global_indexes
             .iter()
             .zip(claimed_leafs.iter())
-            .map(|(&global_index, &leaf)| BridgeExit {
+            .map(|(&global_index, &leaf)| GlobalIndexWithLeafHash {
                 global_index,
-                leaf_hash: leaf,
+                bridge_exit_hash: leaf,
             })
             .collect();
 
@@ -864,13 +883,9 @@ mod tests {
             prev_l2_block_hash: prev_l2_block_sketch.header.hash_slow().0.into(),
             new_l2_block_hash: new_l2_block_sketch.header.hash_slow().0.into(),
             new_local_exit_root: expected_new_ler,
-            l1_info_root: {
-                let bytes = hex::decode(l1_info_root.trim_start_matches("0x")).unwrap();
-                let arr: [u8; 32] = bytes.try_into().unwrap();
-                arr.into()
-            },
+            l1_info_root,
             committed_imported_bridge_exits: compute_imported_bridge_exits_commitment(
-                bridge_exits_claimed.clone(),
+                &bridge_exits_claimed,
             ),
             bridge_witness: BridgeWitness {
                 inserted_gers: final_imported_l1_info_tree_leafs,
@@ -900,7 +915,7 @@ mod tests {
     }
 
     fn verify_bridge_data(bridge_data_input: BridgeConstraintsInput) {
-        assert!(bridge_data_input.verify().is_ok());
+        bridge_data_input.verify().unwrap();
 
         // Invalid l1 info root
         {
