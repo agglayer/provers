@@ -95,6 +95,10 @@ pub enum BridgeConstraintsError {
         #[source]
         source: StaticCallError,
     },
+
+    /// The given hash chain overflowed.
+    #[error("Overflow on the hashchain elements.")]
+    HashChainOverflow,
 }
 
 impl BridgeConstraintsError {
@@ -327,7 +331,7 @@ impl BridgeConstraintsInput {
         let filtered_claimed = filter_bridge_exits(
             &self.bridge_witness.global_indices_unset,
             &self.bridge_witness.bridge_exits_claimed,
-        );
+        )?;
 
         // Check if the filtered claimed global indices are equal to the constrained
         // global indices.
@@ -351,7 +355,7 @@ impl BridgeConstraintsInput {
         let filtered_hash_chain_gers = filter_values(
             &self.bridge_witness.removed_gers,
             &self.bridge_witness.raw_inserted_gers,
-        );
+        )?;
 
         // Check that the filtered_hash_chain_gers are equal to the inserted
         let inserted_gers_compare: Vec<Digest> = self
@@ -418,15 +422,21 @@ fn validate_hash_chain(
     Ok(())
 }
 
-fn filter_values<I: Eq + Hash + Copy>(removed: &[I], values: &[I]) -> Vec<I> {
+fn filter_values<I: Eq + Hash + Copy>(
+    removed: &[I],
+    values: &[I],
+) -> Result<Vec<I>, BridgeConstraintsError> {
     // Create a map that counts how many removals are needed for each removed value
     let mut removal_map: HashMap<I, usize> = HashMap::new();
-    removed.iter().for_each(|&value| {
-        *removal_map.entry(value).or_insert(0) += 1;
-    });
+    for &value in removed.iter() {
+        let count = removal_map.entry(value).or_insert(0);
+        *count = count
+            .checked_add(1)
+            .ok_or(BridgeConstraintsError::HashChainOverflow)?;
+    }
 
     // Iterate over values and remove (skip) one occurrence for each removed value
-    values
+    let result = values
         .iter()
         .filter(|value| {
             // If the value needs to be removed...
@@ -439,18 +449,26 @@ fn filter_values<I: Eq + Hash + Copy>(removed: &[I], values: &[I]) -> Vec<I> {
             true // Otherwise, keep the value.
         })
         .copied()
-        .collect()
+        .collect();
+
+    Ok(result)
 }
 
-fn filter_bridge_exits(removed_indices: &[B256], exits: &[BridgeExit]) -> Vec<BridgeExit> {
+fn filter_bridge_exits(
+    removed_indices: &[B256],
+    exits: &[BridgeExit],
+) -> Result<Vec<BridgeExit>, BridgeConstraintsError> {
     // Create a map that counts how many removals are needed for each index
     let mut removal_map: HashMap<B256, usize> = HashMap::new();
-    removed_indices.iter().for_each(|&index| {
-        *removal_map.entry(index).or_insert(0) += 1;
-    });
+    for &value in removed_indices {
+        let count = removal_map.entry(value).or_insert(0);
+        *count = count
+            .checked_add(1)
+            .ok_or(BridgeConstraintsError::HashChainOverflow)?;
+    }
 
     // Filter exits based on their global_index
-    exits
+    let result = exits
         .iter()
         .filter(|exit| {
             // If this exit's global_index needs to be removed...
@@ -463,7 +481,9 @@ fn filter_bridge_exits(removed_indices: &[B256], exits: &[BridgeExit]) -> Vec<Br
             true // Keep this exit
         })
         .cloned() // Since we're working with references, clone to own the data
-        .collect()
+        .collect();
+
+    Ok(result)
 }
 
 pub fn compute_commit_imported_bridge_exits(bridge_exits_claimed: Vec<BridgeExit>) -> Digest {
