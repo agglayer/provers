@@ -78,10 +78,7 @@ pub enum BridgeConstraintsError {
     #[error(
         "Mismatch on the constrained global indices. computed: {computed:?}, input: {input:?}"
     )]
-    MismatchConstrainedGlobalIndices {
-        computed: Vec<B256>,
-        input: Vec<B256>,
-    },
+    MismatchConstrainedBridgeExits { computed: Digest, input: Digest },
 
     /// The provided inserted gers do not correspond with the
     /// computed ones.
@@ -98,6 +95,10 @@ pub enum BridgeConstraintsError {
         #[source]
         source: StaticCallError,
     },
+
+    /// The given hash chain overflowed.
+    #[error("Overflow on the hashchain elements.")]
+    HashChainOverflow,
 }
 
 impl BridgeConstraintsError {
@@ -106,6 +107,20 @@ impl BridgeConstraintsError {
         stage: StaticCallStage,
     ) -> BridgeConstraintsError {
         BridgeConstraintsError::StaticCallError { source, stage }
+    }
+}
+
+/// Bridge exit data
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct BridgeExit {
+    global_index: B256,
+    leaf_hash: Digest,
+}
+
+impl BridgeExit {
+    /// Compute the bridge exit commitment.
+    pub fn compute_bridge_exit_commitment(&self) -> Digest {
+        keccak256_combine([self.global_index.0.into(), self.leaf_hash])
     }
 }
 
@@ -119,8 +134,9 @@ pub struct BridgeWitness {
     pub raw_inserted_gers: Vec<Digest>,
     /// List of removed GER.
     pub removed_gers: Vec<Digest>,
-    /// List of the global index of each imported bridge exit.
-    pub global_indices_claimed: Vec<B256>,
+    /// List of the each imported bridge exit containing the global index and
+    /// the leaf hash.
+    pub bridge_exits_claimed: Vec<BridgeExit>,
     /// List of the global index of each unset bridge exit.
     pub global_indices_unset: Vec<B256>,
     /// State sketch for the prev L2 block.
@@ -137,7 +153,7 @@ pub struct BridgeConstraintsInput {
     pub new_l2_block_hash: Digest,
     pub new_local_exit_root: Digest,
     pub l1_info_root: Digest,
-    pub global_indices: Vec<B256>,
+    pub committed_imported_bridge_exits: Digest,
     pub bridge_witness: BridgeWitness,
 }
 
@@ -228,9 +244,9 @@ impl BridgeConstraintsInput {
 
             validate_hash_chain(
                 self.bridge_witness
-                    .global_indices_claimed
+                    .bridge_exits_claimed
                     .iter()
-                    .map(|idx| idx.0.into()),
+                    .map(|idx| idx.compute_bridge_exit_commitment()),
                 prev_hash_chain,
                 new_hash_chain,
                 hash_chain_type,
@@ -314,15 +330,19 @@ impl BridgeConstraintsInput {
     fn verify_constrained_global_indices(&self) -> Result<(), BridgeConstraintsError> {
         let filtered_claimed = filter_values(
             &self.bridge_witness.global_indices_unset,
-            &self.bridge_witness.global_indices_claimed,
-        );
+            &self.bridge_witness.bridge_exits_claimed,
+            |exit: &BridgeExit| -> B256 { exit.global_index },
+        )?;
 
         // Check if the filtered claimed global indices are equal to the constrained
         // global indices.
-        if filtered_claimed != self.global_indices {
-            return Err(BridgeConstraintsError::MismatchConstrainedGlobalIndices {
-                computed: filtered_claimed,
-                input: self.global_indices.clone(),
+        let computed_commit_imported_bridge_exits =
+            compute_imported_bridge_exits_commitment(filtered_claimed);
+
+        if computed_commit_imported_bridge_exits != self.committed_imported_bridge_exits {
+            return Err(BridgeConstraintsError::MismatchConstrainedBridgeExits {
+                computed: computed_commit_imported_bridge_exits,
+                input: self.committed_imported_bridge_exits,
             });
         }
 
@@ -336,7 +356,8 @@ impl BridgeConstraintsInput {
         let filtered_hash_chain_gers = filter_values(
             &self.bridge_witness.removed_gers,
             &self.bridge_witness.raw_inserted_gers,
-        );
+            |&x| x,
+        )?;
 
         // Check that the filtered_hash_chain_gers are equal to the inserted
         let inserted_gers_compare: Vec<Digest> = self
@@ -403,19 +424,26 @@ fn validate_hash_chain(
     Ok(())
 }
 
-fn filter_values<I: Eq + Hash + Copy>(removed: &[I], values: &[I]) -> Vec<I> {
+fn filter_values<K: Eq + Hash + Copy, V: Copy>(
+    removed: &[K],
+    values: &[V],
+    mut key_fn: impl FnMut(&V) -> K,
+) -> Result<Vec<V>, BridgeConstraintsError> {
     // Create a map that counts how many removals are needed for each removed value
-    let mut removal_map: HashMap<I, usize> = HashMap::new();
-    removed.iter().for_each(|&value| {
-        *removal_map.entry(value).or_insert(0) += 1;
-    });
+    let mut removal_map: HashMap<K, usize> = HashMap::new();
+    for &value in removed.iter() {
+        let count = removal_map.entry(value).or_insert(0);
+        *count = count
+            .checked_add(1)
+            .ok_or(BridgeConstraintsError::HashChainOverflow)?;
+    }
 
     // Iterate over values and remove (skip) one occurrence for each removed value
-    values
+    let result = values
         .iter()
         .filter(|value| {
             // If the value needs to be removed...
-            if let Some(count) = removal_map.get_mut(value) {
+            if let Some(count) = removal_map.get_mut(&key_fn(value)) {
                 if *count > 0 {
                     *count -= 1; // Remove one occurrence.
                     return false; // Skip including this occurrence.
@@ -424,7 +452,17 @@ fn filter_values<I: Eq + Hash + Copy>(removed: &[I], values: &[I]) -> Vec<I> {
             true // Otherwise, keep the value.
         })
         .copied()
-        .collect()
+        .collect();
+
+    Ok(result)
+}
+
+pub fn compute_imported_bridge_exits_commitment(bridge_exits_claimed: Vec<BridgeExit>) -> Digest {
+    keccak256_combine(
+        bridge_exits_claimed
+            .into_iter() // iter()
+            .map(|exit| exit.compute_bridge_exit_commitment()),
+    )
 }
 
 #[cfg(test)]
@@ -470,8 +508,17 @@ mod tests {
         let local_exit_root = json_data["localExitRoot"].as_str().unwrap();
         let l1_info_root = json_data["l1InfoRoot"].as_str().unwrap();
         let chain_id_l2: u64 = json_data["chainId"].as_u64().unwrap();
+        let claimed_leafs: Vec<Digest> = json_data["claimedLeafs"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|s| {
+                let s_str = s.as_str().unwrap();
+                let bytes = hex::decode(s_str.trim_start_matches("0x")).unwrap();
+                bytes.try_into().unwrap()
+            })
+            .collect();
 
-        // New extractions for the additional fields:
         let removed_gers: Vec<Digest> = json_data["removedGERs"]
             .as_array()
             .unwrap()
@@ -511,7 +558,7 @@ mod tests {
         for idx in &unclaimed_global_indexes {
             *removal_map.entry(*idx).or_insert(0) += 1;
         }
-        let constrained_global_indices: Vec<B256> = claimed_global_indexes
+        let _constrained_global_indices: Vec<B256> = claimed_global_indexes
             .iter()
             .cloned()
             .filter(|v| {
@@ -798,6 +845,15 @@ mod tests {
             new_unset
         );
 
+        let bridge_exits_claimed: Vec<BridgeExit> = claimed_global_indexes
+            .iter()
+            .zip(claimed_leafs.iter())
+            .map(|(&global_index, &leaf)| BridgeExit {
+                global_index,
+                leaf_hash: leaf,
+            })
+            .collect();
+
         // Finalize the sketches
         let prev_l2_block_sketch = prev_l2_block_executor.finalize().await?;
         let new_l2_block_sketch = new_l2_block_executor.finalize().await?;
@@ -813,12 +869,14 @@ mod tests {
                 let arr: [u8; 32] = bytes.try_into().unwrap();
                 arr.into()
             },
-            global_indices: constrained_global_indices, // Constrained indices
+            committed_imported_bridge_exits: compute_imported_bridge_exits_commitment(
+                bridge_exits_claimed.clone(),
+            ),
             bridge_witness: BridgeWitness {
                 inserted_gers: final_imported_l1_info_tree_leafs,
                 raw_inserted_gers,
                 removed_gers,
-                global_indices_claimed: claimed_global_indexes,
+                bridge_exits_claimed,
                 global_indices_unset: unclaimed_global_indexes,
                 prev_l2_block_sketch,
                 new_l2_block_sketch,

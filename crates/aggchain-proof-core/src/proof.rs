@@ -1,14 +1,10 @@
-use alloy_primitives::{keccak256, B256};
 use serde::{Deserialize, Serialize};
 
 use crate::Digest;
 use crate::{
     bridge::{BridgeConstraintsInput, BridgeWitness, L2_GER_ADDR},
     error::ProofError,
-    full_execution_proof::FepPublicValues,
-    keccak::keccak256_combine,
-    local_exit_tree::{hasher::Keccak256Hasher, proof::LETMerkleProof},
-    L1InfoTreeLeaf,
+    full_execution_proof::FepInputs,
 };
 
 /// Aggchain proof is generated from the FEP proof and additional
@@ -30,13 +26,9 @@ pub struct AggchainProofWitness {
     /// Origin network for which the proof was generated.
     pub origin_network: u32,
     /// Full execution proof with its metadata.
-    pub fep: FepPublicValues,
-    /// L1 info tree leaf and index containing the `l1Head` as block hash.
-    pub l1_info_tree_leaf: (u32, L1InfoTreeLeaf),
-    /// Inclusion proof of the leaf to the l1 info root.
-    pub l1_head_inclusion_proof: LETMerkleProof<Keccak256Hasher>,
+    pub fep: FepInputs,
     /// List of the global index of each imported bridge exit.
-    pub global_indices: Vec<B256>,
+    pub committed_imported_bridge_exits: Digest,
     /// Bridge witness related data.
     pub bridge_witness: BridgeWitness,
 }
@@ -44,31 +36,11 @@ pub struct AggchainProofWitness {
 impl AggchainProofWitness {
     pub fn verify_aggchain_inputs(&self) -> Result<AggchainProofPublicValues, ProofError> {
         // Verify the FEP proof or ECDSA signature.
-        self.fep.verify()?;
-
-        // Verify that the `l1Head` considered by the FEP exists in the L1 Info Tree
-        {
-            if self.fep.l1_head != self.l1_info_tree_leaf.1.block_hash {
-                return Err(ProofError::MismatchL1Head {
-                    from_l1_info_tree_leaf: self.l1_info_tree_leaf.1.block_hash,
-                    from_fep_public_values: self.fep.l1_head,
-                });
-            }
-
-            let inclusion_proof_valid = self.l1_head_inclusion_proof.verify(
-                self.l1_info_tree_leaf.1.hash(),
-                self.l1_info_tree_leaf.0,
-                self.l1_info_root,
-            );
-
-            if !inclusion_proof_valid {
-                return Err(ProofError::InvalidInclusionProofL1Head {
-                    index: self.l1_info_tree_leaf.0,
-                    l1_leaf_hash: self.l1_info_tree_leaf.1.hash(),
-                    l1_info_root: self.l1_info_root,
-                });
-            }
-        }
+        self.fep.verify(
+            self.l1_info_root,
+            self.new_local_exit_root,
+            self.committed_imported_bridge_exits,
+        )?;
 
         // Verify the bridge constraints
         self.bridge_constraints_input().verify()?;
@@ -84,11 +56,7 @@ impl AggchainProofWitness {
             new_local_exit_root: self.new_local_exit_root,
             l1_info_root: self.l1_info_root,
             origin_network: self.origin_network,
-            commit_imported_bridge_exits: keccak256_combine(
-                self.global_indices
-                    .iter()
-                    .map(|idx| keccak256(idx.as_slice())),
-            ),
+            commit_imported_bridge_exits: self.committed_imported_bridge_exits,
             aggchain_params: self.fep.aggchain_params(),
         }
     }
@@ -102,7 +70,7 @@ impl AggchainProofWitness {
             new_l2_block_hash: self.fep.new_block_hash,
             new_local_exit_root: self.new_local_exit_root,
             l1_info_root: self.l1_info_root,
-            global_indices: self.global_indices.clone(),
+            committed_imported_bridge_exits: self.committed_imported_bridge_exits,
             bridge_witness: self.bridge_witness.clone(),
         }
     }
