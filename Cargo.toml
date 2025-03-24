@@ -38,8 +38,8 @@ prover-logger = { path = "crates/prover-logger" }
 prover-utils = { path = "crates/prover-utils" }
 
 agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
-agglayer-primitives = { git = "https://github.com/agglayer/interop.git" }
-agglayer-interop = { git = "https://github.com/agglayer/interop.git" }
+agglayer-primitives = { git = "https://github.com/agglayer/interop.git", tag = "v0.1.0" }
+agglayer-interop = { git = "https://github.com/agglayer/interop.git", tag = "v0.1.0" }
 
 # Core dependencies
 alloy = { version = '0.11.0', features = ["full"] }
@@ -96,6 +96,7 @@ rstest = "0.22.0"
 test-log = "0.2.16"
 
 # SP1 dependencies
+sp1-core-executor = "=4.1.2"
 sp1-core-machine = "=4.1.2"
 sp1-sdk = "=4.1.2"
 sp1-prover = "=4.1.2"

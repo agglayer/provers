@@ -5,16 +5,27 @@ use aggkit_prover_types::vkey_hash::VKeyHash;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use proposer_client::network_prover::new_network_prover;
-use proposer_client::rpc::{AggSpanProofProposerRequest, ProposerRpcClient};
-use proposer_client::ProofId;
-pub use proposer_client::{ProposerRequest, ProposerResponse};
+use proposer_client::rpc::{AggregationProofProposerRequest, ProposerRpcClient};
+pub use proposer_client::FepProposerRequest as ProposerRequest;
+use proposer_client::RequestId;
 use prover_alloy::Provider;
-use sp1_sdk::{NetworkProver, SP1ProofWithPublicValues};
+use sp1_sdk::NetworkProver;
+use tracing::info;
 
 use crate::config::ProposerServiceConfig;
 
+type AggregationProof = Box<sp1_core_executor::SP1ReduceProof<sp1_prover::InnerSC>>;
+
+#[derive(Debug)]
+pub struct ProposerResponse {
+    pub aggregation_proof: AggregationProof,
+    pub start_block: u64,
+    pub end_block: u64,
+}
+
 pub mod config;
 pub mod error;
+
 #[cfg(test)]
 mod tests;
 
@@ -40,15 +51,20 @@ impl<L1Rpc, ProposerClient> Clone for ProposerService<L1Rpc, ProposerClient> {
     }
 }
 
-impl<L1Rpc> ProposerService<L1Rpc, proposer_client::Client<ProposerRpcClient, NetworkProver>> {
+impl<L1Rpc>
+    ProposerService<L1Rpc, proposer_client::client::Client<ProposerRpcClient, NetworkProver>>
+{
     pub fn new(config: &ProposerServiceConfig, l1_rpc: Arc<L1Rpc>) -> Result<Self, Error> {
-        let proposer_rpc_client = ProposerRpcClient::new(config.client.proposer_endpoint.as_str())?;
+        let proposer_rpc_client = ProposerRpcClient::new(
+            config.client.proposer_endpoint.as_str(),
+            config.client.request_timeout,
+        )?;
         let network_prover = new_network_prover(config.client.sp1_cluster_endpoint.as_str())
             .map_err(Error::UnableToCreateNetworkProver)?;
 
         Ok(Self {
             l1_rpc,
-            client: Arc::new(proposer_client::Client::new(
+            client: Arc::new(proposer_client::client::Client::new(
                 proposer_rpc_client,
                 network_prover,
                 Some(config.client.proving_timeout),
@@ -59,14 +75,9 @@ impl<L1Rpc> ProposerService<L1Rpc, proposer_client::Client<ProposerRpcClient, Ne
 }
 
 fn check_aggregation_vkey(
-    sp1_proof: &SP1ProofWithPublicValues,
+    proof: &AggregationProof,
     expected_vkey_hash: VKeyHash,
 ) -> Result<(), Error> {
-    let sp1_proof = &sp1_proof.proof;
-    let proof = &**sp1_proof
-        .try_as_compressed_ref()
-        .ok_or_else(|| Error::UnsupportedAggregationProofMode(sp1_proof.into()))?;
-
     let vkey_hash = VKeyHash::from_vkey(&proof.vk);
     if vkey_hash != expected_vkey_hash {
         return Err(Error::AggregationVKeyMismatch {
@@ -114,21 +125,28 @@ where
 
             // Request the AggSpanProof generation from the proposer.
             let response = client
-                .request_agg_proof(AggSpanProofProposerRequest {
+                .request_agg_proof(AggregationProofProposerRequest {
                     start_block,
                     max_block,
                     l1_block_number,
                     l1_block_hash,
                 })
                 .await?;
-            let proof_id = ProofId(response.proof_id);
+            let request_id = RequestId(response.request_id);
+            info!("Aggregation proof request submitted: {}", request_id);
 
             // Wait for the prover to finish aggregating span proofs
-            let proofs = client.wait_for_proof(proof_id).await?;
-            check_aggregation_vkey(&proofs, expected_vkey_hash)?;
+            let proofs = client.wait_for_proof(request_id).await?;
+            let proof_mode: sp1_sdk::SP1ProofMode = (&proofs.proof).into();
+            let aggregation_proof: AggregationProof = proofs
+                .proof
+                .try_as_compressed()
+                .ok_or_else(|| Error::UnsupportedAggregationProofMode(proof_mode))?;
+
+            check_aggregation_vkey(&aggregation_proof, expected_vkey_hash)?;
 
             Ok(ProposerResponse {
-                aggregation_proof: proofs,
+                aggregation_proof,
                 start_block: response.start_block,
                 end_block: response.end_block,
             })

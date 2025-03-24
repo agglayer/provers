@@ -4,20 +4,31 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
+[[bin]]
+name = "proposer-service-test"
+path = "src/tests/proposer_service_test_program.rs"
+
 [dependencies]
 alloy-primitives.workspace = true
 anyhow.workspace = true
+clap.workspace = true
 futures.workspace = true
 serde.workspace = true
+sp1-core-executor.workspace = true
+sp1-prover.workspace = true
 sp1-sdk.workspace = true
-tower = { workspace = true, features = ["timeout"] }
 thiserror.workspace = true
+tokio.workspace = true
+tower = { workspace = true, features = ["timeout"] }
+tracing.workspace = true
 url.workspace = true
 
 aggchain-proof-core.workspace = true
 aggkit-prover-types = { workspace = true, features = ["sp1"] }
 proposer-client.workspace = true
 prover-alloy.workspace = true
+prover-logger.workspace = true
+log = "0.4.26"
 
 [dev-dependencies]
 mockall.workspace = true

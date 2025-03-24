@@ -1,8 +1,12 @@
 mod proposer_rpc {
+    use std::time::Duration;
+
     use alloy_primitives::B256;
     use serde_json::json;
 
-    use crate::rpc::{AggSpanProofProposer, AggSpanProofProposerRequest, ProposerRpcClient};
+    use crate::rpc::{
+        AggregationProofProposer, AggregationProofProposerRequest, ProposerRpcClient,
+    };
 
     #[tokio::test]
     async fn request_an_aggregated_span_proof() {
@@ -36,9 +40,9 @@ mod proposer_rpc {
             )
             .create();
 
-        let service = ProposerRpcClient::new(&server.url()).unwrap();
+        let service = ProposerRpcClient::new(&server.url(), Duration::from_millis(500)).unwrap();
 
-        let request = AggSpanProofProposerRequest {
+        let request = AggregationProofProposerRequest {
             start_block: 110,
             max_block: 200,
             l1_block_number: 230203,
@@ -58,11 +62,11 @@ mod proposer_rpc {
 
     #[test]
     #[ignore = "to be implemented"]
-    fn request_with_a_valid_proof_id() {}
+    fn request_with_a_valid_request_id() {}
 
     #[test]
     #[ignore = "to be implemented"]
-    fn request_with_an_invalid_proof_id() {}
+    fn request_with_an_invalid_request_id() {}
 
     #[test]
     #[ignore = "to be implemented"]
@@ -89,7 +93,7 @@ mod prover_rpc {
 
     #[test]
     #[ignore = "to be implemented"]
-    fn request_a_proof_with_an_invalid_proof_id() {}
+    fn request_a_proof_with_an_invalid_request_id() {}
 
     #[test]
     #[ignore = "to be implemented"]
