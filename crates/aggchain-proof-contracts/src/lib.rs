@@ -306,6 +306,16 @@ impl<RpcProvider> AggchainContractsRpcClient<RpcProvider> {
             output_root: parse_hash(&json, "outputRoot")?,
         })
     }
+
+    // async fn trusted_sequencer(&self, network_id: u32) -> Address {
+    //     let aggchain_fep_address = self.polygon_rollup_manager
+    //         .rollupIDToRollupData(network_id)
+    //         .call()
+    //         .await
+    //         .unwrap()
+    //         .rollupData
+    //         .;
+    // }
 }
 
 impl AggchainContractsRpcClient<AlloyFillProvider> {

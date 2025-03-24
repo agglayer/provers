@@ -38,8 +38,8 @@ prover-logger = { path = "crates/prover-logger" }
 prover-utils = { path = "crates/prover-utils" }
 
 agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
-agglayer-primitives = { git = "https://github.com/agglayer/interop.git" }
-agglayer-interop = { git = "https://github.com/agglayer/interop.git" }
+agglayer-primitives = { git = "https://github.com/agglayer/interop.git", branch = "fix/ub-deps" }
+agglayer-interop = { git = "https://github.com/agglayer/interop.git", branch = "fix/ub-deps" }
 
 # Core dependencies
 alloy = { version = '0.12.6', features = ["full"] }
