@@ -6,7 +6,7 @@ use clap::Parser;
 use proposer_client::config::ProposerClientConfig;
 use proposer_client::FepProposerRequest;
 use proposer_service::config::ProposerServiceConfig;
-use proposer_service::ProposerService;
+use proposer_service::{ProposerResponse, ProposerService};
 use prover_logger::log::Log;
 use tower::{Service, ServiceExt};
 use tracing::info;
@@ -42,7 +42,7 @@ struct Cli {
 }
 
 #[tokio::main]
-pub async fn main() -> anyhow::Result<()> {
+pub async fn main() {
     println!("Starting Proposer service test...");
 
     // Initialize the tracing
@@ -89,9 +89,7 @@ pub async fn main() -> anyhow::Result<()> {
             println!("Proposer response: {:?}", response);
         }
         Err(e) => {
-            println!("Error: {:?}", e);
+            eprintln!("Error: {:?}", e);
         }
     }
-
-    Ok(())
 }

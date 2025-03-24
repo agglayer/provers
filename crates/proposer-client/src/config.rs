@@ -63,7 +63,3 @@ pub fn default_request_timeout() -> Duration {
 pub fn default_proving_timeout() -> Duration {
     Duration::from_secs(3600)
 }
-
-pub fn convert_duration(secs: u64) -> Duration {
-    Duration::from_secs(secs)
-}
