@@ -7,7 +7,7 @@ use clap::Parser;
 use proposer_client::config::ProposerClientConfig;
 use proposer_client::FepProposerRequest;
 use proposer_service::config::ProposerServiceConfig;
-use proposer_service::{ProposerService};
+use proposer_service::ProposerService;
 use prover_logger::log::Log;
 use tower::{Service, ServiceExt};
 use tracing::info;
