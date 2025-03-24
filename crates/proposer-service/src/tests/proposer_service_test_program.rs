@@ -2,6 +2,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use alloy_primitives::B256;
+use anyhow::anyhow;
 use clap::Parser;
 use proposer_client::config::ProposerClientConfig;
 use proposer_client::FepProposerRequest;
@@ -42,7 +43,7 @@ struct Cli {
 }
 
 #[tokio::main]
-pub async fn main() {
+pub async fn main() -> anyhow::Result<()> {
     println!("Starting Proposer service test...");
 
     // Initialize the tracing
@@ -87,9 +88,11 @@ pub async fn main() {
     match proposer_service.call(request).await {
         Ok(response) => {
             println!("Proposer response: {:?}", response);
+            Ok(())
         }
         Err(e) => {
             eprintln!("Error: {:?}", e);
+            Err(anyhow!(e.to_string()))
         }
     }
 }
