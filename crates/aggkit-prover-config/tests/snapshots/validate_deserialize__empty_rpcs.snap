@@ -38,11 +38,8 @@ l1-rpc-endpoint = "http://anvil-mock-l1-rpc:8545/"
 [aggchain-proof-service.proposer-service.client]
 proposer-endpoint = "http://proposer-mock-rpc:3000/"
 sp1-cluster-endpoint = "https://rpc.production.succinct.xyz/"
+request-timeout = 600
 proving-timeout = 3600
-
-[aggchain-proof-service.proposer-service.client.request-timeout]
-secs = 600
-nanos = 0
 
 [primary-prover.network-prover]
 proving-timeout = "5m"

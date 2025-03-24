@@ -24,6 +24,7 @@ pub struct ProposerClientConfig {
     pub sp1_cluster_endpoint: Url,
     /// Proposer request timeout in seconds.
     #[serde(default = "default_request_timeout")]
+    #[serde_as(as = "DurationSeconds<u64>")]
     pub request_timeout: Duration,
     /// Proving timeout in seconds.
     #[serde(default = "default_proving_timeout")]
