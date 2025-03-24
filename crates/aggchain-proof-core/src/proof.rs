@@ -4,7 +4,7 @@ use crate::Digest;
 use crate::{
     bridge::{BridgeConstraintsInput, BridgeWitness, L2_GER_ADDR},
     error::ProofError,
-    full_execution_proof::FepInputs
+    full_execution_proof::FepInputs,
 };
 
 /// Aggchain proof is generated from the FEP proof and additional

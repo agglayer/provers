@@ -130,7 +130,8 @@ pub struct BridgeWitness {
     pub raw_inserted_gers: Vec<Digest>,
     /// List of removed GER.
     pub removed_gers: Vec<Digest>,
-    /// List of the each imported bridge exit containing the global index and the leaf hash.
+    /// List of the each imported bridge exit containing the global index and
+    /// the leaf hash.
     pub bridge_exits_claimed: Vec<BridgeExit>,
     /// List of the global index of each unset bridge exit.
     pub global_indices_unset: Vec<B256>,
@@ -336,7 +337,7 @@ impl BridgeConstraintsInput {
         if computed_commit_imported_bridge_exits != self.committed_imported_bridge_exits {
             return Err(BridgeConstraintsError::MismatchConstrainedBridgeExits {
                 computed: computed_commit_imported_bridge_exits,
-                input: self.committed_imported_bridge_exits.clone(),
+                input: self.committed_imported_bridge_exits,
             });
         }
 
@@ -465,6 +466,14 @@ fn filter_bridge_exits(removed_indices: &[B256], exits: &[BridgeExit]) -> Vec<Br
         .collect()
 }
 
+pub fn compute_commit_imported_bridge_exits(bridge_exits_claimed: Vec<BridgeExit>) -> Digest {
+    keccak256_combine(
+        bridge_exits_claimed
+            .into_iter() // iter()
+            .map(|exit| exit.compute_bridge_exit_commitment()),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
@@ -558,7 +567,7 @@ mod tests {
         for idx in &unclaimed_global_indexes {
             *removal_map.entry(*idx).or_insert(0) += 1;
         }
-        let constrained_global_indices: Vec<B256> = claimed_global_indexes
+        let _constrained_global_indices: Vec<B256> = claimed_global_indexes
             .iter()
             .cloned()
             .filter(|v| {
@@ -876,7 +885,7 @@ mod tests {
                 inserted_gers: final_imported_l1_info_tree_leafs,
                 raw_inserted_gers,
                 removed_gers,
-                bridge_exits_claimed: bridge_exits_claimed,
+                bridge_exits_claimed,
                 global_indices_unset: unclaimed_global_indexes,
                 prev_l2_block_sketch,
                 new_l2_block_sketch,
@@ -949,12 +958,4 @@ mod tests {
 
         verify_bridge_data(bridge_data_input);
     }
-}
-
-pub fn compute_commit_imported_bridge_exits(bridge_exits_claimed: Vec<BridgeExit>) -> Digest {
-    keccak256_combine(
-        bridge_exits_claimed
-            .into_iter() // iter()
-            .map(|exit| exit.compute_bridge_exit_commitment()),
-    )
 }

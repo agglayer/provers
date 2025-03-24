@@ -141,7 +141,8 @@ impl FepInputs {
 }
 
 impl FepInputs {
-    /// Verify that the `l1Head` considered by the FEP exists in the L1 Info Tree
+    /// Verify that the `l1Head` considered by the FEP exists in the L1 Info
+    /// Tree
     pub fn verify_l1_head(&self, l1_info_root: Digest) -> Result<(), ProofError> {
         if self.l1_head != self.l1_info_tree_leaf.1.block_hash {
             return Err(ProofError::MismatchL1Head {
