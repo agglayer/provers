@@ -111,7 +111,7 @@ impl BridgeConstraintsError {
 }
 
 /// Bridge exit data
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct BridgeExit {
     global_index: B256,
     leaf_hash: Digest,
@@ -328,15 +328,16 @@ impl BridgeConstraintsInput {
     /// Verify that the claimed global indexes minus the unset global indexes
     /// are equal to the Constrained global indexes.
     fn verify_constrained_global_indices(&self) -> Result<(), BridgeConstraintsError> {
-        let filtered_claimed = filter_bridge_exits(
+        let filtered_claimed = filter_values(
             &self.bridge_witness.global_indices_unset,
             &self.bridge_witness.bridge_exits_claimed,
+            |exit: &BridgeExit| -> B256 { exit.global_index },
         )?;
 
         // Check if the filtered claimed global indices are equal to the constrained
         // global indices.
         let computed_commit_imported_bridge_exits =
-            compute_commit_imported_bridge_exits(filtered_claimed);
+            compute_imported_bridge_exits_commitment(filtered_claimed);
 
         if computed_commit_imported_bridge_exits != self.committed_imported_bridge_exits {
             return Err(BridgeConstraintsError::MismatchConstrainedBridgeExits {
@@ -355,6 +356,7 @@ impl BridgeConstraintsInput {
         let filtered_hash_chain_gers = filter_values(
             &self.bridge_witness.removed_gers,
             &self.bridge_witness.raw_inserted_gers,
+            |&x| x,
         )?;
 
         // Check that the filtered_hash_chain_gers are equal to the inserted
@@ -422,12 +424,13 @@ fn validate_hash_chain(
     Ok(())
 }
 
-fn filter_values<I: Eq + Hash + Copy>(
-    removed: &[I],
-    values: &[I],
-) -> Result<Vec<I>, BridgeConstraintsError> {
+fn filter_values<K: Eq + Hash + Copy, V: Copy>(
+    removed: &[K],
+    values: &[V],
+    mut key_fn: impl FnMut(&V) -> K,
+) -> Result<Vec<V>, BridgeConstraintsError> {
     // Create a map that counts how many removals are needed for each removed value
-    let mut removal_map: HashMap<I, usize> = HashMap::new();
+    let mut removal_map: HashMap<K, usize> = HashMap::new();
     for &value in removed.iter() {
         let count = removal_map.entry(value).or_insert(0);
         *count = count
@@ -440,7 +443,7 @@ fn filter_values<I: Eq + Hash + Copy>(
         .iter()
         .filter(|value| {
             // If the value needs to be removed...
-            if let Some(count) = removal_map.get_mut(value) {
+            if let Some(count) = removal_map.get_mut(&key_fn(value)) {
                 if *count > 0 {
                     *count -= 1; // Remove one occurrence.
                     return false; // Skip including this occurrence.
@@ -454,39 +457,7 @@ fn filter_values<I: Eq + Hash + Copy>(
     Ok(result)
 }
 
-fn filter_bridge_exits(
-    removed_indices: &[B256],
-    exits: &[BridgeExit],
-) -> Result<Vec<BridgeExit>, BridgeConstraintsError> {
-    // Create a map that counts how many removals are needed for each index
-    let mut removal_map: HashMap<B256, usize> = HashMap::new();
-    for &value in removed_indices {
-        let count = removal_map.entry(value).or_insert(0);
-        *count = count
-            .checked_add(1)
-            .ok_or(BridgeConstraintsError::HashChainOverflow)?;
-    }
-
-    // Filter exits based on their global_index
-    let result = exits
-        .iter()
-        .filter(|exit| {
-            // If this exit's global_index needs to be removed...
-            if let Some(count) = removal_map.get_mut(&exit.global_index) {
-                if *count > 0 {
-                    *count -= 1; // Remove one occurrence
-                    return false; // Skip this exit
-                }
-            }
-            true // Keep this exit
-        })
-        .cloned() // Since we're working with references, clone to own the data
-        .collect();
-
-    Ok(result)
-}
-
-pub fn compute_commit_imported_bridge_exits(bridge_exits_claimed: Vec<BridgeExit>) -> Digest {
+pub fn compute_imported_bridge_exits_commitment(bridge_exits_claimed: Vec<BridgeExit>) -> Digest {
     keccak256_combine(
         bridge_exits_claimed
             .into_iter() // iter()
@@ -898,7 +869,7 @@ mod tests {
                 let arr: [u8; 32] = bytes.try_into().unwrap();
                 arr.into()
             },
-            committed_imported_bridge_exits: compute_commit_imported_bridge_exits(
+            committed_imported_bridge_exits: compute_imported_bridge_exits_commitment(
                 bridge_exits_claimed.clone(),
             ),
             bridge_witness: BridgeWitness {
