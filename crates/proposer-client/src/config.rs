@@ -3,6 +3,7 @@ use std::time::Duration;
 
 use prover_utils::from_env_or_default;
 use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DurationSeconds};
 use url::Url;
 
 /// The default proposer service endpoint
@@ -11,6 +12,7 @@ const DEFAULT_PROPOSER_SERVICE_ENDPOINT: &str = "http://proposer-mock-rpc:3000";
 /// The default url endpoint for the grpc cluster service
 const DEFAULT_SP1_CLUSTER_ENDPOINT: &str = "https://rpc.production.succinct.xyz/";
 
+#[serde_as]
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct ProposerClientConfig {
@@ -24,7 +26,8 @@ pub struct ProposerClientConfig {
     #[serde(default = "default_request_timeout")]
     pub request_timeout: Duration,
     /// Proving timeout in seconds.
-    #[serde(default = "default_timeout")]
+    #[serde(default = "default_proving_timeout")]
+    #[serde_as(as = "DurationSeconds<u64>")]
     pub proving_timeout: Duration,
 }
 
@@ -34,7 +37,7 @@ impl Default for ProposerClientConfig {
             proposer_endpoint: default_proposer_service_endpoint(),
             sp1_cluster_endpoint: default_sp1_cluster_endpoint(),
             request_timeout: default_request_timeout(),
-            proving_timeout: default_timeout(),
+            proving_timeout: default_proving_timeout(),
         }
     }
 }
@@ -57,6 +60,10 @@ pub fn default_request_timeout() -> Duration {
     Duration::from_secs(600)
 }
 
-pub fn default_timeout() -> Duration {
+pub fn default_proving_timeout() -> Duration {
     Duration::from_secs(3600)
+}
+
+pub fn convert_duration(secs: u64) -> Duration {
+    Duration::from_secs(secs)
 }

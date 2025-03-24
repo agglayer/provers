@@ -43,7 +43,7 @@ pub struct FepProposerResponse {
     pub end_block: u64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct RequestId(pub B256);
 
 impl Display for RequestId {

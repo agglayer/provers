@@ -25,20 +25,16 @@ pub struct Client<Proposer, Prover> {
     proving_timeout: Option<Duration>,
 }
 
-impl<Proposer, Prover> Client<Proposer, Prover>
-where
-    Proposer: AggregationProofProposer,
-    Prover: AggSpanProver,
-{
+impl<Proposer, Prover> Client<Proposer, Prover> {
     pub fn new(
         proposer: Proposer,
         prover: Prover,
-        timeout: Option<Duration>,
+        proving_timeout: Option<Duration>,
     ) -> Result<Self, error::Error> {
         Ok(Self {
             proposer_rpc: Arc::new(proposer),
             prover_rpc: Arc::new(prover),
-            proving_timeout: timeout,
+            proving_timeout,
         })
     }
 }

@@ -25,7 +25,7 @@ struct Cli {
     max_block: u64,
 
     /// L1 block hash
-    #[arg(short = 'h', long)]
+    #[arg(short = 'H', long)]
     l1_block_hash: String,
 
     /// JSON-RPC endpoint of the l1 node.
@@ -43,6 +43,8 @@ struct Cli {
 
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
+    println!("Starting Proposer service test...");
+
     // Initialize the tracing
     prover_logger::tracing(&Log::default());
 
@@ -64,7 +66,7 @@ pub async fn main() -> anyhow::Result<()> {
             proposer_endpoint: cli.proposer_endpoint,
             sp1_cluster_endpoint: cli.sp1_cluster_endpoint,
             request_timeout: proposer_client::config::default_request_timeout(),
-            proving_timeout: proposer_client::config::default_timeout(),
+            proving_timeout: proposer_client::config::default_proving_timeout(),
         },
         l1_rpc_endpoint: cli.l1_rpc_endpoint,
     };
@@ -84,10 +86,10 @@ pub async fn main() -> anyhow::Result<()> {
     };
     match proposer_service.call(request).await {
         Ok(response) => {
-            info!("Proposer response: {:?}", response);
+            println!("Proposer response: {:?}", response);
         }
         Err(e) => {
-            info!("Error: {:?}", e);
+            println!("Error: {:?}", e);
         }
     }
 
