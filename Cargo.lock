@@ -5292,10 +5292,13 @@ dependencies = [
  "aggkit-prover-types",
  "alloy-primitives",
  "anyhow",
+ "clap",
  "futures",
+ "log",
  "mockall",
  "proposer-client",
  "prover-alloy",
+ "prover-logger",
  "serde",
  "sp1-core-executor",
  "sp1-prover",
@@ -5303,6 +5306,7 @@ dependencies = [
  "thiserror 2.0.11",
  "tokio",
  "tower 0.4.13",
+ "tracing",
  "url",
 ]
 

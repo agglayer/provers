@@ -1,7 +1,6 @@
 ---
 source: crates/aggkit-prover-config/tests/validate_deserialize.rs
 expression: config
-snapshot_kind: text
 ---
 grpc-endpoint = "127.0.0.1:8081"
 
@@ -42,10 +41,8 @@ l1-rpc-endpoint = "http://anvil-mock-l1-rpc:8545/"
 [aggchain-proof-service.proposer-service.client]
 proposer-endpoint = "http://proposer-mock-rpc:3000/"
 sp1-cluster-endpoint = "https://rpc.production.succinct.xyz/"
-
-[aggchain-proof-service.proposer-service.client.proving-timeout]
-secs = 3600
-nanos = 0
+request-timeout = 600
+proving-timeout = 3600
 
 [primary-prover.network-prover]
 proving-timeout = "5m"
