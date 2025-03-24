@@ -207,7 +207,7 @@ dependencies = [
 [[package]]
 name = "agglayer-grpc-types"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git#0e8b4fb89ac9b081ef8bfa510bccaec7bd10dfe9"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.1.0#82404ee5f9cc7e66c51c5a226ecf53812b744949"
 dependencies = [
  "agglayer-interop-types",
  "bincode",
@@ -221,7 +221,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git#0e8b4fb89ac9b081ef8bfa510bccaec7bd10dfe9"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.1.0#82404ee5f9cc7e66c51c5a226ecf53812b744949"
 dependencies = [
  "agglayer-grpc-types",
  "agglayer-interop-types",
@@ -230,7 +230,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop-types"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git#0e8b4fb89ac9b081ef8bfa510bccaec7bd10dfe9"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.1.0#82404ee5f9cc7e66c51c5a226ecf53812b744949"
 dependencies = [
  "agglayer-primitives",
  "bincode",
@@ -248,7 +248,7 @@ dependencies = [
 [[package]]
 name = "agglayer-primitives"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git#0e8b4fb89ac9b081ef8bfa510bccaec7bd10dfe9"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.1.0#82404ee5f9cc7e66c51c5a226ecf53812b744949"
 dependencies = [
  "alloy-primitives",
  "byteorder",
@@ -4957,7 +4957,7 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 [[package]]
 name = "pessimistic-proof"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git#0e8b4fb89ac9b081ef8bfa510bccaec7bd10dfe9"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.1.0#82404ee5f9cc7e66c51c5a226ecf53812b744949"
 dependencies = [
  "agglayer-primitives",
  "bincode",
@@ -4977,7 +4977,7 @@ dependencies = [
 [[package]]
 name = "pessimistic-proof-core"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git#0e8b4fb89ac9b081ef8bfa510bccaec7bd10dfe9"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.1.0#82404ee5f9cc7e66c51c5a226ecf53812b744949"
 dependencies = [
  "agglayer-primitives",
  "bincode",
