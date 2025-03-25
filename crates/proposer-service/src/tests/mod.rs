@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use alloy_primitives::{FixedBytes};
+use alloy_primitives::FixedBytes;
 use proposer_client::{
     rpc::AggregationProofProposerRequest, FepProposerRequest, MockProposerClient,
 };
