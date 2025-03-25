@@ -19,8 +19,8 @@ pub struct AggchainProofWitness {
     pub origin_network: u32,
     /// Full execution proof with its metadata.
     pub fep: FepInputs,
-    /// List of the global index of each imported bridge exit.
-    pub committed_imported_bridge_exits: Digest,
+    /// Commitment on the imported bridge exits minus the unset ones.
+    pub commit_imported_bridge_exits: Digest,
     /// Bridge witness related data.
     pub bridge_witness: BridgeWitness,
 }
@@ -31,7 +31,7 @@ impl AggchainProofWitness {
         self.fep.verify(
             self.l1_info_root,
             self.new_local_exit_root,
-            self.committed_imported_bridge_exits,
+            self.commit_imported_bridge_exits,
         )?;
 
         // Verify the bridge constraints
@@ -48,7 +48,7 @@ impl AggchainProofWitness {
             new_local_exit_root: self.new_local_exit_root,
             l1_info_root: self.l1_info_root,
             origin_network: self.origin_network,
-            commit_imported_bridge_exits: self.committed_imported_bridge_exits,
+            commit_imported_bridge_exits: self.commit_imported_bridge_exits,
             aggchain_params: self.fep.aggchain_params(),
         }
     }
@@ -62,7 +62,7 @@ impl AggchainProofWitness {
             new_l2_block_hash: self.fep.new_block_hash,
             new_local_exit_root: self.new_local_exit_root,
             l1_info_root: self.l1_info_root,
-            committed_imported_bridge_exits: self.committed_imported_bridge_exits,
+            commit_imported_bridge_exits: self.commit_imported_bridge_exits,
             bridge_witness: self.bridge_witness.clone(),
         }
     }

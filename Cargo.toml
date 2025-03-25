@@ -38,8 +38,8 @@ prover-logger = { path = "crates/prover-logger" }
 prover-utils = { path = "crates/prover-utils" }
 
 agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
-agglayer-primitives = { git = "https://github.com/agglayer/interop.git", rev = "e38287a" }
-agglayer-interop = { git = "https://github.com/agglayer/interop.git", rev = "e38287a" }
+agglayer-primitives = { git = "https://github.com/agglayer/interop.git" }
+agglayer-interop = { git = "https://github.com/agglayer/interop.git" }
 
 # Core dependencies
 alloy = { version = '0.12.6', features = ["full"] }
@@ -102,5 +102,5 @@ sp1-core-machine = "=4.1.2"
 sp1-sdk = "=4.1.2"
 sp1-prover = "=4.1.2"
 sp1-zkvm = "=4.1.2"
-sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "83ca051" }
-sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "83ca051" }
+sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "83ca051cd5c5d4e7b4ffd2919dc06b2ef6cae127" }
+sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "83ca051cd5c5d4e7b4ffd2919dc06b2ef6cae127" }

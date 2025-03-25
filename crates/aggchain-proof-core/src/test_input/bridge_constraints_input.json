@@ -4,7 +4,7 @@
     "new_l2_block_hash": "0x7bc50cbf8a1d308f60471e953136af62b7efc293319f7bd9df4d725915dd0f5d",
     "new_local_exit_root": "0x94b931a82d9f95b6ea777d16147ae3fc7674cbe2b3c388c1964c6080e151e5b3",
     "l1_info_root": "0xf39756fc60dd904f0f5165210a5110deb24d8aa2bd512753a82e5fa1009f6d8c",
-    "committed_imported_bridge_exits": "0x588a675657af061404e8adba0fe3843f9ced04fa1f08a7c251b60fc11d6416ee",
+    "commit_imported_bridge_exits": "0x588a675657af061404e8adba0fe3843f9ced04fa1f08a7c251b60fc11d6416ee",
     "bridge_witness": {
         "inserted_gers": [
             {

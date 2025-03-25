@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 
 use aggchain_proof_contracts::contracts::{
-    L1RollupConfigHashFetcher, L2EVMStateSketchesFetched, L2LocalExitRootFetcher,
+    L1RollupConfigHashFetcher, L2EvmStateSketchFetcher, L2LocalExitRootFetcher,
     L2OutputAtBlockFetcher,
 };
 use aggchain_proof_contracts::AggchainContractsClient;
@@ -17,10 +17,9 @@ use aggchain_proof_core::full_execution_proof::FepInputs;
 use aggchain_proof_core::proof::{AggchainProofPublicValues, AggchainProofWitness};
 use aggchain_proof_core::Digest;
 use aggchain_proof_types::AggchainProofInputs;
-use agglayer_interop::types::GlobalIndex;
 use agglayer_primitives::utils::Hashable;
 use alloy::eips::BlockNumberOrTag;
-use alloy_primitives::{Address, FixedBytes};
+use alloy_primitives::Address;
 use bincode::Options;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
@@ -101,22 +100,6 @@ pub enum WitnessGeneration {
     WrongAggregationProofType,
 }
 
-pub fn encoded_global_index(value: &GlobalIndex) -> FixedBytes<32> {
-    let mut bytes = [0u8; 32];
-
-    let leaf_bytes = value.leaf_index.to_le_bytes();
-    bytes[0..4].copy_from_slice(&leaf_bytes);
-
-    let rollup_bytes = value.rollup_index.to_le_bytes();
-    bytes[4..8].copy_from_slice(&rollup_bytes);
-
-    if value.mainnet_flag {
-        bytes[8] |= 0x01;
-    }
-
-    bytes.into()
-}
-
 impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     pub async fn new(
         config: &AggchainProofBuilderConfig,
@@ -151,10 +134,10 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     where
         ContractsClient: L2LocalExitRootFetcher
             + L2OutputAtBlockFetcher
-            + L2EVMStateSketchesFetched
+            + L2EvmStateSketchFetcher
             + L1RollupConfigHashFetcher,
     {
-        let block_range = request.aggchain_proof_inputs.start_block..request.end_block; // Handle +-1
+        let block_range = request.aggchain_proof_inputs.start_block..request.end_block; // TODO: Handle +-1
 
         // Fetch from RPCs
         let prev_local_exit_root = contracts_client
@@ -203,13 +186,11 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .values()
             .filter(|inserted_ger| block_range.contains(&inserted_ger.block_number))
             .cloned()
-            .map(|elmt| {
-                Ok(InsertedGER {
-                    proof: elmt.inserted_ger.proof_ger_l1root,
-                    l1_info_tree_leaf: elmt.inserted_ger.l1_leaf,
-                })
+            .map(|e| InsertedGER {
+                proof: e.inserted_ger.proof_ger_l1root,
+                l1_info_tree_leaf: e.inserted_ger.l1_leaf,
             })
-            .collect::<Result<Vec<_>, _>>()?;
+            .collect();
 
         // NOTE: Corresponds to all of them because we do not have removed GERs yet.
         let inserted_gers_hash_chain = inserted_gers
@@ -224,7 +205,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .iter()
             .filter(|ib| block_range.contains(&ib.block_number))
             .map(|ib| GlobalIndexWithLeafHash {
-                global_index: encoded_global_index(&ib.imported_bridge_exit.global_index),
+                global_index: ib.imported_bridge_exit.global_index.into(),
                 bridge_exit_hash: ib.imported_bridge_exit.bridge_exit.hash(),
             })
             .collect();
@@ -241,7 +222,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             new_withdrawal_storage_root: claim_root_output_at_block.withdrawal_storage_root,
             new_block_hash: claim_root_output_at_block.latest_block_hash,
             trusted_sequencer,
-            signature_optimistic_mode: None,
+            signature_optimistic_mode: None, // NOTE: disabled for now
             l1_info_tree_leaf,
             l1_head_inclusion_proof: request.aggchain_proof_inputs.l1_info_tree_merkle_proof,
         };
@@ -252,7 +233,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             l1_info_root: request.aggchain_proof_inputs.l1_info_tree_root_hash,
             origin_network: network_id,
             fep,
-            committed_imported_bridge_exits: compute_imported_bridge_exits_commitment(
+            commit_imported_bridge_exits: compute_imported_bridge_exits_commitment(
                 &bridge_exits_claimed,
             ),
             bridge_witness: BridgeWitness {

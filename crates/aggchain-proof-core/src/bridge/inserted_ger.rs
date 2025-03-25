@@ -14,13 +14,15 @@ pub struct InsertedGER {
 impl InsertedGER {
     /// Verify the inclusion proof against one L1 info root.
     pub fn verify(&self, l1_info_root: Digest) -> bool {
-        let valid_merkle_proof = self.proof.verify(
+        // TODO: return differentiated errors
+        if l1_info_root != self.proof.root {
+            return false;
+        }
+
+        self.proof.verify(
             self.l1_info_tree_leaf.hash(),
             self.l1_info_tree_leaf.l1_info_tree_index,
-        );
-
-        // TODO: return differentiated errors
-        (l1_info_root == self.proof.root) && valid_merkle_proof
+        )
     }
 
     /// Returns the inserted GER.

@@ -70,7 +70,7 @@ pub trait L1RollupConfigHashFetcher {
 }
 
 #[async_trait::async_trait]
-pub trait L2EVMStateSketchesFetched {
+pub trait L2EvmStateSketchFetcher {
     async fn get_prev_l2_block_sketch(
         &self,
         prev_l2_block: BlockNumberOrTag,

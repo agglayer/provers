@@ -216,7 +216,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?rev=e38287a#e38287a0d48f1515385055e0aaf76e2213a66517"
+source = "git+https://github.com/agglayer/interop.git#e38287a0d48f1515385055e0aaf76e2213a66517"
 dependencies = [
  "agglayer-interop-grpc-types",
  "agglayer-interop-types",
@@ -225,7 +225,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop-grpc-types"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?rev=e38287a#e38287a0d48f1515385055e0aaf76e2213a66517"
+source = "git+https://github.com/agglayer/interop.git#e38287a0d48f1515385055e0aaf76e2213a66517"
 dependencies = [
  "agglayer-interop-types",
  "bincode",
@@ -240,7 +240,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop-types"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?rev=e38287a#e38287a0d48f1515385055e0aaf76e2213a66517"
+source = "git+https://github.com/agglayer/interop.git#e38287a0d48f1515385055e0aaf76e2213a66517"
 dependencies = [
  "agglayer-primitives",
  "agglayer-tries",
@@ -259,7 +259,7 @@ dependencies = [
 [[package]]
 name = "agglayer-primitives"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?rev=e38287a#e38287a0d48f1515385055e0aaf76e2213a66517"
+source = "git+https://github.com/agglayer/interop.git#e38287a0d48f1515385055e0aaf76e2213a66517"
 dependencies = [
  "alloy-primitives",
  "byteorder",
@@ -345,7 +345,7 @@ dependencies = [
 [[package]]
 name = "agglayer-tries"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?rev=e38287a#e38287a0d48f1515385055e0aaf76e2213a66517"
+source = "git+https://github.com/agglayer/interop.git#e38287a0d48f1515385055e0aaf76e2213a66517"
 dependencies = [
  "agglayer-primitives",
  "serde",
@@ -7630,7 +7630,7 @@ dependencies = [
 [[package]]
 name = "sp1-cc-client-executor"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/sp1-contract-call/?rev=83ca051#83ca051cd5c5d4e7b4ffd2919dc06b2ef6cae127"
+source = "git+https://github.com/succinctlabs/sp1-contract-call/?rev=83ca051cd5c5d4e7b4ffd2919dc06b2ef6cae127#83ca051cd5c5d4e7b4ffd2919dc06b2ef6cae127"
 dependencies = [
  "alloy-consensus 0.12.6",
  "alloy-evm",
@@ -7652,7 +7652,7 @@ dependencies = [
 [[package]]
 name = "sp1-cc-host-executor"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/sp1-contract-call/?rev=83ca051#83ca051cd5c5d4e7b4ffd2919dc06b2ef6cae127"
+source = "git+https://github.com/succinctlabs/sp1-contract-call/?rev=83ca051cd5c5d4e7b4ffd2919dc06b2ef6cae127#83ca051cd5c5d4e7b4ffd2919dc06b2ef6cae127"
 dependencies = [
  "alloy-evm",
  "alloy-primitives",
@@ -9061,7 +9061,7 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 [[package]]
 name = "unified-bridge"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?rev=e38287a#e38287a0d48f1515385055e0aaf76e2213a66517"
+source = "git+https://github.com/agglayer/interop.git#e38287a0d48f1515385055e0aaf76e2213a66517"
 dependencies = [
  "agglayer-primitives",
  "agglayer-tries",

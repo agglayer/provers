@@ -16,7 +16,7 @@ use alloy::network::AnyNetwork;
 use alloy::primitives::{Address, B256};
 use alloy::providers::{Provider, RootProvider};
 use alloy::sol_types::SolCall;
-use contracts::{GlobalExitRootManagerL2SovereignChainRpcClient, L2EVMStateSketchesFetched};
+use contracts::{GlobalExitRootManagerL2SovereignChainRpcClient, L2EvmStateSketchFetcher};
 use jsonrpsee::core::client::ClientT;
 use jsonrpsee::http_client::HttpClient;
 use jsonrpsee::rpc_params;
@@ -40,7 +40,7 @@ pub trait AggchainContractsClient:
     L2LocalExitRootFetcher
     + L2OutputAtBlockFetcher
     + L1RollupConfigHashFetcher
-    + L2EVMStateSketchesFetched
+    + L2EvmStateSketchFetcher
 {
 }
 
@@ -125,7 +125,7 @@ where
 }
 
 #[async_trait::async_trait]
-impl<RpcProvider> L2EVMStateSketchesFetched for AggchainContractsRpcClient<RpcProvider>
+impl<RpcProvider> L2EvmStateSketchFetcher for AggchainContractsRpcClient<RpcProvider>
 where
     RpcProvider: alloy::providers::Provider + Send + Sync,
 {
@@ -143,7 +143,7 @@ where
 
         // Static calls on the hash chains
         {
-            _ = host_execute(
+            host_execute(
                 ger_address,
                 &mut executor,
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
@@ -151,7 +151,7 @@ where
             )
             .await?;
 
-            _ = host_execute(
+            host_execute(
                 ger_address,
                 &mut executor,
                 GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
@@ -159,7 +159,7 @@ where
             )
             .await?;
 
-            _ = host_execute(
+            host_execute(
                 bridge_address,
                 &mut executor,
                 BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
@@ -167,7 +167,7 @@ where
             )
             .await?;
 
-            _ = host_execute(
+            host_execute(
                 bridge_address,
                 &mut executor,
                 BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
@@ -198,7 +198,7 @@ where
         let bridge_address = *self.polygon_zkevm_bridge_v2.address();
 
         // Static call on the bridge address
-        _ = host_execute(
+        host_execute(
             ger_address,
             &mut executor,
             GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
@@ -207,7 +207,7 @@ where
         .await?;
 
         // Static call on the new LER
-        _ = host_execute(
+        host_execute(
             bridge_address,
             &mut executor,
             BridgeL2SovereignChain::getRootCall {},
@@ -217,7 +217,7 @@ where
 
         // Static calls on the hash chains
         {
-            _ = host_execute(
+            host_execute(
                 ger_address,
                 &mut executor,
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
@@ -225,7 +225,7 @@ where
             )
             .await?;
 
-            _ = host_execute(
+            host_execute(
                 ger_address,
                 &mut executor,
                 GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
@@ -233,7 +233,7 @@ where
             )
             .await?;
 
-            _ = host_execute(
+            host_execute(
                 bridge_address,
                 &mut executor,
                 BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
@@ -241,7 +241,7 @@ where
             )
             .await?;
 
-            _ = host_execute(
+            host_execute(
                 bridge_address,
                 &mut executor,
                 BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
