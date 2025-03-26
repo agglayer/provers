@@ -55,7 +55,8 @@ pub struct AggchainProofBuilderRequest {
     pub aggregation_proof: Box<sp1_core_executor::SP1ReduceProof<sp1_prover::InnerSC>>,
 
     /// Last block in the agg_span_proof provided by the proposer.
-    /// Could be different from the requested_end_block requested by the agg-sender.
+    /// Could be different from the requested_end_block requested by the
+    /// agg-sender.
     pub end_block: u64,
 
     /// Aggchain proof request information, public inputs, bridge data,...
