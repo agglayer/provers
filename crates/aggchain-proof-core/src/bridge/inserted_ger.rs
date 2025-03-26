@@ -1,6 +1,6 @@
-use agglayer_interop::types::{L1InfoTreeLeaf, MerkleProof};
 use agglayer_primitives::digest::Digest;
 use serde::{Deserialize, Serialize};
+use unified_bridge::imported_bridge_exit::{L1InfoTreeLeaf, MerkleProof};
 
 /// Data to verify the legitimacy of one inserted GER.
 #[derive(Debug, Clone, Serialize, Deserialize)]

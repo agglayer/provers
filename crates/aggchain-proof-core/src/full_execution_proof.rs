@@ -1,9 +1,9 @@
-use agglayer_interop::types::{L1InfoTreeLeaf, MerkleProof};
 use agglayer_primitives::digest::Digest;
 use agglayer_primitives::keccak::keccak256_combine;
 use alloy_primitives::{Address, PrimitiveSignature, B256};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest as Sha256Digest, Sha256};
+use unified_bridge::imported_bridge_exit::{L1InfoTreeLeaf, MerkleProof};
 
 use crate::{error::ProofError, vkey_hash::HashU32};
 
