@@ -3,7 +3,6 @@ name: Release
 on:
   push:
     branches:
-      - build/docker-dev
       - main
   release:
     types: [created]
