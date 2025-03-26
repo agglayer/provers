@@ -34,6 +34,7 @@ jobs:
       VERSION: ${{ steps.meta.outputs.version }}
     steps:
       - name: validate tag
+        if: ${{ github.event_name == '"release"' }}
         run: echo ${{ github.ref_name }} | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$'
 
       - name: Prepare
@@ -55,7 +56,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
 
-      - name: Image name builder
+      - name: Image name builder (release)
         id: image_builder
         run: |
           IMAGE=$(jq -ecr '.tags | map(select(match("${{ env.REGEX_IMAGE }}", "i"))) | first| sub(":.*$";"")' <<< "$DOCKER_METADATA_OUTPUT_JSON")
