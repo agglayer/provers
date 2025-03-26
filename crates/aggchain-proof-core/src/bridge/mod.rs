@@ -477,7 +477,6 @@ mod tests {
     use std::io::BufReader;
     use std::str::FromStr;
 
-    use agglayer_interop::types::{L1InfoTreeLeaf, L1InfoTreeLeafInner, MerkleProof};
     use alloy::providers::RootProvider;
     use alloy::rpc::types::BlockNumberOrTag;
     use alloy_primitives::hex;
@@ -485,6 +484,7 @@ mod tests {
     use serde_json::Value;
     use sp1_cc_client_executor::ContractInput;
     use sp1_cc_host_executor::HostExecutor;
+    use unified_bridge::imported_bridge_exit::{L1InfoTreeLeaf, L1InfoTreeLeafInner, MerkleProof};
     use url::Url;
 
     use super::*;
