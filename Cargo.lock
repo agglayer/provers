@@ -116,6 +116,7 @@ dependencies = [
  "anyhow",
  "bincode",
  "futures",
+ "proposer-client",
  "proposer-service",
  "prover-alloy",
  "serde",

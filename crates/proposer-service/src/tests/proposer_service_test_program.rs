@@ -17,13 +17,13 @@ use url::Url;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Cli {
-    /// Start block
+    /// Start block (last proven block before the requested proof)
     #[arg(short, long)]
-    start_block: u64,
+    last_proven_block: u64,
 
-    /// Max block
+    /// Requested end block
     #[arg(short, long)]
-    max_block: u64,
+    requested_end_block: u64,
 
     /// L1 block hash
     #[arg(short = 'H', long)]
@@ -81,8 +81,8 @@ pub async fn main() -> anyhow::Result<()> {
 
     // Perform proving request based on the input arguments
     let request = FepProposerRequest {
-        start_block: cli.start_block,
-        max_block: cli.max_block,
+        last_proven_block: cli.last_proven_block,
+        requested_end_block: cli.requested_end_block,
         l1_block_hash: B256::from_str(&cli.l1_block_hash)?,
     };
     match proposer_service.call(request).await {

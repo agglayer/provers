@@ -28,14 +28,17 @@ pub trait AggregationProofProposer {
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct AggregationProofProposerRequest {
-    /// Starting block number to request proof from.
+    /// Last block that has already been proven before this request.
     #[serde(rename = "startBlock")]
-    pub start_block: u64,
+    pub last_proven_block: u64,
+
     /// Maximum block number for the aggregation proof.
     #[serde(rename = "maxBlock")]
-    pub max_block: u64,
-    /// L1 block number corresponding to max_block.
+    pub requested_end_block: u64,
+
+    /// L1 block number corresponding to requested_end_block.
     pub l1_block_number: u64,
+
     /// L1 block hash.
     #[serde_as(as = "DisplayFromStr")]
     pub l1_block_hash: B256,
@@ -47,8 +50,10 @@ pub struct AggregationProofProposerResponse {
     /// Proof request_id, used to fetch the proof from the cluster.
     #[serde(rename = "proof_request_id")]
     pub request_id: B256,
-    /// Start block for the aggregation proof.
-    pub start_block: u64,
+
+    /// Last block already proven before this aggregation proof.
+    pub last_proven_block: u64,
+
     /// End block for the aggregation proof.
     pub end_block: u64,
 }
@@ -57,8 +62,8 @@ impl Display for AggregationProofProposerResponse {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "start block: {}, end block: {}, request_id: {}",
-            self.start_block, self.end_block, self.request_id
+            "last proven block: {}, end block: {}, request_id: {}",
+            self.last_proven_block, self.end_block, self.request_id
         )
     }
 }
@@ -85,8 +90,8 @@ impl AggregationProofProposer for ProposerRpcClient {
         request: AggregationProofProposerRequest,
     ) -> Result<AggregationProofProposerResponse, Error> {
         let params = rpc_params![
-            request.start_block,
-            request.max_block,
+            request.last_proven_block,
+            request.requested_end_block,
             request.l1_block_number,
             request.l1_block_hash
         ];

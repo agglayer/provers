@@ -31,15 +31,15 @@ pub trait ProposerClient {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct FepProposerRequest {
-    pub start_block: u64,
-    pub max_block: u64,
+    pub last_proven_block: u64,
+    pub requested_end_block: u64,
     pub l1_block_hash: B256,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FepProposerResponse {
     pub aggregation_proof: SP1ProofWithPublicValues,
-    pub start_block: u64,
+    pub last_proven_block: u64,
     pub end_block: u64,
 }
 

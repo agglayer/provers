@@ -31,7 +31,7 @@ mod proposer_rpc {
                     "id": 0,
                     "jsonrpc": "2.0",
                     "result": {
-                        "start_block": 110,
+                        "last_proven_block": 110,
                         "end_block": 200,
                         "proof_request_id": proof_request_id
                     }
@@ -43,8 +43,8 @@ mod proposer_rpc {
         let service = ProposerRpcClient::new(&server.url(), Duration::from_millis(500)).unwrap();
 
         let request = AggregationProofProposerRequest {
-            start_block: 110,
-            max_block: 200,
+            last_proven_block: 110,
+            requested_end_block: 200,
             l1_block_number: 230203,
             l1_block_hash: [23; 32].into(),
         };

@@ -7,10 +7,10 @@ impl serde::Serialize for GenerateAggchainProofRequest {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if self.start_block != 0 {
+        if self.last_proven_block != 0 {
             len += 1;
         }
-        if self.max_end_block != 0 {
+        if self.requested_end_block != 0 {
             len += 1;
         }
         if self.l1_info_tree_root_hash.is_some() {
@@ -29,15 +29,15 @@ impl serde::Serialize for GenerateAggchainProofRequest {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("aggkit.prover.v1.GenerateAggchainProofRequest", len)?;
-        if self.start_block != 0 {
+        if self.last_proven_block != 0 {
             #[allow(clippy::needless_borrow)]
             #[allow(clippy::needless_borrows_for_generic_args)]
-            struct_ser.serialize_field("startBlock", ToString::to_string(&self.start_block).as_str())?;
+            struct_ser.serialize_field("lastProvenBlock", ToString::to_string(&self.last_proven_block).as_str())?;
         }
-        if self.max_end_block != 0 {
+        if self.requested_end_block != 0 {
             #[allow(clippy::needless_borrow)]
             #[allow(clippy::needless_borrows_for_generic_args)]
-            struct_ser.serialize_field("maxEndBlock", ToString::to_string(&self.max_end_block).as_str())?;
+            struct_ser.serialize_field("requestedEndBlock", ToString::to_string(&self.requested_end_block).as_str())?;
         }
         if let Some(v) = self.l1_info_tree_root_hash.as_ref() {
             struct_ser.serialize_field("l1InfoTreeRootHash", v)?;
@@ -64,10 +64,10 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
         D: serde::Deserializer<'de>,
     {
         const FIELDS: &[&str] = &[
-            "start_block",
-            "startBlock",
-            "max_end_block",
-            "maxEndBlock",
+            "last_proven_block",
+            "lastProvenBlock",
+            "requested_end_block",
+            "requestedEndBlock",
             "l1_info_tree_root_hash",
             "l1InfoTreeRootHash",
             "l1_info_tree_leaf",
@@ -82,8 +82,8 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
-            StartBlock,
-            MaxEndBlock,
+            LastProvenBlock,
+            RequestedEndBlock,
             L1InfoTreeRootHash,
             L1InfoTreeLeaf,
             L1InfoTreeMerkleProof,
@@ -110,8 +110,8 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
                         E: serde::de::Error,
                     {
                         match value {
-                            "startBlock" | "start_block" => Ok(GeneratedField::StartBlock),
-                            "maxEndBlock" | "max_end_block" => Ok(GeneratedField::MaxEndBlock),
+                            "lastProvenBlock" | "last_proven_block" => Ok(GeneratedField::LastProvenBlock),
+                            "requestedEndBlock" | "requested_end_block" => Ok(GeneratedField::RequestedEndBlock),
                             "l1InfoTreeRootHash" | "l1_info_tree_root_hash" => Ok(GeneratedField::L1InfoTreeRootHash),
                             "l1InfoTreeLeaf" | "l1_info_tree_leaf" => Ok(GeneratedField::L1InfoTreeLeaf),
                             "l1InfoTreeMerkleProof" | "l1_info_tree_merkle_proof" => Ok(GeneratedField::L1InfoTreeMerkleProof),
@@ -136,8 +136,8 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
                 where
                     V: serde::de::MapAccess<'de>,
             {
-                let mut start_block__ = None;
-                let mut max_end_block__ = None;
+                let mut last_proven_block__ = None;
+                let mut requested_end_block__ = None;
                 let mut l1_info_tree_root_hash__ = None;
                 let mut l1_info_tree_leaf__ = None;
                 let mut l1_info_tree_merkle_proof__ = None;
@@ -145,19 +145,19 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
                 let mut imported_bridge_exits__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
-                        GeneratedField::StartBlock => {
-                            if start_block__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("startBlock"));
+                        GeneratedField::LastProvenBlock => {
+                            if last_proven_block__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("lastProvenBlock"));
                             }
-                            start_block__ = 
+                            last_proven_block__ = 
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
-                        GeneratedField::MaxEndBlock => {
-                            if max_end_block__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("maxEndBlock"));
+                        GeneratedField::RequestedEndBlock => {
+                            if requested_end_block__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("requestedEndBlock"));
                             }
-                            max_end_block__ = 
+                            requested_end_block__ = 
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
@@ -196,8 +196,8 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
                     }
                 }
                 Ok(GenerateAggchainProofRequest {
-                    start_block: start_block__.unwrap_or_default(),
-                    max_end_block: max_end_block__.unwrap_or_default(),
+                    last_proven_block: last_proven_block__.unwrap_or_default(),
+                    requested_end_block: requested_end_block__.unwrap_or_default(),
                     l1_info_tree_root_hash: l1_info_tree_root_hash__,
                     l1_info_tree_leaf: l1_info_tree_leaf__,
                     l1_info_tree_merkle_proof: l1_info_tree_merkle_proof__,
@@ -220,7 +220,7 @@ impl serde::Serialize for GenerateAggchainProofResponse {
         if !self.aggchain_proof.is_empty() {
             len += 1;
         }
-        if self.start_block != 0 {
+        if self.last_proven_block != 0 {
             len += 1;
         }
         if self.end_block != 0 {
@@ -238,10 +238,10 @@ impl serde::Serialize for GenerateAggchainProofResponse {
             #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("aggchainProof", pbjson::private::base64::encode(&self.aggchain_proof).as_str())?;
         }
-        if self.start_block != 0 {
+        if self.last_proven_block != 0 {
             #[allow(clippy::needless_borrow)]
             #[allow(clippy::needless_borrows_for_generic_args)]
-            struct_ser.serialize_field("startBlock", ToString::to_string(&self.start_block).as_str())?;
+            struct_ser.serialize_field("lastProvenBlock", ToString::to_string(&self.last_proven_block).as_str())?;
         }
         if self.end_block != 0 {
             #[allow(clippy::needless_borrow)]
@@ -268,8 +268,8 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofResponse {
         const FIELDS: &[&str] = &[
             "aggchain_proof",
             "aggchainProof",
-            "start_block",
-            "startBlock",
+            "last_proven_block",
+            "lastProvenBlock",
             "end_block",
             "endBlock",
             "local_exit_root_hash",
@@ -281,7 +281,7 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofResponse {
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             AggchainProof,
-            StartBlock,
+            LastProvenBlock,
             EndBlock,
             LocalExitRootHash,
             CustomChainData,
@@ -307,7 +307,7 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofResponse {
                     {
                         match value {
                             "aggchainProof" | "aggchain_proof" => Ok(GeneratedField::AggchainProof),
-                            "startBlock" | "start_block" => Ok(GeneratedField::StartBlock),
+                            "lastProvenBlock" | "last_proven_block" => Ok(GeneratedField::LastProvenBlock),
                             "endBlock" | "end_block" => Ok(GeneratedField::EndBlock),
                             "localExitRootHash" | "local_exit_root_hash" => Ok(GeneratedField::LocalExitRootHash),
                             "customChainData" | "custom_chain_data" => Ok(GeneratedField::CustomChainData),
@@ -331,7 +331,7 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofResponse {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut aggchain_proof__ = None;
-                let mut start_block__ = None;
+                let mut last_proven_block__ = None;
                 let mut end_block__ = None;
                 let mut local_exit_root_hash__ = None;
                 let mut custom_chain_data__ = None;
@@ -345,11 +345,11 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofResponse {
                                 Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
                             ;
                         }
-                        GeneratedField::StartBlock => {
-                            if start_block__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("startBlock"));
+                        GeneratedField::LastProvenBlock => {
+                            if last_proven_block__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("lastProvenBlock"));
                             }
-                            start_block__ = 
+                            last_proven_block__ = 
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
@@ -379,7 +379,7 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofResponse {
                 }
                 Ok(GenerateAggchainProofResponse {
                     aggchain_proof: aggchain_proof__.unwrap_or_default(),
-                    start_block: start_block__.unwrap_or_default(),
+                    last_proven_block: last_proven_block__.unwrap_or_default(),
                     end_block: end_block__.unwrap_or_default(),
                     local_exit_root_hash: local_exit_root_hash__,
                     custom_chain_data: custom_chain_data__.unwrap_or_default(),

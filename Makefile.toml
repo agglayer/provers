@@ -1,9 +1,10 @@
 extend = [
-    { path = "Makefile.ci.toml" },
-    { path = "Makefile.e2e.toml" },
-    { path = "Makefile.elf.toml" },
-    { path = "Makefile.test.toml" },
-    { path = "Makefile.contracts.toml" },
+    { path = "./scripts/make/Makefile.ci.toml" },
+    { path = "./scripts/make/Makefile.e2e.toml" },
+    { path = "./scripts/make/Makefile.elf.toml" },
+    { path = "./scripts/make/Makefile.proto.toml" },
+    { path = "./scripts/make/Makefile.test.toml" },
+    { path = "./scripts/make/Makefile.contracts.toml" },
 ]
 
 [config]
