@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use alloy_primitives::B256;
 use serde::{Deserialize, Serialize};
-use sp1_sdk::SP1ProofWithPublicValues;
+use sp1_sdk::{SP1ProofWithPublicValues, SP1VerifyingKey};
 
 pub use crate::error::Error;
 use crate::rpc::{AggregationProofProposerRequest, AggregationProofProposerResponse};
@@ -27,6 +27,13 @@ pub trait ProposerClient {
         &self,
         request_id: RequestId,
     ) -> Result<SP1ProofWithPublicValues, Error>;
+
+    fn verify_agg_proof(
+        &self,
+        request_id: RequestId,
+        proof: &SP1ProofWithPublicValues,
+        vkey: &SP1VerifyingKey,
+    ) -> Result<(), Error>;
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

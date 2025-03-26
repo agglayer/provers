@@ -38,11 +38,16 @@ prover-logger = { path = "crates/prover-logger" }
 prover-utils = { path = "crates/prover-utils" }
 
 agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
-agglayer-primitives = { git = "https://github.com/agglayer/interop.git", tag = "v0.1.0" }
-agglayer-interop = { git = "https://github.com/agglayer/interop.git", tag = "v0.1.0" }
+
+# Interop dependencies
+agglayer-primitives = { git = "https://github.com/agglayer/interop.git" }
+agglayer-interop = { git = "https://github.com/agglayer/interop.git" }
+agglayer-tries = { git = "https://github.com/agglayer/interop.git" }
+unified-bridge = { git = "https://github.com/agglayer/interop.git" }
+agglayer-interop-types = { git = "https://github.com/agglayer/interop.git" }
 
 # Core dependencies
-alloy = { version = '0.11.0', features = ["full"] }
+alloy = { version = '0.12.6', features = ["full"] }
 alloy-primitives = { version = "0.8.15", features = ["serde", "k256"] }
 anyhow = "1.0.94"
 arc-swap = "1.7.1"
@@ -57,6 +62,7 @@ educe = "0.6"
 ethers = "2.0.14"
 ethers-gcp-kms-signer = "0.1.5"
 ethers-signers = "2.0.14"
+eyre = "0.6.12"
 futures = "0.3.31"
 hex = "0.4.3"
 hyper = "1.5.2"
@@ -96,8 +102,10 @@ rstest = "0.22.0"
 test-log = "0.2.16"
 
 # SP1 dependencies
-sp1-core-executor = "=4.1.2"
-sp1-core-machine = "=4.1.2"
-sp1-sdk = "=4.1.2"
-sp1-prover = "=4.1.2"
-sp1-zkvm = "=4.1.2"
+sp1-core-executor = "=4.1.4"
+sp1-core-machine = "=4.1.4"
+sp1-sdk = "=4.1.4"
+sp1-prover = "=4.1.4"
+sp1-zkvm = "=4.1.4"
+sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "83ca051cd5c5d4e7b4ffd2919dc06b2ef6cae127" }
+sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "83ca051cd5c5d4e7b4ffd2919dc06b2ef6cae127" }

@@ -1,7 +1,6 @@
 use std::str::FromStr as _;
 use std::time::Duration;
 
-use alloy::network::primitives::BlockTransactionsKind;
 use alloy::network::Ethereum;
 use alloy::providers::fillers::{
     BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller,
@@ -103,7 +102,7 @@ impl Provider for AlloyProvider {
     ) -> Result<alloy::primitives::B256, anyhow::Error> {
         let hash = self
             .client
-            .get_block_by_number(block_number.into(), BlockTransactionsKind::Hashes)
+            .get_block_by_number(block_number.into())
             .await
             .map_err(|error| anyhow::anyhow!("Failed to get L1 block hash: {:?}", error))?
             .ok_or(anyhow::anyhow!(
@@ -120,7 +119,7 @@ impl Provider for AlloyProvider {
     ) -> Result<u64, anyhow::Error> {
         let number = self
             .client
-            .get_block_by_hash(block_hash, BlockTransactionsKind::Hashes)
+            .get_block_by_hash(block_hash)
             .await
             .map_err(|error| anyhow::anyhow!("Failed to get L1 block number: {:?}", error))?
             .ok_or(anyhow::anyhow!("target block {block_hash} does not exist"))?

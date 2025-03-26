@@ -1,9 +1,9 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use sp1_sdk::SP1ProofWithPublicValues;
+use sp1_sdk::{SP1ProofWithPublicValues, SP1VerifyingKey};
 
-use crate::network_prover::AggSpanProver;
+use crate::network_prover::AggregationProver;
 use crate::rpc::{
     AggregationProofProposer, AggregationProofProposerRequest, AggregationProofProposerResponse,
 };
@@ -15,7 +15,7 @@ use crate::{error, Error, ProposerClient, RequestId};
 /// block span full execution proofs.
 ///
 /// The proposer client communicates with the proposer API to
-/// request creation of the AggSpanProof (getting the proof ID in return),
+/// request creation of the AggregationProof (getting the proof ID in return),
 /// and directly communicates with the SP1 cluster using NetworkProver
 /// to retrieve the generated proof.
 #[derive(Clone)]
@@ -43,7 +43,7 @@ impl<Proposer, Prover> Client<Proposer, Prover> {
 impl<Proposer, Prover> ProposerClient for Client<Proposer, Prover>
 where
     Proposer: AggregationProofProposer + Sync + Send,
-    Prover: AggSpanProver + Sync + Send,
+    Prover: AggregationProver + Sync + Send,
 {
     async fn request_agg_proof(
         &self,
@@ -60,5 +60,16 @@ where
             .wait_for_proof(request_id.0, self.proving_timeout)
             .await
             .map_err(|e| Error::Proving(request_id, e.to_string()))
+    }
+
+    fn verify_agg_proof(
+        &self,
+        request_id: RequestId,
+        proof: &SP1ProofWithPublicValues,
+        vkey: &SP1VerifyingKey,
+    ) -> Result<(), Error> {
+        self.prover_rpc
+            .verify_aggregated_proof(proof, vkey)
+            .map_err(|source| Error::Verification { request_id, source })
     }
 }
