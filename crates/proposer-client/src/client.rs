@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use sp1_sdk::{SP1ProofWithPublicValues, SP1VerifyingKey};
 
-use crate::network_prover::AggregatedProver;
+use crate::network_prover::AggregationProver;
 use crate::rpc::{
     AggregationProofProposer, AggregationProofProposerRequest, AggregationProofProposerResponse,
 };
@@ -15,7 +15,7 @@ use crate::{error, Error, ProposerClient, RequestId};
 /// block span full execution proofs.
 ///
 /// The proposer client communicates with the proposer API to
-/// request creation of the AggSpanProof (getting the proof ID in return),
+/// request creation of the AggregationProof (getting the proof ID in return),
 /// and directly communicates with the SP1 cluster using NetworkProver
 /// to retrieve the generated proof.
 #[derive(Clone)]
@@ -43,7 +43,7 @@ impl<Proposer, Prover> Client<Proposer, Prover> {
 impl<Proposer, Prover> ProposerClient for Client<Proposer, Prover>
 where
     Proposer: AggregationProofProposer + Sync + Send,
-    Prover: AggregatedProver + Sync + Send,
+    Prover: AggregationProver + Sync + Send,
 {
     async fn request_agg_proof(
         &self,

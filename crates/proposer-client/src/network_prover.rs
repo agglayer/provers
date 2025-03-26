@@ -7,9 +7,9 @@ use sp1_sdk::{
 };
 
 /// This prover waits for the SP1 cluster generated
-/// AggSpanProof based on the proof id.
+/// AggregationProof based on the proof id.
 #[tonic::async_trait]
-pub trait AggregatedProver {
+pub trait AggregationProver {
     async fn wait_for_proof(
         &self,
         request_id: B256,
@@ -24,7 +24,7 @@ pub trait AggregatedProver {
 }
 
 #[tonic::async_trait]
-impl AggregatedProver for NetworkProver {
+impl AggregationProver for NetworkProver {
     async fn wait_for_proof(
         &self,
         request_id: B256,

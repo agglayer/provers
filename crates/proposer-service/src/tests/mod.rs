@@ -71,7 +71,7 @@ async fn test_proposer_service() {
     let mut proposer_service = ProposerService {
         client,
         l1_rpc,
-        aggregation_vkey_hash: vkey,
+        aggregation_vkey: vkey,
     };
 
     let request = FepProposerRequest {
@@ -101,7 +101,7 @@ async fn unable_to_fetch_block_hash() {
     let mut proposer_service = ProposerService {
         client,
         l1_rpc,
-        aggregation_vkey_hash: vkey,
+        aggregation_vkey: vkey,
     };
 
     let request = FepProposerRequest {
@@ -117,3 +117,7 @@ async fn unable_to_fetch_block_hash() {
         Error::AlloyProviderError(_)
     ));
 }
+
+#[test]
+#[ignore = "to be implemented"]
+fn test_invalid_proof_vkey_verificatinon_fails() {}

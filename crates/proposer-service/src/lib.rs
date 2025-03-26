@@ -1,7 +1,6 @@
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
-use aggkit_prover_types::vkey_hash::VKeyHash;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use proposer_client::network_prover::new_network_prover;
@@ -30,7 +29,8 @@ pub mod error;
 #[cfg(test)]
 mod tests;
 
-pub const AGGREGATION_ELF: &[u8] = include_bytes!("../elf/aggregation-elf");
+pub const AGGREGATION_ELF: &[u8] =
+    include_bytes!("../../aggchain-proof-program/elf/aggregation-elf");
 
 pub struct ProposerService<L1Rpc, ProposerClient> {
     pub client: Arc<ProposerClient>,
@@ -38,7 +38,7 @@ pub struct ProposerService<L1Rpc, ProposerClient> {
     pub l1_rpc: Arc<L1Rpc>,
 
     /// Aggregated span proof verification key.
-    aggregation_vkey_hash: SP1VerifyingKey,
+    aggregation_vkey: SP1VerifyingKey,
 }
 
 impl<L1Rpc, ProposerClient> Clone for ProposerService<L1Rpc, ProposerClient> {
@@ -46,7 +46,7 @@ impl<L1Rpc, ProposerClient> Clone for ProposerService<L1Rpc, ProposerClient> {
         Self {
             client: self.client.clone(),
             l1_rpc: self.l1_rpc.clone(),
-            aggregation_vkey_hash: self.aggregation_vkey_hash.clone(),
+            aggregation_vkey: self.aggregation_vkey.clone(),
         }
     }
 }
@@ -62,7 +62,7 @@ impl<L1Rpc>
         let network_prover = new_network_prover(config.client.sp1_cluster_endpoint.as_str())
             .map_err(Error::UnableToCreateNetworkProver)?;
 
-        let aggregation_vkey_hash = Self::extract_aggregation_vkey(AGGREGATION_ELF);
+        let aggregation_vkey = Self::extract_aggregation_vkey(AGGREGATION_ELF);
 
         Ok(Self {
             l1_rpc,
@@ -71,7 +71,7 @@ impl<L1Rpc>
                 network_prover,
                 Some(config.client.proving_timeout),
             )?),
-            aggregation_vkey_hash,
+            aggregation_vkey,
         })
     }
 
@@ -108,7 +108,7 @@ where
     ) -> Self::Future {
         let client = self.client.clone();
         let l1_rpc = self.l1_rpc.clone();
-        let aggregation_vkey_hash = self.aggregation_vkey_hash.clone();
+        let aggregation_vkey = self.aggregation_vkey.clone();
 
         async move {
             let l1_block_number = l1_rpc
@@ -116,7 +116,7 @@ where
                 .await
                 .map_err(Error::AlloyProviderError)?;
 
-            // Request the AggSpanProof generation from the proposer.
+            // Request the AggregationProof generation from the proposer.
             let response = client
                 .request_agg_proof(AggregationProofProposerRequest {
                     start_block,
@@ -132,7 +132,7 @@ where
             let proofs = client.wait_for_proof(request_id.clone()).await?;
 
             // Verify received proof
-            client.verify_agg_proof(request_id, &proofs, &aggregation_vkey_hash)?;
+            client.verify_agg_proof(request_id, &proofs, &aggregation_vkey)?;
 
             let proof_mode: sp1_sdk::SP1ProofMode = (&proofs.proof).into();
             let aggregation_proof: AggregationProof = proofs

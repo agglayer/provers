@@ -207,7 +207,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?branch=chore%2Fsp1-version-4_1_4#fe6acba60bce401ace333f4c97165cf65ef37f54"
+source = "git+https://github.com/agglayer/interop.git?branch=main#c0ec751936eaf2014f6c3d05bcccc203aca9e01a"
 dependencies = [
  "agglayer-interop-grpc-types",
  "agglayer-interop-types",
@@ -216,7 +216,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop-grpc-types"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?branch=chore%2Fsp1-version-4_1_4#fe6acba60bce401ace333f4c97165cf65ef37f54"
+source = "git+https://github.com/agglayer/interop.git?branch=main#c0ec751936eaf2014f6c3d05bcccc203aca9e01a"
 dependencies = [
  "agglayer-interop-types",
  "bincode",
@@ -231,7 +231,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop-types"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?branch=chore%2Fsp1-version-4_1_4#fe6acba60bce401ace333f4c97165cf65ef37f54"
+source = "git+https://github.com/agglayer/interop.git?branch=main#c0ec751936eaf2014f6c3d05bcccc203aca9e01a"
 dependencies = [
  "agglayer-primitives",
  "agglayer-tries",
@@ -250,7 +250,7 @@ dependencies = [
 [[package]]
 name = "agglayer-primitives"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?branch=chore%2Fsp1-version-4_1_4#fe6acba60bce401ace333f4c97165cf65ef37f54"
+source = "git+https://github.com/agglayer/interop.git?branch=main#c0ec751936eaf2014f6c3d05bcccc203aca9e01a"
 dependencies = [
  "alloy-primitives",
  "byteorder",
@@ -336,7 +336,7 @@ dependencies = [
 [[package]]
 name = "agglayer-tries"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?branch=chore%2Fsp1-version-4_1_4#fe6acba60bce401ace333f4c97165cf65ef37f54"
+source = "git+https://github.com/agglayer/interop.git?branch=main#c0ec751936eaf2014f6c3d05bcccc203aca9e01a"
 dependencies = [
  "agglayer-primitives",
  "serde",
@@ -8567,7 +8567,7 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 [[package]]
 name = "unified-bridge"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?branch=chore%2Fsp1-version-4_1_4#fe6acba60bce401ace333f4c97165cf65ef37f54"
+source = "git+https://github.com/agglayer/interop.git?branch=main#c0ec751936eaf2014f6c3d05bcccc203aca9e01a"
 dependencies = [
  "agglayer-primitives",
  "agglayer-tries",
