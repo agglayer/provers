@@ -5,12 +5,21 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 
 use aggchain_proof_contracts::contracts::{
-    L1RollupConfigHashFetcher, L2LocalExitRootFetcher, L2OutputAtBlockFetcher,
+    L1RollupConfigHashFetcher, L2EvmStateSketchFetcher, L2LocalExitRootFetcher,
+    L2OutputAtBlockFetcher,
 };
 use aggchain_proof_contracts::AggchainContractsClient;
+use aggchain_proof_core::bridge::inserted_ger::InsertedGER;
+use aggchain_proof_core::bridge::{
+    compute_imported_bridge_exits_commitment, BridgeWitness, GlobalIndexWithLeafHash,
+};
+use aggchain_proof_core::full_execution_proof::FepInputs;
 use aggchain_proof_core::proof::{AggchainProofPublicValues, AggchainProofWitness};
 use aggchain_proof_core::Digest;
 use aggchain_proof_types::AggchainProofInputs;
+use agglayer_primitives::utils::Hashable;
+use alloy::eips::BlockNumberOrTag;
+use alloy_primitives::Address;
 use bincode::Options;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
@@ -23,7 +32,7 @@ use tower::ServiceExt as _;
 use crate::config::AggchainProofBuilderConfig;
 
 const MAX_CONCURRENT_REQUESTS: usize = 100;
-pub const ELF: &[u8] =
+pub const AGGCHAIN_PROOF_ELF: &[u8] =
     include_bytes!("../../../crates/aggchain-proof-program/elf/riscv32im-succinct-zkvm-elf");
 
 pub(crate) type ProverService = Buffer<
@@ -83,6 +92,12 @@ pub struct AggchainProofBuilder<ContractsClient> {
     aggchain_proof_vkey: SP1VerifyingKey,
 }
 
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum WitnessGeneration {
+    #[error("Invalid inserted GER.")]
+    InvalidInsertedGer,
+}
+
 impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     pub async fn new(
         config: &AggchainProofBuilderConfig,
@@ -92,12 +107,12 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .service(Executor::new(
                 &config.primary_prover,
                 &config.fallback_prover,
-                ELF,
+                AGGCHAIN_PROOF_ELF,
             ))
             .boxed();
 
         let prover = Buffer::new(executor, MAX_CONCURRENT_REQUESTS);
-        let aggchain_proof_vkey = Executor::get_vkey(ELF);
+        let aggchain_proof_vkey = Executor::get_vkey(AGGCHAIN_PROOF_ELF);
 
         Ok(AggchainProofBuilder {
             contracts_client,
@@ -112,38 +127,140 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     pub(crate) async fn retrieve_chain_data(
         contracts_client: Arc<ContractsClient>,
         request: AggchainProofBuilderRequest,
-        _network_id: u32,
+        network_id: u32,
     ) -> Result<AggchainProverInputs, Error>
     where
-        ContractsClient:
-            L2LocalExitRootFetcher + L2OutputAtBlockFetcher + L1RollupConfigHashFetcher,
+        ContractsClient: L2LocalExitRootFetcher
+            + L2OutputAtBlockFetcher
+            + L2EvmStateSketchFetcher
+            + L1RollupConfigHashFetcher,
     {
-        let _prev_local_exit_root = contracts_client
+        let block_range = request.aggchain_proof_inputs.start_block..request.end_block; // TODO: Handle +-1
+
+        // Fetch from RPCs
+        let prev_local_exit_root = contracts_client
             .get_l2_local_exit_root(request.aggchain_proof_inputs.start_block - 1)
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 
-        let _new_local_exit_root = contracts_client
+        let new_local_exit_root = contracts_client
             .get_l2_local_exit_root(request.end_block)
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 
-        let _l2_pre_root_output_at_block = contracts_client
+        let l2_pre_root_output_at_block = contracts_client
             .get_l2_output_at_block(request.aggchain_proof_inputs.start_block - 1)
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 
-        let _claim_root_output_at_block = contracts_client
+        let claim_root_output_at_block = contracts_client
             .get_l2_output_at_block(request.end_block)
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 
-        let _rollup_config_hash = contracts_client
+        let rollup_config_hash = contracts_client
             .get_rollup_config_hash()
             .await
             .map_err(Error::L1ChainDataRetrievalError)?;
 
-        todo!("Fill the proof witness struct with the retrieved data");
+        let prev_l2_block_sketch = contracts_client
+            .get_prev_l2_block_sketch(BlockNumberOrTag::Number(
+                request.aggchain_proof_inputs.start_block,
+            ))
+            .await
+            .map_err(Error::L2ChainDataRetrievalError)?;
+
+        let new_l2_block_sketch = contracts_client
+            .get_new_l2_block_sketch(BlockNumberOrTag::Number(request.end_block))
+            .await
+            .map_err(Error::L2ChainDataRetrievalError)?;
+
+        let trusted_sequencer = Address::default(); // TODO: from config or l1
+
+        // From the request
+        let inserted_gers: Vec<InsertedGER> = request
+            .aggchain_proof_inputs
+            .ger_leaves
+            .values()
+            .filter(|inserted_ger| block_range.contains(&inserted_ger.block_number))
+            .cloned()
+            .map(|e| InsertedGER {
+                proof: e.inserted_ger.proof_ger_l1root,
+                l1_info_tree_leaf: e.inserted_ger.l1_leaf,
+            })
+            .collect();
+
+        // NOTE: Corresponds to all of them because we do not have removed GERs yet.
+        let inserted_gers_hash_chain = inserted_gers
+            .iter()
+            .map(|inserted_ger| inserted_ger.ger())
+            .collect();
+
+        // NOTE: Corresponds to all of them because we do not have unset claims yet.
+        let bridge_exits_claimed: Vec<GlobalIndexWithLeafHash> = request
+            .aggchain_proof_inputs
+            .imported_bridge_exits
+            .iter()
+            .filter(|ib| block_range.contains(&ib.block_number))
+            .map(|ib| GlobalIndexWithLeafHash {
+                global_index: ib.imported_bridge_exit.global_index.into(),
+                bridge_exit_hash: ib.imported_bridge_exit.bridge_exit.hash(),
+            })
+            .collect();
+
+        let l1_info_tree_leaf = request.aggchain_proof_inputs.l1_info_tree_leaf;
+        let fep = FepInputs {
+            l1_head: l1_info_tree_leaf.inner.block_hash,
+            claim_block_num: request.end_block as u32,
+            rollup_config_hash,
+            prev_state_root: l2_pre_root_output_at_block.state_root,
+            prev_withdrawal_storage_root: l2_pre_root_output_at_block.withdrawal_storage_root,
+            prev_block_hash: l2_pre_root_output_at_block.latest_block_hash,
+            new_state_root: claim_root_output_at_block.state_root,
+            new_withdrawal_storage_root: claim_root_output_at_block.withdrawal_storage_root,
+            new_block_hash: claim_root_output_at_block.latest_block_hash,
+            trusted_sequencer,
+            signature_optimistic_mode: None, // NOTE: disabled for now
+            l1_info_tree_leaf,
+            l1_head_inclusion_proof: request.aggchain_proof_inputs.l1_info_tree_merkle_proof,
+        };
+
+        let prover_witness = AggchainProofWitness {
+            prev_local_exit_root,
+            new_local_exit_root,
+            l1_info_root: request.aggchain_proof_inputs.l1_info_tree_root_hash,
+            origin_network: network_id,
+            fep,
+            commit_imported_bridge_exits: compute_imported_bridge_exits_commitment(
+                &bridge_exits_claimed,
+            ),
+            bridge_witness: BridgeWitness {
+                inserted_gers,
+                bridge_exits_claimed,
+                global_indices_unset: vec![], // NOTE: no unset yet.
+                raw_inserted_gers: inserted_gers_hash_chain,
+                removed_gers: vec![], // NOTE: no removed GERs yet.
+                prev_l2_block_sketch,
+                new_l2_block_sketch,
+            },
+        };
+
+        let aggregation_proof = request.aggregation_proof;
+        let aggregation_vkey = aggregation_proof.vk.clone();
+        let witness = prover_witness.clone();
+        let sp1_stdin = {
+            let mut stdin = SP1Stdin::new();
+            stdin.write(&prover_witness);
+            stdin.write_proof(*aggregation_proof, aggregation_vkey);
+            stdin
+        };
+
+        Ok(AggchainProverInputs {
+            start_block: request.aggchain_proof_inputs.start_block,
+            end_block: request.end_block,
+            stdin: sp1_stdin,
+            proof_witness: witness,
+        })
     }
 }
 
