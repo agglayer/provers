@@ -23,7 +23,7 @@ use tower::ServiceExt as _;
 use crate::config::AggchainProofBuilderConfig;
 
 const MAX_CONCURRENT_REQUESTS: usize = 100;
-pub const ELF: &[u8] =
+pub const AGGCHAIN_PROOF_ELF: &[u8] =
     include_bytes!("../../../crates/aggchain-proof-program/elf/riscv32im-succinct-zkvm-elf");
 
 pub(crate) type ProverService = Buffer<
@@ -92,12 +92,12 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .service(Executor::new(
                 &config.primary_prover,
                 &config.fallback_prover,
-                ELF,
+                AGGCHAIN_PROOF_ELF,
             ))
             .boxed();
 
         let prover = Buffer::new(executor, MAX_CONCURRENT_REQUESTS);
-        let aggchain_proof_vkey = Executor::get_vkey(ELF);
+        let aggchain_proof_vkey = Executor::get_vkey(AGGCHAIN_PROOF_ELF);
 
         Ok(AggchainProofBuilder {
             contracts_client,
