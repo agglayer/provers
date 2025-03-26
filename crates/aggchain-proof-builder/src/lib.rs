@@ -262,15 +262,6 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             proof_witness: witness,
         })
     }
-
-    /// Generate aggchain proof
-    #[allow(unused)]
-    pub(crate) async fn generate_aggchain_proof(
-        mut _prover: ProverService,
-        _inputs: AggchainProverInputs,
-    ) -> Result<AggchainProofBuilderResponse, Error> {
-        todo!()
-    }
 }
 
 impl<ContractsClient> tower::Service<AggchainProofBuilderRequest>
