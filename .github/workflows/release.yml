@@ -60,7 +60,7 @@ jobs:
         id: image_builder
         run: |
           IMAGE=$(jq -ecr '.tags | map(select(match("${{ env.REGEX_IMAGE }}", "i"))) | first| sub(":.*$";"")' <<< "$DOCKER_METADATA_OUTPUT_JSON")
-          echo "IMAGE=$IMAGE" >> $GITHUB_OUTPUT
+          echo "IMAGE=$IMAGE" | tee $GITHUB_OUTPUT
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
