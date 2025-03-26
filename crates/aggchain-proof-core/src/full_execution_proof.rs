@@ -1,15 +1,12 @@
+use agglayer_interop::types::{L1InfoTreeLeaf, MerkleProof};
+use agglayer_primitives::digest::Digest;
+use agglayer_primitives::keccak::keccak256_combine;
 use alloy_primitives::{Address, PrimitiveSignature, B256};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest as Sha256Digest, Sha256};
 
-use crate::Digest;
-use crate::{
-    error::ProofError,
-    keccak::keccak256_combine,
-    local_exit_tree::{hasher::Keccak256Hasher, proof::LETMerkleProof},
-    vkey_hash::HashU32,
-    L1InfoTreeLeaf,
-};
+use crate::{error::ProofError, vkey_hash::HashU32};
+
 /// Hardcoded hash of the "aggregation vkey".
 /// NOTE: Format being `hash_u32()` of the `SP1StarkVerifyingKey`.
 pub const AGGREGATION_VKEY_HASH: HashU32 = [0u32; 8]; // TODO: to put the right value
@@ -40,10 +37,10 @@ pub struct FepInputs {
     pub trusted_sequencer: Address,
     /// Signature in the "OptimisticMode" case.
     pub signature_optimistic_mode: Option<PrimitiveSignature>,
-    /// L1 info tree leaf and index containing the `l1Head` as block hash.
-    pub l1_info_tree_leaf: (u32, L1InfoTreeLeaf),
+    /// L1 info tree leaf containing the `l1Head` as block hash.
+    pub l1_info_tree_leaf: L1InfoTreeLeaf,
     /// Inclusion proof of the leaf to the l1 info root.
-    pub l1_head_inclusion_proof: LETMerkleProof<Keccak256Hasher>,
+    pub l1_head_inclusion_proof: MerkleProof,
 }
 
 impl FepInputs {
@@ -144,23 +141,23 @@ impl FepInputs {
     /// Verify that the `l1Head` considered by the FEP exists in the L1 Info
     /// Tree
     pub fn verify_l1_head(&self, l1_info_root: Digest) -> Result<(), ProofError> {
-        if self.l1_head != self.l1_info_tree_leaf.1.block_hash {
+        if self.l1_head != self.l1_info_tree_leaf.inner.block_hash {
             return Err(ProofError::MismatchL1Head {
-                from_l1_info_tree_leaf: self.l1_info_tree_leaf.1.block_hash,
+                from_l1_info_tree_leaf: self.l1_info_tree_leaf.inner.block_hash,
                 from_fep_public_values: self.l1_head,
             });
         }
 
         let inclusion_proof_valid = self.l1_head_inclusion_proof.verify(
-            self.l1_info_tree_leaf.1.hash(),
-            self.l1_info_tree_leaf.0,
-            l1_info_root,
+            self.l1_info_tree_leaf.hash(),
+            self.l1_info_tree_leaf.l1_info_tree_index,
         );
 
-        if !inclusion_proof_valid {
+        // TODO: proper error
+        if !(inclusion_proof_valid && l1_info_root == self.l1_head_inclusion_proof.root) {
             return Err(ProofError::InvalidInclusionProofL1Head {
-                index: self.l1_info_tree_leaf.0,
-                l1_leaf_hash: self.l1_info_tree_leaf.1.hash(),
+                index: self.l1_info_tree_leaf.l1_info_tree_index,
+                l1_leaf_hash: self.l1_info_tree_leaf.hash(),
                 l1_info_root,
             });
         }

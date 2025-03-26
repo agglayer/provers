@@ -6,7 +6,10 @@ license.workspace = true
 
 [dependencies]
 anyhow.workspace = true
+alloy.workspace = true
+alloy-primitives.workspace = true
 bincode.workspace = true
+
 futures.workspace = true
 thiserror.workspace = true
 tower = { workspace = true, features = ["timeout"] }
@@ -19,6 +22,7 @@ aggchain-proof-contracts.workspace = true
 aggchain-proof-core.workspace = true
 aggchain-proof-types.workspace = true
 agglayer-interop.workspace = true
+agglayer-primitives.workspace = true
 prover-config.workspace = true
 prover-executor.workspace = true
 
