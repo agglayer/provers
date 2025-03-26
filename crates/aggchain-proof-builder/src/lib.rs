@@ -96,8 +96,6 @@ pub struct AggchainProofBuilder<ContractsClient> {
 pub enum WitnessGeneration {
     #[error("Invalid inserted GER.")]
     InvalidInsertedGer,
-    #[error("Cannot interpret the aggregation proof as 'compressed' type.")]
-    WrongAggregationProofType,
 }
 
 impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
