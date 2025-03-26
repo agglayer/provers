@@ -97,10 +97,10 @@ rstest = "0.22.0"
 test-log = "0.2.16"
 
 # SP1 dependencies
-sp1-core-executor = "=4.1.2"
-sp1-core-machine = "=4.1.2"
-sp1-sdk = "=4.1.2"
-sp1-prover = "=4.1.2"
-sp1-zkvm = "=4.1.2"
+sp1-core-executor = "=4.1.4"
+sp1-core-machine = "=4.1.4"
+sp1-sdk = "=4.1.4"
+sp1-prover = "=4.1.4"
+sp1-zkvm = "=4.1.4"
 sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "83ca051cd5c5d4e7b4ffd2919dc06b2ef6cae127" }
 sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "83ca051cd5c5d4e7b4ffd2919dc06b2ef6cae127" }
