@@ -5,7 +5,8 @@ edition = "2021"
 
 [dependencies]
 agglayer-primitives.workspace = true
-agglayer-interop.workspace = true
+agglayer-tries.workspace = true
+unified-bridge.workspace = true
 
 # alloy
 alloy-primitives.workspace = true

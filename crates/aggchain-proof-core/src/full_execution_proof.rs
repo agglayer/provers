@@ -1,4 +1,4 @@
-use agglayer_interop::types::{L1InfoTreeLeaf, MerkleProof};
+use unified_bridge::imported_bridge_exit::{L1InfoTreeLeaf, MerkleProof};
 use agglayer_primitives::digest::Digest;
 use agglayer_primitives::keccak::keccak256_combine;
 use alloy_primitives::{Address, PrimitiveSignature, B256};

@@ -1,4 +1,4 @@
-use agglayer_interop::types::Digest;
+use agglayer_primitives::digest::Digest;
 use serde::{Deserialize, Serialize};
 
 use crate::{
