@@ -1,8 +1,12 @@
 name: Release
 
 on:
+  push:
+    branches:
+      - main
   release:
     types: [created]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -15,7 +19,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   REGISTRY_IMAGE: ghcr.io/agglayer/aggkit-prover
-  REGEX_IMAGE: agglayer/aggkit-prover:\\d+.\\d+.\\d+
+  REGEX_IMAGE: "agglayer/aggkit-prover:"
 
 jobs:
   build:
@@ -32,6 +36,7 @@ jobs:
       VERSION: ${{ steps.meta.outputs.version }}
     steps:
       - name: validate tag
+        if: ${{ github.event_name == '"release"' }}
         run: echo ${{ github.ref_name }} | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$'
 
       - name: Prepare
@@ -56,8 +61,8 @@ jobs:
       - name: Image name builder
         id: image_builder
         run: |
-          IMAGE=$(jq -ecr '.tags | map(select(match("${{ env.REGEX_IMAGE }}", "i"))) | first| sub(":.*$";"")' <<< "$DOCKER_METADATA_OUTPUT_JSON")
-          echo "IMAGE=$IMAGE" >> $GITHUB_OUTPUT
+          IMAGE=$(jq -ecr '.tags | map(select(match("${{ env.REGEX_IMAGE }}"; "i"))) | first| sub(":.*$";"")' <<< "$DOCKER_METADATA_OUTPUT_JSON")
+          echo "IMAGE=$IMAGE" | tee $GITHUB_OUTPUT
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
