@@ -29,11 +29,11 @@ pub trait AggregationProofProposer {
 #[serde(rename_all = "camelCase")]
 pub struct AggregationProofProposerRequest {
     /// Last block that has already been proven before this request.
-    #[serde(rename = "lastProvenBlock")]
+    #[serde(rename = "StartBlock")]
     pub last_proven_block: u64,
 
     /// Maximum block number for the aggregation proof.
-    #[serde(rename = "requestedEndBlock")]
+    #[serde(rename = "EndBlock")]
     pub requested_end_block: u64,
 
     /// L1 block number corresponding to requested_end_block.
@@ -52,6 +52,7 @@ pub struct AggregationProofProposerResponse {
     pub request_id: B256,
 
     /// Last block already proven before this aggregation proof.
+    #[serde(rename = "start_block")]
     pub last_proven_block: u64,
 
     /// End block for the aggregation proof.
