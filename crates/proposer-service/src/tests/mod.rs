@@ -39,8 +39,8 @@ async fn test_proposer_service() {
             Box::pin(async move {
                 Ok(proposer_client::rpc::AggregationProofProposerResponse {
                     request_id: FixedBytes::new([0; 32]),
-                    start_block: request.start_block,
-                    end_block: request.max_block,
+                    last_proven_block: request.last_proven_block,
+                    end_block: request.requested_end_block,
                 })
             })
         },
@@ -75,13 +75,13 @@ async fn test_proposer_service() {
     };
 
     let request = FepProposerRequest {
-        start_block: 0,
-        max_block: 10,
+        last_proven_block: 0,
+        requested_end_block: 10,
         l1_block_hash: Default::default(),
     };
 
     let response = proposer_service.call(request).await.unwrap();
-    assert_eq!(response.start_block, 0);
+    assert_eq!(response.last_proven_block, 0);
 }
 
 #[tokio::test]
@@ -105,8 +105,8 @@ async fn unable_to_fetch_block_hash() {
     };
 
     let request = FepProposerRequest {
-        start_block: 0,
-        max_block: 10,
+        last_proven_block: 0,
+        requested_end_block: 10,
         l1_block_hash: Default::default(),
     };
 

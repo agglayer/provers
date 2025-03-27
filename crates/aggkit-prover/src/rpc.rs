@@ -41,11 +41,11 @@ impl AggchainProofGrpcService for GrpcService {
         request: Request<GenerateAggchainProofRequest>,
     ) -> Result<Response<GenerateAggchainProofResponse>, Status> {
         let request = request.into_inner();
-        if request.max_end_block < request.start_block {
+        if request.requested_end_block <= request.last_proven_block {
             let mut error = ErrorDetails::new();
             error.add_bad_request_violation(
-                "max_end_block",
-                "max_end_block must be greater than start_block",
+                "requested_end_block",
+                "requested_end_block must be greater than last_proven_block",
             );
 
             return Err(Status::with_error_details(
@@ -87,7 +87,7 @@ impl AggchainProofGrpcService for GrpcService {
                     .map_err(|e| Status::internal(format!("Unable to serialize proof: {e:?}")))?;
                 Ok(Response::new(GenerateAggchainProofResponse {
                     aggchain_proof: aggchain_proof.into(),
-                    start_block: response.start_block,
+                    last_proven_block: response.last_proven_block,
                     end_block: response.end_block,
                     local_exit_root_hash: Some(response.local_exit_root_hash.into()),
                     custom_chain_data: response.custom_chain_data.into(),

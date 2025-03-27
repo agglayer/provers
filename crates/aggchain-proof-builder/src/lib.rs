@@ -45,7 +45,7 @@ pub(crate) type ProverService = Buffer<
 pub struct AggchainProverInputs {
     pub proof_witness: AggchainProofWitness,
     pub stdin: SP1Stdin,
-    pub start_block: u64,
+    pub last_proven_block: u64,
     pub end_block: u64,
 }
 
@@ -53,9 +53,12 @@ pub struct AggchainProofBuilderRequest {
     /// Aggregated full execution proof for the number of aggregated block
     /// spans.
     pub aggregation_proof: Box<sp1_core_executor::SP1ReduceProof<sp1_prover::InnerSC>>,
+
     /// Last block in the agg_span_proof provided by the proposer.
-    /// Could be different from the max_end_block requested by the agg-sender.
+    /// Could be different from the requested_end_block requested by the
+    /// agg-sender.
     pub end_block: u64,
+
     /// Aggchain proof request information, public inputs, bridge data,...
     pub aggchain_proof_inputs: AggchainProofInputs,
 }
@@ -64,12 +67,16 @@ pub struct AggchainProofBuilderRequest {
 pub struct AggchainProofBuilderResponse {
     /// Generated aggchain proof for the block range.
     pub proof: Vec<u8>,
+
     /// Aggchain params
     pub aggchain_params: Vec<u8>,
-    /// First block included in the aggchain proof.
-    pub start_block: u64,
+
+    /// Last block proven, before this aggchain proof.
+    pub last_proven_block: u64,
+
     /// Last block included in the aggchain proof.
     pub end_block: u64,
+
     /// Output root
     pub output_root: Digest,
 }
@@ -135,11 +142,12 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             + L2EvmStateSketchFetcher
             + L1RollupConfigHashFetcher,
     {
-        let block_range = request.aggchain_proof_inputs.start_block..request.end_block; // TODO: Handle +-1
+        let new_blocks_range =
+            (request.aggchain_proof_inputs.last_proven_block + 1)..=request.end_block;
 
         // Fetch from RPCs
         let prev_local_exit_root = contracts_client
-            .get_l2_local_exit_root(request.aggchain_proof_inputs.start_block - 1)
+            .get_l2_local_exit_root(request.aggchain_proof_inputs.last_proven_block)
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 
@@ -149,7 +157,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .map_err(Error::L2ChainDataRetrievalError)?;
 
         let l2_pre_root_output_at_block = contracts_client
-            .get_l2_output_at_block(request.aggchain_proof_inputs.start_block - 1)
+            .get_l2_output_at_block(request.aggchain_proof_inputs.last_proven_block)
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 
@@ -165,7 +173,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
 
         let prev_l2_block_sketch = contracts_client
             .get_prev_l2_block_sketch(BlockNumberOrTag::Number(
-                request.aggchain_proof_inputs.start_block,
+                request.aggchain_proof_inputs.last_proven_block,
             ))
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
@@ -182,7 +190,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .aggchain_proof_inputs
             .ger_leaves
             .values()
-            .filter(|inserted_ger| block_range.contains(&inserted_ger.block_number))
+            .filter(|inserted_ger| new_blocks_range.contains(&inserted_ger.block_number))
             .cloned()
             .map(|e| InsertedGER {
                 proof: e.inserted_ger.proof_ger_l1root,
@@ -201,7 +209,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .aggchain_proof_inputs
             .imported_bridge_exits
             .iter()
-            .filter(|ib| block_range.contains(&ib.block_number))
+            .filter(|ib| new_blocks_range.contains(&ib.block_number))
             .map(|ib| GlobalIndexWithLeafHash {
                 global_index: ib.imported_bridge_exit.global_index.into(),
                 bridge_exit_hash: ib.imported_bridge_exit.bridge_exit.hash(),
@@ -256,7 +264,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         };
 
         Ok(AggchainProverInputs {
-            start_block: request.aggchain_proof_inputs.start_block,
+            last_proven_block: request.aggchain_proof_inputs.last_proven_block,
             end_block: request.end_block,
             stdin: sp1_stdin,
             proof_witness: witness,
@@ -290,7 +298,7 @@ where
         let mut prover = self.prover.clone();
         let network_id = self.network_id;
         async move {
-            let start_block = req.aggchain_proof_inputs.start_block;
+            let last_proven_block = req.aggchain_proof_inputs.last_proven_block;
             let end_block = req.end_block;
             // Retrieve all the necessary public inputs. Combine with
             // the data provided by the agg-sender in the request.
@@ -322,7 +330,7 @@ where
                             .serialize(&stark)
                             .map_err(Error::UnableToSerializeProof)?,
                         aggchain_params: public_input.aggchain_params.to_vec(),
-                        start_block,
+                        last_proven_block,
                         end_block,
                         // TODO: Define the output root with the witness data
                         output_root: Default::default(),

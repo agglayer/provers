@@ -5,7 +5,7 @@ pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use proposer_client::network_prover::new_network_prover;
 use proposer_client::rpc::{AggregationProofProposerRequest, ProposerRpcClient};
-pub use proposer_client::FepProposerRequest as ProposerRequest;
+use proposer_client::FepProposerRequest;
 use proposer_client::RequestId;
 use prover_alloy::Provider;
 use sp1_prover::SP1VerifyingKey;
@@ -19,7 +19,7 @@ type AggregationProof = Box<sp1_core_executor::SP1ReduceProof<sp1_prover::InnerS
 #[derive(Debug)]
 pub struct ProposerResponse {
     pub aggregation_proof: AggregationProof,
-    pub start_block: u64,
+    pub last_proven_block: u64,
     pub end_block: u64,
 }
 
@@ -82,7 +82,7 @@ impl<L1Rpc>
     }
 }
 
-impl<L1Rpc, ProposerClient> tower::Service<ProposerRequest>
+impl<L1Rpc, ProposerClient> tower::Service<FepProposerRequest>
     for ProposerService<L1Rpc, ProposerClient>
 where
     L1Rpc: Provider + Send + Sync + 'static,
@@ -100,11 +100,11 @@ where
 
     fn call(
         &mut self,
-        ProposerRequest {
-            start_block,
-            max_block,
+        FepProposerRequest {
+            last_proven_block,
+            requested_end_block,
             l1_block_hash,
-        }: ProposerRequest,
+        }: FepProposerRequest,
     ) -> Self::Future {
         let client = self.client.clone();
         let l1_rpc = self.l1_rpc.clone();
@@ -119,8 +119,8 @@ where
             // Request the AggregationProof generation from the proposer.
             let response = client
                 .request_agg_proof(AggregationProofProposerRequest {
-                    start_block,
-                    max_block,
+                    last_proven_block,
+                    requested_end_block,
                     l1_block_number,
                     l1_block_hash,
                 })
@@ -143,7 +143,7 @@ where
 
             Ok(ProposerResponse {
                 aggregation_proof,
-                start_block: response.start_block,
+                last_proven_block: response.last_proven_block,
                 end_block: response.end_block,
             })
         }

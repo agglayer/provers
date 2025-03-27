@@ -29,8 +29,8 @@ async fn service_can_be_called() {
         .expect("create aggchain proof service");
     let request = AggchainProofServiceRequest {
         aggchain_proof_inputs: AggchainProofInputs {
-            start_block: 0,
-            max_end_block: 100,
+            last_proven_block: 0,
+            requested_end_block: 100,
             l1_info_tree_root_hash: Default::default(),
             l1_info_tree_leaf: L1InfoTreeLeaf {
                 l1_info_tree_index: 1,
@@ -94,8 +94,8 @@ async fn testing_rpc_failure() {
     let mut client = AggchainProofServiceClient::new(channel);
 
     let request = tonic::Request::new(GenerateAggchainProofRequest {
-        start_block: 1000,
-        max_end_block: 999,
+        last_proven_block: 1000,
+        requested_end_block: 999,
         l1_info_tree_root_hash: None,
         l1_info_tree_leaf: None,
         l1_info_tree_merkle_proof: None,
@@ -117,10 +117,10 @@ async fn testing_rpc_failure() {
     assert_eq!(violations.len(), 1);
 
     violations.iter().for_each(|violation| {
-        assert_eq!(violation.field, "max_end_block");
+        assert_eq!(violation.field, "requested_end_block");
         assert_eq!(
             violation.description,
-            "max_end_block must be greater than start_block"
+            "requested_end_block must be greater than last_proven_block"
         );
     });
 }

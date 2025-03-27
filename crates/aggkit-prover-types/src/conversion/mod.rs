@@ -11,8 +11,8 @@ impl TryFrom<v1::GenerateAggchainProofRequest> for AggchainProofInputs {
 
     fn try_from(value: v1::GenerateAggchainProofRequest) -> Result<Self, Self::Error> {
         Ok(Self {
-            start_block: value.start_block,
-            max_end_block: value.max_end_block,
+            last_proven_block: value.last_proven_block,
+            requested_end_block: value.requested_end_block,
             l1_info_tree_root_hash: value
                 .l1_info_tree_root_hash
                 .ok_or_else(|| Error::MissingL1InfoTreeRootHash {

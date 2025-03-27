@@ -8,6 +8,14 @@ license.workspace = true
 workspace = true
 
 [dependencies]
+aggchain-proof-builder.workspace = true
+aggchain-proof-contracts.workspace = true
+aggchain-proof-core.workspace = true
+aggchain-proof-types.workspace = true
+proposer-client.workspace = true
+proposer-service.workspace = true
+prover-alloy.workspace = true
+
 alloy-primitives.workspace = true
 anyhow.workspace = true
 bincode.workspace = true
@@ -18,15 +26,6 @@ thiserror.workspace = true
 tokio.workspace = true
 tower = { workspace = true, features = ["timeout"] }
 tracing.workspace = true
-
-aggchain-proof-builder.workspace = true
-aggchain-proof-contracts.workspace = true
-aggchain-proof-core.workspace = true
-aggchain-proof-types.workspace = true
-proposer-service.workspace = true
-prover-alloy.workspace = true
-
-
 
 [dev-dependencies]
 aggchain-proof-contracts = { workspace = true, features = ["testutils"] }
