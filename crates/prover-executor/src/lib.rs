@@ -176,20 +176,25 @@ impl Service<Request> for Executor {
     }
 
     fn call(&mut self, req: Request) -> Self::Future {
+        println!(">>>>>>>>>> Executor Checkpoint 01");
         let mut primary = self.primary.clone();
         let fallback = self.fallback.clone();
 
         let fut = async move {
             let result = primary.ready().await?.call(req.clone()).await;
+            println!(">>>>>>>>>> Executor Checkpoint 03");
             match result {
                 Ok(res) => Ok(res),
                 Err(err) => {
+                    println!(">>>>>>>>>> Executor Checkpoint 04");
                     error!("Primary prover failed: {:?}", err);
                     if let Some(mut _fallback) = fallback {
+                        println!(">>>>>>>>>> Executor Checkpoint 05");
                         // If fallback prover is set, try to use it
                         info!("Repeating proving request with fallback prover...");
                         _fallback.ready().await?.call(req).await
                     } else {
+                        println!(">>>>>>>>>> Executor Checkpoint 06");
                         // Return primary prover error
                         Err(err)
                     }

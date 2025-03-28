@@ -90,6 +90,10 @@ where
     RpcProvider: alloy::providers::Provider + Send + Sync,
 {
     async fn get_l2_output_at_block(&self, block_number: u64) -> Result<L2OutputAtBlock, Error> {
+        println!(
+            ">>>>>>>>>>>>>>> Fetching L2 output at block {}, client l2_cl_client",
+            block_number
+        );
         let params = rpc_params![format!("0x{block_number:x}")];
         let json: serde_json::Value = self
             .l2_cl_client
@@ -320,6 +324,11 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             prover_alloy::DEFAULT_HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
         )
         .map_err(Error::ProviderInitializationError)?;
+
+        println!(
+            ">>>>>>>>>>>>>>>>>>>> config.l2_consensus_layer_rpc_endpoint: {}",
+            config.l2_consensus_layer_rpc_endpoint
+        );
 
         let l2_cl_client = Arc::new(
             HttpClient::builder()

@@ -110,11 +110,27 @@ where
         let l1_rpc = self.l1_rpc.clone();
         let aggregation_vkey = self.aggregation_vkey.clone();
 
+        println!(
+            ">>>>>>>>>> Proposer service request received, start_block: {last_proven_block:} \
+             max_block: {requested_end_block:} l1_block_hash: {l1_block_hash:}"
+        );
+
         async move {
+            println!(">>>>>>>>>> Checkpoint 11");
             let l1_block_number = l1_rpc
                 .get_block_number(l1_block_hash)
                 .await
                 .map_err(Error::AlloyProviderError)?;
+
+            println!(
+                ">>>>>>>>>> Checkpoint 12 op succinct proposer request: {:#?}",
+                AggregationProofProposerRequest {
+                    last_proven_block,
+                    requested_end_block,
+                    l1_block_number,
+                    l1_block_hash,
+                }
+            );
 
             // Request the AggregationProof generation from the proposer.
             let response = client
@@ -124,12 +140,17 @@ where
                     l1_block_number,
                     l1_block_hash,
                 })
-                .await?;
+                .await
+                .inspect_err(|e| println!(">>>>>> ERROR: {e:#?}"))?;
             let request_id = RequestId(response.request_id);
             info!("Aggregation proof request submitted: {}", request_id);
 
+            println!(">>>>>>>>>> Checkpoint 13, request_id: {request_id:}");
+
             // Wait for the prover to finish aggregating span proofs
             let proofs = client.wait_for_proof(request_id.clone()).await?;
+
+            println!(">>>>>>>>>> Checkpoint 14");
 
             // Verify received proof
             client.verify_agg_proof(request_id, &proofs, &aggregation_vkey)?;
@@ -140,6 +161,8 @@ where
                 .clone()
                 .try_as_compressed()
                 .ok_or_else(|| Error::UnsupportedAggregationProofMode(proof_mode))?;
+
+            println!(">>>>>>>>>> Checkpoint 15");
 
             Ok(ProposerResponse {
                 aggregation_proof,
