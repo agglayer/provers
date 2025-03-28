@@ -307,7 +307,7 @@ mod aggchain_contracts_rpc_client {
             "method": "eth_call",
             "params": [{
                 "to":"0x8e80ffe6dc044f4a766afd6e5a8732fe0977a493",
-                "input":"0xb7fd13ce",
+                "input":"0x6d9a1c8b",
             },
             "latest"],
             "id": 1,
@@ -354,7 +354,7 @@ mod aggchain_contracts_rpc_client {
 
         // We ask the PolygonZkEVMBridgeV2 for the local exit root with `getRoot()`
         let get_rollup_config_hash = serde_json::json!({
-            "method": "l2_outputAtBlock",
+            "method": "optimism_outputAtBlock",
             "params":["0x10"],
             "id": 0,
             "jsonrpc": "2.0",
