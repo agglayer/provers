@@ -48,7 +48,6 @@ pub trait AggchainContractsClient:
 /// smart contracts relevant for the aggchain prover.
 #[derive(Clone)]
 pub struct AggchainContractsRpcClient<RpcProvider> {
-
     /// L2 rpc execution layer client.
     l2_root_provider: RootProvider<AnyNetwork>,
 
@@ -110,7 +109,7 @@ where
     async fn get_rollup_config_hash(&self) -> Result<Digest, Error> {
         let response = self
             .aggchain_fep
-            .chainConfigHash()
+            .rollupConfigHash()
             .call()
             .await
             .map_err(Error::RollupConfigHashError)?;
