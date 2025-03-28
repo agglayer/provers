@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package agglayer.proposer.v1;
+
+// Service for proof requests.
+service Proofs {
+  // Request an aggregation proof.
+  rpc RequestAggregationProof(AggregationProofRequest) returns (AggregationProofResponse);
+}
+
+// Request for an aggregation proof.
+message AggregationProofRequest {
+  uint64 last_proven_block = 1;
+  uint64 requested_end_block = 2;
+  uint64 l1_block_number = 3;
+  bytes l1_block_hash = 4;
+}
+
+// Response from an aggregation proof request.
+message AggregationProofResponse {
+  bytes request_id = 1;
+  uint64 last_proven_block = 2;
+  uint64 end_block = 3;
+}
+
+// Kinds of errors reported by the service.
+enum RequestAggregationProofErrorKind {
+    // Unspecified error.
+    REQUEST_AGGREGATION_PROOF_ERROR_UNSPECIFIED = 0;
+}

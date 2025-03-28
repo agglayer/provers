@@ -4,8 +4,8 @@ use std::sync::Arc;
 use alloy_primitives::B256;
 use anyhow::anyhow;
 use clap::Parser;
-use proposer_client::config::ProposerClientConfig;
 use proposer_client::FepProposerRequest;
+use proposer_client::{config::ProposerClientConfig, GrpcUri};
 use proposer_service::config::ProposerServiceConfig;
 use proposer_service::ProposerService;
 use prover_logger::log::Log;
@@ -33,9 +33,9 @@ struct Cli {
     #[arg(short, long)]
     pub l1_rpc_endpoint: Url,
 
-    /// Proposer JSON rpc endpoint.
+    /// Proposer gRPC endpoint.
     #[arg(short, long)]
-    pub proposer_endpoint: Url,
+    pub proposer_endpoint: GrpcUri,
 
     /// Sp1 cluster endpoint
     #[arg(short, long)]
@@ -72,10 +72,7 @@ pub async fn main() -> anyhow::Result<()> {
         l1_rpc_endpoint: cli.l1_rpc_endpoint,
     };
     let mut proposer_service = tower::ServiceBuilder::new()
-        .service(ProposerService::new(
-            &propser_service_config,
-            l1_rpc_client,
-        )?)
+        .service(ProposerService::new(&propser_service_config, l1_rpc_client).await?)
         .boxed_clone();
     info!("ProposerService initialized");
 
