@@ -4,17 +4,14 @@ dependencies = ["generate-aggkit-proto", "generate-agglayer-proto"]
 [tasks.generate-aggkit-proto]
 command = "buf"
 args = ["generate", "--template", "buf.aggkit-prover.gen.yaml"]
-dependencies = [
-    "install-buf",
-    "install-protoc-gen-prost",
-    "install-protoc-gen-prost-serde",
-    "install-protoc-gen-prost-crate",
-    "install-protoc-gen-tonic",
-]
+dependencies = ["install-proto-deps"]
 
 [tasks.generate-agglayer-proto]
 command = "buf"
 args = ["generate", "--template", "buf.agglayer-prover.gen.yaml"]
+dependencies = ["install-proto-deps"]
+
+[tasks.install-proto-deps]
 dependencies = [
     "install-buf",
     "install-protoc-gen-prost",
