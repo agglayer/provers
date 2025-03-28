@@ -40,6 +40,7 @@ impl AggchainProofGrpcService for GrpcService {
         &self,
         request: Request<GenerateAggchainProofRequest>,
     ) -> Result<Response<GenerateAggchainProofResponse>, Status> {
+        println!(">>>>>>>>>> GRPC Checkpoint 01");
         let request = request.into_inner();
         if request.requested_end_block <= request.last_proven_block {
             let mut error = ErrorDetails::new();
@@ -55,6 +56,8 @@ impl AggchainProofGrpcService for GrpcService {
             ));
         }
 
+        println!(">>>>>>>>>> GRPC Checkpoint 02");
+
         let aggchain_proof_inputs: AggchainProofInputs =
             request
                 .try_into()
@@ -68,10 +71,12 @@ impl AggchainProofGrpcService for GrpcService {
                         error_details,
                     )
                 })?;
-
+        println!(">>>>>>>>>> GRPC Checkpoint 03");
         let proof_request = AggchainProofServiceRequest {
             aggchain_proof_inputs,
         };
+
+        println!(">>>>>>>>>> GRPC Checkpoint 04");
 
         let mut service = self.service.clone();
 
@@ -80,8 +85,11 @@ impl AggchainProofGrpcService for GrpcService {
             .await
             .map_err(|_| Status::internal("Unable to get the service"))?;
 
+        println!(">>>>>>>>>> GRPC Checkpoint 05");
+
         match service.call(proof_request).await {
             Ok(response) => {
+                println!(">>>>>>>>>> GRPC Checkpoint 06");
                 let aggchain_proof = default_bincode_options()
                     .serialize(&response.proof)
                     .map_err(|e| Status::internal(format!("Unable to serialize proof: {e:?}")))?;
@@ -93,7 +101,10 @@ impl AggchainProofGrpcService for GrpcService {
                     custom_chain_data: response.custom_chain_data.into(),
                 }))
             }
-            Err(e) => Err(Status::internal(e.to_string())),
+            Err(e) => {
+                println!(">>>>>>>>>> GRPC Checkpoint 07 ERROR: {e:?}");
+                Err(Status::internal(e.to_string()))
+            }
         }
     }
 }
