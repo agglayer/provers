@@ -48,11 +48,6 @@ pub trait AggchainContractsClient:
 /// smart contracts relevant for the aggchain prover.
 #[derive(Clone)]
 pub struct AggchainContractsRpcClient<RpcProvider> {
-    /// Mainnet node rpc client.
-    _l1_client: Arc<RpcProvider>,
-
-    /// L2 rpc execution layer client.
-    _l2_el_client: Arc<RpcProvider>,
 
     /// L2 rpc execution layer client.
     l2_root_provider: RootProvider<AnyNetwork>,
@@ -377,8 +372,6 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             "Aggchain proof contracts client created successfully");
 
         Ok(Self {
-            _l1_client: Arc::new(l1_client),
-            _l2_el_client: Arc::new(l2_el_client),
             l2_cl_client,
             polygon_zkevm_bridge_v2,
             aggchain_fep,
