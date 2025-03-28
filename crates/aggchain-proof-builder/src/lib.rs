@@ -173,26 +173,34 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         let new_blocks_range =
             (request.aggchain_proof_inputs.last_proven_block + 1)..=request.end_block;
 
+        println!(">>>>>>>>>> AggchainProofBuilder RetrieveChainData Checkpoint 01");
         // Fetch from RPCs
         let prev_local_exit_root = contracts_client
             .get_l2_local_exit_root(request.aggchain_proof_inputs.last_proven_block)
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 
+        println!(">>>>>>>>>> AggchainProofBuilder RetrieveChainData Checkpoint 03");
+
         let new_local_exit_root = contracts_client
             .get_l2_local_exit_root(request.end_block)
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 
+        println!(">>>>>>>>>> AggchainProofBuilder RetrieveChainData Checkpoint 04");
+
         let l2_pre_root_output_at_block = contracts_client
             .get_l2_output_at_block(request.aggchain_proof_inputs.last_proven_block)
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
+        println!(">>>>>>>>>> AggchainProofBuilder RetrieveChainData Checkpoint 05");
 
         let claim_root_output_at_block = contracts_client
             .get_l2_output_at_block(request.end_block)
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
+
+        println!(">>>>>>>>>> AggchainProofBuilder RetrieveChainData Checkpoint 06");
 
         let rollup_config_hash = contracts_client
             .get_rollup_config_hash()
@@ -206,10 +214,14 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 
+        println!(">>>>>>>>>> AggchainProofBuilder RetrieveChainData Checkpoint 08");
+
         let new_l2_block_sketch = contracts_client
             .get_new_l2_block_sketch(BlockNumberOrTag::Number(request.end_block))
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
+
+        println!(">>>>>>>>>> AggchainProofBuilder RetrieveChainData Checkpoint 09");
 
         let trusted_sequencer = Address::default(); // TODO: from config or l1
 
@@ -226,11 +238,15 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             })
             .collect();
 
+        println!(">>>>>>>>>> AggchainProofBuilder RetrieveChainData Checkpoint 10");
+
         // NOTE: Corresponds to all of them because we do not have removed GERs yet.
         let inserted_gers_hash_chain = inserted_gers
             .iter()
             .map(|inserted_ger| inserted_ger.ger())
             .collect();
+
+        println!(">>>>>>>>>> AggchainProofBuilder RetrieveChainData Checkpoint 11");
 
         // NOTE: Corresponds to all of them because we do not have unset claims yet.
         let bridge_exits_claimed: Vec<GlobalIndexWithLeafHash> = request
@@ -243,6 +259,8 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                 bridge_exit_hash: ib.imported_bridge_exit.bridge_exit.hash(),
             })
             .collect();
+
+        println!(">>>>>>>>>> AggchainProofBuilder RetrieveChainData Checkpoint 12");
 
         let l1_info_tree_leaf = request.aggchain_proof_inputs.l1_info_tree_leaf;
         let fep = FepInputs {
@@ -296,6 +314,8 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             stdin
         };
 
+        println!(">>>>>>>>>> AggchainProofBuilder RetrieveChainData Checkpoint 15");
+
         Ok(AggchainProverInputs {
             last_proven_block: request.aggchain_proof_inputs.last_proven_block,
             end_block: request.end_block,
@@ -317,16 +337,21 @@ where
     type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        println!(">>>>>>>>>> AggchainProofBuilder Checkpoint 11");
         self.prover.poll_ready(cx).map_err(|e| {
+            println!(">>>>>>>>>> AggchainProofBuilder Checkpoint 12");
             if let Some(error) = e.downcast_ref::<prover_executor::Error>() {
+                println!(">>>>>>>>>> AggchainProofBuilder Checkpoint 13");
                 Error::ProverExecutorError(error.clone())
             } else {
+                println!(">>>>>>>>>> AggchainProofBuilder Checkpoint 14");
                 Error::ProverServiceError(e.to_string())
             }
         })
     }
 
     fn call(&mut self, req: AggchainProofBuilderRequest) -> Self::Future {
+        println!(">>>>>>>>>> AggchainProofBuilder Checkpoint 01");
         let contracts_client = self.contracts_client.clone();
         let mut prover = self.prover.clone();
         let network_id = self.network_id;
@@ -352,6 +377,8 @@ where
                 .await
                 .map_err(|error| Error::ProverFailedToExecute(anyhow::Error::from_boxed(error)))?;
 
+            println!(">>>>>>>>>> AggchainProofBuilder Checkpoint 04");
+
             let public_input: AggchainProofPublicValues =
                 bincode::deserialize(proof.public_values.as_slice()).unwrap();
 
@@ -359,6 +386,8 @@ where
                 .proof
                 .try_as_compressed()
                 .ok_or(Error::GeneratedProofIsNotCompressed)?;
+
+            println!(">>>>>>>>>> AggchainProofBuilder Checkpoint 05");
 
             Ok(AggchainProofBuilderResponse {
                 proof: bincode::DefaultOptions::new()
