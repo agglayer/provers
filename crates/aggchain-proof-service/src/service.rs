@@ -154,12 +154,15 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
         let mut proof_builder = self.aggchain_proof_builder.clone();
 
         async move {
+            println!(">>>>>>>>>> Proposer service Checkpoint 01");
             // The ProposerResponse contains the start and end block number
             // It also contains the generated proof.
             let aggregation_proof_response = proposer_service
                 .call(proposer_request)
                 .await
                 .map_err(Error::ProposerServiceError)?;
+
+            println!(">>>>>>>>>> Proposer service Checkpoint 02");
 
             let aggchain_proof_builder_request =
                 aggchain_proof_builder::AggchainProofBuilderRequest {
@@ -168,16 +171,27 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
                     aggchain_proof_inputs: req.aggchain_proof_inputs,
                 };
 
+            println!(
+                ">>>>>>>>>> Proposer service Checkpoint 03, aggchain proof builder request end \
+                 block: {}\n proof inputs: {:#?}",
+                aggchain_proof_builder_request.end_block,
+                aggchain_proof_builder_request.aggchain_proof_inputs
+            );
+
             let aggchain_proof_response = proof_builder
                 .call(aggchain_proof_builder_request)
                 .await
                 .map_err(Error::AggchainProofBuilderRequestFailed)?;
+
+            println!(">>>>>>>>>> Proposer service Checkpoint 04");
 
             let custom_chain_data = compute_custom_chain_data(
                 aggchain_proof_response.output_root,
                 aggregation_proof_response.end_block,
             )
             .map_err(Error::UnableToSerializeCustomChainData)?;
+
+            println!(">>>>>>>>>> Proposer service Checkpoint 05");
 
             Ok(AggchainProofServiceResponse {
                 proof: aggchain_proof_response.proof,
