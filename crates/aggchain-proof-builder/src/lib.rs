@@ -297,6 +297,7 @@ where
         let contracts_client = self.contracts_client.clone();
         let mut prover = self.prover.clone();
         let network_id = self.network_id;
+
         async move {
             let last_proven_block = req.aggchain_proof_inputs.last_proven_block;
             let end_block = req.end_block;
@@ -306,6 +307,9 @@ where
                 Self::retrieve_chain_data(contracts_client, req, network_id).await?;
 
             let result = prover
+                .ready()
+                .await
+                .map_err(Error::ProverServiceReadyError)?
                 .call(prover_executor::Request {
                     stdin: aggchain_prover_inputs.stdin,
                     proof_type: ProofType::Stark,
