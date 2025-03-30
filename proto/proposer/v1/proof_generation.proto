@@ -1,9 +1,9 @@
 syntax = "proto3";
 
-package agglayer.proposer.v1;
+package proposer.v1;
 
 // Service for proof requests.
-service Proofs {
+service ProofRequestService {
   // Request an aggregation proof.
   rpc RequestAggregationProof(AggregationProofRequest) returns (AggregationProofResponse);
 }

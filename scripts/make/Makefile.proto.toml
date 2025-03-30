@@ -1,5 +1,16 @@
 [tasks.generate-proto]
-dependencies = ["generate-aggkit-proto", "generate-agglayer-proto"]
+dependencies = ["generate-aggkit-proto", "generate-agglayer-proto", "generate-proposer-proto"]
+
+[tasks.generate-proposer-proto]
+command = "buf"
+args = ["generate", "--template", "buf.proposer.gen.yaml"]
+dependencies = [
+    "install-buf",
+    "install-protoc-gen-prost",
+    "install-protoc-gen-prost-serde",
+    "install-protoc-gen-prost-crate",
+    "install-protoc-gen-tonic",
+]
 
 [tasks.generate-aggkit-proto]
 command = "buf"
