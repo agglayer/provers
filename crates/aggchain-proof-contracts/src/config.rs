@@ -51,7 +51,7 @@ impl Default for AggchainProofContractsConfig {
 pub(crate) fn default_output_at_block_endpoint() -> String {
     from_env_or_default(
         "L2_OUTPUT_AT_BLOCK_ENDPOINT",
-        "l2_outputAtBlock".to_string(),
+        "optimism_outputAtBlock".to_string(),
     )
 }
 
