@@ -297,6 +297,7 @@ where
         let contracts_client = self.contracts_client.clone();
         let mut prover = self.prover.clone();
         let network_id = self.network_id;
+
         async move {
             let last_proven_block = req.aggchain_proof_inputs.last_proven_block;
             let end_block = req.end_block;
@@ -305,39 +306,37 @@ where
             let aggchain_prover_inputs =
                 Self::retrieve_chain_data(contracts_client, req, network_id).await?;
 
-            let result = prover
+            let prover_executor::Response { proof } = prover
+                .ready()
+                .await
+                .map_err(Error::ProverServiceReadyError)?
                 .call(prover_executor::Request {
                     stdin: aggchain_prover_inputs.stdin,
                     proof_type: ProofType::Stark,
                 })
                 .await
-                .map_err(|error| Error::ProverFailedToExecute(anyhow::Error::from_boxed(error)));
+                .map_err(|error| Error::ProverFailedToExecute(anyhow::Error::from_boxed(error)))?;
 
-            match result {
-                Ok(prover_executor::Response { proof }) => {
-                    let public_input: AggchainProofPublicValues =
-                        bincode::deserialize(proof.public_values.as_slice()).unwrap();
+            let public_input: AggchainProofPublicValues =
+                bincode::deserialize(proof.public_values.as_slice()).unwrap();
 
-                    let stark = proof
-                        .proof
-                        .try_as_compressed()
-                        .ok_or(Error::GeneratedProofIsNotCompressed)?;
+            let stark = proof
+                .proof
+                .try_as_compressed()
+                .ok_or(Error::GeneratedProofIsNotCompressed)?;
 
-                    Ok(AggchainProofBuilderResponse {
-                        proof: bincode::DefaultOptions::new()
-                            .with_big_endian()
-                            .with_fixint_encoding()
-                            .serialize(&stark)
-                            .map_err(Error::UnableToSerializeProof)?,
-                        aggchain_params: public_input.aggchain_params.to_vec(),
-                        last_proven_block,
-                        end_block,
-                        // TODO: Define the output root with the witness data
-                        output_root: Default::default(),
-                    })
-                }
-                Err(_) => todo!(),
-            }
+            Ok(AggchainProofBuilderResponse {
+                proof: bincode::DefaultOptions::new()
+                    .with_big_endian()
+                    .with_fixint_encoding()
+                    .serialize(&stark)
+                    .map_err(Error::UnableToSerializeProof)?,
+                aggchain_params: public_input.aggchain_params.to_vec(),
+                last_proven_block,
+                end_block,
+                // TODO: Define the output root with the witness data
+                output_root: Default::default(),
+            })
         }
         .boxed()
     }

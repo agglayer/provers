@@ -192,10 +192,12 @@ impl Service<Request> for Executor {
     }
 
     fn call(&mut self, req: Request) -> Self::Future {
-        let primary = self.primary.call(req.clone());
+        let mut primary = self.primary.clone();
         let fallback = self.fallback.clone();
+
         let fut = async move {
-            match primary.await {
+            let result = primary.ready().await?.call(req.clone()).await;
+            match result {
                 Ok(res) => Ok(res),
                 Err(err) => {
                     error!("Primary prover failed: {:?}", err);
