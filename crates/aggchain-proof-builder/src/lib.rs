@@ -13,7 +13,7 @@ use aggchain_proof_core::bridge::inserted_ger::InsertedGER;
 use aggchain_proof_core::bridge::{
     compute_imported_bridge_exits_commitment, BridgeWitness, GlobalIndexWithLeafHash,
 };
-use aggchain_proof_core::full_execution_proof::FepInputs;
+use aggchain_proof_core::full_execution_proof::{FepInputs, AGGREGATION_VKEY_HASH};
 use aggchain_proof_core::proof::{AggchainProofPublicValues, AggchainProofWitness};
 use aggchain_proof_core::Digest;
 use aggchain_proof_types::AggchainProofInputs;
@@ -24,7 +24,7 @@ use bincode::Options;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use prover_executor::{Executor, ProofType};
-use sp1_sdk::{SP1Stdin, SP1VerifyingKey};
+use sp1_sdk::{HashableKey, SP1Stdin, SP1VerifyingKey};
 use tower::buffer::Buffer;
 use tower::util::BoxService;
 use tower::ServiceExt as _;
@@ -280,6 +280,15 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         let aggregation_proof = request.aggregation_proof;
         let aggregation_vkey = aggregation_proof.vk.clone();
         let witness = prover_witness.clone();
+
+        // mismatch verification
+        {
+            let hardcoded_vkey_hash = AGGREGATION_VKEY_HASH;
+            let received_vkey_hash = aggregation_vkey.hash_u32();
+            println!("received aggregation vkey.hash_u32(): {received_vkey_hash:?}");
+            println!("hardcoded aggregation vkey hash: {hardcoded_vkey_hash:?}");
+        }
+
         let sp1_stdin = {
             let mut stdin = SP1Stdin::new();
             stdin.write(&prover_witness);

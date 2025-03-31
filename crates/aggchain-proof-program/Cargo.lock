@@ -23,6 +23,7 @@ dependencies = [
  "alloy-rlp",
  "alloy-sol-macro",
  "alloy-sol-types",
+ "bincode",
  "eyre",
  "hex",
  "k256",

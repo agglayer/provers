@@ -1,6 +1,7 @@
 use agglayer_primitives::digest::Digest;
 use agglayer_primitives::keccak::keccak256_combine;
-use alloy_primitives::{Address, PrimitiveSignature, B256};
+use alloy_primitives::{b256, Address, PrimitiveSignature, B256};
+use bincode::Options;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest as Sha256Digest, Sha256};
 use unified_bridge::imported_bridge_exit::{L1InfoTreeLeaf, MerkleProof};
@@ -9,10 +10,13 @@ use crate::{error::ProofError, vkey_hash::HashU32};
 
 /// Hardcoded hash of the "aggregation vkey".
 /// NOTE: Format being `hash_u32()` of the `SP1StarkVerifyingKey`.
-pub const AGGREGATION_VKEY_HASH: HashU32 = [0u32; 8]; // TODO: to put the right value
+pub const AGGREGATION_VKEY_HASH: HashU32 = [
+    1059830946, 1053541861, 1386453206, 1465020229, 176980445, 2008122133, 689544796, 1223443100,
+];
 
 /// Specific commitment for the range proofs.
-pub const RANGE_VKEY_COMMITMENT: [u8; 32] = [0u8; 32]; // TODO: to put the right value
+pub const RANGE_VKEY_COMMITMENT: [u8; 32] =
+    b256!("0367776036b0d8b12720eab775b651c7251e63a249cb84f63eb1c20418b24e9c").0;
 
 /// Hardcoded for now, might see if we might need it as input
 pub const OUTPUT_ROOT_VERSION: [u8; 32] = [0u8; 32];
@@ -43,19 +47,46 @@ pub struct FepInputs {
     pub l1_head_inclusion_proof: MerkleProof,
 }
 
+/// Aggregation proof public values as defined by upstream.
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+pub struct AggregationOutputs {
+    pub l1_head: Digest,
+    pub l2_pre_root: Digest,
+    pub l2_post_root: Digest,
+    pub l2_block_number: u64,
+    pub rollup_config_hash: Digest,
+    pub multi_block_vkey: Digest,
+}
+
+impl AggregationOutputs {
+    /// Encoding abi-encode style
+    pub fn bincode_options() -> impl bincode::Options {
+        bincode::DefaultOptions::new()
+            .with_big_endian()
+            .with_fixint_encoding()
+    }
+}
+
+impl From<&FepInputs> for AggregationOutputs {
+    fn from(inputs: &FepInputs) -> Self {
+        Self {
+            l1_head: inputs.l1_head,
+            l2_pre_root: inputs.compute_l2_pre_root(),
+            l2_post_root: inputs.compute_claim_root(),
+            l2_block_number: inputs.claim_block_num.into(),
+            rollup_config_hash: inputs.rollup_config_hash,
+            multi_block_vkey: RANGE_VKEY_COMMITMENT.into(),
+        }
+    }
+}
+
 impl FepInputs {
     pub fn sha256_public_values(&self) -> [u8; 32] {
-        let public_values = [
-            self.l1_head.as_slice(),
-            self.compute_l2_pre_root().as_slice(),
-            self.compute_claim_root().as_slice(),
-            &self.claim_block_num.to_be_bytes(),
-            self.rollup_config_hash.as_slice(),
-            RANGE_VKEY_COMMITMENT.as_slice(),
-        ]
-        .concat();
+        let encoded_public_values = AggregationOutputs::bincode_options()
+            .serialize(&AggregationOutputs::from(self))
+            .expect("ser");
 
-        Sha256::digest(&public_values).into()
+        Sha256::digest(encoded_public_values.as_slice()).into()
     }
 }
 

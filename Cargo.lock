@@ -91,6 +91,7 @@ dependencies = [
  "alloy-rlp",
  "alloy-sol-macro",
  "alloy-sol-types",
+ "bincode",
  "dotenvy",
  "eyre",
  "hex",

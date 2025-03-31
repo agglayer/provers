@@ -95,12 +95,26 @@ mod test {
         ]);
 
         let from_hex = VKeyHash::from_bytes(b256!(
-            "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+            "0367776036b0d8b12720eab775b651c7251e63a249cb84f63eb1c20418b24e9c"
         ));
 
         assert_eq!(from_hash_u32, from_hex);
 
         let roundtrip = VKeyHash::from_bytes(from_hash_u32.to_bytes());
         assert_eq!(from_hash_u32, roundtrip);
+    }
+
+    #[test]
+    fn aggregation_vkey_hash() {
+        let from_hash_u32 = VKeyHash::from_hash_u32([
+            1059830946, 1053541861, 1386453206, 1465020229, 176980445, 2008122133, 689544796,
+            1223443100,
+        ]);
+
+        let from_hex = VKeyHash::from_bytes(b256!(
+            "00e85a8274b6b98b791afeef499b00895c59b5e2e118844dda57eda801dbb10d"
+        ));
+
+        assert_eq!(from_hash_u32, from_hex);
     }
 }

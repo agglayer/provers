@@ -28,6 +28,7 @@ thiserror.workspace = true
 tiny-keccak = { git = "https://github.com/sp1-patches/tiny-keccak", tag = "patch-2.0.2-sp1-4.0.0", features = [
     "keccak",
 ] }
+bincode.workspace = true
 
 [dev-dependencies]
 alloy.workspace = true
