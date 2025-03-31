@@ -25,4 +25,7 @@ pub enum Error {
 
     #[error("Prover witness generation error: {0}")]
     ProverWitnessGenerationError(#[source] WitnessGeneration),
+
+    #[error("Prover service is not ready")]
+    ProverServiceReadyError(#[source] tower::BoxError),
 }
