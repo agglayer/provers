@@ -12,7 +12,6 @@ plugins:
     opt:
       - bytes=.
       - extern_path=.agglayer.interop.types=::agglayer-interop::grpc
-      - file_descriptor_set
       - compile_well_known_types
 
   - local: protoc-gen-tonic

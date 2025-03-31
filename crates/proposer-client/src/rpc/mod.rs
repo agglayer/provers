@@ -9,9 +9,13 @@ use crate::{
     GrpcUri,
 };
 
+mod grpc {
+    include!("generated/proposer.v1.rs");
+}
+
 mod proofs_service_types;
 
-use proofs_service_types::ProofsClient;
+use grpc::proof_request_service_client::ProofRequestServiceClient as ProofsClient;
 
 /// Proposer client that requests the generation
 /// of the aggregation proof from the proposer and gets
@@ -88,7 +92,7 @@ impl AggregationProofProposer for ProposerRpcClient {
         &self,
         request: AggregationProofProposerRequest,
     ) -> Result<AggregationProofProposerResponse, Error> {
-        let request = proofs_service_types::grpc::AggregationProofRequest::from(request);
+        let request = grpc::AggregationProofRequest::from(request);
 
         let mut client = self.client.clone();
         let response: AggregationProofProposerResponse = client
