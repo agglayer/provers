@@ -14,7 +14,7 @@ const ELF: &[u8] = include_bytes!("../../prover-dummy-program/elf/riscv32im-succ
 
 fn cpu_prover() -> &'static CpuProver {
     static RES: OnceLock<CpuProver> = OnceLock::new();
-    RES.get_or_init(|| CpuProver::new())
+    RES.get_or_init(CpuProver::new)
 }
 
 fn pkey_vkey() -> &'static (SP1ProvingKey, SP1VerifyingKey) {
