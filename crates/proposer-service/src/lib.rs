@@ -1,6 +1,8 @@
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
+use aggchain_proof_core::full_execution_proof::AggregationOutputs;
+use alloy_sol_types::SolType;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use proposer_client::network_prover::new_network_prover;
@@ -129,6 +131,12 @@ where
 
             // Wait for the prover to finish aggregating span proofs
             let proofs = client.wait_for_proof(request_id.clone()).await?;
+
+            let public_values =
+                AggregationOutputs::abi_decode(proofs.public_values.as_slice(), false)
+                    .map_err(Error::DeserializeFailure)?;
+
+            info!("Public values from the received FEP: {:?}", public_values);
 
             // Verify received proof
             client.verify_agg_proof(request_id, &proofs, &aggregation_vkey)?;
