@@ -1,6 +1,7 @@
 pub mod config;
 mod error;
 
+use std::borrow::Borrow;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
@@ -39,6 +40,9 @@ pub(crate) type ProverService = Buffer<
     BoxService<prover_executor::Request, prover_executor::Response, prover_executor::Error>,
     prover_executor::Request,
 >;
+
+use p3_baby_bear::BabyBear;
+use sp1_recursion_core::air::RecursionPublicValues;
 
 /// All the data `aggchain-proof-builder` needs for the agghchain
 /// proof generation. Collected from various sources.
@@ -277,16 +281,28 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
 
         println!(">>>>>>>>>> AggchainProofBuilder RetrieveChainData Checkpoint 14");
 
-        let aggregation_proof = request.aggregation_proof;
+        let public_values: &RecursionPublicValues<BabyBear> = request
+            .aggregation_proof
+            .proof
+            .public_values
+            .as_slice()
+            .borrow();
+        let aggregation_proof = request.aggregation_proof.clone();
         let aggregation_vkey = aggregation_proof.vk.clone();
         let witness = prover_witness.clone();
 
         // mismatch verification
         {
             let hardcoded_vkey_hash = AGGREGATION_VKEY_HASH;
-            let received_vkey_hash = aggregation_vkey.hash_u32();
-            println!("received aggregation vkey.hash_u32(): {received_vkey_hash:?}");
+            let received_vkey_hash = public_values.sp1_vk_digest;
+            let received_vkey_babybear = aggregation_vkey.hash_babybear();
             println!("hardcoded aggregation vkey hash: {hardcoded_vkey_hash:?}");
+            println!("received sp1_vk_digest: {received_vkey_hash:?}");
+            println!("received vkey hashed babybear: {received_vkey_babybear:?}");
+
+            if received_vkey_hash != received_vkey_babybear {
+                println!("different");
+            }
         }
 
         let sp1_stdin = {

@@ -18,6 +18,10 @@ sp1-core-executor.workspace = true
 sp1-prover.workspace = true
 sp1-sdk.workspace = true
 
+# tmp sp1 deps
+sp1-recursion-core = "=4.1.4"
+p3-baby-bear = { version = "=0.2.1-succinct", features = ["nightly-features"] }
+
 aggchain-proof-contracts.workspace = true
 aggchain-proof-core.workspace = true
 aggchain-proof-types.workspace = true
