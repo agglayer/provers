@@ -27,16 +27,14 @@ mod error;
 
 #[derive(Clone)]
 pub struct Executor {
+    vkey: SP1VerifyingKey,
     primary: BoxCloneService<Request, Response, Error>,
     fallback: Option<BoxCloneService<Request, Response, Error>>,
 }
 
 impl Executor {
-    pub fn get_vkey(elf: &[u8]) -> SP1VerifyingKey {
-        let prover = CpuProver::new();
-        let (_proving_key, verification_key) = prover.setup(elf);
-
-        verification_key
+    pub fn get_vkey(&self) -> SP1VerifyingKey {
+        self.vkey.clone()
     }
 
     pub fn build_network_service<S>(
@@ -81,29 +79,37 @@ impl Executor {
 
     #[cfg(test)]
     pub fn new_with_services(
+        vkey: SP1VerifyingKey,
         primary: BoxCloneService<Request, Response, Error>,
         fallback: Option<BoxCloneService<Request, Response, Error>>,
     ) -> Self {
-        Self { primary, fallback }
+        Self {
+            vkey,
+            primary,
+            fallback,
+        }
     }
 
     pub fn create_prover(
         prover_type: &ProverType,
         program: &[u8],
-    ) -> BoxCloneService<Request, Response, Error> {
+    ) -> (SP1VerifyingKey, BoxCloneService<Request, Response, Error>) {
         match prover_type {
             ProverType::NetworkProver(network_prover_config) => {
                 debug!("Creating network prover executor...");
                 let network_prover = ProverClient::builder().network().build();
                 let (proving_key, verification_key) = network_prover.setup(program);
-                Self::build_network_service(
-                    network_prover_config.get_proving_request_timeout(),
-                    NetworkExecutor {
-                        prover: Arc::new(network_prover),
-                        proving_key,
-                        verification_key,
-                        timeout: network_prover_config.proving_timeout,
-                    },
+                (
+                    verification_key.clone(),
+                    Self::build_network_service(
+                        network_prover_config.get_proving_request_timeout(),
+                        NetworkExecutor {
+                            prover: Arc::new(network_prover),
+                            proving_key,
+                            verification_key,
+                            timeout: network_prover_config.proving_timeout,
+                        },
+                    ),
                 )
             }
             ProverType::CpuProver(cpu_prover_config) => {
@@ -111,14 +117,17 @@ impl Executor {
                 let prover = CpuProver::new();
                 let (proving_key, verification_key) = prover.setup(program);
 
-                Self::build_local_service(
-                    cpu_prover_config.get_proving_request_timeout(),
-                    cpu_prover_config.max_concurrency_limit,
-                    LocalExecutor {
-                        prover: Arc::new(prover),
-                        proving_key,
-                        verification_key,
-                    },
+                (
+                    verification_key.clone(),
+                    Self::build_local_service(
+                        cpu_prover_config.get_proving_request_timeout(),
+                        cpu_prover_config.max_concurrency_limit,
+                        LocalExecutor {
+                            prover: Arc::new(prover),
+                            proving_key,
+                            verification_key,
+                        },
+                    ),
                 )
             }
             ProverType::MockProver(mock_prover_config) => {
@@ -126,14 +135,17 @@ impl Executor {
                 let prover = CpuProver::mock();
                 let (proving_key, verification_key) = prover.setup(program);
 
-                Self::build_local_service(
-                    mock_prover_config.get_proving_request_timeout(),
-                    mock_prover_config.max_concurrency_limit,
-                    LocalExecutor {
-                        prover: Arc::new(prover),
-                        proving_key,
-                        verification_key,
-                    },
+                (
+                    verification_key.clone(),
+                    Self::build_local_service(
+                        mock_prover_config.get_proving_request_timeout(),
+                        mock_prover_config.max_concurrency_limit,
+                        LocalExecutor {
+                            prover: Arc::new(prover),
+                            proving_key,
+                            verification_key,
+                        },
+                    ),
                 )
             }
             ProverType::GpuProver(_) => todo!(),
@@ -141,11 +153,15 @@ impl Executor {
     }
 
     pub fn new(primary: &ProverType, fallback: &Option<ProverType>, program: &[u8]) -> Self {
-        let primary = Self::create_prover(primary, program);
+        let (vkey, primary) = Self::create_prover(primary, program);
         let fallback = fallback
             .as_ref()
-            .map(|config| Self::create_prover(config, program));
-        Self { primary, fallback }
+            .map(|config| Self::create_prover(config, program).1);
+        Self {
+            vkey,
+            primary,
+            fallback,
+        }
     }
 }
 

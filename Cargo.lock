@@ -50,6 +50,7 @@ dependencies = [
  "sp1-sdk",
  "thiserror 2.0.11",
  "tower 0.4.13",
+ "tracing",
 ]
 
 [[package]]
@@ -166,6 +167,7 @@ dependencies = [
  "http",
  "hyper-util",
  "prost",
+ "prover-config",
  "prover-engine",
  "prover-executor",
  "prover-logger",

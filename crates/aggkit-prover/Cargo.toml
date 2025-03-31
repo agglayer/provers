@@ -30,6 +30,7 @@ aggchain-proof-types.workspace = true
 aggkit-prover-config.workspace = true
 aggkit-prover-types.workspace = true
 agglayer-interop = { workspace = true, features = ["grpc-compat"] }
+prover-config.workspace = true
 prover-engine.workspace = true
 prover-executor.workspace = true
 prover-logger.workspace = true

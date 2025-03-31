@@ -110,16 +110,16 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         config: &AggchainProofBuilderConfig,
         contracts_client: Arc<ContractsClient>,
     ) -> Result<Self, Error> {
-        let executor = tower::ServiceBuilder::new()
-            .service(Executor::new(
-                &config.primary_prover,
-                &config.fallback_prover,
-                AGGCHAIN_PROOF_ELF,
-            ))
-            .boxed();
+        let executor = Executor::new(
+            &config.primary_prover,
+            &config.fallback_prover,
+            AGGCHAIN_PROOF_ELF,
+        );
+        let aggchain_proof_vkey = executor.get_vkey();
+
+        let executor = tower::ServiceBuilder::new().service(executor).boxed();
 
         let prover = Buffer::new(executor, MAX_CONCURRENT_REQUESTS);
-        let aggchain_proof_vkey = Executor::get_vkey(AGGCHAIN_PROOF_ELF);
 
         Ok(AggchainProofBuilder {
             contracts_client,
