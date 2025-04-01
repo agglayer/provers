@@ -49,6 +49,7 @@ mod aggchain_proof_builder {
     }
 
     #[tokio::test]
+    #[ignore = "requires network key, run manually"]
     async fn execute_aggchain_program_test() -> Result<(), Box<dyn std::error::Error>> {
         let mut prover = init_network_prover()?;
 
