@@ -21,7 +21,7 @@ use aggchain_proof_core::Digest;
 use aggchain_proof_types::AggchainProofInputs;
 use agglayer_primitives::utils::Hashable;
 use alloy::eips::BlockNumberOrTag;
-use alloy_primitives::Address;
+use alloy_primitives::{b256, Address};
 use bincode::Options;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
@@ -242,7 +242,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         println!(">>>>>>>>>> AggchainProofBuilder RetrieveChainData Checkpoint 12");
 
         let l1_info_tree_leaf = request.aggchain_proof_inputs.l1_info_tree_leaf;
-        let fep = FepInputs {
+        let mut fep = FepInputs {
             l1_head: l1_info_tree_leaf.inner.block_hash,
             claim_block_num: request.end_block as u32,
             rollup_config_hash,
@@ -260,6 +260,12 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
 
         let retrieved_pv = AggregationOutputs::from(&fep);
         println!("retrieved pv: {:?}", retrieved_pv);
+
+        // workaround
+        fep.rollup_config_hash =
+            b256!("8a3f045ea5a3e7dbc2800ec2a0e61b8a31433ca07cadae822d7b35631ca7ce52")
+                .0
+                .into();
 
         println!(">>>>>>>>>> AggchainProofBuilder RetrieveChainData Checkpoint 13");
 

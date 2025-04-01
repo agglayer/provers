@@ -153,7 +153,7 @@ where
             let proofs = client.wait_for_proof(request_id.clone()).await?;
 
             let deser_pv = AggregationOutputs::abi_decode(proofs.public_values.as_slice(), false)
-                .map(|_| Error::DeserializeFailure);
+                .map_err(|_| Error::DeserializeFailure)?;
 
             println!("fep public values: {:?}", deser_pv);
             println!(">>>>>>>>>> Checkpoint 14");
@@ -177,5 +177,53 @@ where
             })
         }
         .boxed()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use alloy_primitives::b256;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn tryout() {
+        let endpoint = "https://rpc.production.succinct.xyz";
+        let client = new_network_prover(endpoint).unwrap();
+
+        let proof = client
+            .wait_proof(
+                b256!("172e951450e033e180ad94fd689fbe1f1944df7518c8ab8a7de4ec6e83656d2a"),
+                None,
+            )
+            .await
+            .unwrap();
+
+        let deser_pv =
+            AggregationOutputs::abi_decode(proof.public_values.as_slice(), false).unwrap();
+
+        println!("deser pv: {:?}", deser_pv);
+
+        // retrieved pv: AggregationOutputs { l1Head:
+        // 0x810022740813befed86fac5de9f66f31e7402266a2c864829c7a36fe61e382eb,
+        // l2PreRoot:
+        // 0xa5f72cd04ea69cbeb9b6ee184ad88f6fafb203416b058d14f8e6a6f56d429d47,
+        // l2PostRoot:
+        // 0xeb11a561f15e2f773075cb1977da70bdd217e023ae5863e2905bb4cd286c87a9,
+        // l2BlockNumber: 39, rollupConfigHash:
+        // 0x1111111111111111111111111111111111111111111111111111111111111111,
+        // multiBlockVKey:
+        // 0x0367776036b0d8b12720eab775b651c7251e63a249cb84f63eb1c20418b24e9c }
+
+        // deser pv: AggregationOutputs { l1Head:
+        // 0x810022740813befed86fac5de9f66f31e7402266a2c864829c7a36fe61e382eb,
+        // l2PreRoot:
+        // 0xa5f72cd04ea69cbeb9b6ee184ad88f6fafb203416b058d14f8e6a6f56d429d47,
+        // l2PostRoot:
+        // 0xeb11a561f15e2f773075cb1977da70bdd217e023ae5863e2905bb4cd286c87a9,
+        // l2BlockNumber: 39, rollupConfigHash:
+        // 0x8a3f045ea5a3e7dbc2800ec2a0e61b8a31433ca07cadae822d7b35631ca7ce52,
+        // multiBlockVKey:
+        // 0x0367776036b0d8b12720eab775b651c7251e63a249cb84f63eb1c20418b24e9c }
     }
 }
