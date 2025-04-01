@@ -9,7 +9,7 @@ use crate::{
     GrpcUri,
 };
 
-mod grpc {
+pub mod grpc {
     include!("generated/proposer.v1.rs");
 }
 

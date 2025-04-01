@@ -17,7 +17,6 @@ plugins:
   - local: protoc-gen-tonic
     out: crates/proposer-client/src/rpc/generated
     opt:
-      - no_server
 
 inputs:
   - directory: ./proto

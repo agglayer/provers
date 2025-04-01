@@ -5583,6 +5583,7 @@ dependencies = [
  "hex",
  "mockall",
  "mockito",
+ "proposer-client",
  "prost",
  "prover-utils",
  "serde",
