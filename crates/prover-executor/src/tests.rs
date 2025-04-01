@@ -17,16 +17,19 @@ fn cpu_prover() -> &'static CpuProver {
     RES.get_or_init(CpuProver::new)
 }
 
-fn pkey_vkey() -> &'static (SP1ProvingKey, SP1VerifyingKey) {
-    static RES: OnceLock<(SP1ProvingKey, SP1VerifyingKey)> = OnceLock::new();
-    RES.get_or_init(|| cpu_prover().setup(ELF))
+fn pkey_vkey() -> &'static (Arc<SP1ProvingKey>, Arc<SP1VerifyingKey>) {
+    static RES: OnceLock<(Arc<SP1ProvingKey>, Arc<SP1VerifyingKey>)> = OnceLock::new();
+    RES.get_or_init(|| {
+        let (pkey, vkey) = cpu_prover().setup(ELF);
+        (Arc::new(pkey), Arc::new(vkey))
+    })
 }
 
-fn pkey() -> &'static SP1ProvingKey {
+fn pkey() -> &'static Arc<SP1ProvingKey> {
     &pkey_vkey().0
 }
 
-fn vkey() -> &'static SP1VerifyingKey {
+fn vkey() -> &'static Arc<SP1VerifyingKey> {
     &pkey_vkey().1
 }
 

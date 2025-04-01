@@ -7,7 +7,7 @@ use std::{
 
 pub use error::Error;
 use futures::{Future, TryFutureExt};
-use prover_config::ProverType;
+use prover_config::{CpuProverConfig, ProverType};
 use sp1_sdk::{
     network::{prover::NetworkProver, FulfillmentStrategy},
     CpuProver, Prover, ProverClient, SP1ProofWithPublicValues, SP1ProvingKey, SP1Stdin,
@@ -27,14 +27,14 @@ mod error;
 
 #[derive(Clone)]
 pub struct Executor {
-    vkey: SP1VerifyingKey,
+    vkey: Arc<SP1VerifyingKey>,
     primary: BoxCloneService<Request, Response, Error>,
     fallback: Option<BoxCloneService<Request, Response, Error>>,
 }
 
 impl Executor {
-    pub fn get_vkey(&self) -> SP1VerifyingKey {
-        self.vkey.clone()
+    pub fn get_vkey(&self) -> &Arc<SP1VerifyingKey> {
+        &self.vkey
     }
 
     pub fn build_network_service<S>(
@@ -79,7 +79,7 @@ impl Executor {
 
     #[cfg(test)]
     pub fn new_with_services(
-        vkey: SP1VerifyingKey,
+        vkey: Arc<SP1VerifyingKey>,
         primary: BoxCloneService<Request, Response, Error>,
         fallback: Option<BoxCloneService<Request, Response, Error>>,
     ) -> Self {
@@ -158,10 +158,19 @@ impl Executor {
             .as_ref()
             .map(|config| Self::create_prover(config, program).1);
         Self {
-            vkey,
+            vkey: Arc::new(vkey),
             primary,
             fallback,
         }
+    }
+
+    pub fn compute_program_vkey(program: &[u8]) -> SP1VerifyingKey {
+        let executor = Executor::new(
+            &ProverType::CpuProver(CpuProverConfig::default()),
+            &None,
+            program,
+        );
+        SP1VerifyingKey::clone(executor.get_vkey())
     }
 }
 

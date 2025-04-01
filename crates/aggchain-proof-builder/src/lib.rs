@@ -96,7 +96,7 @@ pub struct AggchainProofBuilder<ContractsClient> {
     prover: ProverService,
 
     /// Verification key for the aggchain proof.
-    aggchain_proof_vkey: SP1VerifyingKey,
+    aggchain_proof_vkey: Arc<SP1VerifyingKey>,
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
@@ -115,7 +115,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             &config.fallback_prover,
             AGGCHAIN_PROOF_ELF,
         );
-        let aggchain_proof_vkey = executor.get_vkey();
+        let aggchain_proof_vkey = executor.get_vkey().clone();
 
         let executor = tower::ServiceBuilder::new().service(executor).boxed();
 

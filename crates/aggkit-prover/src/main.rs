@@ -32,12 +32,12 @@ fn main() -> anyhow::Result<()> {
             }
         }
         aggkit_prover::cli::Commands::Vkey => {
-            let vkey = prover_executor::Executor::new(
+            let executor = prover_executor::Executor::new(
                 &ProverType::CpuProver(CpuProverConfig::default()),
                 &None,
                 aggchain_proof_service::AGGCHAIN_PROOF_ELF,
-            )
-            .get_vkey();
+            );
+            let vkey = executor.get_vkey();
             let vkey_hex = hex::encode(words_to_bytes_le(&vkey.hash_u32()));
 
             println!("aggchain_proof_vkey: 0x{vkey_hex}");
