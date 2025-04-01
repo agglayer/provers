@@ -26,6 +26,10 @@ agglayer-interop.workspace = true
 agglayer-primitives.workspace = true
 prover-config.workspace = true
 prover-executor.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+tokio.workspace = true
 
 [lints]
 workspace = true
