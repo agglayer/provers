@@ -14,7 +14,9 @@ use aggchain_proof_core::bridge::inserted_ger::InsertedGER;
 use aggchain_proof_core::bridge::{
     compute_imported_bridge_exits_commitment, BridgeWitness, GlobalIndexWithLeafHash,
 };
-use aggchain_proof_core::full_execution_proof::{FepInputs, AGGREGATION_VKEY_HASH};
+use aggchain_proof_core::full_execution_proof::{
+    AggregationOutputs, FepInputs, AGGREGATION_VKEY_HASH,
+};
 use aggchain_proof_core::proof::{AggchainProofPublicValues, AggchainProofWitness};
 use aggchain_proof_core::Digest;
 use aggchain_proof_types::AggchainProofInputs;
@@ -260,6 +262,9 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             l1_head_inclusion_proof: request.aggchain_proof_inputs.l1_info_tree_merkle_proof,
         };
 
+        let retrieved_pv = AggregationOutputs::from(&fep);
+        println!("retrieved pv: {:?}", retrieved_pv);
+
         println!(">>>>>>>>>> AggchainProofBuilder RetrieveChainData Checkpoint 13");
 
         let prover_witness = AggchainProofWitness {
@@ -283,13 +288,6 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         };
 
         println!(">>>>>>>>>> AggchainProofBuilder RetrieveChainData Checkpoint 14");
-
-        let _public_values: &RecursionPublicValues<BabyBear> = request
-            .aggregation_proof
-            .proof
-            .public_values
-            .as_slice()
-            .borrow();
         let aggregation_proof = request.aggregation_proof.clone();
         let aggregation_vkey = aggregation_proof.vk.clone();
         let witness = prover_witness.clone();

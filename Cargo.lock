@@ -5617,6 +5617,7 @@ dependencies = [
  "aggkit-prover-types",
  "alloy-primitives",
  "anyhow",
+ "bincode",
  "clap",
  "futures",
  "log",
