@@ -62,7 +62,7 @@ impl<L1Rpc>
         let network_prover = new_network_prover(config.client.sp1_cluster_endpoint.as_str())
             .map_err(Error::UnableToCreateNetworkProver)?;
 
-        let aggregation_vkey = Self::extract_aggregation_vkey(AGGREGATION_ELF);
+        let aggregation_vkey = Self::extract_aggregation_vkey(&network_prover, AGGREGATION_ELF);
 
         Ok(Self {
             l1_rpc,
@@ -75,9 +75,8 @@ impl<L1Rpc>
         })
     }
 
-    fn extract_aggregation_vkey(elf: &[u8]) -> SP1VerifyingKey {
-        let client = sp1_sdk::ProverClient::builder().network().build();
-        let (_pkey, vkey) = client.setup(elf);
+    fn extract_aggregation_vkey(network_prover: &NetworkProver, elf: &[u8]) -> SP1VerifyingKey {
+        let (_pkey, vkey) = network_prover.setup(elf);
         vkey
     }
 }

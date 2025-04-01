@@ -1,7 +1,6 @@
 use std::{path::PathBuf, sync::Arc};
 
 use prover_engine::ProverEngine;
-use sp1_sdk::HashableKey;
 
 #[cfg(feature = "testutils")]
 pub mod fake;
@@ -52,8 +51,8 @@ pub fn main(cfg: PathBuf, version: &str, program: &'static [u8]) -> anyhow::Resu
     Ok(())
 }
 
-pub fn get_vkey(program: &'static [u8]) -> String {
-    let vkey = prover_executor::Executor::get_vkey(program);
+pub fn compute_program_vkey(program: &'static [u8]) -> String {
+    let vkey = prover_executor::Executor::compute_program_vkey(program);
     vkey.bytes32()
 }
 
@@ -83,6 +82,7 @@ mod testutils {
     }
 }
 
+use sp1_sdk::HashableKey as _;
 #[cfg(feature = "testutils")]
 pub use testutils::start_prover;
 use tokio_util::sync::CancellationToken;

@@ -1,10 +1,10 @@
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 
 use prover_config::MockProverConfig;
 use sp1_sdk::{
-    CpuProver, Prover, ProverClient, SP1ProofMode, SP1ProofWithPublicValues, SP1Stdin,
-    SP1_CIRCUIT_VERSION,
+    CpuProver, Prover, SP1ProofMode, SP1ProofWithPublicValues, SP1ProvingKey, SP1Stdin,
+    SP1VerifyingKey, SP1_CIRCUIT_VERSION,
 };
 use tower::timeout::TimeoutLayer;
 use tower::{service_fn, Service, ServiceBuilder, ServiceExt};
@@ -12,14 +12,33 @@ use tower::{service_fn, Service, ServiceBuilder, ServiceExt};
 use crate::{Executor, LocalExecutor, ProofType, Request, Response};
 const ELF: &[u8] = include_bytes!("../../prover-dummy-program/elf/riscv32im-succinct-zkvm-elf");
 
+fn cpu_prover() -> &'static CpuProver {
+    static RES: OnceLock<CpuProver> = OnceLock::new();
+    RES.get_or_init(CpuProver::new)
+}
+
+fn pkey_vkey() -> &'static (Arc<SP1ProvingKey>, Arc<SP1VerifyingKey>) {
+    static RES: OnceLock<(Arc<SP1ProvingKey>, Arc<SP1VerifyingKey>)> = OnceLock::new();
+    RES.get_or_init(|| {
+        let (pkey, vkey) = cpu_prover().setup(ELF);
+        (Arc::new(pkey), Arc::new(vkey))
+    })
+}
+
+fn pkey() -> &'static Arc<SP1ProvingKey> {
+    &pkey_vkey().0
+}
+
+fn vkey() -> &'static Arc<SP1VerifyingKey> {
+    &pkey_vkey().1
+}
+
 fn mock_proof(stdin: SP1Stdin) -> SP1ProofWithPublicValues {
-    let client = ProverClient::builder().cpu().build();
-    let (pk, _vk) = client.setup(ELF);
-    let (public_values, _) = client.execute(&pk.elf, &stdin).run().unwrap();
+    let (public_values, _) = cpu_prover().execute(&pkey().elf, &stdin).run().unwrap();
 
     // Create a mock Plonk proof.
     SP1ProofWithPublicValues::create_mock_proof(
-        &pk,
+        pkey(),
         public_values,
         SP1ProofMode::Plonk,
         SP1_CIRCUIT_VERSION,
@@ -44,7 +63,7 @@ async fn executor_normal_behavior() {
         service_fn(|_: Request| async { panic!("Shouldn't be called") }),
     );
 
-    let mut executor = Executor::new_with_services(network, Some(local));
+    let mut executor = Executor::new_with_services(vkey().clone(), network, Some(local));
     let result = executor
         .call(Request {
             stdin: SP1Stdin::new(),
@@ -68,7 +87,7 @@ async fn executor_normal_behavior_only_network() {
         }),
     );
 
-    let mut executor = Executor::new_with_services(network, None);
+    let mut executor = Executor::new_with_services(vkey().clone(), network, None);
     let result = executor
         .call(Request {
             stdin: SP1Stdin::new(),
@@ -98,7 +117,7 @@ async fn executor_fallback_behavior_cpu() {
         }),
     );
 
-    let mut executor = Executor::new_with_services(network, Some(local));
+    let mut executor = Executor::new_with_services(vkey().clone(), network, Some(local));
     let result = executor
         .call(Request {
             stdin: SP1Stdin::new(),
@@ -134,7 +153,7 @@ async fn executor_fallback_because_of_timeout_cpu() {
         }),
     );
 
-    let mut executor = Executor::new_with_services(network, Some(local));
+    let mut executor = Executor::new_with_services(vkey().clone(), network, Some(local));
 
     let result = executor
         .call(Request {
@@ -174,7 +193,11 @@ async fn executor_fails_because_of_timeout_cpu() {
 
     let mut executor = ServiceBuilder::new()
         .layer(TimeoutLayer::new(Duration::from_millis(100)))
-        .service(Executor::new_with_services(network, Some(local)));
+        .service(Executor::new_with_services(
+            vkey().clone(),
+            network,
+            Some(local),
+        ));
 
     let result = executor
         .call(Request {
@@ -213,7 +236,11 @@ async fn executor_fails_because_of_concurrency_cpu() {
 
     let mut executor = ServiceBuilder::new()
         .layer(TimeoutLayer::new(Duration::from_secs(1)))
-        .service(Executor::new_with_services(network, Some(local)));
+        .service(Executor::new_with_services(
+            vkey().clone(),
+            network,
+            Some(local),
+        ));
 
     let mut executor2 = executor.clone();
 
