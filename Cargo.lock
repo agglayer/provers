@@ -5736,6 +5736,7 @@ dependencies = [
  "serde_json",
  "serde_with",
  "toml",
+ "url",
 ]
 
 [[package]]
