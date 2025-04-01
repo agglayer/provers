@@ -281,7 +281,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
 
         println!(">>>>>>>>>> AggchainProofBuilder RetrieveChainData Checkpoint 14");
 
-        let public_values: &RecursionPublicValues<BabyBear> = request
+        let _public_values: &RecursionPublicValues<BabyBear> = request
             .aggregation_proof
             .proof
             .public_values
@@ -294,13 +294,11 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         // mismatch verification
         {
             let hardcoded_vkey_hash = AGGREGATION_VKEY_HASH;
-            let received_vkey_hash = public_values.sp1_vk_digest;
-            let received_vkey_babybear = aggregation_vkey.hash_babybear();
+            let received_vkey_hash_u32 = aggregation_vkey.hash_u32();
             println!("hardcoded aggregation vkey hash: {hardcoded_vkey_hash:?}");
-            println!("received sp1_vk_digest: {received_vkey_hash:?}");
-            println!("received vkey hashed babybear: {received_vkey_babybear:?}");
+            println!("received hashed u32: {received_vkey_hash_u32:?}");
 
-            if received_vkey_hash != received_vkey_babybear {
+            if hardcoded_vkey_hash != received_vkey_hash_u32 {
                 println!("different");
             }
         }
