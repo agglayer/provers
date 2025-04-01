@@ -25,7 +25,7 @@ use bincode::Options;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use prover_executor::{Executor, ProofType};
-use sp1_sdk::{HashableKey, SP1Stdin, SP1VerifyingKey};
+use sp1_sdk::{HashableKey, Prover, ProverClient, SP1Stdin, SP1VerifyingKey};
 use tower::buffer::Buffer;
 use tower::util::BoxService;
 use tower::ServiceExt as _;
@@ -35,6 +35,9 @@ use crate::config::AggchainProofBuilderConfig;
 const MAX_CONCURRENT_REQUESTS: usize = 100;
 pub const AGGCHAIN_PROOF_ELF: &[u8] =
     include_bytes!("../../../crates/aggchain-proof-program/elf/riscv32im-succinct-zkvm-elf");
+
+pub const AGGREGATION_PROOF_ELF: &[u8] =
+    include_bytes!("../../../crates/aggchain-proof-program/elf/aggregation-elf");
 
 pub(crate) type ProverService = Buffer<
     BoxService<prover_executor::Request, prover_executor::Response, prover_executor::Error>,
@@ -291,22 +294,22 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         let aggregation_vkey = aggregation_proof.vk.clone();
         let witness = prover_witness.clone();
 
+        let prover = ProverClient::builder().cpu().build();
+        let (_, agg_vk_from_elf) = prover.setup(AGGREGATION_PROOF_ELF);
+
         // mismatch verification
         {
             let hardcoded_vkey_hash = AGGREGATION_VKEY_HASH;
             let received_vkey_hash_u32 = aggregation_vkey.hash_u32();
             println!("hardcoded aggregation vkey hash: {hardcoded_vkey_hash:?}");
-            println!("received hashed u32: {received_vkey_hash_u32:?}");
-
-            if hardcoded_vkey_hash != received_vkey_hash_u32 {
-                println!("different");
-            }
+            println!("received hash u32: {received_vkey_hash_u32:?}");
+            println!("from elf hash u32: {:?}", agg_vk_from_elf.hash_u32());
         }
 
         let sp1_stdin = {
             let mut stdin = SP1Stdin::new();
             stdin.write(&prover_witness);
-            stdin.write_proof(*aggregation_proof, aggregation_vkey);
+            stdin.write_proof(*aggregation_proof, agg_vk_from_elf.vk);
             stdin
         };
 
@@ -397,5 +400,18 @@ where
             })
         }
         .boxed()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn aggregration_vkey() {
+        let prover = ProverClient::builder().cpu().build();
+        let (_, agg_vk_from_elf) = prover.setup(AGGREGATION_PROOF_ELF);
+
+        println!("agg_vk hashu32 {:?}", agg_vk_from_elf.hash_u32());
     }
 }

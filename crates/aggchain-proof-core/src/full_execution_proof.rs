@@ -11,7 +11,7 @@ use crate::{error::ProofError, vkey_hash::HashU32};
 /// Hardcoded hash of the "aggregation vkey".
 /// NOTE: Format being `hash_u32()` of the `SP1StarkVerifyingKey`.
 pub const AGGREGATION_VKEY_HASH: HashU32 = [
-    1059830946, 1053541861, 1386453206, 1465020229, 176980445, 2008122133, 689544796, 1223443100,
+    1949122874, 766403294, 593485289, 430966933, 1657646871, 73535799, 883940176, 31174925,
 ];
 
 /// Specific commitment for the range proofs.
