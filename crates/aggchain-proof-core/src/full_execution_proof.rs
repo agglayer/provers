@@ -1,7 +1,7 @@
 use agglayer_primitives::digest::Digest;
 use agglayer_primitives::keccak::keccak256_combine;
 use alloy_primitives::{b256, Address, PrimitiveSignature, B256};
-use bincode::Options;
+use alloy_sol_types::{sol, SolValue};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest as Sha256Digest, Sha256};
 use unified_bridge::imported_bridge_exit::{L1InfoTreeLeaf, MerkleProof};
@@ -47,44 +47,36 @@ pub struct FepInputs {
     pub l1_head_inclusion_proof: MerkleProof,
 }
 
-/// Aggregation proof public values as defined by upstream.
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
-pub struct AggregationOutputs {
-    pub l1_head: Digest,
-    pub l2_pre_root: Digest,
-    pub l2_post_root: Digest,
-    pub l2_block_number: u64,
-    pub rollup_config_hash: Digest,
-    pub multi_block_vkey: Digest,
-}
-
-impl AggregationOutputs {
-    /// Encoding abi-encode style
-    pub fn bincode_options() -> impl bincode::Options {
-        bincode::DefaultOptions::new()
-            .with_big_endian()
-            .with_fixint_encoding()
+sol! {
+    #[derive(Debug, Serialize, Deserialize)]
+    struct AggregationOutputs {
+        bytes32 l1Head;
+        bytes32 l2PreRoot;
+        bytes32 l2PostRoot;
+        uint64 l2BlockNumber;
+        bytes32 rollupConfigHash;
+        bytes32 multiBlockVKey;
     }
 }
+
+pub type AggOutputs = AggregationOutputs;
 
 impl From<&FepInputs> for AggregationOutputs {
     fn from(inputs: &FepInputs) -> Self {
         Self {
-            l1_head: inputs.l1_head,
-            l2_pre_root: inputs.compute_l2_pre_root(),
-            l2_post_root: inputs.compute_claim_root(),
-            l2_block_number: inputs.claim_block_num.into(),
-            rollup_config_hash: inputs.rollup_config_hash,
-            multi_block_vkey: RANGE_VKEY_COMMITMENT.into(),
+            l1Head: inputs.l1_head.0.into(),
+            l2PreRoot: inputs.compute_l2_pre_root().0.into(),
+            l2PostRoot: inputs.compute_claim_root().0.into(),
+            l2BlockNumber: inputs.claim_block_num.into(),
+            rollupConfigHash: inputs.rollup_config_hash.0.into(),
+            multiBlockVKey: RANGE_VKEY_COMMITMENT.into(),
         }
     }
 }
 
 impl FepInputs {
     pub fn sha256_public_values(&self) -> [u8; 32] {
-        let encoded_public_values = AggregationOutputs::bincode_options()
-            .serialize(&AggregationOutputs::from(self))
-            .expect("ser");
+        let encoded_public_values = AggregationOutputs::abi_encode(&AggregationOutputs::from(self));
 
         Sha256::digest(encoded_public_values.as_slice()).into()
     }

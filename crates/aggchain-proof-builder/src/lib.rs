@@ -1,7 +1,6 @@
 pub mod config;
 mod error;
 
-use std::borrow::Borrow;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
@@ -45,9 +44,6 @@ pub(crate) type ProverService = Buffer<
     BoxService<prover_executor::Request, prover_executor::Response, prover_executor::Error>,
     prover_executor::Request,
 >;
-
-use p3_baby_bear::BabyBear;
-use sp1_recursion_core::air::RecursionPublicValues;
 
 /// All the data `aggchain-proof-builder` needs for the agghchain
 /// proof generation. Collected from various sources.

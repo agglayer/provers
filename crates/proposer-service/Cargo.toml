@@ -31,6 +31,9 @@ prover-logger.workspace = true
 log = "0.4.26"
 bincode.workspace = true
 
+# tmp dep
+alloy-sol-types = "0.8.21"
+
 [dev-dependencies]
 mockall.workspace = true
 proposer-client = { workspace = true, features = ["testutils"] }

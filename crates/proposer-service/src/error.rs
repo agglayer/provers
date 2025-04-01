@@ -15,5 +15,5 @@ pub enum Error {
     UnsupportedAggregationProofMode(sp1_sdk::SP1ProofMode),
 
     #[error("Invalid deserialize")]
-    DeserializeFailure(#[from] bincode::Error),
+    DeserializeFailure,
 }

@@ -5616,6 +5616,7 @@ dependencies = [
  "aggchain-proof-core",
  "aggkit-prover-types",
  "alloy-primitives",
+ "alloy-sol-types",
  "anyhow",
  "bincode",
  "clap",
