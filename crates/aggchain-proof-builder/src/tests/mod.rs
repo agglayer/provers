@@ -34,7 +34,7 @@ mod aggchain_proof_builder {
     use crate::tests::load_aggchain_prover_inputs_json;
     use crate::{AggchainProverInputs, Error, ProverService};
 
-    fn init_test_prover() -> Result<ProverService, anyhow::Error> {
+    fn init_network_prover() -> Result<ProverService, anyhow::Error> {
         let executor = Executor::new(
             &ProverType::NetworkProver(NetworkProverConfig {
                 proving_timeout: Duration::from_secs(3600),
@@ -50,7 +50,7 @@ mod aggchain_proof_builder {
 
     #[tokio::test]
     async fn execute_aggchain_program_test() -> Result<(), Box<dyn std::error::Error>> {
-        let mut prover = init_test_prover()?;
+        let mut prover = init_network_prover()?;
 
         let aggchain_prover_inputs: AggchainProverInputs = load_aggchain_prover_inputs_json(
             "src/tests/data/aggchain_prover_inputs_001_lpb_18_eb_21.json",
