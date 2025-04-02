@@ -97,7 +97,10 @@ impl Executor {
         match prover_type {
             ProverType::NetworkProver(network_prover_config) => {
                 debug!("Creating network prover executor...");
-                let network_prover = ProverClient::builder().network().build();
+                let network_prover = ProverClient::builder()
+                    .network()
+                    .rpc_url(network_prover_config.sp1_cluster_endpoint.as_str())
+                    .build();
                 let (proving_key, verification_key) = network_prover.setup(program);
                 (
                     verification_key.clone(),

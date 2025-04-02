@@ -19,6 +19,7 @@ fn network_prover() {
         ProverType::NetworkProver(NetworkProverConfig {
             proving_request_timeout: Some(std::time::Duration::from_secs(300)),
             proving_timeout: std::time::Duration::from_secs(600),
+            sp1_cluster_endpoint: url::Url::parse("https://rpc.production.succinct.xyz/").unwrap(),
         })
     );
 }
@@ -48,6 +49,7 @@ fn network_and_cpu_prover() {
         ProverType::NetworkProver(NetworkProverConfig {
             proving_request_timeout: Some(std::time::Duration::from_secs(300)),
             proving_timeout: std::time::Duration::from_secs(600),
+            sp1_cluster_endpoint: url::Url::parse("https://rpc.production.succinct.xyz/").unwrap(),
         })
     );
 
