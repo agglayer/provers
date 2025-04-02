@@ -22,7 +22,7 @@ use aggchain_proof_types::AggchainProofInputs;
 use aggkit_prover_types::vkey_hash::VKeyHash;
 use agglayer_primitives::utils::Hashable;
 use alloy::eips::BlockNumberOrTag;
-use alloy_primitives::{b256, Address};
+use alloy_primitives::Address;
 use bincode::Options;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
@@ -224,7 +224,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .collect();
 
         let l1_info_tree_leaf = request.aggchain_proof_inputs.l1_info_tree_leaf;
-        let mut fep = FepInputs {
+        let fep = FepInputs {
             l1_head: l1_info_tree_leaf.inner.block_hash,
             claim_block_num: request.end_block as u32,
             rollup_config_hash,
