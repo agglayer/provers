@@ -103,7 +103,7 @@ pub struct AggchainProofBuilder<ContractsClient> {
     prover: ProverService,
 
     /// Verification key for the aggchain proof.
-    aggchain_proof_vkey: Arc<SP1VerifyingKey>,
+    aggregation_vkey: Arc<SP1VerifyingKey>,
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
@@ -122,17 +122,37 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             &config.fallback_prover,
             AGGCHAIN_PROOF_ELF,
         );
-        let aggchain_proof_vkey = executor.get_vkey().clone();
 
         let executor = tower::ServiceBuilder::new().service(executor).boxed();
 
         let prover = Buffer::new(executor, MAX_CONCURRENT_REQUESTS);
 
+        // Retrieve the entire aggregation vkey from the ELF
+        let aggregation_vkey = {
+            // TODO, use executor.get_vkey().clone() instead, just test before
+            let prover = ProverClient::builder().cpu().build();
+            let (_, agg_vk_from_elf) = prover.setup(AGGREGATION_PROOF_ELF);
+            agg_vk_from_elf
+        };
+
+        // Check mismatch on aggregation vkey
+        {
+            let retrieved = VKeyHash::from_vkey(&aggregation_vkey);
+            let expected = VKeyHash::from_hash_u32(AGGREGATION_VKEY_HASH);
+
+            if retrieved != expected {
+                return Err(Error::MismatchAggregationVkeyHash {
+                    got: retrieved,
+                    expected,
+                });
+            }
+        }
+
         Ok(AggchainProofBuilder {
             contracts_client,
             prover,
             network_id: config.network_id,
-            aggchain_proof_vkey,
+            aggregation_vkey: Arc::new(aggregation_vkey),
         })
     }
 
@@ -142,6 +162,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         contracts_client: Arc<ContractsClient>,
         request: AggchainProofBuilderRequest,
         network_id: u32,
+        aggregation_vkey: Arc<SP1VerifyingKey>,
     ) -> Result<AggchainProverInputs, Error>
     where
         ContractsClient: L2LocalExitRootFetcher
@@ -265,33 +286,13 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             },
         };
 
-        // Retrieve the entire aggregation vkey from the ELF
-        let aggregation_vkey = {
-            let prover = ProverClient::builder().cpu().build();
-            let (_, agg_vk_from_elf) = prover.setup(AGGREGATION_PROOF_ELF);
-            agg_vk_from_elf
-        };
-
         let aggregation_proof = request.aggregation_proof.clone();
         let witness = prover_witness.clone();
-
-        // Check mismatch on aggregation vkey
-        {
-            let retrieved = VKeyHash::from_vkey(&aggregation_vkey);
-            let expected = VKeyHash::from_hash_u32(AGGREGATION_VKEY_HASH);
-
-            if retrieved != expected {
-                return Err(Error::MismatchAggregationVkeyHash {
-                    got: retrieved,
-                    expected,
-                });
-            }
-        }
 
         let sp1_stdin = {
             let mut stdin = SP1Stdin::new();
             stdin.write(&prover_witness);
-            stdin.write_proof(*aggregation_proof, aggregation_vkey.vk);
+            stdin.write_proof(*aggregation_proof, aggregation_vkey.vk.clone());
             stdin
         };
 
@@ -329,6 +330,7 @@ where
         let contracts_client = self.contracts_client.clone();
         let mut prover = self.prover.clone();
         let network_id = self.network_id;
+        let aggregation_vkey = self.aggregation_vkey.clone();
 
         async move {
             let last_proven_block = req.aggchain_proof_inputs.last_proven_block;
@@ -336,7 +338,8 @@ where
             // Retrieve all the necessary public inputs. Combine with
             // the data provided by the agg-sender in the request.
             let aggchain_prover_inputs =
-                Self::retrieve_chain_data(contracts_client, req, network_id).await?;
+                Self::retrieve_chain_data(contracts_client, req, network_id, aggregation_vkey)
+                    .await?;
 
             let prover_executor::Response { proof } = prover
                 .ready()
