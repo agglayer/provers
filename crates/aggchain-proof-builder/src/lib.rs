@@ -245,12 +245,6 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             AggregationOutputs::from(&fep)
         );
 
-        // TODO: workaround to remove
-        fep.rollup_config_hash =
-            b256!("8a3f045ea5a3e7dbc2800ec2a0e61b8a31433ca07cadae822d7b35631ca7ce52")
-                .0
-                .into();
-
         let prover_witness = AggchainProofWitness {
             prev_local_exit_root,
             new_local_exit_root,
@@ -284,12 +278,12 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         // Check mismatch on aggregation vkey
         {
             let retrieved = VKeyHash::from_vkey(&aggregation_vkey);
-            let hardcoded = VKeyHash::from_hash_u32(AGGREGATION_VKEY_HASH);
+            let expected = VKeyHash::from_hash_u32(AGGREGATION_VKEY_HASH);
 
-            if retrieved != hardcoded {
+            if retrieved != expected {
                 return Err(Error::MismatchAggregationVkeyHash {
                     got: retrieved,
-                    expected: hardcoded,
+                    expected,
                 });
             }
         }
