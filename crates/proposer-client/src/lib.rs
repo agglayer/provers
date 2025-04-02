@@ -6,12 +6,15 @@ use sp1_sdk::{SP1ProofWithPublicValues, SP1VerifyingKey};
 
 pub use crate::error::Error;
 use crate::rpc::{AggregationProofProposerRequest, AggregationProofProposerResponse};
+
+pub mod aggregation_prover;
+pub mod client;
 pub mod config;
 pub mod error;
+pub mod mock_prover;
 pub mod network_prover;
 pub mod rpc;
 
-pub mod client;
 #[cfg(test)]
 mod tests;
 
