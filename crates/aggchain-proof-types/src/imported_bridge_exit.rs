@@ -1,8 +1,13 @@
-use agglayer_interop::types::ImportedBridgeExit;
+use agglayer_interop::types::GlobalIndex;
 use serde::{Deserialize, Serialize};
+
+// TODO: move this to interop repository
+#[derive(Deserialize, Serialize, Clone, Copy, Debug)]
+pub struct BridgeExitHash(pub agglayer_interop::types::Digest);
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct ImportedBridgeExitWithBlockNumber {
     pub block_number: u64,
-    pub imported_bridge_exit: ImportedBridgeExit,
+    pub bridge_exit_hash: BridgeExitHash,
+    pub global_index: GlobalIndex,
 }

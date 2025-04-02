@@ -20,7 +20,6 @@ use aggchain_proof_core::proof::{AggchainProofPublicValues, AggchainProofWitness
 use aggchain_proof_core::Digest;
 use aggchain_proof_types::AggchainProofInputs;
 use aggkit_prover_types::vkey_hash::VKeyHash;
-use agglayer_primitives::utils::Hashable;
 use alloy::eips::BlockNumberOrTag;
 use alloy_primitives::Address;
 use bincode::Options;
@@ -76,7 +75,7 @@ pub struct AggchainProofBuilderResponse {
     pub proof: Vec<u8>,
 
     /// Aggchain params
-    pub aggchain_params: Vec<u8>,
+    pub aggchain_params: [u8; 32],
 
     /// Last block proven, before this aggchain proof.
     pub last_proven_block: u64,
@@ -239,8 +238,8 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .iter()
             .filter(|ib| new_blocks_range.contains(&ib.block_number))
             .map(|ib| GlobalIndexWithLeafHash {
-                global_index: ib.imported_bridge_exit.global_index.into(),
-                bridge_exit_hash: ib.imported_bridge_exit.bridge_exit.hash(),
+                global_index: ib.global_index.into(),
+                bridge_exit_hash: ib.bridge_exit_hash.0,
             })
             .collect();
 
@@ -366,7 +365,7 @@ where
                     .with_fixint_encoding()
                     .serialize(&stark)
                     .map_err(Error::UnableToSerializeProof)?,
-                aggchain_params: public_input.aggchain_params.to_vec(),
+                aggchain_params: public_input.aggchain_params.0,
                 last_proven_block,
                 end_block,
                 // TODO: Define the output root with the witness data
