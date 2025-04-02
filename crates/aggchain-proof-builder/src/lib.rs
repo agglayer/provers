@@ -13,10 +13,13 @@ use aggchain_proof_core::bridge::inserted_ger::InsertedGER;
 use aggchain_proof_core::bridge::{
     compute_imported_bridge_exits_commitment, BridgeWitness, GlobalIndexWithLeafHash,
 };
-use aggchain_proof_core::full_execution_proof::FepInputs;
+use aggchain_proof_core::full_execution_proof::{
+    AggregationOutputs, FepInputs, AGGREGATION_VKEY_HASH,
+};
 use aggchain_proof_core::proof::{AggchainProofPublicValues, AggchainProofWitness};
 use aggchain_proof_core::Digest;
 use aggchain_proof_types::AggchainProofInputs;
+use aggkit_prover_types::vkey_hash::VKeyHash;
 use agglayer_primitives::utils::Hashable;
 use alloy::eips::BlockNumberOrTag;
 use alloy_primitives::Address;
@@ -24,16 +27,20 @@ use bincode::Options;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use prover_executor::{Executor, ProofType};
-use sp1_sdk::{SP1Stdin, SP1VerifyingKey};
+use sp1_sdk::{Prover, ProverClient, SP1Stdin, SP1VerifyingKey};
 use tower::buffer::Buffer;
 use tower::util::BoxService;
 use tower::ServiceExt as _;
+use tracing::info;
 
 use crate::config::AggchainProofBuilderConfig;
 
 const MAX_CONCURRENT_REQUESTS: usize = 100;
 pub const AGGCHAIN_PROOF_ELF: &[u8] =
     include_bytes!("../../../crates/aggchain-proof-program/elf/riscv32im-succinct-zkvm-elf");
+
+pub const AGGREGATION_PROOF_ELF: &[u8] =
+    include_bytes!("../../../crates/aggchain-proof-program/elf/aggregation-elf");
 
 pub(crate) type ProverService = Buffer<
     BoxService<prover_executor::Request, prover_executor::Response, prover_executor::Error>,
@@ -233,6 +240,11 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             l1_head_inclusion_proof: request.aggchain_proof_inputs.l1_info_tree_merkle_proof,
         };
 
+        info!(
+            "Public values retrieved from contracts: {:?}",
+            AggregationOutputs::from(&fep)
+        );
+
         let prover_witness = AggchainProofWitness {
             prev_local_exit_root,
             new_local_exit_root,
@@ -253,13 +265,33 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             },
         };
 
-        let aggregation_proof = request.aggregation_proof;
-        let aggregation_vkey = aggregation_proof.vk.clone();
+        // Retrieve the entire aggregation vkey from the ELF
+        let aggregation_vkey = {
+            let prover = ProverClient::builder().cpu().build();
+            let (_, agg_vk_from_elf) = prover.setup(AGGREGATION_PROOF_ELF);
+            agg_vk_from_elf
+        };
+
+        let aggregation_proof = request.aggregation_proof.clone();
         let witness = prover_witness.clone();
+
+        // Check mismatch on aggregation vkey
+        {
+            let retrieved = VKeyHash::from_vkey(&aggregation_vkey);
+            let expected = VKeyHash::from_hash_u32(AGGREGATION_VKEY_HASH);
+
+            if retrieved != expected {
+                return Err(Error::MismatchAggregationVkeyHash {
+                    got: retrieved,
+                    expected,
+                });
+            }
+        }
+
         let sp1_stdin = {
             let mut stdin = SP1Stdin::new();
             stdin.write(&prover_witness);
-            stdin.write_proof(*aggregation_proof, aggregation_vkey);
+            stdin.write_proof(*aggregation_proof, aggregation_vkey.vk);
             stdin
         };
 

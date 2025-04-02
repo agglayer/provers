@@ -12,7 +12,7 @@ use tonic::{Request, Response, Status};
 use tonic_types::{ErrorDetails, StatusExt};
 use tower::buffer::Buffer;
 use tower::{Service, ServiceExt};
-use tracing::instrument;
+use tracing::{info, instrument};
 
 const MAX_CONCURRENT_REQUESTS: usize = 100;
 
@@ -85,6 +85,10 @@ impl AggchainProofGrpcService for GrpcService {
                 let aggchain_proof = default_bincode_options()
                     .serialize(&response.proof)
                     .map_err(|e| Status::internal(format!("Unable to serialize proof: {e:?}")))?;
+                info!(
+                    "Successfully generated the aggchain proof: {} bytes",
+                    aggchain_proof.len()
+                );
                 Ok(Response::new(GenerateAggchainProofResponse {
                     aggchain_proof: aggchain_proof.into(),
                     last_proven_block: response.last_proven_block,
