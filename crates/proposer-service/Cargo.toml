@@ -31,6 +31,7 @@ prover-alloy.workspace = true
 prover-logger.workspace = true
 
 [dev-dependencies]
+bincode.workspace = true
 mockall.workspace = true
 proposer-client = { workspace = true, features = ["testutils"] }
 prover-alloy = { workspace = true, features = ["testutils"] }
