@@ -22,7 +22,7 @@ fn generate_keys() -> (
 
     let client = sp1_sdk::ProverClient::builder().mock().build();
     let (pk, vk) = client.setup(ELF);
-    
+
     #[derive(Default, Serialize, Deserialize)]
     struct AggregationOutputs {
         l1_head: B256,
