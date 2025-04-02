@@ -39,6 +39,7 @@ mod aggchain_proof_builder {
             &ProverType::NetworkProver(NetworkProverConfig {
                 proving_timeout: Duration::from_secs(3600),
                 proving_request_timeout: Some(Duration::from_secs(600)),
+                sp1_cluster_endpoint: "https://rpc.production.succinct.xyz/".parse()?,
             }),
             &None,
             crate::AGGCHAIN_PROOF_ELF,
