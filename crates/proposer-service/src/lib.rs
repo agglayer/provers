@@ -31,8 +31,7 @@ pub mod error;
 #[cfg(test)]
 mod tests;
 
-pub const AGGREGATION_ELF: &[u8] =
-    include_bytes!("../../aggchain-proof-program/elf/aggregation-elf");
+pub const AGGREGATION_ELF: &[u8] = op_succinct_elfs::AGG_ELF;
 
 pub struct ProposerService<L1Rpc, ProposerClient> {
     pub client: Arc<ProposerClient>,
