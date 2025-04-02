@@ -22,7 +22,7 @@ use aggchain_proof_types::AggchainProofInputs;
 use aggkit_prover_types::vkey_hash::VKeyHash;
 use agglayer_primitives::utils::Hashable;
 use alloy::eips::BlockNumberOrTag;
-use alloy_primitives::Address;
+use alloy_primitives::{Address};
 use bincode::Options;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
@@ -186,6 +186,18 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .await
             .map_err(Error::L1ChainDataRetrievalError)?;
 
+        // /////////////////////////////////////////////// TODO REMOVE
+        // let expected_rollup_config_hash: Digest = alloy_primitives::b256!("8a3f045ea5a3e7dbc2800ec2a0e61b8a31433ca07cadae822d7b35631ca7ce52")
+        //     .0
+        //     .into();
+        // println!(">>>>>>>>>>>>>>> RETRIEVED ROLLUP CONFIG HASH: {}, expected: {}", rollup_config_hash, expected_rollup_config_hash);
+        // let rollup_config_hash = if rollup_config_hash != expected_rollup_config_hash {
+        //     expected_rollup_config_hash
+        // } else {
+        //     rollup_config_hash
+        // };
+        // /////////////////////////////////////////////// <<<<<<<<<<<<<<<<<
+
         let prev_l2_block_sketch = contracts_client
             .get_prev_l2_block_sketch(BlockNumberOrTag::Number(
                 request.aggchain_proof_inputs.last_proven_block,
@@ -242,7 +254,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         println!(">>>>>>>>>> AggchainProofBuilder RetrieveChainData Checkpoint 12");
 
         let l1_info_tree_leaf = request.aggchain_proof_inputs.l1_info_tree_leaf;
-        let fep = FepInputs {
+        let mut fep = FepInputs {
             l1_head: l1_info_tree_leaf.inner.block_hash,
             claim_block_num: request.end_block as u32,
             rollup_config_hash,
@@ -262,6 +274,13 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             "Public values retrieved from contracts: {:?}",
             AggregationOutputs::from(&fep)
         );
+
+        // TODO: workaround to remove
+        fep.rollup_config_hash =
+            alloy_primitives::b256!("1ed6a0218756412484ccdb2c88f98ac9921af65a124345b778b7baf082f5f119")
+                .0
+                .into();
+
 
         let prover_witness = AggchainProofWitness {
             prev_local_exit_root,
