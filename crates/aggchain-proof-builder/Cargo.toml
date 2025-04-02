@@ -24,7 +24,7 @@ aggchain-proof-core.workspace = true
 aggchain-proof-types.workspace = true
 agglayer-interop.workspace = true
 agglayer-primitives.workspace = true
-aggkit-prover-types.workspace = true
+aggkit-prover-types = {workspace = true, features = ["sp1"] }
 prover-config.workspace = true
 prover-executor.workspace = true
 
