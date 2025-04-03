@@ -104,7 +104,7 @@ pub struct AggchainProofBuilder<ContractsClient> {
     /// Prover client service.
     prover: ProverService,
 
-    /// Verification key for the aggspan proof.
+    /// Verification key for the aggregated fep proof.
     aggregation_vkey: Arc<SP1VerifyingKey>,
 
     /// Verification key for the aggchain proof.
