@@ -43,7 +43,7 @@ impl ElfInfo {
     }
 
     fn prover(&mut self) -> &CpuProver {
-        self.prover.get_or_insert_with(|| CpuProver::new())
+        self.prover.get_or_insert_with(CpuProver::new)
     }
 }
 
@@ -63,7 +63,7 @@ impl<ElfBytes> Emitter<ElfBytes> {
     }
 
     pub fn finish(self) -> ElfInfo {
-        self.output().write(b"}\n").unwrap();
+        self.output().write_all(b"}\n").unwrap();
         self.context
     }
 
