@@ -35,7 +35,10 @@ pub struct AggchainProofServiceResponse {
     pub proof: Vec<u8>,
 
     /// Aggchain params
-    pub aggchain_params: Vec<u8>,
+    pub aggchain_params: Digest,
+
+    /// Aggchain verification key
+    pub vkey: Vec<u8>,
 
     /// Last block proven before this aggchain proof.
     pub last_proven_block: u64,
@@ -183,6 +186,7 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
                 proof: aggchain_proof_response.proof,
                 aggchain_params: aggchain_proof_response.aggchain_params,
                 last_proven_block: aggregation_proof_response.last_proven_block,
+                vkey: aggchain_proof_response.vkey,
                 end_block: aggregation_proof_response.end_block,
                 // TODO: Replace with actual value when available
                 local_exit_root_hash: Default::default(),

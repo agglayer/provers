@@ -25,6 +25,9 @@ pub enum Error {
     #[error("Unable to serialize proof")]
     UnableToSerializeProof(#[source] bincode::Error),
 
+    #[error("Unable to serialize vkey")]
+    UnableToSerializeVkey(#[source] bincode::Error),
+
     #[error("Prover witness generation error: {0}")]
     ProverWitnessGenerationError(#[source] WitnessGeneration),
 
