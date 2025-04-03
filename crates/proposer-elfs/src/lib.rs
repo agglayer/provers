@@ -5,8 +5,9 @@ mod internal {
 pub use internal::range;
 
 pub mod aggregation {
-    pub use super::internal::aggregation::VKEY_HASH;
     pub use op_succinct_elfs::AGG_ELF as ELF;
+
+    pub use crate::internal::aggregation::VKEY_HASH;
 }
 
 #[cfg(test)]
