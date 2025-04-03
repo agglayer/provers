@@ -71,7 +71,7 @@ impl<ElfBytes> Emitter<ElfBytes> {
 impl<ElfBytes: AsRef<[u8]>> Emitter<ElfBytes> {
     /// Emit an attribute to be added to the next item.
     pub fn emit_attr(self, attr: &str) -> Self {
-        writeln!(self.output(), "#[{attr}]").unwrap();
+        writeln!(self.output(), "    #[{attr}]").unwrap();
         self
     }
 
