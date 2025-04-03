@@ -30,7 +30,7 @@ proposer-client.workspace = true
 prover-alloy.workspace = true
 prover-logger.workspace = true
 
-op-succinct-elfs.workspace = true
+proposer-elfs.workspace = true
 
 [dev-dependencies]
 bincode.workspace = true

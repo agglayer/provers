@@ -31,7 +31,7 @@ pub mod error;
 #[cfg(test)]
 mod tests;
 
-pub const AGGREGATION_ELF: &[u8] = op_succinct_elfs::AGG_ELF;
+pub const AGGREGATION_ELF: &[u8] = proposer_elfs::aggregation::ELF;
 
 pub struct ProposerService<L1Rpc, ProposerClient> {
     pub client: Arc<ProposerClient>,

@@ -5649,6 +5649,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "proposer-elfs"
+version = "0.1.0"
+dependencies = [
+ "op-succinct-elfs",
+ "prover-elf-utils",
+]
+
+[[package]]
 name = "proposer-service"
 version = "0.1.0"
 dependencies = [
@@ -5661,8 +5669,8 @@ dependencies = [
  "clap",
  "futures",
  "mockall",
- "op-succinct-elfs",
  "proposer-client",
+ "proposer-elfs",
  "prover-alloy",
  "prover-logger",
  "serde",
