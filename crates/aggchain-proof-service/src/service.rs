@@ -184,9 +184,9 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
 
             Ok(AggchainProofServiceResponse {
                 proof: aggchain_proof_response.proof,
-                aggchain_params: aggchain_proof_response.aggchain_params.into(),
+                aggchain_params: aggchain_proof_response.aggchain_params,
                 last_proven_block: aggregation_proof_response.last_proven_block,
-                vkey: Vec::new(),
+                vkey: aggchain_proof_response.vkey,
                 end_block: aggregation_proof_response.end_block,
                 // TODO: Replace with actual value when available
                 local_exit_root_hash: Default::default(),

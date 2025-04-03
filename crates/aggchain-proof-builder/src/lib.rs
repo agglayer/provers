@@ -74,8 +74,11 @@ pub struct AggchainProofBuilderResponse {
     /// Generated aggchain proof for the block range.
     pub proof: Vec<u8>,
 
+    /// Verification key for the aggchain proof.
+    pub vkey: Vec<u8>,
+
     /// Aggchain params
-    pub aggchain_params: [u8; 32],
+    pub aggchain_params: Digest,
 
     /// Last block proven, before this aggchain proof.
     pub last_proven_block: u64,
@@ -101,8 +104,11 @@ pub struct AggchainProofBuilder<ContractsClient> {
     /// Prover client service.
     prover: ProverService,
 
-    /// Verification key for the aggchain proof.
+    /// Verification key for the aggspan proof.
     aggregation_vkey: Arc<SP1VerifyingKey>,
+
+    /// Verification key for the aggchain proof.
+    aggchain_vkey: Arc<SP1VerifyingKey>,
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
@@ -122,6 +128,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             AGGCHAIN_PROOF_ELF,
         );
 
+        let aggchain_vkey = executor.get_vkey().clone();
         let executor = tower::ServiceBuilder::new().service(executor).boxed();
 
         let prover = Buffer::new(executor, MAX_CONCURRENT_REQUESTS);
@@ -148,6 +155,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         }
 
         Ok(AggchainProofBuilder {
+            aggchain_vkey,
             contracts_client,
             prover,
             network_id: config.network_id,
@@ -330,6 +338,7 @@ where
         let mut prover = self.prover.clone();
         let network_id = self.network_id;
         let aggregation_vkey = self.aggregation_vkey.clone();
+        let aggchain_vkey = self.aggchain_vkey.clone();
 
         async move {
             let last_proven_block = req.aggchain_proof_inputs.last_proven_block;
@@ -360,12 +369,17 @@ where
                 .ok_or(Error::GeneratedProofIsNotCompressed)?;
 
             Ok(AggchainProofBuilderResponse {
+                vkey: bincode::DefaultOptions::new()
+                    .with_big_endian()
+                    .with_fixint_encoding()
+                    .serialize(&aggchain_vkey)
+                    .map_err(Error::UnableToSerializeVkey)?,
                 proof: bincode::DefaultOptions::new()
                     .with_big_endian()
                     .with_fixint_encoding()
                     .serialize(&stark)
                     .map_err(Error::UnableToSerializeProof)?,
-                aggchain_params: public_input.aggchain_params.0,
+                aggchain_params: public_input.aggchain_params,
                 last_proven_block,
                 end_block,
                 // TODO: Define the output root with the witness data
