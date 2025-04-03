@@ -169,6 +169,7 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
                     aggregation_proof: aggregation_proof_response.aggregation_proof,
                     end_block: aggregation_proof_response.end_block,
                     aggchain_proof_inputs: req.aggchain_proof_inputs,
+                    aggregation_proof_public_values: aggregation_proof_response.public_values,
                 };
 
             let aggchain_proof_response = proof_builder

@@ -48,8 +48,8 @@ pub struct FepInputs {
 }
 
 sol! {
-    #[derive(Debug, Serialize, Deserialize)]
-    struct AggregationOutputs {
+    #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+    struct AggregationProofPublicValues {
         bytes32 l1Head;
         bytes32 l2PreRoot;
         bytes32 l2PostRoot;
@@ -59,7 +59,7 @@ sol! {
     }
 }
 
-impl From<&FepInputs> for AggregationOutputs {
+impl From<&FepInputs> for AggregationProofPublicValues {
     fn from(inputs: &FepInputs) -> Self {
         Self {
             l1Head: inputs.l1_head.0.into(),
@@ -74,7 +74,8 @@ impl From<&FepInputs> for AggregationOutputs {
 
 impl FepInputs {
     pub fn sha256_public_values(&self) -> [u8; 32] {
-        let encoded_public_values = AggregationOutputs::abi_encode(&AggregationOutputs::from(self));
+        let encoded_public_values =
+            AggregationProofPublicValues::abi_encode(&AggregationProofPublicValues::from(self));
 
         Sha256::digest(encoded_public_values.as_slice()).into()
     }
