@@ -10,6 +10,7 @@ path = "src/tests/proposer_service_test_program.rs"
 
 [dependencies]
 alloy-primitives.workspace = true
+alloy-sol-types.workspace = true
 anyhow.workspace = true
 clap.workspace = true
 futures.workspace = true
@@ -28,9 +29,9 @@ aggkit-prover-types = { workspace = true, features = ["sp1"] }
 proposer-client.workspace = true
 prover-alloy.workspace = true
 prover-logger.workspace = true
-log = "0.4.26"
 
 [dev-dependencies]
+bincode.workspace = true
 mockall.workspace = true
 proposer-client = { workspace = true, features = ["testutils"] }
 prover-alloy = { workspace = true, features = ["testutils"] }

@@ -1,3 +1,5 @@
+use aggkit_prover_types::vkey_hash::VKeyHash;
+
 use crate::WitnessGeneration;
 
 #[derive(thiserror::Error, Debug)]
@@ -28,4 +30,7 @@ pub enum Error {
 
     #[error("Prover service is not ready")]
     ProverServiceReadyError(#[source] tower::BoxError),
+
+    #[error("Mismatch on the aggregation vkey. got: {got:?}, expected: {expected:?}")]
+    MismatchAggregationVkeyHash { got: VKeyHash, expected: VKeyHash },
 }
