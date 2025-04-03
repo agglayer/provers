@@ -30,6 +30,7 @@ use bincode::Options;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use prover_executor::{Executor, ProofType};
+use serde::{Deserialize, Serialize};
 use sp1_sdk::{Prover, ProverClient, SP1Stdin, SP1VerifyingKey};
 use tower::buffer::Buffer;
 use tower::util::BoxService;
@@ -126,7 +127,6 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             &config.fallback_prover,
             AGGCHAIN_PROOF_ELF,
         );
-        let aggchain_proof_vkey = executor.get_vkey().clone();
 
         let executor = tower::ServiceBuilder::new().service(executor).boxed();
 
@@ -134,7 +134,6 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
 
         // Retrieve the entire aggregation vkey from the ELF
         let aggregation_vkey = {
-            // TODO, use executor.get_vkey().clone() instead, just test before
             let prover = ProverClient::builder().cpu().build();
             let (_, agg_vk_from_elf) = prover.setup(AGGREGATION_PROOF_ELF);
             agg_vk_from_elf
