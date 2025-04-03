@@ -80,7 +80,7 @@ impl AggchainProofService {
     pub async fn new(config: &AggchainProofServiceConfig) -> Result<Self, Error> {
         debug!("Initializing AggchainProofService");
         let client = prover_alloy::AlloyProvider::new(
-            &config.proposer_service.l1_rpc_endpoint,
+            &config.proposer_service.l1_rpc_endpoint.url,
             prover_alloy::DEFAULT_HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
             prover_alloy::DEFAULT_HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
         )
@@ -98,12 +98,21 @@ impl AggchainProofService {
         );
         debug!("Contract L1 client initialized");
 
-        let proposer_service = tower::ServiceBuilder::new()
-            .service(
-                ProposerService::new(&config.proposer_service, l1_rpc_client)
-                    .map_err(Error::ProposerServiceInitFailed)?,
-            )
-            .boxed_clone();
+        let proposer_service = if config.proposer_service.mock {
+            tower::ServiceBuilder::new()
+                .service(
+                    ProposerService::new_mock(&config.proposer_service, l1_rpc_client)
+                        .map_err(Error::ProposerServiceInitFailed)?,
+                )
+                .boxed_clone()
+        } else {
+            tower::ServiceBuilder::new()
+                .service(
+                    ProposerService::new_network(&config.proposer_service, l1_rpc_client)
+                        .map_err(Error::ProposerServiceInitFailed)?,
+                )
+                .boxed_clone()
+        };
         debug!("ProposerService initialized");
 
         let aggchain_proof_builder = tower::ServiceBuilder::new()

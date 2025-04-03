@@ -1,4 +1,4 @@
-use std::str::FromStr as _;
+use std::str::FromStr;
 use std::time::Duration;
 
 use alloy::network::Ethereum;
@@ -11,6 +11,9 @@ use alloy::transports::http::reqwest;
 use alloy::transports::layers::RetryBackoffLayer;
 use alloy::{providers::RootProvider, rpc::client::ClientBuilder};
 pub use async_trait::async_trait;
+use derive_more::{From, FromStr};
+use educe::Educe;
+use serde::{Deserialize, Serialize};
 use url::Url;
 
 const HTTP_CLIENT_CONNECTION_POOL_IDLE_TIMEOUT: u64 = 90;
@@ -129,8 +132,12 @@ impl Provider for AlloyProvider {
     }
 }
 
-pub fn default_l1_node_url() -> Url {
-    Url::from_str("http://anvil-mock-l1-rpc:8545").unwrap()
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, From, FromStr, Educe)]
+#[serde(transparent)]
+#[educe(Default)]
+pub struct L1RpcEndpoint {
+    #[educe(Default = Url::from_str("http://anvil-mock-l1-rpc:8545").unwrap())]
+    pub url: Url,
 }
 
 pub fn default_l2_execution_layer_url() -> Url {

@@ -3,7 +3,8 @@ use std::time::Duration;
 use alloy_primitives::B256;
 use anyhow::Context;
 use sp1_sdk::{
-    CpuProver, Prover as _, SP1ProofWithPublicValues, SP1VerificationError, SP1VerifyingKey,
+    CpuProver, Prover as _, SP1ProofWithPublicValues, SP1ProvingKey, SP1VerificationError,
+    SP1VerifyingKey,
 };
 
 use crate::aggregation_prover::AggregationProver;
@@ -24,6 +25,10 @@ impl MockProver {
 
 #[tonic::async_trait]
 impl AggregationProver for MockProver {
+    fn compute_pkey_vkey(&self, program: &[u8]) -> (SP1ProvingKey, SP1VerifyingKey) {
+        self.sp1_prover.setup(program)
+    }
+
     async fn wait_for_proof(
         &self,
         _request_id: B256,

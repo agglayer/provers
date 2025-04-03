@@ -3,11 +3,18 @@ use std::time::Duration;
 use alloy_primitives::B256;
 use anyhow::Context;
 use sp1_sdk::{
-    NetworkProver, Prover, SP1ProofWithPublicValues, SP1VerificationError, SP1VerifyingKey,
+    NetworkProver, Prover, SP1ProofWithPublicValues, SP1ProvingKey, SP1VerificationError,
+    SP1VerifyingKey,
 };
+
+use crate::aggregation_prover::AggregationProver;
 
 #[tonic::async_trait]
 impl AggregationProver for NetworkProver {
+    fn compute_pkey_vkey(&self, program: &[u8]) -> (SP1ProvingKey, SP1VerifyingKey) {
+        self.setup(program)
+    }
+
     async fn wait_for_proof(
         &self,
         request_id: B256,

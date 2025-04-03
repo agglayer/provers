@@ -12,6 +12,7 @@ path = "src/tests/proposer_service_test_program.rs"
 alloy-primitives.workspace = true
 anyhow.workspace = true
 clap.workspace = true
+educe.workspace = true
 futures.workspace = true
 serde.workspace = true
 sp1-core-executor.workspace = true

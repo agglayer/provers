@@ -11,9 +11,10 @@ workspace = true
 alloy-primitives.workspace = true
 anyhow.workspace = true
 async-trait.workspace = true
+educe.workspace = true
 hex.workspace = true
 jsonrpsee.workspace = true
-reqwest = { workspace = true, features = ["json"]}
+reqwest = { workspace = true, features = ["json"] }
 serde.workspace = true
 serde_with = { workspace = true, features = ["hex"] }
 sp1-sdk.workspace = true
