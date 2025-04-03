@@ -98,6 +98,7 @@ dependencies = [
  "hex",
  "k256",
  "mockall",
+ "proposer-elfs",
  "semver 1.0.25",
  "serde",
  "serde_json",
@@ -5652,6 +5653,7 @@ dependencies = [
 name = "proposer-elfs"
 version = "0.1.0"
 dependencies = [
+ "alloy-primitives",
  "op-succinct-elfs",
  "prover-elf-utils",
 ]

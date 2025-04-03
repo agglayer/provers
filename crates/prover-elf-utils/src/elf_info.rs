@@ -77,7 +77,7 @@ impl<ElfBytes: AsRef<[u8]>> Emitter<ElfBytes> {
 
     /// Emit bincode-encoded vkey for given proof.
     pub fn emit_vkey(self) -> Self {
-        todo!("emit vkey encoded with bincode");
+        todo!("emit vkey encoded with bincode")
     }
 
     /// Emit vkey hash for given proof.
@@ -86,6 +86,17 @@ impl<ElfBytes: AsRef<[u8]>> Emitter<ElfBytes> {
         writeln!(
             self.output(),
             "    pub const VKEY_HASH: [u32; 8] = {hash:?};"
+        )
+        .unwrap();
+        self
+    }
+
+    /// Emit vkey hash commitment.
+    pub fn emit_vkey_commitment(mut self) -> Self {
+        let commitment = self.vkey().hash_bytes();
+        writeln!(
+            self.output(),
+            "    pub const VKEY_COMMITMENT: [u8; 32] = {commitment:?};"
         )
         .unwrap();
         self

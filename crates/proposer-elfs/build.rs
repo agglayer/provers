@@ -7,5 +7,6 @@ fn main() {
         // Verification keys for range proof
         .module("range", op_succinct_elfs::RANGE_ELF)
         .emit_vkey_hash()
+        .emit_vkey_commitment()
         .finish();
 }

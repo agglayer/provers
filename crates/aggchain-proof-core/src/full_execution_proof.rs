@@ -1,6 +1,6 @@
 use agglayer_primitives::digest::Digest;
 use agglayer_primitives::keccak::keccak256_combine;
-use alloy_primitives::{b256, Address, PrimitiveSignature, B256};
+use alloy_primitives::{Address, PrimitiveSignature, B256};
 use alloy_sol_types::{sol, SolValue};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest as Sha256Digest, Sha256};
@@ -10,13 +10,10 @@ use crate::{error::ProofError, vkey_hash::HashU32};
 
 /// Hardcoded hash of the "aggregation vkey".
 /// NOTE: Format being `hash_u32()` of the `SP1StarkVerifyingKey`.
-pub const AGGREGATION_VKEY_HASH: HashU32 = [
-    1949122874, 766403294, 593485289, 430966933, 1657646871, 73535799, 883940176, 31174925,
-];
+pub const AGGREGATION_VKEY_HASH: HashU32 = proposer_elfs::aggregation::VKEY_HASH;
 
 /// Specific commitment for the range proofs.
-pub const RANGE_VKEY_COMMITMENT: [u8; 32] =
-    b256!("0367776036b0d8b12720eab775b651c7251e63a249cb84f63eb1c20418b24e9c").0;
+pub const RANGE_VKEY_COMMITMENT: [u8; 32] = proposer_elfs::range::VKEY_COMMITMENT;
 
 /// Hardcoded for now, might see if we might need it as input
 pub const OUTPUT_ROOT_VERSION: [u8; 32] = [0u8; 32];
