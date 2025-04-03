@@ -5782,6 +5782,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "prover-elf-utils"
+version = "0.1.0"
+dependencies = [
+ "sp1-sdk",
+]
+
+[[package]]
 name = "prover-engine"
 version = "0.1.0"
 dependencies = [
