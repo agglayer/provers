@@ -35,7 +35,11 @@ impl ElfInfo {
         module_name: &str,
         elf_path: impl AsRef<Path>,
     ) -> Emitter<Box<[u8]>> {
-        self.module(module_name, fs::read(elf_path).unwrap().into_boxed_slice())
+        let path_string = elf_path.as_ref().to_string_lossy();
+        println!("cargo::rerun-if-changed={path_string}");
+
+        let elf_bytes = fs::read(elf_path).unwrap().into_boxed_slice();
+        self.module(module_name, elf_bytes)
     }
 
     fn prover(&mut self) -> &CpuProver {
