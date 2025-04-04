@@ -4,9 +4,9 @@ pub use aggkit_prover_types::{
 };
 
 pub mod aggregation {
-    use crate::{HashU32, LazyVerifyingKey, VKeyHash};
-
     pub use op_succinct_elfs::AGG_ELF as ELF;
+
+    use crate::{HashU32, LazyVerifyingKey, VKeyHash};
 
     pub const VKEY: LazyVerifyingKey =
         LazyVerifyingKey::new_unchecked(proposer_vkeys_raw::aggregation::VKEY_BYTES);
@@ -17,9 +17,9 @@ pub mod aggregation {
 }
 
 pub mod range {
-    use crate::{HashU32, LazyVerifyingKey, VKeyHash};
-
     pub use op_succinct_elfs::RANGE_ELF as ELF;
+
+    use crate::{HashU32, LazyVerifyingKey, VKeyHash};
 
     pub const VKEY: LazyVerifyingKey =
         LazyVerifyingKey::new_unchecked(proposer_vkeys_raw::range::VKEY_BYTES);
