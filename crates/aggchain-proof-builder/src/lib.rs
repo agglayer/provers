@@ -16,14 +16,12 @@ use aggchain_proof_core::bridge::inserted_ger::InsertedGER;
 use aggchain_proof_core::bridge::{
     compute_imported_bridge_exits_commitment, BridgeWitness, GlobalIndexWithLeafHash,
 };
-use aggchain_proof_core::full_execution_proof::{
-    AggregationOutputs, FepInputs, AGGREGATION_VKEY_HASH,
-};
+use aggchain_proof_core::full_execution_proof::AggregationProofPublicValues;
+use aggchain_proof_core::full_execution_proof::{FepInputs, AGGREGATION_VKEY_HASH};
 use aggchain_proof_core::proof::{AggchainProofPublicValues, AggchainProofWitness};
 use aggchain_proof_core::Digest;
 use aggchain_proof_types::AggchainProofInputs;
 use aggkit_prover_types::vkey_hash::VKeyHash;
-use agglayer_primitives::utils::Hashable;
 use alloy::eips::BlockNumberOrTag;
 use alloy_primitives::Address;
 use bincode::Options;
@@ -55,7 +53,6 @@ pub(crate) type ProverService = Buffer<
 /// proof generation. Collected from various sources.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AggchainProverInputs {
-    pub proof_witness: AggchainProofWitness,
     pub stdin: SP1Stdin,
     pub last_proven_block: u64,
     pub end_block: u64,
@@ -71,8 +68,11 @@ pub struct AggchainProofBuilderRequest {
     /// agg-sender.
     pub end_block: u64,
 
-    /// Aggchain proof request information, public inputs, bridge data,...
+    /// Aggchain proof partial prover inputs coming from the aggsender request.
     pub aggchain_proof_inputs: AggchainProofInputs,
+
+    /// Aggregation proof public values coming from the generated proof.
+    pub aggregation_proof_public_values: AggregationProofPublicValues,
 }
 
 #[derive(Clone, Debug)]
@@ -80,8 +80,11 @@ pub struct AggchainProofBuilderResponse {
     /// Generated aggchain proof for the block range.
     pub proof: Vec<u8>,
 
+    /// Verification key for the aggchain proof.
+    pub vkey: Vec<u8>,
+
     /// Aggchain params
-    pub aggchain_params: Vec<u8>,
+    pub aggchain_params: Digest,
 
     /// Last block proven, before this aggchain proof.
     pub last_proven_block: u64,
@@ -107,8 +110,11 @@ pub struct AggchainProofBuilder<ContractsClient> {
     /// Prover client service.
     prover: ProverService,
 
-    /// Verification key for the aggchain proof.
+    /// Verification key for the aggregated fep proof.
     aggregation_vkey: Arc<SP1VerifyingKey>,
+
+    /// Verification key for the aggchain proof.
+    aggchain_vkey: Arc<SP1VerifyingKey>,
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
@@ -128,6 +134,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             AGGCHAIN_PROOF_ELF,
         );
 
+        let aggchain_vkey = executor.get_vkey().clone();
         let executor = tower::ServiceBuilder::new().service(executor).boxed();
 
         let prover = Buffer::new(executor, MAX_CONCURRENT_REQUESTS);
@@ -153,6 +160,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         }
 
         Ok(AggchainProofBuilder {
+            aggchain_vkey,
             contracts_client,
             prover,
             network_id: config.network_id,
@@ -243,13 +251,13 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .iter()
             .filter(|ib| new_blocks_range.contains(&ib.block_number))
             .map(|ib| GlobalIndexWithLeafHash {
-                global_index: ib.imported_bridge_exit.global_index.into(),
-                bridge_exit_hash: ib.imported_bridge_exit.bridge_exit.hash(),
+                global_index: ib.global_index.into(),
+                bridge_exit_hash: ib.bridge_exit_hash.0,
             })
             .collect();
 
         let l1_info_tree_leaf = request.aggchain_proof_inputs.l1_info_tree_leaf;
-        let fep = FepInputs {
+        let fep_inputs = FepInputs {
             l1_head: l1_info_tree_leaf.inner.block_hash,
             claim_block_num: request.end_block as u32,
             rollup_config_hash,
@@ -265,17 +273,33 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             l1_head_inclusion_proof: request.aggchain_proof_inputs.l1_info_tree_merkle_proof,
         };
 
-        info!(
-            "Public values retrieved from contracts: {:?}",
-            AggregationOutputs::from(&fep)
-        );
+        {
+            let retrieved_from_contracts = AggregationProofPublicValues::from(&fep_inputs);
+
+            info!(
+                "Aggregation proof public values received with the proof: {:?}",
+                request.aggregation_proof_public_values
+            );
+
+            info!(
+                "Aggregation proof public values retrieved from contracts: {:?}",
+                retrieved_from_contracts
+            );
+
+            if request.aggregation_proof_public_values != retrieved_from_contracts {
+                return Err(Error::MismatchAggregationProofPublicValues {
+                    expected_by_contract: Box::new(retrieved_from_contracts),
+                    expected_by_verifier: Box::new(request.aggregation_proof_public_values),
+                });
+            }
+        }
 
         let prover_witness = AggchainProofWitness {
             prev_local_exit_root,
             new_local_exit_root,
             l1_info_root: request.aggchain_proof_inputs.l1_info_tree_root_hash,
             origin_network: network_id,
-            fep,
+            fep: fep_inputs,
             commit_imported_bridge_exits: compute_imported_bridge_exits_commitment(
                 &bridge_exits_claimed,
             ),
@@ -290,13 +314,10 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             },
         };
 
-        let aggregation_proof = request.aggregation_proof.clone();
-        let witness = prover_witness.clone();
-
         let sp1_stdin = {
             let mut stdin = SP1Stdin::new();
             stdin.write(&prover_witness);
-            stdin.write_proof(*aggregation_proof, aggregation_vkey.vk.clone());
+            stdin.write_proof(*request.aggregation_proof, aggregation_vkey.vk.clone());
             stdin
         };
 
@@ -304,7 +325,6 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             last_proven_block: request.aggchain_proof_inputs.last_proven_block,
             end_block: request.end_block,
             stdin: sp1_stdin,
-            proof_witness: witness,
         })
     }
 }
@@ -335,6 +355,7 @@ where
         let mut prover = self.prover.clone();
         let network_id = self.network_id;
         let aggregation_vkey = self.aggregation_vkey.clone();
+        let aggchain_vkey = self.aggchain_vkey.clone();
 
         async move {
             let last_proven_block = req.aggchain_proof_inputs.last_proven_block;
@@ -365,12 +386,17 @@ where
                 .ok_or(Error::GeneratedProofIsNotCompressed)?;
 
             Ok(AggchainProofBuilderResponse {
+                vkey: bincode::DefaultOptions::new()
+                    .with_big_endian()
+                    .with_fixint_encoding()
+                    .serialize(&aggchain_vkey)
+                    .map_err(Error::UnableToSerializeVkey)?,
                 proof: bincode::DefaultOptions::new()
                     .with_big_endian()
                     .with_fixint_encoding()
                     .serialize(&stark)
                     .map_err(Error::UnableToSerializeProof)?,
-                aggchain_params: public_input.aggchain_params.to_vec(),
+                aggchain_params: public_input.aggchain_params,
                 last_proven_block,
                 end_block,
                 // TODO: Define the output root with the witness data

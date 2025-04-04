@@ -2,9 +2,9 @@ syntax = "proto3";
 
 package aggkit.prover.v1;
 
+import "agglayer/interop/types/v1/aggchain.proto";
 import "agglayer/interop/types/v1/bytes.proto";
 import "agglayer/interop/types/v1/claim.proto";
-import "agglayer/interop/types/v1/imported_bridge_exit.proto";
 import "agglayer/interop/types/v1/merkle_proof.proto";
 
 // Service for generating aggchain proof.
@@ -40,7 +40,7 @@ message GenerateAggchainProofRequest {
 // The aggchain proof response message.
 message GenerateAggchainProofResponse {
   // Aggchain proof.
-  bytes aggchain_proof = 1;
+  agglayer.interop.types.v1.AggchainProof aggchain_proof = 1;
 
   // The last proven block before the computed aggchain proof.
   uint64 last_proven_block = 2;
@@ -60,8 +60,11 @@ message ImportedBridgeExitWithBlockNumber {
   // The block number of the imported bridge exit.
   uint64 block_number = 1;
 
-  // The imported bridge exit.
-  agglayer.interop.types.v1.ImportedBridgeExit imported_bridge_exit = 2;
+  // Global index of the imported bridge exit.
+  agglayer.interop.types.v1.FixedBytes32 global_index = 2;
+
+  // Bridge exit hash.
+  agglayer.interop.types.v1.FixedBytes32 bridge_exit_hash = 3;
 }
 
 // Inserted GER with block number.

@@ -8,6 +8,7 @@ license.workspace = true
 workspace = true
 
 [dependencies]
+agglayer-interop.workspace = true
 aggchain-proof-builder.workspace = true
 aggchain-proof-contracts.workspace = true
 aggchain-proof-core.workspace = true
