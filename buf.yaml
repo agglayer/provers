@@ -5,7 +5,7 @@ modules:
     name: buf.build/agglayer/provers
 
 deps:
-  - buf.build/agglayer/interop
+  - buf.build/agglayer/interop:v0.2.0
 
 lint:
   use:

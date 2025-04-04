@@ -1,3 +1,4 @@
+use aggchain_proof_core::full_execution_proof::AggregationProofPublicValues;
 use aggkit_prover_types::vkey_hash::VKeyHash;
 
 use crate::WitnessGeneration;
@@ -25,6 +26,9 @@ pub enum Error {
     #[error("Unable to serialize proof")]
     UnableToSerializeProof(#[source] bincode::Error),
 
+    #[error("Unable to serialize vkey")]
+    UnableToSerializeVkey(#[source] bincode::Error),
+
     #[error("Prover witness generation error: {0}")]
     ProverWitnessGenerationError(#[source] WitnessGeneration),
 
@@ -33,4 +37,15 @@ pub enum Error {
 
     #[error("Mismatch on the aggregation vkey. got: {got:?}, expected: {expected:?}")]
     MismatchAggregationVkeyHash { got: VKeyHash, expected: VKeyHash },
+
+    /// Mismatch on the aggregation proof public values between what we got from
+    /// the contracts and what we expect from the proof public values.
+    #[error(
+        "Mismatch on the aggregation proof public values. expected by contract: \
+         {expected_by_contract:?}, expected by verifier: {expected_by_verifier:?}"
+    )]
+    MismatchAggregationProofPublicValues {
+        expected_by_contract: Box<AggregationProofPublicValues>,
+        expected_by_verifier: Box<AggregationProofPublicValues>,
+    },
 }
