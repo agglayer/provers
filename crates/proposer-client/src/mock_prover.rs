@@ -27,7 +27,7 @@ impl MockProver {
     pub fn new(rpc_url: Url) -> anyhow::Result<MockProver> {
         Ok(MockProver {
             rpc_url,
-            sp1_prover: sp1_sdk::CpuProver::new(),
+            sp1_prover: sp1_sdk::CpuProver::mock(),
         })
     }
 }
