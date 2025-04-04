@@ -1,5 +1,5 @@
 fn main() {
-    prover_elf_utils::ElfInfo::new("elf_info.rs")
+    prover_elf_utils::ElfInfo::writing_to("vkeys.rs")
         // Verification keys for aggregation proof
         .module("aggregation", op_succinct_elfs::AGG_ELF)
         .emit_vkey_hash()

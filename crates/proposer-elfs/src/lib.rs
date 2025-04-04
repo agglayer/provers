@@ -1,5 +1,5 @@
 mod internal {
-    include!(concat!(env!("OUT_DIR"), "/elf_info.rs"));
+    include!(concat!(env!("OUT_DIR"), "/vkeys.rs"));
 }
 
 pub use internal::range;

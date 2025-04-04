@@ -4,15 +4,15 @@ use sp1_sdk::{CpuProver, HashableKey, Prover as _, SP1VerifyingKey};
 
 /// Build time tool to emit information about a zkvm ELF.
 pub struct ElfInfo {
-    /// Lazily loaded SP1 prover client
+    /// Lazily loaded SP1 prover client.
     prover: Option<CpuProver>,
 
-    /// Target file
+    /// Target file.
     output: fs::File,
 }
 
 impl ElfInfo {
-    pub fn new(file_name: impl AsRef<Path>) -> Self {
+    pub fn writing_to(file_name: impl AsRef<Path>) -> Self {
         println!("cargo::rerun-if-changed=build.rs");
 
         let prover = None;
