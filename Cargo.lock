@@ -224,7 +224,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.2.0#6250c7079441af5975215846aecd744203056624"
+source = "git+https://github.com/agglayer/interop.git?branch=feat%2Fcommit-imported#a4e92792b07b67a8c204c7ac239811be68ec985c"
 dependencies = [
  "agglayer-interop-grpc-types",
  "agglayer-interop-types",
@@ -233,7 +233,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop-grpc-types"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.2.0#6250c7079441af5975215846aecd744203056624"
+source = "git+https://github.com/agglayer/interop.git?branch=feat%2Fcommit-imported#a4e92792b07b67a8c204c7ac239811be68ec985c"
 dependencies = [
  "agglayer-interop-types",
  "bincode",
@@ -248,7 +248,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop-types"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.2.0#6250c7079441af5975215846aecd744203056624"
+source = "git+https://github.com/agglayer/interop.git?branch=feat%2Fcommit-imported#a4e92792b07b67a8c204c7ac239811be68ec985c"
 dependencies = [
  "agglayer-primitives",
  "agglayer-tries",
@@ -268,7 +268,7 @@ dependencies = [
 [[package]]
 name = "agglayer-primitives"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.2.0#6250c7079441af5975215846aecd744203056624"
+source = "git+https://github.com/agglayer/interop.git?branch=feat%2Fcommit-imported#a4e92792b07b67a8c204c7ac239811be68ec985c"
 dependencies = [
  "alloy-primitives",
  "byteorder",
@@ -354,7 +354,7 @@ dependencies = [
 [[package]]
 name = "agglayer-tries"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.2.0#6250c7079441af5975215846aecd744203056624"
+source = "git+https://github.com/agglayer/interop.git?branch=feat%2Fcommit-imported#a4e92792b07b67a8c204c7ac239811be68ec985c"
 dependencies = [
  "agglayer-primitives",
  "serde",
@@ -9121,7 +9121,7 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 [[package]]
 name = "unified-bridge"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.2.0#6250c7079441af5975215846aecd744203056624"
+source = "git+https://github.com/agglayer/interop.git?branch=feat%2Fcommit-imported#a4e92792b07b67a8c204c7ac239811be68ec985c"
 dependencies = [
  "agglayer-primitives",
  "agglayer-tries",

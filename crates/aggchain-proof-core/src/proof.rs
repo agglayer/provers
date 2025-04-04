@@ -1,11 +1,15 @@
 use agglayer_primitives::digest::Digest;
 use serde::{Deserialize, Serialize};
+use unified_bridge::imported_bridge_exit::CommitmentVersion;
 
 use crate::{
     bridge::{BridgeConstraintsInput, BridgeWitness, L2_GER_ADDR},
     error::ProofError,
     full_execution_proof::FepInputs,
 };
+
+/// Version of the commitment on the imported bridge exits.
+pub const IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION: CommitmentVersion = CommitmentVersion::V3;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AggchainProofWitness {
