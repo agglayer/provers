@@ -9,6 +9,8 @@ use bincode::{
 pub mod v1;
 pub mod conversion;
 pub mod error;
+#[cfg(feature = "sp1")]
+pub mod vkey;
 pub mod vkey_hash;
 
 pub fn default_bincode_options(

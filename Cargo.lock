@@ -43,6 +43,7 @@ dependencies = [
  "anyhow",
  "bincode",
  "futures",
+ "proposer-elfs",
  "prover-config",
  "prover-executor",
  "serde",
@@ -98,6 +99,7 @@ dependencies = [
  "hex",
  "k256",
  "mockall",
+ "proposer-vkeys-raw",
  "semver 1.0.25",
  "serde",
  "serde_json",
@@ -212,6 +214,7 @@ dependencies = [
  "bincode",
  "pbjson",
  "prost",
+ "prover-elf-utils",
  "serde",
  "sp1-sdk",
  "thiserror 2.0.11",
@@ -1569,9 +1572,9 @@ dependencies = [
 
 [[package]]
 name = "async-trait"
-version = "0.1.86"
+version = "0.1.88"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "644dd749086bf3771a2fbc5f256fdb982d53f011c7d5d560304eafeecebce79d"
+checksum = "e539d3fca749fcee5236ab05e93a52867dd549cc157c8cb7f99595f3cedffdb5"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4807,6 +4810,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "op-succinct-elfs"
+version = "0.1.0"
+source = "git+https://github.com/agglayer/op-succinct.git?branch=vcastellm%2Fagglayer#1f2d85c7e0e0e3bdaf5b4e0dea45bea963bfc3b1"
+
+[[package]]
 name = "opaque-debug"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5644,6 +5652,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "proposer-elfs"
+version = "0.1.0"
+dependencies = [
+ "aggkit-prover-types",
+ "op-succinct-elfs",
+ "proposer-vkeys-raw",
+ "rstest",
+ "sp1-sdk",
+]
+
+[[package]]
 name = "proposer-service"
 version = "0.1.0"
 dependencies = [
@@ -5657,6 +5676,7 @@ dependencies = [
  "futures",
  "mockall",
  "proposer-client",
+ "proposer-elfs",
  "prover-alloy",
  "prover-logger",
  "serde",
@@ -5668,6 +5688,15 @@ dependencies = [
  "tower 0.4.13",
  "tracing",
  "url",
+]
+
+[[package]]
+name = "proposer-vkeys-raw"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "op-succinct-elfs",
+ "prover-elf-utils",
 ]
 
 [[package]]
@@ -5773,6 +5802,14 @@ dependencies = [
  "serde_with",
  "toml",
  "url",
+]
+
+[[package]]
+name = "prover-elf-utils"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "sp1-sdk",
 ]
 
 [[package]]

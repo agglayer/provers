@@ -25,7 +25,7 @@ use bincode::Options;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use prover_executor::{Executor, ProofType};
-use sp1_sdk::{Prover, ProverClient, SP1Stdin, SP1VerifyingKey};
+use sp1_sdk::{SP1Stdin, SP1VerifyingKey};
 use tower::buffer::Buffer;
 use tower::util::BoxService;
 use tower::ServiceExt as _;
@@ -34,11 +34,9 @@ use tracing::info;
 use crate::config::AggchainProofBuilderConfig;
 
 const MAX_CONCURRENT_REQUESTS: usize = 100;
+
 pub const AGGCHAIN_PROOF_ELF: &[u8] =
     include_bytes!("../../../crates/aggchain-proof-program/elf/riscv32im-succinct-zkvm-elf");
-
-pub const AGGREGATION_PROOF_ELF: &[u8] =
-    include_bytes!("../../../crates/aggchain-proof-program/elf/aggregation-elf");
 
 pub(crate) type ProverService = Buffer<
     BoxService<prover_executor::Request, prover_executor::Response, prover_executor::Error>,
@@ -135,12 +133,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         let prover = Buffer::new(executor, MAX_CONCURRENT_REQUESTS);
 
         // Retrieve the entire aggregation vkey from the ELF
-        let aggregation_vkey = {
-            // TODO, use executor.get_vkey().clone() instead, just test before
-            let prover = ProverClient::builder().cpu().build();
-            let (_, agg_vk_from_elf) = prover.setup(AGGREGATION_PROOF_ELF);
-            agg_vk_from_elf
-        };
+        let aggregation_vkey = proposer_elfs::aggregation::VKEY.vkey().clone();
 
         // Check mismatch on aggregation vkey
         {
