@@ -34,11 +34,9 @@ use tracing::info;
 use crate::config::AggchainProofBuilderConfig;
 
 const MAX_CONCURRENT_REQUESTS: usize = 100;
+
 pub const AGGCHAIN_PROOF_ELF: &[u8] =
     include_bytes!("../../../crates/aggchain-proof-program/elf/riscv32im-succinct-zkvm-elf");
-
-pub const AGGREGATION_PROOF_ELF: &[u8] =
-    include_bytes!("../../../crates/aggchain-proof-program/elf/aggregation-elf");
 
 pub(crate) type ProverService = Buffer<
     BoxService<prover_executor::Request, prover_executor::Response, prover_executor::Error>,
@@ -138,7 +136,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         let aggregation_vkey = {
             // TODO, use executor.get_vkey().clone() instead, just test before
             let prover = ProverClient::builder().cpu().build();
-            let (_, agg_vk_from_elf) = prover.setup(AGGREGATION_PROOF_ELF);
+            let (_, agg_vk_from_elf) = prover.setup(proposer_elfs::aggregation::ELF);
             agg_vk_from_elf
         };
 

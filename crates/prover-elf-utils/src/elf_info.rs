@@ -1,6 +1,13 @@
 use std::{env, fs, io::Write, path::Path};
 
+use bincode::Options;
 use sp1_sdk::{CpuProver, HashableKey, Prover as _, SP1VerifyingKey};
+
+pub fn bincode_options() -> impl bincode::Options {
+    bincode::DefaultOptions::new()
+        .with_big_endian()
+        .with_fixint_encoding()
+}
 
 /// Build time tool to emit information about a zkvm ELF.
 pub struct ElfInfo {
@@ -73,15 +80,15 @@ impl<ElfBytes> Emitter<ElfBytes> {
 }
 
 impl<ElfBytes: AsRef<[u8]>> Emitter<ElfBytes> {
-    /// Emit an attribute to be added to the next item.
-    pub fn emit_attr(self, attr: &str) -> Self {
-        writeln!(self.output(), "    #[{attr}]").unwrap();
-        self
-    }
-
     /// Emit bincode-encoded vkey for given proof.
-    pub fn emit_vkey(self) -> Self {
-        todo!("emit vkey encoded with bincode")
+    pub fn emit_vkey_bytes(mut self) -> Self {
+        let bytes = bincode_options().serialize(self.vkey()).unwrap();
+        writeln!(
+            self.output(),
+            "    pub const VKEY_BYTES: &[u8] = &{bytes:?};"
+        )
+        .unwrap();
+        self
     }
 
     /// Emit vkey hash for given proof.

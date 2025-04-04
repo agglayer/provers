@@ -5,4 +5,5 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+bincode.workspace = true
 sp1-sdk.workspace = true

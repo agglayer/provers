@@ -27,6 +27,7 @@ agglayer-primitives.workspace = true
 aggkit-prover-types = { workspace = true, features = ["sp1"] }
 prover-config.workspace = true
 prover-executor.workspace = true
+proposer-elfs.workspace = true
 
 [lints]
 workspace = true

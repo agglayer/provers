@@ -43,6 +43,7 @@ dependencies = [
  "anyhow",
  "bincode",
  "futures",
+ "proposer-elfs",
  "prover-config",
  "prover-executor",
  "serde",
@@ -5803,6 +5804,7 @@ dependencies = [
 name = "prover-elf-utils"
 version = "0.1.0"
 dependencies = [
+ "bincode",
  "sp1-sdk",
 ]
 
