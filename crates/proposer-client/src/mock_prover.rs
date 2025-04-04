@@ -3,6 +3,7 @@ use std::time::Duration;
 use alloy_primitives::B256;
 use anyhow::Context;
 use base64::{prelude::BASE64_STANDARD, Engine as _};
+use bincode::Options as _;
 use jsonrpsee::{
     core::client::{ClientT, Error as JsonRpcError},
     http_client::HttpClient,
@@ -76,7 +77,10 @@ impl AggregationProver for MockProver {
         let proof_bytes = BASE64_STANDARD
             .decode(proof_response)
             .with_context(|| format!("deserializing base64 for proof {request_id}"))?;
-        let proof = bincode::deserialize(&proof_bytes)
+        let proof = bincode::DefaultOptions::new()
+            .with_big_endian()
+            .with_fixint_encoding()
+            .deserialize(&proof_bytes)
             .with_context(|| format!("deserializing proof {request_id}"))?;
 
         Ok(proof)
