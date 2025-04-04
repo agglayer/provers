@@ -25,8 +25,7 @@ pub fn load_aggchain_prover_inputs_json(
 
 mod aggchain_proof_builder {
     use std::time::Duration;
-
-    use prover_config::{CpuProverConfig, ProverType};
+    use prover_config::{NetworkProverConfig, ProverType};
     use prover_executor::Executor;
     use tower::buffer::Buffer;
     use tower::{Service, ServiceExt};
@@ -36,10 +35,10 @@ mod aggchain_proof_builder {
 
     fn init_network_prover() -> Result<ProverService, anyhow::Error> {
         let executor = Executor::new(
-            &ProverType::CpuProver(CpuProverConfig {
+            &ProverType::NetworkProver(NetworkProverConfig {
                 proving_timeout: Duration::from_secs(3600),
                 proving_request_timeout: Some(Duration::from_secs(600)),
-                ..Default::default()
+                sp1_cluster_endpoint: "https://rpc.production.succinct.xyz/".parse()?,
             }),
             &None,
             crate::AGGCHAIN_PROOF_ELF,
@@ -50,11 +49,12 @@ mod aggchain_proof_builder {
     }
 
     #[tokio::test]
+    #[ignore = "requires network key, run manually"]
     async fn execute_aggchain_program_test() -> Result<(), Box<dyn std::error::Error>> {
         let mut prover = init_network_prover()?;
 
         let aggchain_prover_inputs: AggchainProverInputs = load_aggchain_prover_inputs_json(
-            "src/tests/data/aggchain_prover_inputs_001_lpb_18_eb_21.json",
+            "src/tests/data/aggchain_prover_inputs_001_lpb_1_eb_4.json",
         )?;
 
         let prover_executor::Response { proof } = prover
