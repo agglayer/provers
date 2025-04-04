@@ -5,5 +5,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-op-succinct-elfs.workspace = true
+aggkit-prover-types = { workspace = true, features = ["sp1"] }
 proposer-vkeys-raw.workspace = true
+
+op-succinct-elfs.workspace = true

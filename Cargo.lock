@@ -214,6 +214,7 @@ dependencies = [
  "bincode",
  "pbjson",
  "prost",
+ "prover-elf-utils",
  "serde",
  "sp1-sdk",
  "thiserror 2.0.11",
@@ -5654,6 +5655,7 @@ dependencies = [
 name = "proposer-elfs"
 version = "0.1.0"
 dependencies = [
+ "aggkit-prover-types",
  "op-succinct-elfs",
  "proposer-vkeys-raw",
 ]
