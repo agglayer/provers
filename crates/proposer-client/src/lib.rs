@@ -3,6 +3,7 @@ use std::fmt::Display;
 use alloy_primitives::B256;
 use serde::{Deserialize, Serialize};
 use sp1_sdk::{SP1ProofWithPublicValues, SP1VerifyingKey};
+pub use tonic::transport::Uri as GrpcUri;
 
 pub use crate::error::Error;
 use crate::rpc::{AggregationProofProposerRequest, AggregationProofProposerResponse};
