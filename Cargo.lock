@@ -5658,6 +5658,8 @@ dependencies = [
  "aggkit-prover-types",
  "op-succinct-elfs",
  "proposer-vkeys-raw",
+ "rstest",
+ "sp1-sdk",
 ]
 
 [[package]]
