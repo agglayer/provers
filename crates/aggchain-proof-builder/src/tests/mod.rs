@@ -25,6 +25,7 @@ pub fn load_aggchain_prover_inputs_json(
 
 mod aggchain_proof_builder {
     use std::time::Duration;
+
     use prover_config::{NetworkProverConfig, ProverType};
     use prover_executor::Executor;
     use tower::buffer::Buffer;
