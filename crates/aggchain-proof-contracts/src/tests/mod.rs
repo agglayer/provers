@@ -4,7 +4,7 @@ mod aggchain_contracts_rpc_client {
     use agglayer_interop::types::Digest;
     use alloy::primitives::{address, B256};
     use mockito::ServerGuard;
-    use prover_alloy::AlloyFillProvider;
+    use prover_alloy::{AlloyFillProvider, L1RpcEndpoint};
     use serde_json::json;
     use url::Url;
 
@@ -91,7 +91,7 @@ mod aggchain_contracts_rpc_client {
             )
             .create();
 
-        let mock_server_l1_url = Url::parse(&server_l1.url()).unwrap();
+        let mock_server_l1_url = L1RpcEndpoint::from_str(&server_l1.url()).unwrap();
         let mock_server_l2_el_url = Url::parse(&server_l2_el.url()).unwrap();
         let mock_server_l2_cl_url = Url::parse(&server_l2_cl.url()).unwrap();
         let config = AggchainProofContractsConfig {
@@ -181,7 +181,7 @@ mod aggchain_contracts_rpc_client {
 
         let mock_server_l2_url = Url::parse(&server_l2.url())?;
         let config = AggchainProofContractsConfig {
-            l1_rpc_endpoint: dummy_url(),
+            l1_rpc_endpoint: L1RpcEndpoint::from(dummy_url()),
             l2_execution_layer_rpc_endpoint: mock_server_l2_url.clone(),
             l2_consensus_layer_rpc_endpoint: dummy_url(),
             polygon_rollup_manager: dummy_address(),

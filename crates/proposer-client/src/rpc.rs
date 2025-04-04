@@ -11,6 +11,7 @@ use serde_with::DisplayFromStr;
 use tracing::{error, info};
 
 use crate::error::Error;
+use crate::RequestId;
 
 /// Proposer client that requests the generation
 /// of the aggregation proof from the proposer and gets
@@ -49,7 +50,7 @@ pub struct AggregationProofProposerRequest {
 pub struct AggregationProofProposerResponse {
     /// Proof request_id, used to fetch the proof from the cluster.
     #[serde(rename = "proof_request_id")]
-    pub request_id: B256,
+    pub request_id: RequestId,
 
     /// Last block already proven before this aggregation proof.
     pub last_proven_block: u64,

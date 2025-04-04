@@ -1,4 +1,5 @@
 use alloy::primitives::{address, Address};
+use prover_alloy::L1RpcEndpoint;
 use prover_utils::from_env_or_default;
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -16,8 +17,8 @@ const POLYGON_ROLLUP_MANAGER: Address = address!("0xB7f8BC63BbcaD18155201308C8f3
 #[serde(rename_all = "kebab-case")]
 pub struct AggchainProofContractsConfig {
     /// JSON-RPC endpoint of the l1 node.
-    #[serde(default = "prover_alloy::default_l1_node_url")]
-    pub l1_rpc_endpoint: Url,
+    #[serde(default)]
+    pub l1_rpc_endpoint: L1RpcEndpoint,
 
     /// JSON-RPC endpoint of the l2 execution node.
     #[serde(default = "prover_alloy::default_l2_execution_layer_url")]
@@ -38,7 +39,7 @@ pub struct AggchainProofContractsConfig {
 impl Default for AggchainProofContractsConfig {
     fn default() -> Self {
         Self {
-            l1_rpc_endpoint: prover_alloy::default_l1_node_url(),
+            l1_rpc_endpoint: L1RpcEndpoint::default(),
             l2_execution_layer_rpc_endpoint: prover_alloy::default_l2_execution_layer_url(),
             l2_consensus_layer_rpc_endpoint: prover_alloy::default_l2_consensus_layer_url(),
             polygon_rollup_manager: default_polygon_rollup_manager(),

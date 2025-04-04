@@ -308,7 +308,7 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
         config: &AggchainProofContractsConfig,
     ) -> Result<Self, crate::Error> {
         let l1_client = build_alloy_fill_provider(
-            &config.l1_rpc_endpoint,
+            &config.l1_rpc_endpoint.url,
             prover_alloy::DEFAULT_HTTP_RPC_NODE_INITIAL_BACKOFF_MS,
             prover_alloy::DEFAULT_HTTP_RPC_NODE_BACKOFF_MAX_RETRIES,
         )

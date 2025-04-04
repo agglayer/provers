@@ -3,15 +3,17 @@ use std::task::{Context, Poll};
 
 use aggchain_proof_core::full_execution_proof::AggregationProofPublicValues;
 use alloy_sol_types::SolType;
+use educe::Educe;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
+use proposer_client::aggregation_prover::AggregationProver;
+use proposer_client::mock_prover::MockProver;
 use proposer_client::network_prover::new_network_prover;
 use proposer_client::rpc::{AggregationProofProposerRequest, ProposerRpcClient};
 use proposer_client::FepProposerRequest;
-use proposer_client::RequestId;
 use prover_alloy::Provider;
 use sp1_prover::SP1VerifyingKey;
-use sp1_sdk::{NetworkProver, Prover};
+use sp1_sdk::NetworkProver;
 use tracing::info;
 
 use crate::config::ProposerServiceConfig;
@@ -35,6 +37,8 @@ mod tests;
 pub const AGGREGATION_ELF: &[u8] =
     include_bytes!("../../aggchain-proof-program/elf/aggregation-elf");
 
+#[derive(Educe)]
+#[educe(Clone(bound()))]
 pub struct ProposerService<L1Rpc, ProposerClient> {
     pub client: Arc<ProposerClient>,
 
@@ -44,43 +48,69 @@ pub struct ProposerService<L1Rpc, ProposerClient> {
     aggregation_vkey: SP1VerifyingKey,
 }
 
-impl<L1Rpc, ProposerClient> Clone for ProposerService<L1Rpc, ProposerClient> {
-    fn clone(&self) -> Self {
-        Self {
-            client: self.client.clone(),
-            l1_rpc: self.l1_rpc.clone(),
-            aggregation_vkey: self.aggregation_vkey.clone(),
-        }
-    }
-}
-
-impl<L1Rpc>
-    ProposerService<L1Rpc, proposer_client::client::Client<ProposerRpcClient, NetworkProver>>
+impl<L1Rpc, Prover>
+    ProposerService<L1Rpc, proposer_client::client::Client<ProposerRpcClient, Prover>>
+where
+    Prover: AggregationProver,
 {
-    pub fn new(config: &ProposerServiceConfig, l1_rpc: Arc<L1Rpc>) -> Result<Self, Error> {
+    pub fn new(
+        prover: Prover,
+        config: &ProposerServiceConfig,
+        l1_rpc: Arc<L1Rpc>,
+    ) -> Result<Self, Error> {
         let proposer_rpc_client = ProposerRpcClient::new(
             config.client.proposer_endpoint.as_str(),
             config.client.request_timeout,
         )?;
-        let network_prover = new_network_prover(config.client.sp1_cluster_endpoint.as_str())
-            .map_err(Error::UnableToCreateNetworkProver)?;
 
-        let aggregation_vkey = Self::extract_aggregation_vkey(&network_prover, AGGREGATION_ELF);
+        let aggregation_vkey = Self::extract_aggregation_vkey(&prover, AGGREGATION_ELF);
 
         Ok(Self {
             l1_rpc,
             client: Arc::new(proposer_client::client::Client::new(
                 proposer_rpc_client,
-                network_prover,
+                prover,
                 Some(config.client.proving_timeout),
             )?),
             aggregation_vkey,
         })
     }
 
-    fn extract_aggregation_vkey(network_prover: &NetworkProver, elf: &[u8]) -> SP1VerifyingKey {
-        let (_pkey, vkey) = network_prover.setup(elf);
+    fn extract_aggregation_vkey(prover: &Prover, elf: &[u8]) -> SP1VerifyingKey {
+        let (_pkey, vkey) = prover.compute_pkey_vkey(elf);
         vkey
+    }
+}
+
+impl<L1Rpc>
+    ProposerService<L1Rpc, proposer_client::client::Client<ProposerRpcClient, NetworkProver>>
+{
+    pub fn new_network(config: &ProposerServiceConfig, l1_rpc: Arc<L1Rpc>) -> Result<Self, Error> {
+        assert!(
+            !config.mock,
+            "Building a network proposer service with a mock config"
+        );
+        Self::new(
+            new_network_prover(config.client.sp1_cluster_endpoint.as_str())
+                .map_err(Error::UnableToCreateProver)?,
+            config,
+            l1_rpc,
+        )
+    }
+}
+
+impl<L1Rpc> ProposerService<L1Rpc, proposer_client::client::Client<ProposerRpcClient, MockProver>> {
+    pub fn new_mock(config: &ProposerServiceConfig, l1_rpc: Arc<L1Rpc>) -> Result<Self, Error> {
+        assert!(
+            config.mock,
+            "Building a mock proposer service with a non-mock config"
+        );
+        Self::new(
+            MockProver::new(config.client.proposer_endpoint.clone())
+                .map_err(Error::UnableToCreateProver)?,
+            config,
+            l1_rpc,
+        )
     }
 }
 
@@ -127,7 +157,7 @@ where
                     l1_block_hash,
                 })
                 .await?;
-            let request_id = RequestId(response.request_id);
+            let request_id = response.request_id;
             info!("Aggregation proof request submitted: {}", request_id);
 
             // Wait for the prover to finish aggregating span proofs
