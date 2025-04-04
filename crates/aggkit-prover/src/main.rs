@@ -1,3 +1,4 @@
+use aggchain_proof_service::AGGCHAIN_VKEY_SELECTOR;
 use aggkit_prover::version;
 use anyhow::Context as _;
 use clap::Parser as _;
@@ -40,7 +41,12 @@ fn main() -> anyhow::Result<()> {
             let vkey = executor.get_vkey();
             let vkey_hex = hex::encode(words_to_bytes_le(&vkey.hash_u32()));
 
-            println!("aggchain_proof_vkey: 0x{vkey_hex}");
+            println!("{vkey_hex}");
+        }
+
+        aggkit_prover::cli::Commands::VkeySelector => {
+            let vkey_selector_hex = hex::encode(AGGCHAIN_VKEY_SELECTOR.to_be_bytes());
+            println!("{vkey_selector_hex}");
         }
     }
 

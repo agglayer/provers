@@ -8,7 +8,6 @@ mod tests;
 
 #[derive(Debug)]
 // TODO: Making this unused as it will be used in another iteration
-#[allow(unused)]
 pub struct VKeySelector([u8; 4]);
 
 impl VKeySelector {
@@ -16,15 +15,13 @@ impl VKeySelector {
         VKeySelector((((program as u32) << 16) | aggchain_type as u32).to_be_bytes())
     }
 
-    #[cfg(test)]
     pub fn to_be_bytes(&self) -> [u8; 4] {
         self.0
     }
 }
 
 // TODO: Making this unused as it will be used in another iteration
-#[allow(unused)]
-const AGGCHAIN_VKEY_SELECTOR: VKeySelector =
+pub const AGGCHAIN_VKEY_SELECTOR: VKeySelector =
     VKeySelector::new(AGGCHAIN_PROOF_PROGRAM_VERSION, AGGCHAIN_TYPE);
 
 #[derive(Serialize, Deserialize)]

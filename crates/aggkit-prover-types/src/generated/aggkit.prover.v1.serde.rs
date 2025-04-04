@@ -217,7 +217,7 @@ impl serde::Serialize for GenerateAggchainProofResponse {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.aggchain_proof.is_empty() {
+        if self.aggchain_proof.is_some() {
             len += 1;
         }
         if self.last_proven_block != 0 {
@@ -233,10 +233,8 @@ impl serde::Serialize for GenerateAggchainProofResponse {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("aggkit.prover.v1.GenerateAggchainProofResponse", len)?;
-        if !self.aggchain_proof.is_empty() {
-            #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
-            struct_ser.serialize_field("aggchainProof", pbjson::private::base64::encode(&self.aggchain_proof).as_str())?;
+        if let Some(v) = self.aggchain_proof.as_ref() {
+            struct_ser.serialize_field("aggchainProof", v)?;
         }
         if self.last_proven_block != 0 {
             #[allow(clippy::needless_borrow)]
@@ -341,9 +339,7 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofResponse {
                             if aggchain_proof__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("aggchainProof"));
                             }
-                            aggchain_proof__ = 
-                                Some(map_.next_value::<::pbjson::private::BytesDeserialize<_>>()?.0)
-                            ;
+                            aggchain_proof__ = map_.next_value()?;
                         }
                         GeneratedField::LastProvenBlock => {
                             if last_proven_block__.is_some() {
@@ -378,7 +374,7 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofResponse {
                     }
                 }
                 Ok(GenerateAggchainProofResponse {
-                    aggchain_proof: aggchain_proof__.unwrap_or_default(),
+                    aggchain_proof: aggchain_proof__,
                     last_proven_block: last_proven_block__.unwrap_or_default(),
                     end_block: end_block__.unwrap_or_default(),
                     local_exit_root_hash: local_exit_root_hash__,
@@ -400,7 +396,10 @@ impl serde::Serialize for ImportedBridgeExitWithBlockNumber {
         if self.block_number != 0 {
             len += 1;
         }
-        if self.imported_bridge_exit.is_some() {
+        if self.global_index.is_some() {
+            len += 1;
+        }
+        if self.bridge_exit_hash.is_some() {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("aggkit.prover.v1.ImportedBridgeExitWithBlockNumber", len)?;
@@ -409,8 +408,11 @@ impl serde::Serialize for ImportedBridgeExitWithBlockNumber {
             #[allow(clippy::needless_borrows_for_generic_args)]
             struct_ser.serialize_field("blockNumber", ToString::to_string(&self.block_number).as_str())?;
         }
-        if let Some(v) = self.imported_bridge_exit.as_ref() {
-            struct_ser.serialize_field("importedBridgeExit", v)?;
+        if let Some(v) = self.global_index.as_ref() {
+            struct_ser.serialize_field("globalIndex", v)?;
+        }
+        if let Some(v) = self.bridge_exit_hash.as_ref() {
+            struct_ser.serialize_field("bridgeExitHash", v)?;
         }
         struct_ser.end()
     }
@@ -424,14 +426,17 @@ impl<'de> serde::Deserialize<'de> for ImportedBridgeExitWithBlockNumber {
         const FIELDS: &[&str] = &[
             "block_number",
             "blockNumber",
-            "imported_bridge_exit",
-            "importedBridgeExit",
+            "global_index",
+            "globalIndex",
+            "bridge_exit_hash",
+            "bridgeExitHash",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             BlockNumber,
-            ImportedBridgeExit,
+            GlobalIndex,
+            BridgeExitHash,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -454,7 +459,8 @@ impl<'de> serde::Deserialize<'de> for ImportedBridgeExitWithBlockNumber {
                     {
                         match value {
                             "blockNumber" | "block_number" => Ok(GeneratedField::BlockNumber),
-                            "importedBridgeExit" | "imported_bridge_exit" => Ok(GeneratedField::ImportedBridgeExit),
+                            "globalIndex" | "global_index" => Ok(GeneratedField::GlobalIndex),
+                            "bridgeExitHash" | "bridge_exit_hash" => Ok(GeneratedField::BridgeExitHash),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -475,7 +481,8 @@ impl<'de> serde::Deserialize<'de> for ImportedBridgeExitWithBlockNumber {
                     V: serde::de::MapAccess<'de>,
             {
                 let mut block_number__ = None;
-                let mut imported_bridge_exit__ = None;
+                let mut global_index__ = None;
+                let mut bridge_exit_hash__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::BlockNumber => {
@@ -486,17 +493,24 @@ impl<'de> serde::Deserialize<'de> for ImportedBridgeExitWithBlockNumber {
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
-                        GeneratedField::ImportedBridgeExit => {
-                            if imported_bridge_exit__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("importedBridgeExit"));
+                        GeneratedField::GlobalIndex => {
+                            if global_index__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("globalIndex"));
                             }
-                            imported_bridge_exit__ = map_.next_value()?;
+                            global_index__ = map_.next_value()?;
+                        }
+                        GeneratedField::BridgeExitHash => {
+                            if bridge_exit_hash__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("bridgeExitHash"));
+                            }
+                            bridge_exit_hash__ = map_.next_value()?;
                         }
                     }
                 }
                 Ok(ImportedBridgeExitWithBlockNumber {
                     block_number: block_number__.unwrap_or_default(),
-                    imported_bridge_exit: imported_bridge_exit__,
+                    global_index: global_index__,
+                    bridge_exit_hash: bridge_exit_hash__,
                 })
             }
         }

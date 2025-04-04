@@ -35,6 +35,7 @@ dependencies = [
  "aggchain-proof-contracts",
  "aggchain-proof-core",
  "aggchain-proof-types",
+ "aggkit-prover-types",
  "agglayer-interop",
  "agglayer-primitives",
  "alloy",
@@ -122,6 +123,7 @@ dependencies = [
  "aggchain-proof-contracts",
  "aggchain-proof-core",
  "aggchain-proof-types",
+ "agglayer-interop",
  "alloy-primitives",
  "anyhow",
  "bincode",
@@ -220,7 +222,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git#c0ec751936eaf2014f6c3d05bcccc203aca9e01a"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.2.0#6250c7079441af5975215846aecd744203056624"
 dependencies = [
  "agglayer-interop-grpc-types",
  "agglayer-interop-types",
@@ -229,7 +231,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop-grpc-types"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git#c0ec751936eaf2014f6c3d05bcccc203aca9e01a"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.2.0#6250c7079441af5975215846aecd744203056624"
 dependencies = [
  "agglayer-interop-types",
  "bincode",
@@ -244,11 +246,12 @@ dependencies = [
 [[package]]
 name = "agglayer-interop-types"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git#c0ec751936eaf2014f6c3d05bcccc203aca9e01a"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.2.0#6250c7079441af5975215846aecd744203056624"
 dependencies = [
  "agglayer-primitives",
  "agglayer-tries",
  "bincode",
+ "educe",
  "hex",
  "rand 0.9.0",
  "serde",
@@ -263,7 +266,7 @@ dependencies = [
 [[package]]
 name = "agglayer-primitives"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git#c0ec751936eaf2014f6c3d05bcccc203aca9e01a"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.2.0#6250c7079441af5975215846aecd744203056624"
 dependencies = [
  "alloy-primitives",
  "byteorder",
@@ -349,7 +352,7 @@ dependencies = [
 [[package]]
 name = "agglayer-tries"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git#c0ec751936eaf2014f6c3d05bcccc203aca9e01a"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.2.0#6250c7079441af5975215846aecd744203056624"
 dependencies = [
  "agglayer-primitives",
  "serde",
@@ -5650,13 +5653,13 @@ dependencies = [
  "aggchain-proof-core",
  "aggkit-prover-types",
  "alloy-primitives",
+ "alloy-sol-types",
  "anyhow",
  "base64 0.22.1",
  "bincode",
  "clap",
  "educe",
  "futures",
- "log",
  "mockall",
  "proposer-client",
  "prover-alloy",
@@ -5777,6 +5780,7 @@ dependencies = [
  "serde_json",
  "serde_with",
  "toml",
+ "url",
 ]
 
 [[package]]
@@ -9115,7 +9119,7 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 [[package]]
 name = "unified-bridge"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git#c0ec751936eaf2014f6c3d05bcccc203aca9e01a"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.2.0#6250c7079441af5975215846aecd744203056624"
 dependencies = [
  "agglayer-primitives",
  "agglayer-tries",

@@ -1,8 +1,13 @@
+use std::str::FromStr;
 use std::time::Duration;
 
-use prover_utils::with;
+use prover_utils::{from_env_or_default, with};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
+use url::Url;
+
+/// The default url endpoint for the grpc cluster service
+const DEFAULT_SP1_CLUSTER_ENDPOINT: &str = "https://rpc.production.succinct.xyz/";
 
 /// Type of the prover to be used for generation of the pessimistic proof
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
@@ -65,6 +70,10 @@ pub struct NetworkProverConfig {
     #[serde(default = "default_network_proving_timeout")]
     #[serde(with = "crate::with::HumanDuration")]
     pub proving_timeout: Duration,
+
+    /// The sp1 proving cluster endpoint.
+    #[serde(default = "default_sp1_cluster_endpoint")]
+    pub sp1_cluster_endpoint: url::Url,
 }
 
 impl NetworkProverConfig {
@@ -82,6 +91,7 @@ impl Default for NetworkProverConfig {
         Self {
             proving_request_timeout: None,
             proving_timeout: default_network_proving_timeout(),
+            sp1_cluster_endpoint: default_sp1_cluster_endpoint(),
         }
     }
 }
@@ -166,4 +176,11 @@ const fn default_local_proving_timeout() -> Duration {
 
 const fn default_network_proving_timeout() -> Duration {
     Duration::from_secs(60 * 5)
+}
+
+fn default_sp1_cluster_endpoint() -> Url {
+    from_env_or_default(
+        "SP1_CLUSTER_ENDPOINT",
+        Url::from_str(DEFAULT_SP1_CLUSTER_ENDPOINT).unwrap(),
+    )
 }

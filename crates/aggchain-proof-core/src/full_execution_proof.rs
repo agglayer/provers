@@ -1,6 +1,7 @@
 use agglayer_primitives::digest::Digest;
 use agglayer_primitives::keccak::keccak256_combine;
-use alloy_primitives::{Address, PrimitiveSignature, B256};
+use alloy_primitives::{b256, Address, PrimitiveSignature, B256};
+use alloy_sol_types::{sol, SolValue};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest as Sha256Digest, Sha256};
 use unified_bridge::imported_bridge_exit::{L1InfoTreeLeaf, MerkleProof};
@@ -9,10 +10,13 @@ use crate::{error::ProofError, vkey_hash::HashU32};
 
 /// Hardcoded hash of the "aggregation vkey".
 /// NOTE: Format being `hash_u32()` of the `SP1StarkVerifyingKey`.
-pub const AGGREGATION_VKEY_HASH: HashU32 = [0u32; 8]; // TODO: to put the right value
+pub const AGGREGATION_VKEY_HASH: HashU32 = [
+    1949122874, 766403294, 593485289, 430966933, 1657646871, 73535799, 883940176, 31174925,
+];
 
 /// Specific commitment for the range proofs.
-pub const RANGE_VKEY_COMMITMENT: [u8; 32] = [0u8; 32]; // TODO: to put the right value
+pub const RANGE_VKEY_COMMITMENT: [u8; 32] =
+    b256!("0367776036b0d8b12720eab775b651c7251e63a249cb84f63eb1c20418b24e9c").0;
 
 /// Hardcoded for now, might see if we might need it as input
 pub const OUTPUT_ROOT_VERSION: [u8; 32] = [0u8; 32];
@@ -43,19 +47,37 @@ pub struct FepInputs {
     pub l1_head_inclusion_proof: MerkleProof,
 }
 
+sol! {
+    #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+    struct AggregationProofPublicValues {
+        bytes32 l1Head;
+        bytes32 l2PreRoot;
+        bytes32 l2PostRoot;
+        uint64 l2BlockNumber;
+        bytes32 rollupConfigHash;
+        bytes32 multiBlockVKey;
+    }
+}
+
+impl From<&FepInputs> for AggregationProofPublicValues {
+    fn from(inputs: &FepInputs) -> Self {
+        Self {
+            l1Head: inputs.l1_head.0.into(),
+            l2PreRoot: inputs.compute_l2_pre_root().0.into(),
+            l2PostRoot: inputs.compute_claim_root().0.into(),
+            l2BlockNumber: inputs.claim_block_num.into(),
+            rollupConfigHash: inputs.rollup_config_hash.0.into(),
+            multiBlockVKey: RANGE_VKEY_COMMITMENT.into(),
+        }
+    }
+}
+
 impl FepInputs {
     pub fn sha256_public_values(&self) -> [u8; 32] {
-        let public_values = [
-            self.l1_head.as_slice(),
-            self.compute_l2_pre_root().as_slice(),
-            self.compute_claim_root().as_slice(),
-            &self.claim_block_num.to_be_bytes(),
-            self.rollup_config_hash.as_slice(),
-            RANGE_VKEY_COMMITMENT.as_slice(),
-        ]
-        .concat();
+        let encoded_public_values =
+            AggregationProofPublicValues::abi_encode(&AggregationProofPublicValues::from(self));
 
-        Sha256::digest(&public_values).into()
+        Sha256::digest(encoded_public_values.as_slice()).into()
     }
 }
 

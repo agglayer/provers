@@ -1,6 +1,8 @@
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
+use aggchain_proof_core::full_execution_proof::AggregationProofPublicValues;
+use alloy_sol_types::SolType;
 use educe::Educe;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
@@ -23,6 +25,7 @@ pub struct ProposerResponse {
     pub aggregation_proof: AggregationProof,
     pub last_proven_block: u64,
     pub end_block: u64,
+    pub public_values: AggregationProofPublicValues,
 }
 
 pub mod config;
@@ -158,13 +161,19 @@ where
             info!("Aggregation proof request submitted: {}", request_id);
 
             // Wait for the prover to finish aggregating span proofs
-            let proofs = client.wait_for_proof(request_id.clone()).await?;
+            let proof_with_pv = client.wait_for_proof(request_id.clone()).await?;
+
+            let public_values = AggregationProofPublicValues::abi_decode(
+                proof_with_pv.public_values.as_slice(),
+                false,
+            )
+            .map_err(Error::FepPublicValuesDeserializeFailure)?;
 
             // Verify received proof
-            client.verify_agg_proof(request_id, &proofs, &aggregation_vkey)?;
+            client.verify_agg_proof(request_id, &proof_with_pv, &aggregation_vkey)?;
 
-            let proof_mode: sp1_sdk::SP1ProofMode = (&proofs.proof).into();
-            let aggregation_proof: AggregationProof = proofs
+            let proof_mode: sp1_sdk::SP1ProofMode = (&proof_with_pv.proof).into();
+            let aggregation_proof = proof_with_pv
                 .proof
                 .clone()
                 .try_as_compressed()
@@ -174,6 +183,7 @@ where
                 aggregation_proof,
                 last_proven_block: response.last_proven_block,
                 end_block: response.end_block,
+                public_values,
             })
         }
         .boxed()

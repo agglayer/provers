@@ -20,6 +20,7 @@ network-id = 0
 
 [aggchain-proof-service.aggchain-proof-builder.primary-prover.network-prover]
 proving-timeout = "5m"
+sp1-cluster-endpoint = "https://rpc.production.succinct.xyz/"
 
 [aggchain-proof-service.aggchain-proof-builder.proving-timeout]
 secs = 3600
@@ -44,3 +45,4 @@ proving-timeout = 3600
 
 [primary-prover.network-prover]
 proving-timeout = "5m"
+sp1-cluster-endpoint = "https://rpc.production.succinct.xyz/"

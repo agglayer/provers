@@ -17,10 +17,23 @@ fn generate_keys() -> (
     sp1_sdk::SP1VerifyingKey,
     SP1PublicValues,
 ) {
-    let stdin = sp1_sdk::SP1Stdin::new();
+    use alloy_primitives::B256;
+    use serde::{Deserialize, Serialize};
+
     let client = sp1_sdk::ProverClient::builder().mock().build();
     let (pk, vk) = client.setup(ELF);
-    let (public_values, _) = client.execute(&pk.elf, &stdin).run().unwrap();
+
+    #[derive(Default, Serialize, Deserialize)]
+    struct AggregationOutputs {
+        l1_head: B256,
+        l2_pre_root: B256,
+        l2_post_root: B256,
+        l2_block_number: u64,
+        rollup_config_hash: B256,
+        multi_block_vkey: B256,
+    }
+    let data = AggregationOutputs::default();
+    let public_values = SP1PublicValues::from(&bincode::serialize(&data).unwrap());
     (pk, vk, public_values)
 }
 

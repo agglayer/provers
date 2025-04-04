@@ -13,4 +13,7 @@ pub enum Error {
 
     #[error("Unsupported aggregation proof mode {0:?}")]
     UnsupportedAggregationProofMode(sp1_sdk::SP1ProofMode),
+
+    #[error("Failure on the deserialization of the FEP public values")]
+    FepPublicValuesDeserializeFailure(#[source] alloy_sol_types::Error),
 }
