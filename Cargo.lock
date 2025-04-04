@@ -5623,6 +5623,8 @@ dependencies = [
  "alloy-primitives",
  "anyhow",
  "async-trait",
+ "base64 0.22.1",
+ "bincode",
  "educe",
  "hex",
  "jsonrpsee",

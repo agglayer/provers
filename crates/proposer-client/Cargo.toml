@@ -11,6 +11,8 @@ workspace = true
 alloy-primitives.workspace = true
 anyhow.workspace = true
 async-trait.workspace = true
+base64.workspace = true
+bincode.workspace = true
 educe.workspace = true
 hex.workspace = true
 jsonrpsee.workspace = true
@@ -19,6 +21,7 @@ serde.workspace = true
 serde_with = { workspace = true, features = ["hex"] }
 sp1-sdk.workspace = true
 thiserror.workspace = true
+tokio.workspace = true
 tonic.workspace = true
 tracing.workspace = true
 url.workspace = true

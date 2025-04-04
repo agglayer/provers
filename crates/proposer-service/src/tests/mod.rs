@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use alloy_primitives::FixedBytes;
 use proposer_client::{
-    rpc::AggregationProofProposerRequest, FepProposerRequest, MockProposerClient,
+    rpc::AggregationProofProposerRequest, FepProposerRequest, MockProposerClient, RequestId,
 };
 use prover_alloy::MockProvider;
 use sp1_sdk::{Prover as _, SP1PublicValues, SP1_CIRCUIT_VERSION};
@@ -38,7 +38,7 @@ async fn test_proposer_service() {
         |request: AggregationProofProposerRequest| {
             Box::pin(async move {
                 Ok(proposer_client::rpc::AggregationProofProposerResponse {
-                    request_id: FixedBytes::new([0; 32]),
+                    request_id: RequestId(FixedBytes::new([0; 32])),
                     last_proven_block: request.last_proven_block,
                     end_block: request.requested_end_block,
                 })

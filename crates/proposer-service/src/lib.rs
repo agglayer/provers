@@ -9,7 +9,6 @@ use proposer_client::mock_prover::MockProver;
 use proposer_client::network_prover::new_network_prover;
 use proposer_client::rpc::{AggregationProofProposerRequest, ProposerRpcClient};
 use proposer_client::FepProposerRequest;
-use proposer_client::RequestId;
 use prover_alloy::Provider;
 use sp1_prover::SP1VerifyingKey;
 use sp1_sdk::NetworkProver;
@@ -104,7 +103,8 @@ impl<L1Rpc> ProposerService<L1Rpc, proposer_client::client::Client<ProposerRpcCl
             "Building a mock proposer service with a non-mock config"
         );
         Self::new(
-            MockProver::new("TODO").map_err(Error::UnableToCreateProver)?,
+            MockProver::new(config.client.proposer_endpoint.clone())
+                .map_err(Error::UnableToCreateProver)?,
             config,
             l1_rpc,
         )
@@ -154,7 +154,7 @@ where
                     l1_block_hash,
                 })
                 .await?;
-            let request_id = RequestId(response.request_id);
+            let request_id = response.request_id;
             info!("Aggregation proof request submitted: {}", request_id);
 
             // Wait for the prover to finish aggregating span proofs
