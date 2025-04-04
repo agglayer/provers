@@ -13,7 +13,7 @@ use sp1_sdk::{
     CpuProver, Prover as _, SP1ProofWithPublicValues, SP1ProvingKey, SP1VerificationError,
     SP1VerifyingKey,
 };
-use tracing::error;
+use tracing::{debug, error};
 use url::Url;
 
 use crate::aggregation_prover::AggregationProver;
@@ -63,6 +63,11 @@ impl AggregationProver for MockProver {
                     if error.code() == -32000
                         && error.message().contains("proof request not complete") =>
                 {
+                    debug!(
+                        request_id = real_request_id,
+                        ?error,
+                        "proof is still pending"
+                    );
                     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
                     continue;
                 }
