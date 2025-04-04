@@ -5651,6 +5651,8 @@ dependencies = [
  "aggkit-prover-types",
  "alloy-primitives",
  "anyhow",
+ "base64 0.22.1",
+ "bincode",
  "clap",
  "educe",
  "futures",

@@ -10,6 +10,7 @@ use proposer_service::config::ProposerServiceConfig;
 use proposer_service::ProposerService;
 use prover_alloy::L1RpcEndpoint;
 use prover_logger::log::Log;
+use sp1_sdk::SP1ProofWithPublicValues;
 use tower::{Service, ServiceExt};
 use tracing::info;
 use url::Url;
@@ -49,6 +50,20 @@ struct Cli {
 
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
+    let proof_response = "AAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFDQhMFYjcwCVBIgAFohyQCCWmAB4VpZwGHU3Y0zDIdQ16i5CHYfpcDJCRQDkiaoBphubtto591AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMB4668iyT3Fh6Y4wkvQhSzlMS58Dk+i14g0mNLZyQZC2dVUFe0tpJPa1haRUrmobHQG7brW8m1Hy7dwY5gXN1b2xHVSaI6m6/vddyAIfglL+P5JN+6vSlzWHuW94XdfsZsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKtjx0yvzdmrtg2RMF8alNxn4CUwNOZVRq+jyZl07JZjWA2d3YDaw2LEnIOq3dbZRxyUeY6JJy4T2PrHCBBiyTpwAAAAAAAAAC3Y0LjAuMC1yYy4z";
+    println!("trying to deserialize proof response {proof_response:?}");
+    use anyhow::Context;
+    use base64::Engine;
+    let proof_bytes = base64::prelude::BASE64_STANDARD
+        .decode(proof_response)
+        .with_context(|| format!("deserializing base64"))?;
+    let proof: SP1ProofWithPublicValues =
+        bincode::deserialize(&proof_bytes).with_context(|| format!("deserializing proof"))?;
+    println!("done!");
+    if 2 * 2 == 4 {
+        return Ok(());
+    }
+    // TODO: remove all that
     println!("Starting Proposer service test...");
 
     // Initialize the tracing

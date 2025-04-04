@@ -72,6 +72,7 @@ impl AggregationProver for MockProver {
                 }
             };
         };
+        tracing::info!("got proof response {proof_response:?}");
         let proof_bytes = BASE64_STANDARD
             .decode(proof_response)
             .with_context(|| format!("deserializing base64 for proof {request_id}"))?;
