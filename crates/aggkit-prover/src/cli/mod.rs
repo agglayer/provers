@@ -29,5 +29,9 @@ pub enum Commands {
         config_path: PathBuf,
     },
 
+    /// Proof verification key.
     Vkey,
+
+    /// Proof verification key selector.
+    VkeySelector,
 }
