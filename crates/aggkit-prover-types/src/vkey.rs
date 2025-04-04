@@ -1,7 +1,7 @@
 use std::sync::OnceLock;
 
 use bincode::Options;
-use sp1_sdk::SP1VerifyingKey;
+pub use sp1_sdk::SP1VerifyingKey;
 
 pub struct LazyVerifyingKey {
     bytes: &'static [u8],
