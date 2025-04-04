@@ -20,7 +20,9 @@ impl InsertedGER {
         }
 
         self.proof.verify(
-            self.l1_info_tree_leaf.hash(),
+            self.l1_info_tree_leaf
+                .inner
+                .hash(self.l1_info_tree_leaf.inner.global_exit_root),
             self.l1_info_tree_leaf.l1_info_tree_index,
         )
     }
