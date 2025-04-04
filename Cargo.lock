@@ -98,7 +98,7 @@ dependencies = [
  "hex",
  "k256",
  "mockall",
- "proposer-elfs",
+ "proposer-vkeys-raw",
  "semver 1.0.25",
  "serde",
  "serde_json",
@@ -5653,9 +5653,8 @@ dependencies = [
 name = "proposer-elfs"
 version = "0.1.0"
 dependencies = [
- "alloy-primitives",
  "op-succinct-elfs",
- "prover-elf-utils",
+ "proposer-vkeys-raw",
 ]
 
 [[package]]
@@ -5684,6 +5683,15 @@ dependencies = [
  "tower 0.4.13",
  "tracing",
  "url",
+]
+
+[[package]]
+name = "proposer-vkeys-raw"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "op-succinct-elfs",
+ "prover-elf-utils",
 ]
 
 [[package]]

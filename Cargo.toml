@@ -31,6 +31,7 @@ agglayer-prover-types = { path = "crates/agglayer-prover-types" }
 proposer-client = { path = "crates/proposer-client" }
 proposer-elfs = { path = "crates/proposer-elfs" }
 proposer-service = { path = "crates/proposer-service" }
+proposer-vkeys-raw = { path = "crates/proposer-vkeys-raw" }
 prover-alloy = { path = "crates/prover-alloy" }
 prover-config = { path = "crates/prover-config" }
 prover-elf-utils = { path = "crates/prover-elf-utils" }

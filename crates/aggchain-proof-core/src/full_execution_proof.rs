@@ -10,10 +10,10 @@ use crate::{error::ProofError, vkey_hash::HashU32};
 
 /// Hardcoded hash of the "aggregation vkey".
 /// NOTE: Format being `hash_u32()` of the `SP1StarkVerifyingKey`.
-pub const AGGREGATION_VKEY_HASH: HashU32 = proposer_elfs::aggregation::VKEY_HASH;
+pub const AGGREGATION_VKEY_HASH: HashU32 = proposer_vkeys_raw::aggregation::VKEY_HASH;
 
 /// Specific commitment for the range proofs.
-pub const RANGE_VKEY_COMMITMENT: [u8; 32] = proposer_elfs::range::VKEY_COMMITMENT;
+pub const RANGE_VKEY_COMMITMENT: [u8; 32] = proposer_vkeys_raw::range::VKEY_COMMITMENT;
 
 /// Hardcoded for now, might see if we might need it as input
 pub const OUTPUT_ROOT_VERSION: [u8; 32] = [0u8; 32];

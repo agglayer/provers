@@ -6,10 +6,4 @@ license.workspace = true
 
 [dependencies]
 op-succinct-elfs.workspace = true
-
-[dev-dependencies]
-alloy-primitives.workspace = true
-
-[build-dependencies]
-prover-elf-utils.workspace = true
-op-succinct-elfs.workspace = true
+proposer-vkeys-raw.workspace = true
