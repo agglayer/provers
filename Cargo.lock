@@ -47,10 +47,12 @@ dependencies = [
  "prover-config",
  "prover-executor",
  "serde",
+ "serde_json",
  "sp1-core-executor",
  "sp1-prover",
  "sp1-sdk",
  "thiserror 2.0.11",
+ "tokio",
  "tower 0.4.13",
  "tracing",
 ]

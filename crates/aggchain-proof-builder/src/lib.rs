@@ -1,6 +1,9 @@
 pub mod config;
 mod error;
 
+#[cfg(test)]
+mod tests;
+
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
@@ -25,6 +28,7 @@ use bincode::Options;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use prover_executor::{Executor, ProofType};
+use serde::{Deserialize, Serialize};
 use sp1_sdk::{SP1Stdin, SP1VerifyingKey};
 use tower::buffer::Buffer;
 use tower::util::BoxService;
@@ -45,6 +49,7 @@ pub(crate) type ProverService = Buffer<
 
 /// All the data `aggchain-proof-builder` needs for the agghchain
 /// proof generation. Collected from various sources.
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AggchainProverInputs {
     pub stdin: SP1Stdin,
     pub last_proven_block: u64,
