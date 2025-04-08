@@ -58,3 +58,15 @@ impl std::fmt::UpperHex for LazyVerifyingKey {
         self.as_bytes().fmt(f)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn hexdump() {
+        let vk = LazyVerifyingKey::new_unchecked(&[0xab, 0xcd]);
+        assert_eq!(format!("{vk:x}"), "0xabcd");
+        assert_eq!(format!("{vk:X}"), "0xABCD");
+    }
+}
