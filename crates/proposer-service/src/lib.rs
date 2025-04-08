@@ -7,8 +7,7 @@ pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use proposer_client::network_prover::new_network_prover;
 use proposer_client::rpc::{AggregationProofProposerRequest, ProposerRpcClient};
-use proposer_client::FepProposerRequest;
-use proposer_client::RequestId;
+use proposer_client::{client::Client as ProposerClient, FepProposerRequest, RequestId};
 use prover_alloy::Provider;
 use sp1_prover::SP1VerifyingKey;
 use sp1_sdk::{NetworkProver, Prover};
@@ -54,14 +53,14 @@ impl<L1Rpc, ProposerClient> Clone for ProposerService<L1Rpc, ProposerClient> {
     }
 }
 
-impl<L1Rpc>
-    ProposerService<L1Rpc, proposer_client::client::Client<ProposerRpcClient, NetworkProver>>
-{
-    pub fn new(config: &ProposerServiceConfig, l1_rpc: Arc<L1Rpc>) -> Result<Self, Error> {
+impl<L1Rpc> ProposerService<L1Rpc, ProposerClient<ProposerRpcClient, NetworkProver>> {
+    pub async fn new(config: &ProposerServiceConfig, l1_rpc: Arc<L1Rpc>) -> Result<Self, Error> {
         let proposer_rpc_client = ProposerRpcClient::new(
-            config.client.proposer_endpoint.as_str(),
+            config.client.proposer_endpoint.clone(),
             config.client.request_timeout,
-        )?;
+        )
+        .await?;
+
         let network_prover = new_network_prover(config.client.sp1_cluster_endpoint.as_str())
             .map_err(Error::UnableToCreateNetworkProver)?;
 

@@ -8,6 +8,33 @@ mod proposer_rpc {
         AggregationProofProposer, AggregationProofProposerRequest, ProposerRpcClient,
     };
 
+    mod mock_server {
+        use crate::rpc::grpc::{self, proof_request_service_server::ProofRequestService};
+
+        mockall::mock! {
+            #[derive(Clone)]
+            pub ProofRequestService {}
+
+            #[tonic::async_trait]
+            impl ProofRequestService for ProofRequestService {
+                async fn request_aggregation_proof(
+                    &self,
+                    request: tonic::Request<grpc::AggregationProofRequest>,
+                ) -> Result<tonic::Response<grpc::AggregationProofResponse>, tonic::Status>;
+            }
+        }
+
+        impl MockProofRequestService {
+            pub async fn run(self) {
+                tonic::transport::Server::builder()
+                    .add_service(self)
+                    .serve("127.0.0.1:0".try_into().unwrap())
+                    .await
+                    .expect("failed to start the mock server")
+            }
+        }
+    }
+
     #[tokio::test]
     async fn request_an_aggregated_span_proof() {
         let mut server = mockito::Server::new_async().await;
@@ -40,7 +67,10 @@ mod proposer_rpc {
             )
             .create();
 
-        let service = ProposerRpcClient::new(&server.url(), Duration::from_millis(500)).unwrap();
+        let service =
+            ProposerRpcClient::new(server.url().try_into().unwrap(), Duration::from_millis(500))
+                .await
+                .unwrap();
 
         let request = AggregationProofProposerRequest {
             last_proven_block: 110,
