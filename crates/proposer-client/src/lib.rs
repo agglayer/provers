@@ -72,7 +72,8 @@ impl<'de> Deserialize<'de> for RequestId {
             Ok(RequestId(id))
         } else if let Ok(id) = u64::from_str(&value) {
             let mut encoding = [0; 32];
-            encoding[..8].copy_from_slice(&id.to_be_bytes());
+            encoding[24..].copy_from_slice(&id.to_be_bytes());
+            debug_assert!(encoding[..24].iter().all(|v| *v == 0));
             Ok(RequestId(B256::from(encoding)))
         } else {
             Err(D::Error::custom(format!("invalid request id: {value:?}")))
