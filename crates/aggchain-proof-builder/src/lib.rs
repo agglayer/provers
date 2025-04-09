@@ -16,9 +16,7 @@ use aggchain_proof_core::bridge::inserted_ger::InsertedGER;
 use aggchain_proof_core::bridge::BridgeWitness;
 use aggchain_proof_core::full_execution_proof::AggregationProofPublicValues;
 use aggchain_proof_core::full_execution_proof::{FepInputs, AGGREGATION_VKEY_HASH};
-use aggchain_proof_core::proof::{
-    AggchainProofPublicValues, AggchainProofWitness, IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION,
-};
+use aggchain_proof_core::proof::{AggchainProofWitness, IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION};
 use aggchain_proof_core::Digest;
 use aggchain_proof_types::AggchainProofInputs;
 use aggkit_prover_types::vkey_hash::VKeyHash;
@@ -35,6 +33,7 @@ use tower::buffer::Buffer;
 use tower::util::BoxService;
 use tower::ServiceExt as _;
 use tracing::info;
+use unified_bridge::aggchain_proof::AggchainProofPublicValues;
 
 use crate::config::AggchainProofBuilderConfig;
 

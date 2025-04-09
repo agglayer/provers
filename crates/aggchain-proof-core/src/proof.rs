@@ -1,6 +1,6 @@
 use agglayer_primitives::digest::Digest;
 use serde::{Deserialize, Serialize};
-use unified_bridge::imported_bridge_exit::CommitmentVersion;
+use unified_bridge::{aggchain_proof::AggchainProofPublicValues, CommitmentVersion};
 
 use crate::{
     bridge::{BridgeConstraintsInput, BridgeWitness, L2_GER_ADDR},
@@ -70,21 +70,4 @@ impl AggchainProofWitness {
             bridge_witness: self.bridge_witness.clone(),
         }
     }
-}
-
-/// Public values of the SP1 aggchain proof.
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct AggchainProofPublicValues {
-    /// Previous local exit root.
-    pub prev_local_exit_root: Digest,
-    /// New local exit root.
-    pub new_local_exit_root: Digest,
-    /// L1 info root used to import bridge exits.
-    pub l1_info_root: Digest,
-    /// Origin network for which the proof was generated.
-    pub origin_network: u32,
-    /// Commitment to the imported bridge exits indexes.
-    pub commit_imported_bridge_exits: Digest,
-    /// Chain-specific commitment forwarded by the PP.
-    pub aggchain_params: Digest,
 }
