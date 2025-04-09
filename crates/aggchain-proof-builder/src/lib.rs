@@ -1,6 +1,9 @@
 pub mod config;
 mod error;
 
+#[cfg(test)]
+mod tests;
+
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
@@ -25,6 +28,7 @@ use bincode::Options;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use prover_executor::{Executor, ProofType};
+use serde::{Deserialize, Serialize};
 use sp1_sdk::{Prover, ProverClient, SP1Stdin, SP1VerifyingKey};
 use tower::buffer::Buffer;
 use tower::util::BoxService;
@@ -47,6 +51,7 @@ pub(crate) type ProverService = Buffer<
 
 /// All the data `aggchain-proof-builder` needs for the agghchain
 /// proof generation. Collected from various sources.
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AggchainProverInputs {
     pub stdin: SP1Stdin,
     pub last_proven_block: u64,
@@ -136,7 +141,6 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
 
         // Retrieve the entire aggregation vkey from the ELF
         let aggregation_vkey = {
-            // TODO, use executor.get_vkey().clone() instead, just test before
             let prover = ProverClient::builder().cpu().build();
             let (_, agg_vk_from_elf) = prover.setup(AGGREGATION_PROOF_ELF);
             agg_vk_from_elf

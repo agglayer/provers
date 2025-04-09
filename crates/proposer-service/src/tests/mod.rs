@@ -24,7 +24,7 @@ fn generate_keys() -> (
     let (pk, vk) = client.setup(ELF);
 
     #[derive(Default, Serialize, Deserialize)]
-    struct AggregationOutputs {
+    struct TestAggregationOutputs {
         l1_head: B256,
         l2_pre_root: B256,
         l2_post_root: B256,
@@ -32,7 +32,7 @@ fn generate_keys() -> (
         rollup_config_hash: B256,
         multi_block_vkey: B256,
     }
-    let data = AggregationOutputs::default();
+    let data = TestAggregationOutputs::default();
     let public_values = SP1PublicValues::from(&bincode::serialize(&data).unwrap());
     (pk, vk, public_values)
 }
