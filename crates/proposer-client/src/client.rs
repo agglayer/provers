@@ -1,9 +1,10 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use educe::Educe;
 use sp1_sdk::{SP1ProofWithPublicValues, SP1VerifyingKey};
 
-use crate::network_prover::AggregationProver;
+use crate::aggregation_prover::AggregationProver;
 use crate::rpc::{
     AggregationProofProposer, AggregationProofProposerRequest, AggregationProofProposerResponse,
 };
@@ -18,7 +19,8 @@ use crate::{error, Error, ProposerClient, RequestId};
 /// request creation of the AggregationProof (getting the proof ID in return),
 /// and directly communicates with the SP1 cluster using NetworkProver
 /// to retrieve the generated proof.
-#[derive(Clone)]
+#[derive(Educe)]
+#[educe(Clone(bound()))]
 pub struct Client<Proposer, Prover> {
     proposer_rpc: Arc<Proposer>,
     prover_rpc: Arc<Prover>,
