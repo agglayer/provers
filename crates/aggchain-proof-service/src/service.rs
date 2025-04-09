@@ -168,11 +168,13 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
         async move {
             // The ProposerResponse contains the start and end block number
             // It also contains the generated proof.
+            tracing::warn!("======== checkpoint start");
             let aggregation_proof_response = proposer_service
                 .call(proposer_request)
                 .await
                 .map_err(Error::ProposerServiceError)?;
 
+            tracing::warn!("======== got mock proof?");
             let aggchain_proof_builder_request =
                 aggchain_proof_builder::AggchainProofBuilderRequest {
                     aggregation_proof: aggregation_proof_response.aggregation_proof,

@@ -358,9 +358,11 @@ where
             let end_block = req.end_block;
             // Retrieve all the necessary public inputs. Combine with
             // the data provided by the agg-sender in the request.
+            tracing::warn!("======== starting up");
             let aggchain_prover_inputs =
                 Self::retrieve_chain_data(contracts_client, req, network_id, aggregation_vkey)
                     .await?;
+            tracing::warn!("======== retrieved chain data");
 
             let prover_executor::Response { proof } = prover
                 .ready()
@@ -372,15 +374,18 @@ where
                 })
                 .await
                 .map_err(|error| Error::ProverFailedToExecute(anyhow::Error::from_boxed(error)))?;
+            tracing::warn!("======== got proof");
 
             let public_input: AggchainProofPublicValues =
                 bincode::deserialize(proof.public_values.as_slice()).unwrap();
+            tracing::warn!("======== deserialized proof");
 
             let stark = proof
                 .proof
                 .try_as_compressed()
                 .ok_or(Error::GeneratedProofIsNotCompressed)?;
 
+            tracing::warn!("======== almost done");
             Ok(AggchainProofBuilderResponse {
                 vkey: bincode::DefaultOptions::new()
                     .with_big_endian()
