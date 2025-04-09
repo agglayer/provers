@@ -279,6 +279,7 @@ async fn executor_normal_behavior_mock_prover() {
         mock_prover_config.max_concurrency_limit,
         LocalExecutor {
             prover: prover.clone(),
+            is_mock: true,
             proving_key,
             verification_key: verification_key.clone(),
         },
