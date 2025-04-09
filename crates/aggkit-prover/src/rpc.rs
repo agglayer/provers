@@ -14,7 +14,7 @@ use tonic::{Request, Response, Status};
 use tonic_types::{ErrorDetails, StatusExt};
 use tower::buffer::Buffer;
 use tower::{Service, ServiceExt};
-use tracing::instrument;
+use tracing::{debug, instrument};
 
 const MAX_CONCURRENT_REQUESTS: usize = 100;
 
@@ -57,13 +57,15 @@ impl AggchainProofGrpcService for GrpcService {
             ));
         }
 
+        debug!(aggchain_proof_input = ?request, "received request");
         let aggchain_proof_inputs: AggchainProofInputs =
             request
                 .try_into()
                 .map_err(|error: AggchainProofRequestError| {
                     let field = error.field_path();
                     let mut error_details = ErrorDetails::new();
-                    error_details.add_bad_request_violation(field, error.to_string());
+                    error_details
+                        .add_bad_request_violation(field, format!("{:?}", error.to_string()));
                     Status::with_error_details(
                         tonic::Code::InvalidArgument,
                         "Invalid aggchain proof request data",
