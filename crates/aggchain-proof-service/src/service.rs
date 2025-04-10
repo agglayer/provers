@@ -198,8 +198,7 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
                 last_proven_block: aggregation_proof_response.last_proven_block,
                 vkey: aggchain_proof_response.vkey,
                 end_block: aggregation_proof_response.end_block,
-                // TODO: Replace with actual value when available
-                local_exit_root_hash: Default::default(),
+                local_exit_root_hash: aggchain_proof_response.new_local_exit_root,
                 custom_chain_data,
             })
         }
