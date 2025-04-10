@@ -37,7 +37,7 @@ impl GrpcService {
 
 #[tonic::async_trait]
 impl AggchainProofGrpcService for GrpcService {
-    #[instrument(skip(self))]
+    #[instrument(skip(self, request))]
     async fn generate_aggchain_proof(
         &self,
         request: Request<GenerateAggchainProofRequest>,
