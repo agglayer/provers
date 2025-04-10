@@ -357,6 +357,8 @@ where
         let aggregation_vkey = self.aggregation_vkey.clone();
         let aggchain_vkey = self.aggchain_vkey.clone();
 
+        let output_root: Digest = (*req.aggregation_proof_public_values.l2PostRoot).into();
+
         async move {
             let last_proven_block = req.aggchain_proof_inputs.last_proven_block;
             let end_block = req.end_block;
@@ -399,8 +401,7 @@ where
                 aggchain_params: public_input.aggchain_params,
                 last_proven_block,
                 end_block,
-                // TODO: Define the output root with the witness data
-                output_root: Default::default(),
+                output_root,
             })
         }
         .boxed()
