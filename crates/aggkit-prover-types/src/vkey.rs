@@ -13,7 +13,7 @@ impl LazyVerifyingKey {
     ///
     /// If the byte string is malformed, the methods will panic.
     /// Use with tested static data only.
-    pub const fn new_unchecked(bytes: &'static [u8]) -> Self {
+    pub const fn from_unparsed_bytes(bytes: &'static [u8]) -> Self {
         let vkey = OnceLock::new();
         Self { bytes, vkey }
     }
@@ -65,7 +65,7 @@ mod test {
 
     #[test]
     fn hexdump() {
-        let vk = LazyVerifyingKey::new_unchecked(&[0xab, 0xcd]);
+        let vk = LazyVerifyingKey::from_unparsed_bytes(&[0xab, 0xcd]);
         assert_eq!(format!("{vk:x}"), "0xabcd");
         assert_eq!(format!("{vk:X}"), "0xABCD");
     }

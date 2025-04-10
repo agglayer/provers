@@ -9,7 +9,7 @@ pub mod aggregation {
     use crate::{HashU32, LazyVerifyingKey, VKeyHash};
 
     pub static VKEY: LazyVerifyingKey =
-        LazyVerifyingKey::new_unchecked(proposer_vkeys_raw::aggregation::VKEY_BYTES);
+        LazyVerifyingKey::from_unparsed_bytes(proposer_vkeys_raw::aggregation::VKEY_BYTES);
 
     pub const VKEY_HASH_U32: HashU32 = proposer_vkeys_raw::aggregation::VKEY_HASH;
 
@@ -22,7 +22,7 @@ pub mod range {
     use crate::{HashU32, LazyVerifyingKey, VKeyHash};
 
     pub static VKEY: LazyVerifyingKey =
-        LazyVerifyingKey::new_unchecked(proposer_vkeys_raw::range::VKEY_BYTES);
+        LazyVerifyingKey::from_unparsed_bytes(proposer_vkeys_raw::range::VKEY_BYTES);
 
     pub const VKEY_HASH_U32: HashU32 = proposer_vkeys_raw::range::VKEY_HASH;
 
