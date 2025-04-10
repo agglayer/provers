@@ -48,4 +48,6 @@ pub enum Error {
         expected_by_contract: Box<AggregationProofPublicValues>,
         expected_by_verifier: Box<AggregationProofPublicValues>,
     },
+    #[error("Unable to fetch trusted sequencer address")]
+    UnableToFetchTrustedSequencerAddress(#[source] aggchain_proof_contracts::Error),
 }

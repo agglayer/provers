@@ -1,4 +1,5 @@
 use agglayer_interop::types::Digest;
+use agglayer_primitives::Address;
 use alloy::eips::BlockNumberOrTag;
 use alloy::network::Ethereum;
 use alloy::sol;
@@ -67,6 +68,11 @@ pub trait L2OutputAtBlockFetcher {
 #[async_trait::async_trait]
 pub trait L1RollupConfigHashFetcher {
     async fn get_rollup_config_hash(&self) -> Result<Digest, Error>;
+}
+
+#[async_trait::async_trait]
+pub trait GetTrustedSequencerAddress {
+    async fn get_trusted_sequencer_address(&self) -> Result<Address, Error>;
 }
 
 #[async_trait::async_trait]
