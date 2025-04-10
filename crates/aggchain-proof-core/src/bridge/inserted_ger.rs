@@ -1,4 +1,4 @@
-use agglayer_primitives::{digest::Digest, keccak::keccak256_combine};
+use agglayer_primitives::digest::Digest;
 use serde::{Deserialize, Serialize};
 use unified_bridge::imported_bridge_exit::{L1InfoTreeLeaf, MerkleProof};
 
@@ -27,6 +27,6 @@ impl InsertedGER {
 
     /// Returns the inserted GER.
     pub fn ger(&self) -> Digest {
-        keccak256_combine([self.l1_info_tree_leaf.mer, self.l1_info_tree_leaf.rer])
+        self.l1_info_tree_leaf.ger()
     }
 }
