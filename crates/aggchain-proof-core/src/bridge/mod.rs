@@ -544,28 +544,6 @@ mod tests {
             })
             .collect();
 
-        // Compute constrained global indices.
-        let mut removal_map: HashMap<U256, usize> = HashMap::new();
-        for idx in &unclaimed_global_indexes {
-            *removal_map.entry(*idx).or_insert(0) += 1;
-        }
-        let _constrained_global_indices: Vec<U256> = claimed_global_indexes
-            .iter()
-            .cloned()
-            .filter(|v| {
-                if let Some(count) = removal_map.get_mut(v) {
-                    if *count > 0 {
-                        *count -= 1;
-                        false
-                    } else {
-                        true
-                    }
-                } else {
-                    true
-                }
-            })
-            .collect();
-
         let imported_l1_info_tree_leafs: Vec<InsertedGER> = global_exit_roots
             .as_array()
             .unwrap()
@@ -593,8 +571,14 @@ mod tests {
                                 .expect("Expected 32 siblings in proof"),
                         ),
                         l1_info_tree_leaf: L1InfoTreeLeaf {
-                            rer: Digest::default(), // TODO: remove from API
-                            mer: Digest::default(), // TODO: remove from API
+                            rer: hex::decode(ger["rer"].as_str().unwrap().trim_start_matches("0x"))
+                                .unwrap()
+                                .try_into()
+                                .unwrap(), // TODO: remove from API
+                            mer: hex::decode(ger["mer"].as_str().unwrap().trim_start_matches("0x"))
+                                .unwrap()
+                                .try_into()
+                                .unwrap(), // TODO: remove from API
                             l1_info_tree_index: index as u32,
                             inner: L1InfoTreeLeafInner {
                                 global_exit_root: hex::decode(
@@ -850,6 +834,27 @@ mod tests {
             })
             .collect();
 
+        let mut removal_map: HashMap<U256, usize> = HashMap::new();
+        for idx in &unclaimed_global_indexes {
+            *removal_map.entry(*idx).or_insert(0) += 1;
+        }
+        let bridge_exits_claimed_filtered: Vec<GlobalIndexWithLeafHash> = bridge_exits_claimed
+            .clone()
+            .into_iter()
+            .filter(|v| {
+                if let Some(count) = removal_map.get_mut(&v.global_index) {
+                    if *count > 0 {
+                        *count -= 1;
+                        false
+                    } else {
+                        true
+                    }
+                } else {
+                    true
+                }
+            })
+            .collect();
+
         // Finalize the sketches
         let prev_l2_block_sketch = prev_l2_block_executor.finalize().await?;
         let new_l2_block_sketch = new_l2_block_executor.finalize().await?;
@@ -862,7 +867,7 @@ mod tests {
             new_local_exit_root: expected_new_ler,
             l1_info_root,
             commit_imported_bridge_exits: ImportedBridgeExitCommitmentValues {
-                claims: bridge_exits_claimed.clone(),
+                claims: bridge_exits_claimed_filtered,
             }
             .commitment(IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION),
             bridge_witness: BridgeWitness {
