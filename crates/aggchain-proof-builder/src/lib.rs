@@ -83,7 +83,7 @@ pub struct AggchainProofBuilderResponse {
     /// Verification key for the aggchain proof.
     pub vkey: Vec<u8>,
 
-    /// Aggchain params
+    /// Aggchain params.
     pub aggchain_params: Digest,
 
     /// Last block proven, before this aggchain proof.
@@ -92,8 +92,11 @@ pub struct AggchainProofBuilderResponse {
     /// Last block included in the aggchain proof.
     pub end_block: u64,
 
-    /// Output root
+    /// Output root.
     pub output_root: Digest,
+
+    /// New Local exit root.
+    pub new_local_exit_root: Digest,
 }
 
 /// This service is responsible for building an Aggchain proof.
@@ -402,6 +405,7 @@ where
                 last_proven_block,
                 end_block,
                 output_root,
+                new_local_exit_root: public_input.new_local_exit_root,
             })
         }
         .boxed()
