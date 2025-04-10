@@ -61,10 +61,7 @@ impl AggregationProver for MockProver {
             {
                 Ok(proof_response) => break proof_response,
                 Err(JsonRpcError::Call(error))
-                    if error.code() == -32000
-                        && error
-                            .message()
-                            .contains("agg proof request is still pending") =>
+                    if error.code() == -5000 || error.code() == -7000 =>
                 {
                     debug!(
                         request_id = real_request_id,
