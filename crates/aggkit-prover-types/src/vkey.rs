@@ -1,4 +1,7 @@
-use std::{fmt::{LowerHex, UpperHex}, sync::OnceLock};
+use std::{
+    fmt::{LowerHex, UpperHex},
+    sync::OnceLock,
+};
 
 use bincode::Options;
 pub use sp1_sdk::SP1VerifyingKey;
