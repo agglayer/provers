@@ -1,4 +1,4 @@
-use std::sync::OnceLock;
+use std::{fmt::{LowerHex, UpperHex}, sync::OnceLock};
 
 use bincode::Options;
 pub use sp1_sdk::SP1VerifyingKey;
@@ -47,15 +47,15 @@ impl std::ops::Deref for LazyVerifyingKey {
     }
 }
 
-impl std::fmt::LowerHex for LazyVerifyingKey {
+impl LowerHex for LazyVerifyingKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.as_bytes().fmt(f)
+        LowerHex::fmt(&self.as_bytes(), f)
     }
 }
 
-impl std::fmt::UpperHex for LazyVerifyingKey {
+impl UpperHex for LazyVerifyingKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.as_bytes().fmt(f)
+        UpperHex::fmt(&self.as_bytes(), f)
     }
 }
 
