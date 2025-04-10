@@ -38,6 +38,10 @@ RUN ARCHITECTURE=$(uname -m | sed -e "s/arm64/arm_64/g" | sed -e "s/aarch64/aarc
 COPY --from=go-builder /usr/local/go /usr/local/go
 ENV PATH="/usr/local/go/bin:$PATH"
 
+RUN mkdir -p /root/.sp1/circuits/${CIRCUIT_TYPE}/${CIRCUIT_VERSION}
+RUN curl -s -o /tmp/circuits.tar.gz ${CIRCUIT_ARTIFACTS_URL_BASE}/${CIRCUIT_VERSION}-${CIRCUIT_TYPE}.tar.gz \
+    && tar -Pxzf/tmp/circuits.tar.gz -C /root/.sp1/circuits/${CIRCUIT_TYPE}/${CIRCUIT_VERSION}
+
 COPY --from=planner /app/recipe.json recipe.json
 # Notice that we are specifying the --target flag!
 RUN cargo chef cook --release --recipe-path recipe.json
@@ -46,10 +50,6 @@ COPY --link crates crates
 COPY --link proto proto
 COPY --link Cargo.toml Cargo.toml
 COPY --link Cargo.lock Cargo.lock
-
-RUN mkdir -p /root/.sp1/circuits/${CIRCUIT_TYPE}/${CIRCUIT_VERSION}
-RUN curl -s -o /tmp/circuits.tar.gz ${CIRCUIT_ARTIFACTS_URL_BASE}/${CIRCUIT_VERSION}-${CIRCUIT_TYPE}.tar.gz \
-    && tar -Pxzf/tmp/circuits.tar.gz -C /root/.sp1/circuits/${CIRCUIT_TYPE}/${CIRCUIT_VERSION}
 
 RUN cargo build --release --bin aggkit-prover
 
