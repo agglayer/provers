@@ -16,7 +16,10 @@ use alloy::network::AnyNetwork;
 use alloy::primitives::{Address, B256};
 use alloy::providers::{Provider, RootProvider};
 use alloy::sol_types::SolCall;
-use contracts::{GlobalExitRootManagerL2SovereignChainRpcClient, L2EvmStateSketchFetcher};
+use contracts::{
+    GetTrustedSequencerAddress, GlobalExitRootManagerL2SovereignChainRpcClient,
+    L2EvmStateSketchFetcher,
+};
 use jsonrpsee::core::client::ClientT;
 use jsonrpsee::http_client::HttpClient;
 use jsonrpsee::rpc_params;
@@ -62,6 +65,9 @@ pub struct AggchainContractsRpcClient<RpcProvider> {
 
     /// Aggchain FEP contract on the l1 network.
     aggchain_fep: AggchainFepRpcClient<RpcProvider>,
+
+    /// Trusted sequencer address.
+    trusted_sequencer_addr: agglayer_primitives::Address,
 }
 
 impl<T: alloy::providers::Provider> AggchainContractsClient for AggchainContractsRpcClient<T> {}
@@ -115,6 +121,16 @@ where
             .map_err(Error::RollupConfigHashError)?;
 
         Ok((*response._0).into())
+    }
+}
+
+#[async_trait::async_trait]
+impl<RpcProvider> GetTrustedSequencerAddress for AggchainContractsRpcClient<RpcProvider>
+where
+    RpcProvider: alloy::providers::Provider + Send + Sync,
+{
+    async fn get_trusted_sequencer_address(&self) -> Result<Address, Error> {
+        Ok(self.trusted_sequencer_addr)
     }
 }
 
@@ -361,6 +377,7 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
         // Create client for AggchainFep smart contract.
         let aggchain_fep = AggchainFep::new(aggchain_fep_address, l1_client.clone());
 
+        let trusted_sequencer_addr = aggchain_fep.trustedSequencer().call().await.unwrap()._0;
         let l2_root_provider =
             RootProvider::<AnyNetwork>::new_http(config.l2_execution_layer_rpc_endpoint.clone());
 
@@ -376,6 +393,7 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             aggchain_fep,
             l2_root_provider,
             global_exit_root_manager_l2,
+            trusted_sequencer_addr,
         })
     }
 }
