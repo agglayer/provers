@@ -4814,7 +4814,7 @@ dependencies = [
 [[package]]
 name = "op-succinct-elfs"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/op-succinct.git?branch=vcastellm%2Fagglayer#1f2d85c7e0e0e3bdaf5b4e0dea45bea963bfc3b1"
+source = "git+https://github.com/agglayer/op-succinct.git?tag=v1.2.7-agglayer#7192e1a962c3f48300b4f87f63942fced8527889"
 
 [[package]]
 name = "opaque-debug"
