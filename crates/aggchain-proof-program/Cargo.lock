@@ -50,7 +50,7 @@ dependencies = [
 [[package]]
 name = "agglayer-primitives"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?branch=feat%2Fcommit-imported#66f6bf9da67218983b6606fd6bb0e9a93efb9f52"
+source = "git+https://github.com/agglayer/interop.git?branch=feat%2Fcommit-imported#04c403462e9fa7c9b376346a5596baf079c5dbd1"
 dependencies = [
  "alloy-primitives",
  "byteorder",
@@ -63,7 +63,7 @@ dependencies = [
 [[package]]
 name = "agglayer-tries"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?branch=feat%2Fcommit-imported#66f6bf9da67218983b6606fd6bb0e9a93efb9f52"
+source = "git+https://github.com/agglayer/interop.git?branch=feat%2Fcommit-imported#04c403462e9fa7c9b376346a5596baf079c5dbd1"
 dependencies = [
  "agglayer-primitives",
  "serde",
@@ -947,9 +947,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.2.18"
+version = "1.2.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "525046617d8376e3db1deffb079e91cef90a89fc3ca5c185bbf8c9ecdd15cd5c"
+checksum = "8e3a13707ac958681c13b39b458c073d0d9bc8a22cb1b2f4c8e55eb72c13f362"
 dependencies = [
  "jobserver",
  "libc",
@@ -4459,7 +4459,7 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 [[package]]
 name = "unified-bridge"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?branch=feat%2Fcommit-imported#66f6bf9da67218983b6606fd6bb0e9a93efb9f52"
+source = "git+https://github.com/agglayer/interop.git?branch=feat%2Fcommit-imported#04c403462e9fa7c9b376346a5596baf079c5dbd1"
 dependencies = [
  "agglayer-primitives",
  "agglayer-tries",
