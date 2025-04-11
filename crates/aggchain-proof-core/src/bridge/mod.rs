@@ -60,9 +60,11 @@ pub enum BridgeConstraintsError {
 
     /// The provided hash chain does not correspond with the computed one.
     #[error(
-        "Mismatch on the hash chain {hash_chain_type:?}. computed: {computed}, input: {input}"
+        "Mismatch on the hash chain {hash_chain_type:?}. prev_hash_chain: {prev_hash_chain}, \
+         new_hash_chain: (computed: {computed} != expected: {input})"
     )]
     MismatchHashChain {
+        prev_hash_chain: Digest,
         computed: Digest,
         input: Digest,
         hash_chain_type: HashChainType,
@@ -199,8 +201,8 @@ impl BridgeConstraintsInput {
                 )
                 .map(|(prev, new)| (prev.hashChain.0.into(), new.hashChain.0.into()))?;
 
-            validate_hash_chain(
-                self.bridge_witness.raw_inserted_gers.iter().cloned(),
+            self.validate_hash_chain(
+                &self.bridge_witness.raw_inserted_gers,
                 prev_hash_chain,
                 new_hash_chain,
                 hash_chain_type,
@@ -218,8 +220,8 @@ impl BridgeConstraintsInput {
                 )
                 .map(|(prev, new)| (prev.hashChain.0.into(), new.hashChain.0.into()))?;
 
-            validate_hash_chain(
-                self.bridge_witness.removed_gers.iter().cloned(),
+            self.validate_hash_chain(
+                &self.bridge_witness.removed_gers,
                 prev_hash_chain,
                 new_hash_chain,
                 hash_chain_type,
@@ -245,15 +247,14 @@ impl BridgeConstraintsInput {
                 )
                 .map(|(prev, new)| (prev.hashChain.0.into(), new.hashChain.0.into()))?;
 
-            validate_hash_chain(
-                self.bridge_witness
-                    .bridge_exits_claimed
-                    .iter()
-                    .map(|idx| idx.compute_bridge_exit_commitment()),
-                prev_hash_chain,
-                new_hash_chain,
-                hash_chain_type,
-            )?;
+            let claims: Vec<Digest> = self
+                .bridge_witness
+                .bridge_exits_claimed
+                .iter()
+                .map(|idx| idx.compute_bridge_exit_commitment())
+                .collect();
+
+            self.validate_hash_chain(&claims, prev_hash_chain, new_hash_chain, hash_chain_type)?;
         }
 
         // Verify the hash chain on unset global index
@@ -267,11 +268,15 @@ impl BridgeConstraintsInput {
                 )
                 .map(|(prev, new)| (prev.hashChain.0.into(), new.hashChain.0.into()))?;
 
-            validate_hash_chain(
-                self.bridge_witness
-                    .global_indices_unset
-                    .iter()
-                    .map(|idx| idx.to_be_bytes().into()),
+            let unset_claims: Vec<Digest> = self
+                .bridge_witness
+                .global_indices_unset
+                .iter()
+                .map(|idx| idx.to_be_bytes().into())
+                .collect();
+
+            self.validate_hash_chain(
+                &unset_claims,
                 prev_hash_chain,
                 new_hash_chain,
                 hash_chain_type,
@@ -404,27 +409,38 @@ impl BridgeConstraintsInput {
         self.verify_constrained_global_indices()?;
         self.verify_inserted_gers()
     }
-}
 
-/// Validate that the rebuilt hash chain is equal to the new hash chain.
-fn validate_hash_chain(
-    hashes: impl Iterator<Item = Digest>,
-    prev_hash_chain: Digest,
-    new_hash_chain: Digest,
-    hash_chain_type: HashChainType,
-) -> Result<(), BridgeConstraintsError> {
-    let rebuilt_hash_chain =
-        hashes.fold(prev_hash_chain, |acc, hash| keccak256_combine([acc, hash]));
+    /// Validate that the rebuilt hash chain is equal to the new hash chain.
+    fn validate_hash_chain(
+        &self,
+        hashes: &[Digest],
+        prev_hash_chain: Digest,
+        new_hash_chain: Digest,
+        hash_chain_type: HashChainType,
+    ) -> Result<(), BridgeConstraintsError> {
+        let rebuilt_hash_chain = hashes
+            .iter()
+            .fold(prev_hash_chain, |acc, &hash| keccak256_combine([acc, hash]));
 
-    if rebuilt_hash_chain != new_hash_chain {
-        return Err(BridgeConstraintsError::MismatchHashChain {
-            computed: rebuilt_hash_chain,
-            input: new_hash_chain,
-            hash_chain_type,
-        });
+        if rebuilt_hash_chain != new_hash_chain {
+            eprintln!(
+                "block_hash. prev: {:?}, new: {:?}",
+                self.prev_l2_block_hash, self.new_l2_block_hash
+            );
+            hashes.iter().enumerate().for_each(|(idx, hash)| {
+                eprintln!("element #{idx} ({:?}): {hash:?}", hash_chain_type)
+            });
+
+            return Err(BridgeConstraintsError::MismatchHashChain {
+                prev_hash_chain,
+                computed: rebuilt_hash_chain,
+                input: new_hash_chain,
+                hash_chain_type,
+            });
+        }
+
+        Ok(())
     }
-
-    Ok(())
 }
 
 fn filter_values<K: Eq + Hash + Copy, V: Copy>(
