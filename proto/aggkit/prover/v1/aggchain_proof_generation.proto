@@ -18,23 +18,26 @@ message GenerateAggchainProofRequest {
   // The last proven block before the requested aggchain prof.
   uint64 last_proven_block = 1;
 
+  // The min end block for which the aggchain proof is requested.
+  uitn64 min_end_block = 2
+
   // The max end block for which the aggchain proof is requested.
-  uint64 requested_end_block = 2;
+  uint64 requested_end_block = 3;
 
   // L1 Info tree root. (hash)
-  agglayer.interop.types.v1.FixedBytes32 l1_info_tree_root_hash = 3;
+  agglayer.interop.types.v1.FixedBytes32 l1_info_tree_root_hash = 4;
 
   // L1 Info tree leaf
-  agglayer.interop.types.v1.L1InfoTreeLeafWithContext l1_info_tree_leaf = 4;
+  agglayer.interop.types.v1.L1InfoTreeLeafWithContext l1_info_tree_leaf = 5;
 
   // L1 Info tree proof. ([32]hash)
-  agglayer.interop.types.v1.MerkleProof l1_info_tree_merkle_proof = 5;
+  agglayer.interop.types.v1.MerkleProof l1_info_tree_merkle_proof = 6;
 
   // Map of the GER with their ger leaf. Note: the GER (string) is a base64 encoded string of the GER digest.
-  map<string, ProvenInsertedGERWithBlockNumber> ger_leaves = 6;
+  map<string, ProvenInsertedGERWithBlockNumber> ger_leaves = 7;
 
   // bridge exits
-  repeated ImportedBridgeExitWithBlockNumber imported_bridge_exits = 7;
+  repeated ImportedBridgeExitWithBlockNumber imported_bridge_exits = 8;
 }
 
 // The aggchain proof response message.

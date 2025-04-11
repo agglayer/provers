@@ -15,6 +15,9 @@ pub struct AggchainProofInputs {
     ///  The last proven block before the requested aggchain proof.
     pub last_proven_block: u64,
 
+    /// The minimum end block for which the aggchain proof is requested.
+    pub min_end_block: u64,
+
     /// The max end block for which the aggchain proof is requested.
     pub requested_end_block: u64,
 

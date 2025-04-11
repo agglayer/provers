@@ -33,6 +33,7 @@ mod proposer_rpc {
                     "result": {
                         "last_proven_block": 110,
                         "end_block": 200,
+                        "min_end_block": 150,
                         "proof_request_id": proof_request_id
                     }
                 })
@@ -45,6 +46,7 @@ mod proposer_rpc {
         let request = AggregationProofProposerRequest {
             last_proven_block: 110,
             requested_end_block: 200,
+            min_end_block: 150,
             l1_block_number: 230203,
             l1_block_hash: [23; 32].into(),
         };

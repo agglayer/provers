@@ -13,6 +13,7 @@ impl TryFrom<v1::GenerateAggchainProofRequest> for AggchainProofInputs {
         Ok(Self {
             last_proven_block: value.last_proven_block,
             requested_end_block: value.requested_end_block,
+            min_end_block: value.min_end_block,
             l1_info_tree_root_hash: value
                 .l1_info_tree_root_hash
                 .ok_or_else(|| Error::MissingL1InfoTreeRootHash {
