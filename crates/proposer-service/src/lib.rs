@@ -34,8 +34,7 @@ pub mod error;
 #[cfg(test)]
 mod tests;
 
-pub const AGGREGATION_ELF: &[u8] =
-    include_bytes!("../../aggchain-proof-program/elf/aggregation-elf");
+pub const AGGREGATION_ELF: &[u8] = proposer_elfs::aggregation::ELF;
 
 #[derive(Educe)]
 #[educe(Clone(bound()))]
