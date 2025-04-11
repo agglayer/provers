@@ -57,6 +57,20 @@ impl AggchainProofGrpcService for GrpcService {
             ));
         }
 
+        if request.min_end_block > request.requested_end_block {
+            let mut error = ErrorDetails::new();
+            error.add_bad_request_violation(
+                "min_end_block",
+                "min_end_block must be less than or equal to requested_end_block",
+            );
+
+            return Err(Status::with_error_details(
+                tonic::Code::InvalidArgument,
+                "Invalid request argument(s)",
+                error,
+            ));
+        }
+
         let aggchain_proof_inputs: AggchainProofInputs =
             request
                 .try_into()

@@ -43,6 +43,10 @@ pub struct AggregationProofProposerRequest {
     /// L1 block hash.
     #[serde_as(as = "DisplayFromStr")]
     pub l1_block_hash: B256,
+
+    /// Minimum end block for the aggregation proof.
+    #[serde(rename = "minEndBlock")]
+    pub min_end_block: u64,
 }
 
 /// Response for the external proposer `request_span_proof` call

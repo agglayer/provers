@@ -44,6 +44,7 @@ pub struct FepProposerRequest {
     pub last_proven_block: u64,
     pub requested_end_block: u64,
     pub l1_block_hash: B256,
+    pub min_end_block: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
