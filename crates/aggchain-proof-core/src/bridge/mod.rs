@@ -495,7 +495,7 @@ mod tests {
 
     use alloy::providers::RootProvider;
     use alloy::rpc::types::BlockNumberOrTag;
-    use alloy_primitives::hex;
+    use alloy_primitives::{b256, hex};
     use alloy_sol_types::SolCall;
     use serde_json::Value;
     use sp1_cc_client_executor::ContractInput;
@@ -976,5 +976,73 @@ mod tests {
         let bridge_data_input: BridgeConstraintsInput = serde_json::from_reader(reader).unwrap();
 
         assert_bridge_data(bridge_data_input);
+    }
+
+    #[test]
+    fn tess() {
+        // [aggkit-prover] stderr: element #0 (InsertedGER):
+        // 29376da9927d334f42dcfab72e66eaa680b27885ee051e641cf873a624f519a7
+        // [aggkit-prover] stderr: element #1 (InsertedGER):
+        // 09ee5a1fa8eba4cbb5c33073a977fa25dea49f253e24f2c0579de5127de6bd70
+        // [aggkit-prover] stderr:
+        // [aggkit-prover] stderr: thread '<unnamed>' panicked at src/main.rs:9:82:
+        // [aggkit-prover] stderr: called `Result::unwrap()` on an `Err` value:
+        // BridgeConstraintsError(MismatchHashChain { prev_hash_chain:
+        // 0000000000000000000000000000000000000000000000000000000000000000, computed:
+        // 0cbfd9235f867986ea74948ae27ddccc0d01034b490ae6ceb6132132067296ac, input:
+        // 7f57802d920580129654ca037a73e22be93dde6c70e68dff8364b516a5efb77f,
+        // hash_chain_type: InsertedGER })
+
+        let mer: Digest = b256!("f9b6bc741814bfd790486d40e363581e3b34923024963a8c8ca53b2d8b9dd2a1")
+            .0
+            .into();
+        let rer: Digest = b256!("0000000000000000000000000000000000000000000000000000000000000000")
+            .0
+            .into();
+        let ger: Digest = b256!("5a1e9708550877ad3f14494dd7a5836be6eed5bf2189b9be2f06a90cd4849309")
+            .0
+            .into();
+
+        assert_eq!(ger, keccak256_combine([mer, rer]));
+    }
+
+    #[test]
+    fn hashchain() {
+        // [aggkit-prover] stderr: element #0 (InsertedGER):
+        // 29376da9927d334f42dcfab72e66eaa680b27885ee051e641cf873a624f519a7
+        // [aggkit-prover] stderr: element #1 (InsertedGER):
+        // 09ee5a1fa8eba4cbb5c33073a977fa25dea49f253e24f2c0579de5127de6bd70
+        // [aggkit-prover] stderr:
+        // [aggkit-prover] stderr: thread '<unnamed>' panicked at src/main.rs:9:82:
+        // [aggkit-prover] stderr: called `Result::unwrap()` on an `Err` value:
+        // BridgeConstraintsError(MismatchHashChain { prev_hash_chain:
+        // 0000000000000000000000000000000000000000000000000000000000000000, computed:
+        // 0cbfd9235f867986ea74948ae27ddccc0d01034b490ae6ceb6132132067296ac, input:
+        // 7f57802d920580129654ca037a73e22be93dde6c70e68dff8364b516a5efb77f,
+        // hash_chain_type: InsertedGER })
+
+        let prev_hash_chain: Digest =
+            b256!("0000000000000000000000000000000000000000000000000000000000000000")
+                .0
+                .into();
+        let items: Vec<Digest> = vec![
+            b256!("09ee5a1fa8eba4cbb5c33073a977fa25dea49f253e24f2c0579de5127de6bd70")
+                .0
+                .into(),
+            b256!("29376da9927d334f42dcfab72e66eaa680b27885ee051e641cf873a624f519a7")
+                .0
+                .into(),
+        ];
+
+        let expected: Digest =
+            b256!("7f57802d920580129654ca037a73e22be93dde6c70e68dff8364b516a5efb77f")
+                .0
+                .into();
+
+        let computed: Digest = items
+            .iter()
+            .fold(prev_hash_chain, |acc, hash| keccak256_combine([acc, *hash]));
+
+        assert_eq!(expected, computed);
     }
 }

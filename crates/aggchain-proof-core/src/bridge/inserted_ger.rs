@@ -9,6 +9,8 @@ pub struct InsertedGER {
     pub proof: MerkleProof,
     /// L1 info tree leaf to reconstruct the leaf hash.
     pub l1_info_tree_leaf: L1InfoTreeLeaf,
+    /// Block number in which the GER got inserted.
+    pub block_number: u64,
 }
 
 impl InsertedGER {
