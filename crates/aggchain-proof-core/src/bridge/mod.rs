@@ -11,6 +11,11 @@ use inserted_ger::InsertedGER;
 use serde::{Deserialize, Serialize};
 use sp1_cc_client_executor::io::EVMStateSketch;
 use static_call::{HashChainType, StaticCallError, StaticCallStage, StaticCallWithContext};
+use unified_bridge::imported_bridge_exit::{
+    GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues,
+};
+
+use crate::proof::IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION;
 
 pub mod inserted_ger;
 pub mod static_call;
@@ -60,9 +65,11 @@ pub enum BridgeConstraintsError {
 
     /// The provided hash chain does not correspond with the computed one.
     #[error(
-        "Mismatch on the hash chain {hash_chain_type:?}. computed: {computed}, input: {input}"
+        "Mismatch on the hash chain {hash_chain_type:?}. prev_hash_chain: {prev_hash_chain}, \
+         new_hash_chain: (computed: {computed} != expected: {input})"
     )]
     MismatchHashChain {
+        prev_hash_chain: Digest,
         computed: Digest,
         input: Digest,
         hash_chain_type: HashChainType,
@@ -107,23 +114,6 @@ impl BridgeConstraintsError {
         stage: StaticCallStage,
     ) -> BridgeConstraintsError {
         BridgeConstraintsError::StaticCallError { source, stage }
-    }
-}
-
-/// Refers to one claim as per its global index and the hash of the underlying
-/// bridge exit.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct GlobalIndexWithLeafHash {
-    /// Global index of the claimed bridge exit.
-    pub global_index: U256,
-    /// Hash of the claimed bridge exit.
-    pub bridge_exit_hash: Digest,
-}
-
-impl GlobalIndexWithLeafHash {
-    /// Compute the bridge exit commitment.
-    pub fn compute_bridge_exit_commitment(&self) -> Digest {
-        keccak256_combine([self.global_index.to_be_bytes(), self.bridge_exit_hash.0])
     }
 }
 
@@ -199,8 +189,8 @@ impl BridgeConstraintsInput {
                 )
                 .map(|(prev, new)| (prev.hashChain.0.into(), new.hashChain.0.into()))?;
 
-            validate_hash_chain(
-                self.bridge_witness.raw_inserted_gers.iter().cloned(),
+            self.validate_hash_chain(
+                &self.bridge_witness.raw_inserted_gers,
                 prev_hash_chain,
                 new_hash_chain,
                 hash_chain_type,
@@ -218,8 +208,8 @@ impl BridgeConstraintsInput {
                 )
                 .map(|(prev, new)| (prev.hashChain.0.into(), new.hashChain.0.into()))?;
 
-            validate_hash_chain(
-                self.bridge_witness.removed_gers.iter().cloned(),
+            self.validate_hash_chain(
+                &self.bridge_witness.removed_gers,
                 prev_hash_chain,
                 new_hash_chain,
                 hash_chain_type,
@@ -245,15 +235,14 @@ impl BridgeConstraintsInput {
                 )
                 .map(|(prev, new)| (prev.hashChain.0.into(), new.hashChain.0.into()))?;
 
-            validate_hash_chain(
-                self.bridge_witness
-                    .bridge_exits_claimed
-                    .iter()
-                    .map(|idx| idx.compute_bridge_exit_commitment()),
-                prev_hash_chain,
-                new_hash_chain,
-                hash_chain_type,
-            )?;
+            let claims: Vec<Digest> = self
+                .bridge_witness
+                .bridge_exits_claimed
+                .iter()
+                .map(|&idx| idx.commitment())
+                .collect();
+
+            self.validate_hash_chain(&claims, prev_hash_chain, new_hash_chain, hash_chain_type)?;
         }
 
         // Verify the hash chain on unset global index
@@ -267,11 +256,15 @@ impl BridgeConstraintsInput {
                 )
                 .map(|(prev, new)| (prev.hashChain.0.into(), new.hashChain.0.into()))?;
 
-            validate_hash_chain(
-                self.bridge_witness
-                    .global_indices_unset
-                    .iter()
-                    .map(|idx| idx.to_be_bytes().into()),
+            let unset_claims: Vec<Digest> = self
+                .bridge_witness
+                .global_indices_unset
+                .iter()
+                .map(|idx| idx.to_be_bytes().into())
+                .collect();
+
+            self.validate_hash_chain(
+                &unset_claims,
                 prev_hash_chain,
                 new_hash_chain,
                 hash_chain_type,
@@ -331,20 +324,22 @@ impl BridgeConstraintsInput {
     /// Verify that the claimed global indexes minus the unset global indexes
     /// are equal to the Constrained global indexes.
     fn verify_constrained_global_indices(&self) -> Result<(), BridgeConstraintsError> {
-        let filtered_claimed = filter_values(
-            &self.bridge_witness.global_indices_unset,
-            &self.bridge_witness.bridge_exits_claimed,
-            |exit: &GlobalIndexWithLeafHash| -> U256 { exit.global_index },
-        )?;
-
         // Check if the filtered claimed global indices are equal to the constrained
         // global indices.
-        let computed_commit_imported_bridge_exits =
-            compute_imported_bridge_exits_commitment(&filtered_claimed);
+        let constrained_claims = ImportedBridgeExitCommitmentValues {
+            claims: filter_values(
+                &self.bridge_witness.global_indices_unset,
+                &self.bridge_witness.bridge_exits_claimed,
+                |exit: &GlobalIndexWithLeafHash| -> U256 { exit.global_index },
+            )?,
+        };
 
-        if computed_commit_imported_bridge_exits != self.commit_imported_bridge_exits {
+        let computed_commitment =
+            constrained_claims.commitment(IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION);
+
+        if computed_commitment != self.commit_imported_bridge_exits {
             return Err(BridgeConstraintsError::MismatchConstrainedBridgeExits {
-                computed: computed_commit_imported_bridge_exits,
+                computed: computed_commitment,
                 input: self.commit_imported_bridge_exits,
             });
         }
@@ -404,27 +399,38 @@ impl BridgeConstraintsInput {
         self.verify_constrained_global_indices()?;
         self.verify_inserted_gers()
     }
-}
 
-/// Validate that the rebuilt hash chain is equal to the new hash chain.
-fn validate_hash_chain(
-    hashes: impl Iterator<Item = Digest>,
-    prev_hash_chain: Digest,
-    new_hash_chain: Digest,
-    hash_chain_type: HashChainType,
-) -> Result<(), BridgeConstraintsError> {
-    let rebuilt_hash_chain =
-        hashes.fold(prev_hash_chain, |acc, hash| keccak256_combine([acc, hash]));
+    /// Validate that the rebuilt hash chain is equal to the new hash chain.
+    fn validate_hash_chain(
+        &self,
+        hashes: &[Digest],
+        prev_hash_chain: Digest,
+        new_hash_chain: Digest,
+        hash_chain_type: HashChainType,
+    ) -> Result<(), BridgeConstraintsError> {
+        let rebuilt_hash_chain = hashes
+            .iter()
+            .fold(prev_hash_chain, |acc, &hash| keccak256_combine([acc, hash]));
 
-    if rebuilt_hash_chain != new_hash_chain {
-        return Err(BridgeConstraintsError::MismatchHashChain {
-            computed: rebuilt_hash_chain,
-            input: new_hash_chain,
-            hash_chain_type,
-        });
+        if rebuilt_hash_chain != new_hash_chain {
+            eprintln!(
+                "block_hash. prev: {:?}, new: {:?}",
+                self.prev_l2_block_hash, self.new_l2_block_hash
+            );
+            hashes.iter().enumerate().for_each(|(idx, hash)| {
+                eprintln!("element #{idx} ({hash_chain_type:?}): {hash:?}")
+            });
+
+            return Err(BridgeConstraintsError::MismatchHashChain {
+                prev_hash_chain,
+                computed: rebuilt_hash_chain,
+                input: new_hash_chain,
+                hash_chain_type,
+            });
+        }
+
+        Ok(())
     }
-
-    Ok(())
 }
 
 fn filter_values<K: Eq + Hash + Copy, V: Copy>(
@@ -458,16 +464,6 @@ fn filter_values<K: Eq + Hash + Copy, V: Copy>(
         .collect();
 
     Ok(result)
-}
-
-pub fn compute_imported_bridge_exits_commitment(
-    bridge_exits_claimed: &[GlobalIndexWithLeafHash],
-) -> Digest {
-    keccak256_combine(
-        bridge_exits_claimed
-            .iter()
-            .map(|exit| exit.compute_bridge_exit_commitment()),
-    )
 }
 
 #[cfg(test)]
@@ -564,28 +560,6 @@ mod tests {
             })
             .collect();
 
-        // Compute constrained global indices.
-        let mut removal_map: HashMap<U256, usize> = HashMap::new();
-        for idx in &unclaimed_global_indexes {
-            *removal_map.entry(*idx).or_insert(0) += 1;
-        }
-        let _constrained_global_indices: Vec<U256> = claimed_global_indexes
-            .iter()
-            .cloned()
-            .filter(|v| {
-                if let Some(count) = removal_map.get_mut(v) {
-                    if *count > 0 {
-                        *count -= 1;
-                        false
-                    } else {
-                        true
-                    }
-                } else {
-                    true
-                }
-            })
-            .collect();
-
         let imported_l1_info_tree_leafs: Vec<InsertedGER> = global_exit_roots
             .as_array()
             .unwrap()
@@ -596,6 +570,8 @@ mod tests {
                     None
                 } else {
                     Some(InsertedGER {
+                        block_index: 0u64,  // dataset already ordered
+                        block_number: 0u64, // dataset already ordered
                         proof: MerkleProof::new(
                             l1_info_root,
                             ger["proof"]
@@ -613,8 +589,14 @@ mod tests {
                                 .expect("Expected 32 siblings in proof"),
                         ),
                         l1_info_tree_leaf: L1InfoTreeLeaf {
-                            rer: Digest::default(), // TODO: remove from API
-                            mer: Digest::default(), // TODO: remove from API
+                            rer: hex::decode(ger["rer"].as_str().unwrap().trim_start_matches("0x"))
+                                .unwrap()
+                                .try_into()
+                                .unwrap(), // TODO: remove from API
+                            mer: hex::decode(ger["mer"].as_str().unwrap().trim_start_matches("0x"))
+                                .unwrap()
+                                .try_into()
+                                .unwrap(), // TODO: remove from API
                             l1_info_tree_index: index as u32,
                             inner: L1InfoTreeLeafInner {
                                 global_exit_root: hex::decode(
@@ -870,6 +852,27 @@ mod tests {
             })
             .collect();
 
+        let mut removal_map: HashMap<U256, usize> = HashMap::new();
+        for idx in &unclaimed_global_indexes {
+            *removal_map.entry(*idx).or_insert(0) += 1;
+        }
+        let bridge_exits_claimed_filtered: Vec<GlobalIndexWithLeafHash> = bridge_exits_claimed
+            .clone()
+            .into_iter()
+            .filter(|v| {
+                if let Some(count) = removal_map.get_mut(&v.global_index) {
+                    if *count > 0 {
+                        *count -= 1;
+                        false
+                    } else {
+                        true
+                    }
+                } else {
+                    true
+                }
+            })
+            .collect();
+
         // Finalize the sketches
         let prev_l2_block_sketch = prev_l2_block_executor.finalize().await?;
         let new_l2_block_sketch = new_l2_block_executor.finalize().await?;
@@ -881,9 +884,10 @@ mod tests {
             new_l2_block_hash: new_l2_block_sketch.header.hash_slow().0.into(),
             new_local_exit_root: expected_new_ler,
             l1_info_root,
-            commit_imported_bridge_exits: compute_imported_bridge_exits_commitment(
-                &bridge_exits_claimed,
-            ),
+            commit_imported_bridge_exits: ImportedBridgeExitCommitmentValues {
+                claims: bridge_exits_claimed_filtered,
+            }
+            .commitment(IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION),
             bridge_witness: BridgeWitness {
                 inserted_gers: final_imported_l1_info_tree_leafs,
                 raw_inserted_gers,

@@ -29,6 +29,7 @@ prover-config.workspace = true
 prover-executor.workspace = true
 proposer-elfs.workspace = true
 serde_json.workspace = true
+unified-bridge.workspace = true
 
 [dev-dependencies]
 tokio.workspace = true

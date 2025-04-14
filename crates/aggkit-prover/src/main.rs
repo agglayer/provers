@@ -4,7 +4,6 @@ use anyhow::Context as _;
 use clap::Parser as _;
 use prover_config::{CpuProverConfig, ProverType};
 use sp1_sdk::HashableKey as _;
-use sp1_zkvm::lib::utils::words_to_bytes_le;
 
 fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
@@ -39,7 +38,7 @@ fn main() -> anyhow::Result<()> {
                 aggchain_proof_service::AGGCHAIN_PROOF_ELF,
             );
             let vkey = executor.get_vkey();
-            let vkey_hex = hex::encode(words_to_bytes_le(&vkey.hash_u32()));
+            let vkey_hex = hex::encode(vkey.hash_bytes());
 
             println!("{vkey_hex}");
         }
