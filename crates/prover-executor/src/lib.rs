@@ -127,6 +127,7 @@ impl Executor {
                         cpu_prover_config.max_concurrency_limit,
                         LocalExecutor {
                             prover: Arc::new(prover),
+                            is_mock: false,
                             proving_key,
                             verification_key,
                         },
@@ -145,6 +146,7 @@ impl Executor {
                         mock_prover_config.max_concurrency_limit,
                         LocalExecutor {
                             prover: Arc::new(prover),
+                            is_mock: true,
                             proving_key,
                             verification_key,
                         },
@@ -233,6 +235,7 @@ impl Service<Request> for Executor {
 struct LocalExecutor {
     proving_key: SP1ProvingKey,
     verification_key: SP1VerifyingKey,
+    is_mock: bool,
     prover: Arc<CpuProver>,
 }
 
@@ -249,6 +252,7 @@ impl Service<Request> for LocalExecutor {
 
     fn call(&mut self, req: Request) -> Self::Future {
         let prover = self.prover.clone();
+        let is_mock = self.is_mock;
         let stdin = req.stdin;
 
         let proving_key = self.proving_key.clone();
@@ -258,12 +262,16 @@ impl Service<Request> for LocalExecutor {
         Box::pin(
             spawn_blocking(move || {
                 debug!("Starting the proving of the requested MultiBatchHeader");
-                let proof_request = prover.prove(&proving_key, &stdin);
+                let mut proof_request = prover.prove(&proving_key, &stdin);
 
-                let proof_request = match req.proof_type {
+                proof_request = match req.proof_type {
                     ProofType::Plonk => proof_request.plonk(),
                     ProofType::Stark => proof_request.compressed(),
                 };
+
+                if is_mock {
+                    proof_request = proof_request.deferred_proof_verification(false);
+                }
 
                 let proof = proof_request
                     .run()
