@@ -40,11 +40,11 @@ prover-utils = { path = "crates/prover-utils" }
 agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
 
 # Interop dependencies
-agglayer-interop = { git = "https://github.com/agglayer/interop.git", tag = "v0.2.0" }
-agglayer-interop-types = { git = "https://github.com/agglayer/interop.git", tag = "v0.2.0" }
-agglayer-primitives = { git = "https://github.com/agglayer/interop.git", tag = "v0.2.0" }
-agglayer-tries = { git = "https://github.com/agglayer/interop.git", tag = "v0.2.0" }
-unified-bridge = { git = "https://github.com/agglayer/interop.git", tag = "v0.2.0" }
+agglayer-interop = { git = "https://github.com/agglayer/interop.git", tag = "v0.2.1" }
+agglayer-interop-types = { git = "https://github.com/agglayer/interop.git", tag = "v0.2.1" }
+agglayer-primitives = { git = "https://github.com/agglayer/interop.git", tag = "v0.2.1" }
+agglayer-tries = { git = "https://github.com/agglayer/interop.git", tag = "v0.2.1" }
+unified-bridge = { git = "https://github.com/agglayer/interop.git", tag = "v0.2.1" }
 
 # Core dependencies
 alloy = { version = '0.12.6', features = ["full"] }

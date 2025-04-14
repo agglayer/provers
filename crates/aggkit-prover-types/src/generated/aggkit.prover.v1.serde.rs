@@ -641,6 +641,9 @@ impl serde::Serialize for ProvenInsertedGerWithBlockNumber {
         if self.proven_inserted_ger.is_some() {
             len += 1;
         }
+        if self.block_index != 0 {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("aggkit.prover.v1.ProvenInsertedGERWithBlockNumber", len)?;
         if self.block_number != 0 {
             #[allow(clippy::needless_borrow)]
@@ -649,6 +652,11 @@ impl serde::Serialize for ProvenInsertedGerWithBlockNumber {
         }
         if let Some(v) = self.proven_inserted_ger.as_ref() {
             struct_ser.serialize_field("provenInsertedGer", v)?;
+        }
+        if self.block_index != 0 {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("blockIndex", ToString::to_string(&self.block_index).as_str())?;
         }
         struct_ser.end()
     }
@@ -664,12 +672,15 @@ impl<'de> serde::Deserialize<'de> for ProvenInsertedGerWithBlockNumber {
             "blockNumber",
             "proven_inserted_ger",
             "provenInsertedGer",
+            "block_index",
+            "blockIndex",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             BlockNumber,
             ProvenInsertedGer,
+            BlockIndex,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -693,6 +704,7 @@ impl<'de> serde::Deserialize<'de> for ProvenInsertedGerWithBlockNumber {
                         match value {
                             "blockNumber" | "block_number" => Ok(GeneratedField::BlockNumber),
                             "provenInsertedGer" | "proven_inserted_ger" => Ok(GeneratedField::ProvenInsertedGer),
+                            "blockIndex" | "block_index" => Ok(GeneratedField::BlockIndex),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -714,6 +726,7 @@ impl<'de> serde::Deserialize<'de> for ProvenInsertedGerWithBlockNumber {
             {
                 let mut block_number__ = None;
                 let mut proven_inserted_ger__ = None;
+                let mut block_index__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::BlockNumber => {
@@ -730,11 +743,20 @@ impl<'de> serde::Deserialize<'de> for ProvenInsertedGerWithBlockNumber {
                             }
                             proven_inserted_ger__ = map_.next_value()?;
                         }
+                        GeneratedField::BlockIndex => {
+                            if block_index__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("blockIndex"));
+                            }
+                            block_index__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
                     }
                 }
                 Ok(ProvenInsertedGerWithBlockNumber {
                     block_number: block_number__.unwrap_or_default(),
                     proven_inserted_ger: proven_inserted_ger__,
+                    block_index: block_index__.unwrap_or_default(),
                 })
             }
         }

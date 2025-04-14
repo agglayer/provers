@@ -13,15 +13,14 @@ use aggchain_proof_contracts::contracts::{
 };
 use aggchain_proof_contracts::AggchainContractsClient;
 use aggchain_proof_core::bridge::inserted_ger::InsertedGER;
-use aggchain_proof_core::bridge::{
-    compute_imported_bridge_exits_commitment, BridgeWitness, GlobalIndexWithLeafHash,
-};
+use aggchain_proof_core::bridge::BridgeWitness;
 use aggchain_proof_core::full_execution_proof::AggregationProofPublicValues;
 use aggchain_proof_core::full_execution_proof::{FepInputs, AGGREGATION_VKEY_HASH};
-use aggchain_proof_core::proof::{AggchainProofPublicValues, AggchainProofWitness};
+use aggchain_proof_core::proof::{AggchainProofWitness, IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION};
 use aggchain_proof_core::Digest;
 use aggchain_proof_types::AggchainProofInputs;
 use aggkit_prover_types::vkey_hash::VKeyHash;
+use agglayer_interop::types::{GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues};
 use alloy::eips::BlockNumberOrTag;
 use alloy_primitives::Address;
 use bincode::Options;
@@ -34,6 +33,7 @@ use tower::buffer::Buffer;
 use tower::util::BoxService;
 use tower::ServiceExt as _;
 use tracing::info;
+use unified_bridge::aggchain_proof::AggchainProofPublicValues;
 
 use crate::config::AggchainProofBuilderConfig;
 
@@ -306,9 +306,10 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             l1_info_root: request.aggchain_proof_inputs.l1_info_tree_root_hash,
             origin_network: network_id,
             fep: fep_inputs,
-            commit_imported_bridge_exits: compute_imported_bridge_exits_commitment(
-                &bridge_exits_claimed,
-            ),
+            commit_imported_bridge_exits: ImportedBridgeExitCommitmentValues {
+                claims: bridge_exits_claimed.clone(),
+            }
+            .commitment(IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION),
             bridge_witness: BridgeWitness {
                 inserted_gers,
                 bridge_exits_claimed,
