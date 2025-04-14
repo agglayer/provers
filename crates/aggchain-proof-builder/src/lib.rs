@@ -228,15 +228,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         // From the request
         let inserted_gers: Vec<InsertedGER> = request
             .aggchain_proof_inputs
-            .ger_leaves
-            .values()
-            .filter(|inserted_ger| new_blocks_range.contains(&inserted_ger.block_number))
-            .cloned()
-            .map(|e| InsertedGER {
-                proof: e.inserted_ger.proof_ger_l1root,
-                l1_info_tree_leaf: e.inserted_ger.l1_leaf,
-            })
-            .collect();
+            .sorted_inserted_gers(&new_blocks_range);
 
         // NOTE: Corresponds to all of them because we do not have removed GERs yet.
         let inserted_gers_hash_chain = inserted_gers
