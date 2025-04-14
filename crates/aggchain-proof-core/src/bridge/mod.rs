@@ -418,7 +418,7 @@ impl BridgeConstraintsInput {
                 self.prev_l2_block_hash, self.new_l2_block_hash
             );
             hashes.iter().enumerate().for_each(|(idx, hash)| {
-                eprintln!("element #{idx} ({:?}): {hash:?}", hash_chain_type)
+                eprintln!("element #{idx} ({hash_chain_type:?}): {hash:?}")
             });
 
             return Err(BridgeConstraintsError::MismatchHashChain {
