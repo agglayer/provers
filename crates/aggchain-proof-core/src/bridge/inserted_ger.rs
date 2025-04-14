@@ -11,6 +11,8 @@ pub struct InsertedGER {
     pub l1_info_tree_leaf: L1InfoTreeLeaf,
     /// Block number in which the GER got inserted.
     pub block_number: u64,
+    /// Index within the block.
+    pub block_index: u64,
 }
 
 impl InsertedGER {
