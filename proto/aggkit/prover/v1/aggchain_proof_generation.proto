@@ -19,7 +19,7 @@ message GenerateAggchainProofRequest {
   uint64 last_proven_block = 1;
 
   // The min end block for which the aggchain proof is requested.
-  uitn64 min_end_block = 2
+  uitn64 min_end_block = 2;
 
   // The max end block for which the aggchain proof is requested.
   uint64 requested_end_block = 3;
