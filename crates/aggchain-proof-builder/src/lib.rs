@@ -81,7 +81,7 @@ pub struct AggchainProofBuilderResponse {
     /// Verification key for the aggchain proof.
     pub vkey: Vec<u8>,
 
-    /// Aggchain params
+    /// Aggchain params.
     pub aggchain_params: Digest,
 
     /// Last block proven, before this aggchain proof.
@@ -90,8 +90,11 @@ pub struct AggchainProofBuilderResponse {
     /// Last block included in the aggchain proof.
     pub end_block: u64,
 
-    /// Output root
+    /// Output root.
     pub output_root: Digest,
+
+    /// New Local exit root.
+    pub new_local_exit_root: Digest,
 }
 
 /// This service is responsible for building an Aggchain proof.
@@ -344,6 +347,8 @@ where
         let aggregation_vkey = self.aggregation_vkey.clone();
         let aggchain_vkey = self.aggchain_vkey.clone();
 
+        let output_root: Digest = (*req.aggregation_proof_public_values.l2PostRoot).into();
+
         async move {
             let last_proven_block = req.aggchain_proof_inputs.last_proven_block;
             let end_block = req.end_block;
@@ -386,8 +391,8 @@ where
                 aggchain_params: public_input.aggchain_params,
                 last_proven_block,
                 end_block,
-                // TODO: Define the output root with the witness data
-                output_root: Default::default(),
+                output_root,
+                new_local_exit_root: public_input.new_local_exit_root,
             })
         }
         .boxed()
