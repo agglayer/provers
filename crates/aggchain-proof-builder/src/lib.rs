@@ -377,6 +377,18 @@ where
                 .try_as_compressed()
                 .ok_or(Error::GeneratedProofIsNotCompressed)?;
 
+            info!(
+                "AP public values: prev_local_exit_root: {:?}, new_local_exit_root: {:?}, \
+                 l1_info_root: {:?}, origin_network: {:?}, aggchain_params: {:?}, \
+                 commit_imported_bridge_exits: {:?}",
+                public_input.prev_local_exit_root,
+                public_input.new_local_exit_root,
+                public_input.l1_info_root,
+                public_input.origin_network,
+                public_input.aggchain_params,
+                public_input.commit_imported_bridge_exits
+            );
+
             Ok(AggchainProofBuilderResponse {
                 vkey: bincode::DefaultOptions::new()
                     .with_big_endian()
