@@ -1,0 +1,15 @@
+[package]
+name = "proposer-elfs"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+aggkit-prover-types = { workspace = true, features = ["sp1"] }
+proposer-vkeys-raw.workspace = true
+
+op-succinct-elfs.workspace = true
+
+[dev-dependencies]
+rstest.workspace = true
+sp1-sdk.workspace = true

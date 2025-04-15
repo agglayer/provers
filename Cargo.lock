@@ -43,6 +43,7 @@ dependencies = [
  "anyhow",
  "bincode",
  "futures",
+ "proposer-elfs",
  "prover-config",
  "prover-executor",
  "serde",
@@ -101,6 +102,7 @@ dependencies = [
  "hex",
  "k256",
  "mockall",
+ "proposer-vkeys-raw",
  "semver 1.0.26",
  "serde",
  "serde_json",
@@ -215,6 +217,7 @@ dependencies = [
  "bincode",
  "pbjson",
  "prost",
+ "prover-elf-utils",
  "serde",
  "sp1-sdk",
  "thiserror 2.0.12",
@@ -4827,6 +4830,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "op-succinct-elfs"
+version = "0.1.0"
+source = "git+https://github.com/agglayer/op-succinct.git?tag=v1.2.7-agglayer#7192e1a962c3f48300b4f87f63942fced8527889"
+
+[[package]]
 name = "opaque-debug"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5667,6 +5675,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "proposer-elfs"
+version = "0.1.0"
+dependencies = [
+ "aggkit-prover-types",
+ "op-succinct-elfs",
+ "proposer-vkeys-raw",
+ "rstest",
+ "sp1-sdk",
+]
+
+[[package]]
 name = "proposer-service"
 version = "0.1.0"
 dependencies = [
@@ -5682,6 +5701,7 @@ dependencies = [
  "futures",
  "mockall",
  "proposer-client",
+ "proposer-elfs",
  "prover-alloy",
  "prover-logger",
  "serde",
@@ -5693,6 +5713,15 @@ dependencies = [
  "tower 0.4.13",
  "tracing",
  "url",
+]
+
+[[package]]
+name = "proposer-vkeys-raw"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "op-succinct-elfs",
+ "prover-elf-utils",
 ]
 
 [[package]]
@@ -5801,6 +5830,14 @@ dependencies = [
  "serde_with",
  "toml",
  "url",
+]
+
+[[package]]
+name = "prover-elf-utils"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "sp1-sdk",
 ]
 
 [[package]]

@@ -7,6 +7,7 @@ edition = "2021"
 agglayer-primitives.workspace = true
 agglayer-tries.workspace = true
 unified-bridge.workspace = true
+proposer-vkeys-raw.workspace = true
 
 # alloy
 alloy-primitives.workspace = true
