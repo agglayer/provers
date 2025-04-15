@@ -377,7 +377,7 @@ where
                 .try_as_compressed()
                 .ok_or(Error::GeneratedProofIsNotCompressed)?;
 
-            info!("AP public values: {:}", public_input);
+            info!("AP public values: {:?}", public_input);
 
             Ok(AggchainProofBuilderResponse {
                 vkey: bincode::DefaultOptions::new()
