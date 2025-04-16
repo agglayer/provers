@@ -36,6 +36,8 @@ proposer-client.workspace = true
 prover-alloy.workspace = true
 prover-logger.workspace = true
 
+proposer-elfs.workspace = true
+
 [dev-dependencies]
 bincode.workspace = true
 mockall.workspace = true

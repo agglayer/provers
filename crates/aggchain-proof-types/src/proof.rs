@@ -1,6 +1,6 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::RangeInclusive};
 
-use aggchain_proof_core::Digest;
+use aggchain_proof_core::{bridge::inserted_ger::InsertedGER, Digest};
 use agglayer_interop::types::{L1InfoTreeLeaf, MerkleProof};
 use serde::{Deserialize, Serialize};
 
@@ -35,4 +35,24 @@ pub struct AggchainProofInputs {
 
     /// Imported bridge exits.
     pub imported_bridge_exits: Vec<ImportedBridgeExitWithBlockNumber>,
+}
+
+impl AggchainProofInputs {
+    pub fn sorted_inserted_gers(&self, range: &RangeInclusive<u64>) -> Vec<InsertedGER> {
+        let mut values: Vec<InsertedGER> = self
+            .ger_leaves
+            .values()
+            .filter(|inserted_ger| range.contains(&inserted_ger.block_number))
+            .cloned()
+            .map(|e| InsertedGER {
+                proof: e.inserted_ger.proof_ger_l1root,
+                l1_info_tree_leaf: e.inserted_ger.l1_leaf,
+                block_number: e.block_number,
+                block_index: e.block_index,
+            })
+            .collect();
+
+        values.sort_unstable_by_key(|e| (e.block_number, e.block_index));
+        values
+    }
 }

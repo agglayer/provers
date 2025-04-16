@@ -13,35 +13,33 @@ use aggchain_proof_contracts::contracts::{
 };
 use aggchain_proof_contracts::AggchainContractsClient;
 use aggchain_proof_core::bridge::inserted_ger::InsertedGER;
-use aggchain_proof_core::bridge::{
-    compute_imported_bridge_exits_commitment, BridgeWitness, GlobalIndexWithLeafHash,
-};
+use aggchain_proof_core::bridge::BridgeWitness;
 use aggchain_proof_core::full_execution_proof::AggregationProofPublicValues;
 use aggchain_proof_core::full_execution_proof::{FepInputs, AGGREGATION_VKEY_HASH};
-use aggchain_proof_core::proof::{AggchainProofPublicValues, AggchainProofWitness};
+use aggchain_proof_core::proof::{AggchainProofWitness, IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION};
 use aggchain_proof_core::Digest;
 use aggchain_proof_types::AggchainProofInputs;
 use aggkit_prover_types::vkey_hash::VKeyHash;
+use agglayer_interop::types::{GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues};
 use alloy::eips::BlockNumberOrTag;
 use bincode::Options;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use prover_executor::{Executor, ProofType};
 use serde::{Deserialize, Serialize};
-use sp1_sdk::{Prover, ProverClient, SP1Stdin, SP1VerifyingKey};
+use sp1_sdk::{SP1Stdin, SP1VerifyingKey};
 use tower::buffer::Buffer;
 use tower::util::BoxService;
 use tower::ServiceExt as _;
 use tracing::info;
+use unified_bridge::aggchain_proof::AggchainProofPublicValues;
 
 use crate::config::AggchainProofBuilderConfig;
 
 const MAX_CONCURRENT_REQUESTS: usize = 100;
+
 pub const AGGCHAIN_PROOF_ELF: &[u8] =
     include_bytes!("../../../crates/aggchain-proof-program/elf/riscv32im-succinct-zkvm-elf");
-
-pub const AGGREGATION_PROOF_ELF: &[u8] =
-    include_bytes!("../../../crates/aggchain-proof-program/elf/aggregation-elf");
 
 pub(crate) type ProverService = Buffer<
     BoxService<prover_executor::Request, prover_executor::Response, prover_executor::Error>,
@@ -82,7 +80,7 @@ pub struct AggchainProofBuilderResponse {
     /// Verification key for the aggchain proof.
     pub vkey: Vec<u8>,
 
-    /// Aggchain params
+    /// Aggchain params.
     pub aggchain_params: Digest,
 
     /// Last block proven, before this aggchain proof.
@@ -91,8 +89,11 @@ pub struct AggchainProofBuilderResponse {
     /// Last block included in the aggchain proof.
     pub end_block: u64,
 
-    /// Output root
+    /// Output root.
     pub output_root: Digest,
+
+    /// New Local exit root.
+    pub new_local_exit_root: Digest,
 }
 
 /// This service is responsible for building an Aggchain proof.
@@ -139,11 +140,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         let prover = Buffer::new(executor, MAX_CONCURRENT_REQUESTS);
 
         // Retrieve the entire aggregation vkey from the ELF
-        let aggregation_vkey = {
-            let prover = ProverClient::builder().cpu().build();
-            let (_, agg_vk_from_elf) = prover.setup(AGGREGATION_PROOF_ELF);
-            agg_vk_from_elf
-        };
+        let aggregation_vkey = proposer_elfs::aggregation::VKEY.vkey().clone();
 
         // Check mismatch on aggregation vkey
         {
@@ -231,15 +228,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         // From the request
         let inserted_gers: Vec<InsertedGER> = request
             .aggchain_proof_inputs
-            .ger_leaves
-            .values()
-            .filter(|inserted_ger| new_blocks_range.contains(&inserted_ger.block_number))
-            .cloned()
-            .map(|e| InsertedGER {
-                proof: e.inserted_ger.proof_ger_l1root,
-                l1_info_tree_leaf: e.inserted_ger.l1_leaf,
-            })
-            .collect();
+            .sorted_inserted_gers(&new_blocks_range);
 
         // NOTE: Corresponds to all of them because we do not have removed GERs yet.
         let inserted_gers_hash_chain = inserted_gers
@@ -303,9 +292,10 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             l1_info_root: request.aggchain_proof_inputs.l1_info_tree_root_hash,
             origin_network: network_id,
             fep: fep_inputs,
-            commit_imported_bridge_exits: compute_imported_bridge_exits_commitment(
-                &bridge_exits_claimed,
-            ),
+            commit_imported_bridge_exits: ImportedBridgeExitCommitmentValues {
+                claims: bridge_exits_claimed.clone(),
+            }
+            .commitment(IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION),
             bridge_witness: BridgeWitness {
                 inserted_gers,
                 bridge_exits_claimed,
@@ -360,6 +350,8 @@ where
         let aggregation_vkey = self.aggregation_vkey.clone();
         let aggchain_vkey = self.aggchain_vkey.clone();
 
+        let output_root: Digest = (*req.aggregation_proof_public_values.l2PostRoot).into();
+
         async move {
             let last_proven_block = req.aggchain_proof_inputs.last_proven_block;
             let end_block = req.end_block;
@@ -388,6 +380,18 @@ where
                 .try_as_compressed()
                 .ok_or(Error::GeneratedProofIsNotCompressed)?;
 
+            info!(
+                "AP public values: prev_local_exit_root: {:?}, new_local_exit_root: {:?}, \
+                 l1_info_root: {:?}, origin_network: {:?}, aggchain_params: {:?}, \
+                 commit_imported_bridge_exits: {:?}",
+                public_input.prev_local_exit_root,
+                public_input.new_local_exit_root,
+                public_input.l1_info_root,
+                public_input.origin_network,
+                public_input.aggchain_params,
+                public_input.commit_imported_bridge_exits
+            );
+
             Ok(AggchainProofBuilderResponse {
                 vkey: bincode::DefaultOptions::new()
                     .with_big_endian()
@@ -402,8 +406,8 @@ where
                 aggchain_params: public_input.aggchain_params,
                 last_proven_block,
                 end_block,
-                // TODO: Define the output root with the witness data
-                output_root: Default::default(),
+                output_root,
+                new_local_exit_root: public_input.new_local_exit_root,
             })
         }
         .boxed()
