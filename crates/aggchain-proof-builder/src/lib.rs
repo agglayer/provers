@@ -8,8 +8,8 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 
 use aggchain_proof_contracts::contracts::{
-    L1RollupConfigHashFetcher, L2EvmStateSketchFetcher, L2LocalExitRootFetcher,
-    L2OutputAtBlockFetcher,
+    GetTrustedSequencerAddress, L1RollupConfigHashFetcher, L2EvmStateSketchFetcher,
+    L2LocalExitRootFetcher, L2OutputAtBlockFetcher,
 };
 use aggchain_proof_contracts::AggchainContractsClient;
 use aggchain_proof_core::bridge::inserted_ger::InsertedGER;
@@ -22,7 +22,6 @@ use aggchain_proof_types::AggchainProofInputs;
 use aggkit_prover_types::vkey_hash::VKeyHash;
 use agglayer_interop::types::{GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues};
 use alloy::eips::BlockNumberOrTag;
-use alloy_primitives::Address;
 use bincode::Options;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
@@ -177,6 +176,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         ContractsClient: L2LocalExitRootFetcher
             + L2OutputAtBlockFetcher
             + L2EvmStateSketchFetcher
+            + GetTrustedSequencerAddress
             + L1RollupConfigHashFetcher,
     {
         let new_blocks_range =
@@ -220,7 +220,10 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 
-        let trusted_sequencer = Address::default(); // TODO: from config or l1
+        let trusted_sequencer = contracts_client
+            .get_trusted_sequencer_address()
+            .await
+            .map_err(Error::UnableToFetchTrustedSequencerAddress)?;
 
         // From the request
         let inserted_gers: Vec<InsertedGER> = request
@@ -322,7 +325,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
 impl<ContractsClient> tower::Service<AggchainProofBuilderRequest>
     for AggchainProofBuilder<ContractsClient>
 where
-    ContractsClient: AggchainContractsClient + Send + Sync + 'static,
+    ContractsClient: AggchainContractsClient + GetTrustedSequencerAddress + Send + Sync + 'static,
 {
     type Response = AggchainProofBuilderResponse;
 
