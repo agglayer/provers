@@ -14,7 +14,9 @@ use aggchain_proof_contracts::contracts::{
 use aggchain_proof_contracts::AggchainContractsClient;
 use aggchain_proof_core::bridge::inserted_ger::InsertedGER;
 use aggchain_proof_core::bridge::BridgeWitness;
-use aggchain_proof_core::full_execution_proof::AggregationProofPublicValues;
+use aggchain_proof_core::full_execution_proof::{
+    AggchainParamsValues, AggregationProofPublicValues,
+};
 use aggchain_proof_core::full_execution_proof::{FepInputs, AGGREGATION_VKEY_HASH};
 use aggchain_proof_core::proof::{AggchainProofWitness, IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION};
 use aggchain_proof_core::Digest;
@@ -22,6 +24,7 @@ use aggchain_proof_types::AggchainProofInputs;
 use aggkit_prover_types::vkey_hash::VKeyHash;
 use agglayer_interop::types::{GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues};
 use alloy::eips::BlockNumberOrTag;
+use alloy::hex;
 use bincode::Options;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
@@ -284,6 +287,20 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                     expected_by_verifier: Box::new(request.aggregation_proof_public_values),
                 });
             }
+        }
+
+        {
+            let aggchain_params_values = AggchainParamsValues::from(&fep_inputs);
+
+            info!("Aggchain-params unrolled values: {aggchain_params_values:?}");
+            info!(
+                "Aggchain-params abi encoded packed: {}",
+                hex::encode(fep_inputs.encoded_aggchain_params())
+            );
+            info!(
+                "Aggchain-params keccak-hashed: {}",
+                fep_inputs.aggchain_params()
+            );
         }
 
         let prover_witness = AggchainProofWitness {
