@@ -30,7 +30,7 @@ async fn request_an_aggregated_span_proof() {
             last_proven_block: request.last_proven_block,
             requested_end_block: request.requested_end_block,
             l1_block_number: request.l1_block_number,
-            l1_block_hash: hex::encode(&request.l1_block_hash),
+            l1_block_hash: hex::encode(request.l1_block_hash),
         };
 
         mock_service
