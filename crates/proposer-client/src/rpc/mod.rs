@@ -2,16 +2,20 @@ use std::fmt::Display;
 use std::time::Duration;
 
 use alloy_primitives::B256;
-use jsonrpsee::core::client::ClientT;
-use jsonrpsee::http_client::HttpClient;
-use jsonrpsee::rpc_params;
-use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
-use serde_with::DisplayFromStr;
 use tracing::{error, info};
 
-use crate::error::Error;
-use crate::RequestId;
+use crate::{
+    error::{self, Error, ProofRequestError},
+    GrpcUri, RequestId,
+};
+
+pub mod grpc {
+    include!("generated/proofs.rs");
+}
+
+mod proofs_service_types;
+
+use grpc::proofs_client::ProofsClient;
 
 /// Proposer client that requests the generation
 /// of the aggregation proof from the proposer and gets
@@ -25,31 +29,25 @@ pub trait AggregationProofProposer {
 }
 
 /// Request format for the proposer `proofs_requestAggProof`
-#[serde_as]
-#[derive(Deserialize, Serialize, Debug)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug)]
 pub struct AggregationProofProposerRequest {
     /// Last block that has already been proven before this request.
-    #[serde(rename = "lastProvenBlock")]
     pub last_proven_block: u64,
 
     /// Maximum block number for the aggregation proof.
-    #[serde(rename = "requestedEndBlock")]
     pub requested_end_block: u64,
 
     /// L1 block number corresponding to requested_end_block.
     pub l1_block_number: u64,
 
     /// L1 block hash.
-    #[serde_as(as = "DisplayFromStr")]
     pub l1_block_hash: B256,
 }
 
 /// Response for the external proposer `request_span_proof` call
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug)]
 pub struct AggregationProofProposerResponse {
     /// Proof request_id, used to fetch the proof from the cluster.
-    #[serde(rename = "proof_request_id")]
     pub request_id: RequestId,
 
     /// Last block already proven before this aggregation proof.
@@ -70,16 +68,20 @@ impl Display for AggregationProofProposerResponse {
 }
 
 pub struct ProposerRpcClient {
-    client: HttpClient,
+    client: ProofsClient<tonic::transport::Channel>,
 }
 
 impl ProposerRpcClient {
-    pub fn new(rpc_endpoint: &str, timeout: Duration) -> Result<Self, Error> {
-        let client = HttpClient::builder()
-            .request_timeout(timeout)
-            .build(rpc_endpoint)
-            .map_err(Error::UnableToCreateRPCClient)?;
+    pub async fn new(rpc_endpoint: GrpcUri, timeout: Duration) -> Result<Self, Error> {
+        // TODO: Configure various other limits besides timeout on the channel.
+        let channel = tonic::transport::Channel::builder(rpc_endpoint)
+            .timeout(timeout)
+            .connect()
+            .await
+            .inspect_err(|e| error!("Error connecting to proposer gRPC: {e}"))
+            .map_err(Error::Connect)?;
 
+        let client = ProofsClient::new(channel);
         Ok(ProposerRpcClient { client })
     }
 }
@@ -90,25 +92,22 @@ impl AggregationProofProposer for ProposerRpcClient {
         &self,
         request: AggregationProofProposerRequest,
     ) -> Result<AggregationProofProposerResponse, Error> {
-        let params = rpc_params![
-            request.last_proven_block,
-            request.requested_end_block,
-            request.l1_block_number,
-            request.l1_block_hash
-        ];
+        let request = grpc::AggProofRequest::from(request);
 
-        let proof_response: AggregationProofProposerResponse = self
-            .client
-            .request("proofs_requestAggProof", params)
+        let mut client = self.client.clone();
+        let response: AggregationProofProposerResponse = client
+            .request_agg_proof(request)
             .await
-            .map_err(Error::AggProofRequestFailed)
-            .inspect_err(|e| error!("proofs_requestAggProof failed, details: {e:?}"))?;
+            .map_err(ProofRequestError::Grpc)
+            .and_then(|resp| resp.into_inner().try_into())
+            .inspect_err(|e| error!("Aggregation proof request failed: {e:?}"))
+            .map_err(Error::Requesting)?;
 
         info!(
-            request_id = proof_response.to_string(),
+            request_id = response.to_string(),
             "agg proof request submitted"
         );
 
-        Ok(proof_response)
+        Ok(response)
     }
 }
