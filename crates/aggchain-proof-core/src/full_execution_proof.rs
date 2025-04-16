@@ -1,6 +1,6 @@
-use agglayer_primitives::digest::Digest;
 use agglayer_primitives::keccak::keccak256_combine;
-use alloy_primitives::{Address, PrimitiveSignature, B256};
+use agglayer_primitives::{digest::Digest, keccak::keccak256};
+use alloy_primitives::{Address, PrimitiveSignature, B256, U256};
 use alloy_sol_types::{sol, SolValue};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest as Sha256Digest, Sha256};
@@ -69,6 +69,31 @@ impl From<&FepInputs> for AggregationProofPublicValues {
     }
 }
 
+sol! {
+    #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+    struct AggchainParamsValues {
+        bytes32 l2PreRoot;
+        bytes32 claimRoot;
+        uint256 claimBlockNum;
+        bytes32 rollupConfigHash;
+        bool optimisticMode;
+        address trustedSequencer;
+    }
+}
+
+impl From<&FepInputs> for AggchainParamsValues {
+    fn from(inputs: &FepInputs) -> Self {
+        Self {
+            l2PreRoot: inputs.compute_l2_pre_root().0.into(),
+            claimRoot: inputs.compute_claim_root().0.into(),
+            claimBlockNum: U256::from(inputs.claim_block_num),
+            rollupConfigHash: inputs.rollup_config_hash.0.into(),
+            optimisticMode: inputs.optimistic_mode() == OptimisticMode::Ecdsa,
+            trustedSequencer: inputs.trusted_sequencer,
+        }
+    }
+}
+
 impl FepInputs {
     pub fn sha256_public_values(&self) -> [u8; 32] {
         let encoded_public_values =
@@ -79,25 +104,20 @@ impl FepInputs {
 }
 
 #[repr(u8)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 enum OptimisticMode {
     Sp1 = 0,
     Ecdsa = 1,
 }
 
 impl FepInputs {
+    pub fn encoded_aggchain_params(&self) -> Vec<u8> {
+        AggchainParamsValues::abi_encode_packed(&AggchainParamsValues::from(self))
+    }
+
     /// Compute the chain-specific commitment forwarded to the PP.
     pub fn aggchain_params(&self) -> Digest {
-        let optimistic_mode: u8 = self.optimistic_mode() as u8;
-
-        keccak256_combine([
-            self.compute_l2_pre_root().as_slice(),
-            self.compute_claim_root().as_slice(),
-            &self.claim_block_num.to_be_bytes(),
-            self.rollup_config_hash.as_slice(),
-            &optimistic_mode.to_be_bytes(),
-            self.trusted_sequencer.as_slice(),
-        ])
+        keccak256(self.encoded_aggchain_params().as_slice())
     }
 
     fn optimistic_mode(&self) -> OptimisticMode {
