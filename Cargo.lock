@@ -130,6 +130,7 @@ dependencies = [
  "aggchain-proof-types",
  "agglayer-interop",
  "alloy-primitives",
+ "alloy-sol-types",
  "anyhow",
  "bincode",
  "futures",
