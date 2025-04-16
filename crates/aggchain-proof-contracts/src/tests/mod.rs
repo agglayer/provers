@@ -2,13 +2,16 @@ mod aggchain_contracts_rpc_client {
     use std::str::FromStr;
 
     use agglayer_interop::types::Digest;
+    use alloy::hex::{self, FromHex};
     use alloy::primitives::{address, B256};
+    use alloy::sol_types::{SolCall, SolValue};
     use mockito::ServerGuard;
     use prover_alloy::{AlloyFillProvider, L1RpcEndpoint};
     use serde_json::json;
     use url::Url;
 
     use crate::config::AggchainProofContractsConfig;
+    use crate::contracts::AggchainFep::trustedSequencerCall;
     use crate::contracts::{
         L1RollupConfigHashFetcher, L2LocalExitRootFetcher, L2OutputAtBlockFetcher,
     };
@@ -91,6 +94,8 @@ mod aggchain_contracts_rpc_client {
             )
             .create();
 
+        let mock_l1_trusted_sequencer = mock_trusted_sequencer_call(&mut server_l1);
+
         let mock_server_l1_url = L1RpcEndpoint::from_str(&server_l1.url()).unwrap();
         let mock_server_l2_el_url = Url::parse(&server_l2_el.url()).unwrap();
         let mock_server_l2_cl_url = Url::parse(&server_l2_cl.url()).unwrap();
@@ -108,6 +113,7 @@ mod aggchain_contracts_rpc_client {
 
         mock_l2.assert_async().await;
         mock_l1.assert_async().await;
+        mock_l1_trusted_sequencer.assert_async().await;
         Ok((
             result?,
             TestServers {
@@ -116,6 +122,68 @@ mod aggchain_contracts_rpc_client {
                 server_l2_cl,
             },
         ))
+    }
+
+    fn mock_get_rollup_config_hash(server_l1: &mut ServerGuard) -> mockito::Mock {
+        let rollup_config_hash_expected_body = serde_json::json!(
+        {
+            "method":"eth_call",
+            "params":[
+                {
+                    "to": "0x8e80ffe6dc044f4a766afd6e5a8732fe0977a493",
+                    "input": format!("0x{}", hex::encode(crate::contracts::AggchainFep::rollupConfigHashCall{}.abi_encode())),
+                },
+                "latest"
+            ],
+            "id": 2,
+            "jsonrpc":"2.0",
+        });
+
+        let result = json!({
+                "jsonrpc":"2.0",
+                "id": 2,
+                "result": alloy::primitives::FixedBytes::<32>::from_hex("0xaaaeffa0811291c96c8cbddcc148bf48a6d68c7974b94356f53754ef617122dd").unwrap().abi_encode()
+            })
+            .to_string();
+
+        server_l1
+            .mock("POST", "/")
+            .with_status(200)
+            .with_header("content-type", "text/javascript")
+            .match_body(mockito::Matcher::Json(rollup_config_hash_expected_body))
+            .with_body(result)
+            .create()
+    }
+
+    fn mock_trusted_sequencer_call(server_l1: &mut ServerGuard) -> mockito::Mock {
+        let trusted_sequencer_expected_body = serde_json::json!(
+        {
+            "method":"eth_call",
+            "params":[
+                {
+                    "to": "0x8e80ffe6dc044f4a766afd6e5a8732fe0977a493",
+                    "input": format!("0x{}", hex::encode(trustedSequencerCall{}.abi_encode())),
+                },
+                "latest"
+            ],
+            "id": 1,
+            "jsonrpc":"2.0",
+        });
+
+        let result = json!({
+            "jsonrpc":"2.0",
+            "id": 1,
+            "result": alloy::primitives::Address::from_hex("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266").unwrap().abi_encode()
+        })
+        .to_string();
+
+        server_l1
+            .mock("POST", "/")
+            .with_status(200)
+            .with_header("content-type", "text/javascript")
+            .match_body(mockito::Matcher::Json(trusted_sequencer_expected_body))
+            .with_body(result)
+            .create()
     }
 
     #[test]
@@ -302,33 +370,7 @@ mod aggchain_contracts_rpc_client {
         let (contracts_client, test_servers) = aggchain_contracts_rpc_client().await?;
         let mut server_l1 = test_servers.server_l1;
 
-        // We ask the PolygonZkEVMBridgeV2 for the local exit root with `getRoot()`
-        let get_rollup_config_hash = serde_json::json!({
-            "method": "eth_call",
-            "params": [{
-                "to":"0x8e80ffe6dc044f4a766afd6e5a8732fe0977a493",
-                "input":"0x6d9a1c8b",
-            },
-            "latest"],
-            "id": 1,
-            "jsonrpc": "2.0",
-        });
-
-        let mock_l1 = server_l1
-            .mock("POST", "/")
-            .with_status(200)
-            .with_header("content-type", "text/javascript")
-            .match_body(mockito::Matcher::Json(get_rollup_config_hash))
-            .with_body(
-                json!({
-                    "id": 1,
-                    "jsonrpc": "2.0",
-                    "result": "0xaaaeffa0811291c96c8cbddcc148bf48a6d68c7974b94356f53754ef617122dd"
-                })
-                .to_string(),
-            )
-            .create();
-
+        let mock_l1 = mock_get_rollup_config_hash(&mut server_l1);
         let result = contracts_client.get_rollup_config_hash().await;
 
         mock_l1.assert_async().await;

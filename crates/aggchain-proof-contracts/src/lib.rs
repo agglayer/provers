@@ -377,7 +377,12 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
         // Create client for AggchainFep smart contract.
         let aggchain_fep = AggchainFep::new(aggchain_fep_address, l1_client.clone());
 
-        let trusted_sequencer_addr = aggchain_fep.trustedSequencer().call().await.unwrap()._0;
+        let trusted_sequencer_addr = aggchain_fep
+            .trustedSequencer()
+            .call()
+            .await
+            .map_err(Error::UnableToRetrieveTrustedSequencerAddress)?
+            ._0;
         let l2_root_provider =
             RootProvider::<AnyNetwork>::new_http(config.l2_execution_layer_rpc_endpoint.clone());
 
