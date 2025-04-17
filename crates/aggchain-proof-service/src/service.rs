@@ -59,7 +59,7 @@ pub struct AggchainProofServiceResponse {
     /// output_root (new state root) and the l2 end block number.
     pub custom_chain_data: Vec<u8>,
 
-    /// The public inputs that were provided to the proof
+    /// The AggchainProof's public inputs that were produced by the prover.
     pub public_values: AggchainProofPublicValues,
 }
 
