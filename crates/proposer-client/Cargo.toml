@@ -26,6 +26,9 @@ tonic.workspace = true
 tracing.workspace = true
 url.workspace = true
 
+# Ecosystem dependencies
+op-succinct-grpc = { git = "https://github.com/agglayer/op-succinct.git", branch = "vcastellm/rust-agglayer", package = "grpc" }
+
 # Local dependencies
 prover-utils.workspace = true
 

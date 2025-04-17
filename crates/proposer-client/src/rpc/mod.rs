@@ -2,16 +2,13 @@ use std::fmt::Display;
 use std::time::Duration;
 
 use alloy_primitives::B256;
+pub use op_succinct_grpc::proofs as grpc;
 use tracing::{error, info};
 
 use crate::{
     error::{self, Error, ProofRequestError},
     GrpcUri, RequestId,
 };
-
-pub mod grpc {
-    include!("generated/proofs.rs");
-}
 
 mod proofs_service_types;
 
