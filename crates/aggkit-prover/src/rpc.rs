@@ -146,23 +146,32 @@ impl AggchainProofGrpcService for GrpcService {
             .map_err(|_| Status::internal("Unable to get the service"))?;
 
         match service.call(proof_request).await {
-            Ok(response) => Ok(Response::new(GenerateAggchainProofResponse {
-                aggchain_proof: Some(AggchainProof {
-                    aggchain_params: Some(response.aggchain_params.into()),
-                    context,
-                    proof: Some(agglayer_interop::grpc::v1::aggchain_proof::Proof::Sp1Stark(
-                        Sp1StarkProof {
-                            version: SP1_CIRCUIT_VERSION.to_string(),
-                            proof: response.proof.into(),
-                            vkey: response.vkey.into(),
-                        },
-                    )),
-                }),
-                last_proven_block: response.last_proven_block,
-                end_block: response.end_block,
-                local_exit_root_hash: Some(response.local_exit_root_hash.into()),
-                custom_chain_data: response.custom_chain_data.into(),
-            })),
+            Ok(response) => {
+                context.insert(
+                    "public_values".to_owned(),
+                    Bytes::from(
+                        bincode::serialize(&response.public_values)
+                            .unwrap_or_else(|_| b"bincode serialization failed".to_vec()),
+                    ),
+                );
+                Ok(Response::new(GenerateAggchainProofResponse {
+                    aggchain_proof: Some(AggchainProof {
+                        aggchain_params: Some(response.aggchain_params.into()),
+                        context,
+                        proof: Some(agglayer_interop::grpc::v1::aggchain_proof::Proof::Sp1Stark(
+                            Sp1StarkProof {
+                                version: SP1_CIRCUIT_VERSION.to_string(),
+                                proof: response.proof.into(),
+                                vkey: response.vkey.into(),
+                            },
+                        )),
+                    }),
+                    last_proven_block: response.last_proven_block,
+                    end_block: response.end_block,
+                    local_exit_root_hash: Some(response.local_exit_root_hash.into()),
+                    custom_chain_data: response.custom_chain_data.into(),
+                }))
+            }
             Err(e) => Err(Status::internal(e.to_string())),
         }
     }
