@@ -78,13 +78,10 @@ impl AggchainProofGrpcService for GrpcService {
             ($name:ident: $($data:tt)*) => {
                 context.insert(stringify!($name).to_owned(), Bytes::from(aggchain_proof_inputs.$($data)*.to_vec()));
             };
-            ($field:ident $($mods:tt)*) => {
-                context_field!($field: $field $($mods)*);
-            };
         }
-        context_field!(last_proven_block.to_be_bytes());
-        context_field!(requested_end_block.to_be_bytes());
-        context_field!(l1_info_tree_root_hash.as_bytes());
+        context_field!(last_proven_block: last_proven_block.to_be_bytes());
+        context_field!(requested_end_block: requested_end_block.to_be_bytes());
+        context_field!(l1_info_tree_root_hash: l1_info_tree_root_hash.as_bytes());
         context_field!(l1_info_tree_index: l1_info_tree_leaf.l1_info_tree_index.to_be_bytes());
         context_field!(l1_info_tree_rer: l1_info_tree_leaf.rer.as_bytes());
         context_field!(l1_info_tree_mer: l1_info_tree_leaf.mer.as_bytes());
