@@ -52,12 +52,9 @@ async fn request_an_aggregated_span_proof() {
         mock_service.run().await.unwrap()
     };
 
-    let service = ProposerRpcClient::new(
-        format!("http://{}", server.local_addr()).parse().unwrap(),
-        Duration::from_millis(500),
-    )
-    .await
-    .unwrap();
+    let service = ProposerRpcClient::new(server.uri(), Duration::from_millis(500))
+        .await
+        .unwrap();
 
     let response = service
         .request_agg_proof(request)

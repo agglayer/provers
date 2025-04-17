@@ -7,6 +7,7 @@ use tracing::info;
 use crate::rpc::grpc::{self, proofs_server::Proofs};
 
 mockall::mock! {
+    /// Mock op-succinct proofs service.
     #[derive(Clone)]
     pub ProofsService {}
 
@@ -20,6 +21,7 @@ mockall::mock! {
 }
 
 impl MockProofsService {
+    /// Run a mock server.
     pub async fn run(self) -> Result<Handle, anyhow::Error> {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
         let local_addr = listener.local_addr()?;
@@ -53,6 +55,9 @@ impl MockProofsService {
     }
 }
 
+/// Handle to a running mock server.
+///
+/// The server is stopped if the handle goes out of scope.
 pub struct Handle {
     task: tokio::task::JoinHandle<Result<(), TransportError>>,
     local_addr: std::net::SocketAddr,
@@ -61,10 +66,17 @@ pub struct Handle {
 }
 
 impl Handle {
+    /// Get the mock server address.
     pub fn local_addr(&self) -> &std::net::SocketAddr {
         &self.local_addr
     }
 
+    /// Get the URI to connect to the mock server.
+    pub fn uri(&self) -> crate::GrpcUri {
+        format!("http://{}", self.local_addr()).parse().unwrap()
+    }
+
+    /// Stop the server and get the return value.
     pub async fn stop(self) -> Result<(), TransportError> {
         self.cancellation_token.cancel();
         self.task.await.unwrap()
