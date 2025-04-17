@@ -14,6 +14,7 @@ clap = { workspace = true, features = ["derive", "env", "string"] }
 dotenvy.workspace = true
 hex.workspace = true
 http = "1.2.0"
+jsonrpsee.workspace = true
 prost.workspace = true
 sp1-sdk.workspace = true
 sp1-zkvm.workspace = true
@@ -30,6 +31,8 @@ aggchain-proof-types.workspace = true
 aggkit-prover-config.workspace = true
 aggkit-prover-types.workspace = true
 agglayer-interop = { workspace = true, features = ["grpc-compat"] }
+proposer-client.workspace = true
+proposer-service.workspace = true
 prover-config.workspace = true
 prover-engine.workspace = true
 prover-executor.workspace = true
