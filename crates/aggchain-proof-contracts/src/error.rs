@@ -64,4 +64,7 @@ pub enum Error {
 
     #[error("Failure on the initialization of the HostExecutor for new L2 block.")]
     HostExecutorNewBlockInitialization(#[source] eyre::Report),
+
+    #[error("Unable to retrieve trusted sequencer address")]
+    UnableToRetrieveTrustedSequencerAddress(#[source] alloy::contract::Error),
 }

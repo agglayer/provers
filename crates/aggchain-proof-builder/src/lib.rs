@@ -8,13 +8,15 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 
 use aggchain_proof_contracts::contracts::{
-    L1RollupConfigHashFetcher, L2EvmStateSketchFetcher, L2LocalExitRootFetcher,
-    L2OutputAtBlockFetcher,
+    GetTrustedSequencerAddress, L1RollupConfigHashFetcher, L2EvmStateSketchFetcher,
+    L2LocalExitRootFetcher, L2OutputAtBlockFetcher,
 };
 use aggchain_proof_contracts::AggchainContractsClient;
 use aggchain_proof_core::bridge::inserted_ger::InsertedGER;
 use aggchain_proof_core::bridge::BridgeWitness;
-use aggchain_proof_core::full_execution_proof::AggregationProofPublicValues;
+use aggchain_proof_core::full_execution_proof::{
+    AggchainParamsValues, AggregationProofPublicValues,
+};
 use aggchain_proof_core::full_execution_proof::{FepInputs, AGGREGATION_VKEY_HASH};
 use aggchain_proof_core::proof::{AggchainProofWitness, IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION};
 use aggchain_proof_core::Digest;
@@ -22,7 +24,7 @@ use aggchain_proof_types::AggchainProofInputs;
 use aggkit_prover_types::vkey_hash::VKeyHash;
 use agglayer_interop::types::{GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues};
 use alloy::eips::BlockNumberOrTag;
-use alloy_primitives::Address;
+use alloy::hex;
 use bincode::Options;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
@@ -73,7 +75,6 @@ pub struct AggchainProofBuilderRequest {
     pub aggregation_proof_public_values: AggregationProofPublicValues,
 }
 
-#[derive(Clone, Debug)]
 pub struct AggchainProofBuilderResponse {
     /// Generated aggchain proof for the block range.
     pub proof: Vec<u8>,
@@ -95,6 +96,9 @@ pub struct AggchainProofBuilderResponse {
 
     /// New Local exit root.
     pub new_local_exit_root: Digest,
+
+    /// The public inputs that were provided to the proof
+    pub public_values: AggchainProofPublicValues,
 }
 
 /// This service is responsible for building an Aggchain proof.
@@ -177,6 +181,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         ContractsClient: L2LocalExitRootFetcher
             + L2OutputAtBlockFetcher
             + L2EvmStateSketchFetcher
+            + GetTrustedSequencerAddress
             + L1RollupConfigHashFetcher,
     {
         let new_blocks_range =
@@ -220,7 +225,10 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 
-        let trusted_sequencer = Address::default(); // TODO: from config or l1
+        let trusted_sequencer = contracts_client
+            .get_trusted_sequencer_address()
+            .await
+            .map_err(Error::UnableToFetchTrustedSequencerAddress)?;
 
         // From the request
         let inserted_gers: Vec<InsertedGER> = request
@@ -283,6 +291,20 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             }
         }
 
+        {
+            let aggchain_params_values = AggchainParamsValues::from(&fep_inputs);
+
+            info!("Aggchain-params unrolled values: {aggchain_params_values:?}");
+            info!(
+                "Aggchain-params abi encoded packed: {}",
+                hex::encode(fep_inputs.encoded_aggchain_params())
+            );
+            info!(
+                "Aggchain-params keccak-hashed: {}",
+                fep_inputs.aggchain_params()
+            );
+        }
+
         let prover_witness = AggchainProofWitness {
             prev_local_exit_root,
             new_local_exit_root,
@@ -322,7 +344,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
 impl<ContractsClient> tower::Service<AggchainProofBuilderRequest>
     for AggchainProofBuilder<ContractsClient>
 where
-    ContractsClient: AggchainContractsClient + Send + Sync + 'static,
+    ContractsClient: AggchainContractsClient + GetTrustedSequencerAddress + Send + Sync + 'static,
 {
     type Response = AggchainProofBuilderResponse;
 
@@ -405,6 +427,7 @@ where
                 end_block,
                 output_root,
                 new_local_exit_root: public_input.new_local_exit_root,
+                public_values: public_input,
             })
         }
         .boxed()

@@ -30,6 +30,7 @@ sp1-cc-client-executor.workspace = true
 sp1-cc-host-executor.workspace = true
 
 [dev-dependencies]
+alloy = { workspace = true, features = ["sol-types"] }
 mockito.workspace = true
 test-log.workspace = true
 
