@@ -75,7 +75,6 @@ pub struct AggchainProofBuilderRequest {
     pub aggregation_proof_public_values: AggregationProofPublicValues,
 }
 
-#[derive(Clone, Debug)]
 pub struct AggchainProofBuilderResponse {
     /// Generated aggchain proof for the block range.
     pub proof: Vec<u8>,
@@ -97,6 +96,9 @@ pub struct AggchainProofBuilderResponse {
 
     /// New Local exit root.
     pub new_local_exit_root: Digest,
+
+    /// The public inputs that were provided to the proof
+    pub public_values: AggchainProofPublicValues,
 }
 
 /// This service is responsible for building an Aggchain proof.
@@ -425,6 +427,7 @@ where
                 end_block,
                 output_root,
                 new_local_exit_root: public_input.new_local_exit_root,
+                public_values: public_input,
             })
         }
         .boxed()

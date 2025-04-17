@@ -9,6 +9,8 @@ use aggkit_prover_types::v1::{
     GenerateAggchainProofRequest, GenerateAggchainProofResponse,
 };
 use agglayer_interop::grpc::v1::{AggchainProof, Sp1StarkProof};
+use agglayer_interop::types::U256;
+use prost::bytes::Bytes;
 use sp1_sdk::SP1_CIRCUIT_VERSION;
 use tonic::{Request, Response, Status};
 use tonic_types::{ErrorDetails, StatusExt};
@@ -71,6 +73,67 @@ impl AggchainProofGrpcService for GrpcService {
                     )
                 })?;
 
+        let mut context = HashMap::new();
+        macro_rules! context_field {
+            ($name:ident: $($data:tt)*) => {
+                context.insert(stringify!($name).to_owned(), Bytes::from(aggchain_proof_inputs.$($data)*.to_vec()));
+            };
+        }
+        context_field!(last_proven_block: last_proven_block.to_be_bytes());
+        context_field!(requested_end_block: requested_end_block.to_be_bytes());
+        context_field!(l1_info_tree_root_hash: l1_info_tree_root_hash.as_bytes());
+        context_field!(l1_info_tree_index: l1_info_tree_leaf.l1_info_tree_index.to_be_bytes());
+        context_field!(l1_info_tree_rer: l1_info_tree_leaf.rer.as_bytes());
+        context_field!(l1_info_tree_mer: l1_info_tree_leaf.mer.as_bytes());
+        context_field!(l1_info_tree_ger: l1_info_tree_leaf.inner.global_exit_root.as_bytes());
+        context_field!(l1_info_tree_block_hash: l1_info_tree_leaf.inner.block_hash.as_bytes());
+        context_field!(l1_info_tree_timestamp: l1_info_tree_leaf.inner.timestamp.to_be_bytes());
+        macro_rules! int_to_bytes {
+            ($val:expr) => {
+                Bytes::from($val.to_be_bytes().to_vec())
+            };
+        }
+        for (name, ger) in aggchain_proof_inputs.ger_leaves.iter() {
+            context.insert(
+                format!("ger/{name}/block_number"),
+                int_to_bytes!(ger.block_number),
+            );
+            context.insert(
+                format!("ger/{name}/block_index"),
+                int_to_bytes!(ger.block_index),
+            );
+            context.insert(
+                format!("ger/{name}/l1_leaf_index"),
+                int_to_bytes!(ger.inserted_ger.l1_leaf.l1_info_tree_index),
+            );
+        }
+        for (i, ibe) in aggchain_proof_inputs
+            .imported_bridge_exits
+            .iter()
+            .enumerate()
+        {
+            context.insert(
+                format!("ibe/{i}/block_number"),
+                int_to_bytes!(ibe.block_number),
+            );
+            context.insert(
+                format!("ibe/{i}/bridge_exit_hash"),
+                Bytes::from(ibe.bridge_exit_hash.0.as_bytes().to_vec()),
+            );
+            let global_index: U256 = ibe.global_index.into();
+            context.insert(
+                format!("ibe/{i}/global_index"),
+                Bytes::from(
+                    global_index
+                        .as_le_bytes()
+                        .iter()
+                        .rev()
+                        .copied()
+                        .collect::<Vec<_>>(),
+                ),
+            );
+        }
+
         let proof_request = AggchainProofServiceRequest {
             aggchain_proof_inputs,
         };
@@ -83,23 +146,40 @@ impl AggchainProofGrpcService for GrpcService {
             .map_err(|_| Status::internal("Unable to get the service"))?;
 
         match service.call(proof_request).await {
-            Ok(response) => Ok(Response::new(GenerateAggchainProofResponse {
-                aggchain_proof: Some(AggchainProof {
-                    aggchain_params: Some(response.aggchain_params.into()),
-                    context: HashMap::new(),
-                    proof: Some(agglayer_interop::grpc::v1::aggchain_proof::Proof::Sp1Stark(
-                        Sp1StarkProof {
-                            version: SP1_CIRCUIT_VERSION.to_string(),
-                            proof: response.proof.into(),
-                            vkey: response.vkey.into(),
-                        },
-                    )),
-                }),
-                last_proven_block: response.last_proven_block,
-                end_block: response.end_block,
-                local_exit_root_hash: Some(response.local_exit_root_hash.into()),
-                custom_chain_data: response.custom_chain_data.into(),
-            })),
+            Ok(response) => {
+                context.insert(
+                    "public_values".to_owned(),
+                    Bytes::from(
+                        bincode::serialize(&response.public_values)
+                            .unwrap_or_else(|_| b"bincode serialization failed".to_vec()),
+                    ),
+                );
+                context.insert(
+                    "local_exit_root_hash".to_owned(),
+                    Bytes::from(response.local_exit_root_hash.as_bytes().to_vec()),
+                );
+                context.insert(
+                    "end_block".to_owned(),
+                    Bytes::from(response.end_block.to_be_bytes().to_vec()),
+                );
+                Ok(Response::new(GenerateAggchainProofResponse {
+                    aggchain_proof: Some(AggchainProof {
+                        aggchain_params: Some(response.aggchain_params.into()),
+                        context,
+                        proof: Some(agglayer_interop::grpc::v1::aggchain_proof::Proof::Sp1Stark(
+                            Sp1StarkProof {
+                                version: SP1_CIRCUIT_VERSION.to_string(),
+                                proof: response.proof.into(),
+                                vkey: response.vkey.into(),
+                            },
+                        )),
+                    }),
+                    last_proven_block: response.last_proven_block,
+                    end_block: response.end_block,
+                    local_exit_root_hash: Some(response.local_exit_root_hash.into()),
+                    custom_chain_data: response.custom_chain_data.into(),
+                }))
+            }
             Err(e) => Err(Status::internal(e.to_string())),
         }
     }

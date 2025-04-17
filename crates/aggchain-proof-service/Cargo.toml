@@ -16,6 +16,7 @@ aggchain-proof-types.workspace = true
 proposer-client.workspace = true
 proposer-service.workspace = true
 prover-alloy.workspace = true
+unified-bridge.workspace = true
 
 alloy-primitives.workspace = true
 anyhow.workspace = true

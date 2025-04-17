@@ -15,6 +15,7 @@ use proposer_client::FepProposerRequest;
 use proposer_service::ProposerService;
 use tower::{util::BoxCloneService, ServiceExt as _};
 use tracing::debug;
+use unified_bridge::aggchain_proof::AggchainProofPublicValues;
 
 use crate::config::AggchainProofServiceConfig;
 use crate::custom_chain_data::compute_custom_chain_data;
@@ -57,6 +58,9 @@ pub struct AggchainProofServiceResponse {
     /// Consists off the two bytes for aggchain selector, 32 bytes for the
     /// output_root (new state root) and the l2 end block number.
     pub custom_chain_data: Vec<u8>,
+
+    /// The public inputs that were provided to the proof
+    pub public_values: AggchainProofPublicValues,
 }
 
 /// The Aggchain proof service is responsible for orchestrating an Aggchain
@@ -202,6 +206,7 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
                 end_block: aggregation_proof_response.end_block,
                 local_exit_root_hash: aggchain_proof_response.new_local_exit_root,
                 custom_chain_data,
+                public_values: aggchain_proof_response.public_values,
             })
         }
         .boxed()
