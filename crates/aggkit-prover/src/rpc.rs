@@ -154,6 +154,14 @@ impl AggchainProofGrpcService for GrpcService {
                             .unwrap_or_else(|_| b"bincode serialization failed".to_vec()),
                     ),
                 );
+                context.insert(
+                    "local_exit_root_hash".to_owned(),
+                    Bytes::from(response.local_exit_root_hash.as_bytes().to_vec()),
+                );
+                context.insert(
+                    "end_block".to_owned(),
+                    Bytes::from(response.end_block.to_be_bytes().to_vec()),
+                );
                 Ok(Response::new(GenerateAggchainProofResponse {
                     aggchain_proof: Some(AggchainProof {
                         aggchain_params: Some(response.aggchain_params.into()),
