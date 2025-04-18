@@ -52,15 +52,16 @@ impl<L1Rpc, Prover>
 where
     Prover: AggregationProver,
 {
-    pub fn new(
+    pub async fn new(
         prover: Prover,
         config: &ProposerServiceConfig,
         l1_rpc: Arc<L1Rpc>,
     ) -> Result<Self, Error> {
         let proposer_rpc_client = ProposerRpcClient::new(
-            config.client.proposer_endpoint.as_str(),
+            config.client.proposer_endpoint.clone(),
             config.client.request_timeout,
-        )?;
+        )
+        .await?;
 
         let aggregation_vkey = Self::extract_aggregation_vkey(&prover, AGGREGATION_ELF);
 
@@ -84,32 +85,40 @@ where
 impl<L1Rpc>
     ProposerService<L1Rpc, proposer_client::client::Client<ProposerRpcClient, NetworkProver>>
 {
-    pub fn new_network(config: &ProposerServiceConfig, l1_rpc: Arc<L1Rpc>) -> Result<Self, Error> {
+    pub async fn new_network(
+        config: &ProposerServiceConfig,
+        l1_rpc: Arc<L1Rpc>,
+    ) -> Result<Self, Error> {
         assert!(
             !config.mock,
             "Building a network proposer service with a mock config"
         );
         Self::new(
-            new_network_prover(config.client.sp1_cluster_endpoint.as_str())
+            new_network_prover(&config.client.sp1_cluster_endpoint)
                 .map_err(Error::UnableToCreateProver)?,
             config,
             l1_rpc,
         )
+        .await
     }
 }
 
 impl<L1Rpc> ProposerService<L1Rpc, proposer_client::client::Client<ProposerRpcClient, MockProver>> {
-    pub fn new_mock(config: &ProposerServiceConfig, l1_rpc: Arc<L1Rpc>) -> Result<Self, Error> {
+    pub async fn new_mock(
+        config: &ProposerServiceConfig,
+        l1_rpc: Arc<L1Rpc>,
+    ) -> Result<Self, Error> {
         assert!(
             config.mock,
             "Building a mock proposer service with a non-mock config"
         );
         Self::new(
-            MockProver::new(config.client.proposer_endpoint.clone())
+            MockProver::new(&config.client.proposer_endpoint)
                 .map_err(Error::UnableToCreateProver)?,
             config,
             l1_rpc,
         )
+        .await
     }
 }
 

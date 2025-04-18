@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{str::FromStr, time::Duration};
 
 use alloy_primitives::B256;
 use anyhow::Context;
@@ -24,9 +24,9 @@ pub struct MockProver {
 }
 
 impl MockProver {
-    pub fn new(rpc_url: Url) -> anyhow::Result<MockProver> {
+    pub fn new(rpc_url: &crate::GrpcUri) -> anyhow::Result<MockProver> {
         Ok(MockProver {
-            rpc_url,
+            rpc_url: Url::from_str(&rpc_url.to_string())?,
             sp1_prover: sp1_sdk::CpuProver::mock(),
         })
     }

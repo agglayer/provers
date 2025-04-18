@@ -16,7 +16,7 @@ bincode.workspace = true
 educe.workspace = true
 hex.workspace = true
 jsonrpsee.workspace = true
-reqwest = { workspace = true, features = ["json"] }
+prost.workspace = true
 serde.workspace = true
 serde_with = { workspace = true, features = ["hex"] }
 sp1-sdk.workspace = true
@@ -26,6 +26,9 @@ tonic.workspace = true
 tracing.workspace = true
 url.workspace = true
 
+# Ecosystem dependencies
+op-succinct-grpc = { git = "https://github.com/agglayer/op-succinct.git", branch = "vcastellm/rust-agglayer", package = "grpc" }
+
 # Local dependencies
 prover-utils.workspace = true
 
@@ -33,9 +36,18 @@ prover-utils.workspace = true
 mockall = { workspace = true, optional = true }
 
 [dev-dependencies]
+proposer-client = { path = ".", features = ["testutils"] }
 mockito.workspace = true
 serde_json.workspace = true
+test-log.workspace = true
 tokio.workspace = true
+tokio-util.workspace = true
+
+[build-dependencies]
+tonic-build = { version = "0.12", default-features = false, features = [
+    "prost",
+    "transport",
+] }
 
 [features]
 testutils = ["dep:mockall"]
