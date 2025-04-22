@@ -5760,6 +5760,7 @@ name = "proposer-vkeys-raw"
 version = "0.1.0"
 dependencies = [
  "alloy-primitives",
+ "insta",
  "op-succinct-elfs",
  "prover-elf-utils",
 ]
