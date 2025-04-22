@@ -5833,7 +5833,7 @@ name = "prover-elf-utils"
 version = "0.1.0"
 dependencies = [
  "bincode",
- "sp1-sdk",
+ "sp1-prover",
 ]
 
 [[package]]
