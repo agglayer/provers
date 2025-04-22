@@ -1835,7 +1835,7 @@ dependencies = [
  "bitflags",
  "cexpr",
  "clang-sys",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "log",
  "prettyplease",
  "proc-macro2",
@@ -3321,7 +3321,7 @@ dependencies = [
 [[package]]
 name = "grpc"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/op-succinct.git?branch=vcastellm%2Frust-agglayer#a93d015f368d09542e3ae2f6fd2389c75c89f163"
+source = "git+https://github.com/agglayer/op-succinct.git?branch=vcastellm%2Frust-agglayer#8a6b76a64ead1a6cb8a6fc79604bfa26c475993e"
 dependencies = [
  "bytes",
  "pbjson",
@@ -5800,8 +5800,8 @@ version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be769465445e8c1474e9c5dac2018218498557af32d9ed057325ec9a41ae81bf"
 dependencies = [
- "heck 0.4.1",
- "itertools 0.10.5",
+ "heck 0.5.0",
+ "itertools 0.12.1",
  "log",
  "multimap",
  "once_cell",
@@ -5821,7 +5821,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a56d757972c98b346a9b766e3f02746cde6dd1cd1d1d563472929fdd74bec4d"
 dependencies = [
  "anyhow",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "proc-macro2",
  "quote",
  "syn 2.0.100",
