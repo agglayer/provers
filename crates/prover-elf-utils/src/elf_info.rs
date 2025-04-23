@@ -19,14 +19,24 @@ pub struct ElfInfo {
 }
 
 impl ElfInfo {
-    pub fn writing_to(file_name: impl AsRef<Path>) -> Self {
+    /// Write the modules into a file relative to the source directory.
+    pub fn writing_to_src(src_path: impl AsRef<Path>) -> Self {
+        let dir = env::var_os("CARGO_MANIFEST_DIR").expect("output directory");
+        let path = Path::new(&dir).join("src").join(src_path);
+        Self::writing_to_custom(path)
+    }
+
+    /// Write the modules into a file, specifying the full path.
+    pub fn writing_to_custom(path: impl AsRef<Path>) -> Self {
         println!("cargo::rerun-if-changed=build.rs");
 
         let prover = None;
 
-        let dir = env::var_os("OUT_DIR").expect("output directory");
-        let path = Path::new(&dir).join(file_name);
+        //let dir = env::var_os("OUT_DIR").expect("output directory");
+        //let path = Path::new(&dir).join(file_name);
         let output = fs::File::create(path).expect("elf info output file");
+
+        writeln!(&output, "// AUTO-GENERATED FILE. DO NOT EDIT.").unwrap();
 
         Self { prover, output }
     }

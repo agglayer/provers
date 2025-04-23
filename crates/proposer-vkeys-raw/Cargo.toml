@@ -4,13 +4,17 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
+[features]
+regenerate = ["dep:prover-elf-utils"]
+
+[[bin]]
+name = "regenerate"
+required-features = ["regenerate"]
+
 [dependencies]
 op-succinct-elfs.workspace = true
+prover-elf-utils = { workspace = true, optional = true }
 
 [dev-dependencies]
 alloy-primitives.workspace = true
 insta.workspace = true
-
-[build-dependencies]
-prover-elf-utils.workspace = true
-op-succinct-elfs.workspace = true
