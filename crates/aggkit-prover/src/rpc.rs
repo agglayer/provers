@@ -180,9 +180,24 @@ impl AggchainProofGrpcService for GrpcService {
                     custom_chain_data: response.custom_chain_data.into(),
                 }))
             }
-            // TODO: Return a different error when the proof is not yet ready.
-            // The gRPC API currently does not expose the status.
-            Err(e) => Err(Status::internal(e.to_string())),
+            Err(e) => {
+                let e = match e.downcast::<aggchain_proof_service::Error>() {
+                    Ok(e) => e,
+                    Err(e) => return Err(Status::internal(e.to_string())),
+                };
+                match *e {
+                    aggchain_proof_service::Error::ProposerServiceError(
+                        proposer_service::Error::Client(
+                            proposer_client::Error::AggProofRequestFailed(
+                                jsonrpsee::core::client::error::Error::Call(e),
+                            ),
+                        ),
+                    ) if e.code() == -2000 => Err(Status::unavailable(
+                        "Proposer service has not built any proof yet",
+                    )),
+                    e => Err(Status::internal(e.to_string())),
+                }
+            }
         }
     }
 }
