@@ -43,8 +43,7 @@ fn main() -> anyhow::Result<()> {
         }
 
         aggkit_prover::cli::Commands::VkeySelector => {
-            let vkey_selector_hex =
-                hex::encode(AGGCHAIN_VKEY_SELECTOR.to_be_bytes());
+            let vkey_selector_hex = hex::encode(AGGCHAIN_VKEY_SELECTOR.to_be_bytes());
             println!("0x{}", vkey_selector_hex.trim_start_matches("0x"));
         }
     }
