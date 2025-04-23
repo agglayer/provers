@@ -38,15 +38,14 @@ fn main() -> anyhow::Result<()> {
                 aggchain_proof_service::AGGCHAIN_PROOF_ELF,
             );
             let vkey = executor.get_vkey();
-            let vkey_hex = hex::encode(vkey.hash_bytes()).trim_start_matches("0x");
-
-            println!("0x{vkey_hex}");
+            let vkey_hex = hex::encode(vkey.hash_bytes());
+            println!("0x{}", vkey_hex.trim_start_matches("0x"));
         }
 
         aggkit_prover::cli::Commands::VkeySelector => {
             let vkey_selector_hex =
-                hex::encode(AGGCHAIN_VKEY_SELECTOR.to_be_bytes()).trim_start_matches("0x");
-            println!("0x{vkey_selector_hex}");
+                hex::encode(AGGCHAIN_VKEY_SELECTOR.to_be_bytes());
+            println!("0x{}", vkey_selector_hex.trim_start_matches("0x"));
         }
     }
 
