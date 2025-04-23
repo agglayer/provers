@@ -35,16 +35,11 @@ impl ElfInfo {
             println!("cargo::rerun-if-changed=build.rs");
         }
 
-        let prover = None;
-
-        //let dir = env::var_os("OUT_DIR").expect("output directory");
-        //let path = Path::new(&dir).join(file_name);
         let output = fs::File::create(path).expect("elf info output file");
-
         writeln!(&output, "// AUTO-GENERATED FILE. DO NOT EDIT.").unwrap();
 
         Self {
-            prover,
+            prover: None,
             output,
             emit_build_directives,
         }
