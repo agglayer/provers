@@ -3,7 +3,6 @@ use std::{fmt::Display, str::FromStr as _};
 use alloy_primitives::B256;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 use sp1_sdk::{SP1ProofWithPublicValues, SP1VerifyingKey};
-pub use tonic::transport::Uri as GrpcUri;
 
 pub use crate::error::Error;
 use crate::rpc::{AggregationProofProposerRequest, AggregationProofProposerResponse};
@@ -60,14 +59,6 @@ pub struct RequestId(pub B256);
 impl Display for RequestId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", hex::encode(self.0))
-    }
-}
-
-impl TryFrom<&[u8]> for RequestId {
-    type Error = core::array::TryFromSliceError;
-
-    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        value.try_into().map(Self)
     }
 }
 
