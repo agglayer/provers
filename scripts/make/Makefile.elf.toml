@@ -10,7 +10,6 @@ run_task = { name = [
 
 [tasks.ap-elf-build]
 description = "Compile aggchain proof ELF file"
-dependencies = ["op-succinct-vkeys"]
 cwd = "crates/aggchain-proof-program"
 command = "cargo"
 args = [
