@@ -6,4 +6,4 @@ license.workspace = true
 
 [dependencies]
 bincode.workspace = true
-sp1-prover = { workspace = true, default-features = false, features = [] }
+sp1-prover = { workspace = true, features = [] }

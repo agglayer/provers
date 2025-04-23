@@ -4,7 +4,7 @@ pub use aggkit_prover_types::{
 };
 
 pub mod aggregation {
-    pub use op_succinct_elfs::AGGREGATION_ELF as ELF;
+    pub use op_succinct_elfs::AGG_ELF as ELF;
 
     use crate::{HashU32, LazyVerifyingKey, VKeyHash};
 
@@ -17,7 +17,7 @@ pub mod aggregation {
 }
 
 pub mod range {
-    pub use op_succinct_elfs::RANGE_ELF_EMBEDDED as ELF;
+    pub use op_succinct_elfs::RANGE_ELF as ELF;
 
     use crate::{HashU32, LazyVerifyingKey, VKeyHash};
 
