@@ -19,6 +19,7 @@ prover-alloy.workspace = true
 unified-bridge.workspace = true
 
 alloy-primitives.workspace = true
+alloy-sol-types.workspace = true
 anyhow.workspace = true
 bincode.workspace = true
 futures.workspace = true

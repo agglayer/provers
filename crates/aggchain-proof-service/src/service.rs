@@ -195,8 +195,7 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
             let custom_chain_data = compute_custom_chain_data(
                 aggchain_proof_response.output_root,
                 aggregation_proof_response.end_block,
-            )
-            .map_err(Error::UnableToSerializeCustomChainData)?;
+            );
 
             Ok(AggchainProofServiceResponse {
                 proof: aggchain_proof_response.proof,
