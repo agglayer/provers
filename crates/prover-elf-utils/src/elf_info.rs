@@ -16,6 +16,9 @@ pub struct ElfInfo {
 
     /// Target file.
     output: fs::File,
+
+    /// If build directives should be emitted.
+    emit_build_directives: bool,
 }
 
 impl ElfInfo {
@@ -23,12 +26,14 @@ impl ElfInfo {
     pub fn writing_to_src(src_path: impl AsRef<Path>) -> Self {
         let dir = env::var_os("CARGO_MANIFEST_DIR").expect("output directory");
         let path = Path::new(&dir).join("src").join(src_path);
-        Self::writing_to_custom(path)
+        Self::writing_to_custom(path, false)
     }
 
     /// Write the modules into a file, specifying the full path.
-    pub fn writing_to_custom(path: impl AsRef<Path>) -> Self {
-        println!("cargo::rerun-if-changed=build.rs");
+    pub fn writing_to_custom(path: impl AsRef<Path>, emit_build_directives: bool) -> Self {
+        if emit_build_directives {
+            println!("cargo::rerun-if-changed=build.rs");
+        }
 
         let prover = None;
 
@@ -38,7 +43,11 @@ impl ElfInfo {
 
         writeln!(&output, "// AUTO-GENERATED FILE. DO NOT EDIT.").unwrap();
 
-        Self { prover, output }
+        Self {
+            prover,
+            output,
+            emit_build_directives,
+        }
     }
 
     /// Emit module corresponding to given ELF binary.
@@ -52,8 +61,10 @@ impl ElfInfo {
         module_name: &str,
         elf_path: impl AsRef<Path>,
     ) -> Emitter<Box<[u8]>> {
-        let path_string = elf_path.as_ref().to_string_lossy();
-        println!("cargo::rerun-if-changed={path_string}");
+        if self.emit_build_directives {
+            let path_string = elf_path.as_ref().to_string_lossy();
+            println!("cargo::rerun-if-changed={path_string}");
+        }
 
         let elf_bytes = fs::read(elf_path).unwrap().into_boxed_slice();
         self.module(module_name, elf_bytes)
