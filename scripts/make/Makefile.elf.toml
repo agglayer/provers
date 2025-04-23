@@ -1,75 +1,34 @@
 [env]
-RUST_VERSION = "1.82.0"
-SP1_VERSION = "succinct-1.82.0"
-SP1_TOOLCHAIN_HASH_aarch64 = "68bc4a29237e2eb862da36324d19cf835bb93f45106ad206ba17836fb7862f32"
-SP1_TOOLCHAIN_HASH_x86_64 = "a899ff54e43a1fdeaf6166bf97dace401e9c99b20842d3cf42cbe5c5dc35823e"
-SP1_ARCH = "x86_64"
+SP1_DOCKER_TAG="v4.1.3"
 
 [tasks.ap-elf]
 description = "Install aggchain proof ELF file"
-dependencies = ["ap-elf-build"]
-cwd = "crates/aggchain-proof-program"
-command = "cp"
-args = [
-    "target/riscv32im-succinct-zkvm-elf/release/aggchain-proof-program",
-    "elf/riscv32im-succinct-zkvm-elf",
-]
+run_task = { name = [
+    "op-succinct-vkeys",
+    "ap-elf-build",
+] }
 
 [tasks.ap-elf-build]
 description = "Compile aggchain proof ELF file"
-dependencies = ["sp1-toolchain-image"]
-command = "docker"
+dependencies = ["op-succinct-vkeys"]
+cwd = "crates/aggchain-proof-program"
+command = "cargo"
 args = [
-    "run",
-    "--platform=linux/amd64",
-    "--rm",
-    "--env",
-    "CARGO_ENCODED_RUSTFLAGS=-C\u001fpasses=lower-atomic\u001f-C\u001flink-arg=-Ttext=0x00200800\u001f-C\u001fpanic=abort",
-    "-v${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}:/sp1/source",
-    "-w/sp1/source/crates/aggchain-proof-program",
-    "sp1:apbuild",
-    "cargo",
+    "prove",
     "build",
-    "--target=riscv32im-succinct-zkvm-elf",
-    "--release",
-    "--locked",
-    "-vv",
+    "--docker",
+    "--tag=${SP1_DOCKER_TAG}",
+    "--workspace-directory=../../",
+    "--output-directory=elf/",
+    "--elf-name=riscv32im-succinct-zkvm-elf",
 ]
 
-[tasks.sp1-toolchain-shell]
-description = "Drop into an interactive shell in sp1 build environment image"
-dependencies = ["sp1-toolchain-image"]
-command = "docker"
+[tasks.op-succinct-vkeys]
+description = "Re-generate op-succinct vkey embedded constants"
+command = "cargo"
 args = [
     "run",
-    "--platform=linux/amd64",
-    "--rm",
-    "-it",
-    "-v${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}:/sp1/source",
-    "sp1:apbuild",
-]
-
-[tasks.sp1-toolchain-image-config]
-script_runner = "@duckscript"
-script = '''
-arch = get_env SP1_ARCH
-sha_arch = get_env SP1_TOOLCHAIN_HASH_${arch}
-
-set_env SP1_TOOLCHAIN_HASH ${sha_arch}
-'''
-
-[tasks.sp1-toolchain-image]
-dependencies = ["sp1-toolchain-image-config"]
-description = "Build a docker image with sp1 build environment"
-command = "docker"
-args = [
-    "build",
-    "--platform=linux/amd64",
-    "--build-arg=RUST_VERSION",
-    "--build-arg=SP1_VERSION",
-    "--build-arg=SP1_TOOLCHAIN_HASH",
-    "--build-arg=SP1_ARCH",
-    "-tsp1:apbuild",
-    "-f./build/sp1-toolchain/Dockerfile",
-    "./build/sp1-toolchain",
+    "--features=regenerate",
+    "-pproposer-vkeys-raw",
+    "--bin=regenerate",
 ]
