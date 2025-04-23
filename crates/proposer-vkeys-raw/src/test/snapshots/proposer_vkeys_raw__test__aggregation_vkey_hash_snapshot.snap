@@ -1,16 +1,15 @@
 ---
 source: crates/proposer-vkeys-raw/src/test/mod.rs
-assertion_line: 5
 expression: "crate::aggregation::VKEY_HASH"
 snapshot_kind: text
 ---
 [
-    1638338388,
-    1256426946,
-    526664290,
-    1122453194,
-    1403846808,
-    601906877,
-    1176579776,
-    312933952,
+    1949122874,
+    766403294,
+    593485289,
+    430966933,
+    1657646871,
+    73535799,
+    883940176,
+    31174925,
 ]
