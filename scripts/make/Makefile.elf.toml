@@ -1,5 +1,5 @@
 [env]
-SP1_DOCKER_TAG="v4.1.3"
+SP1_DOCKER_TAG="v4.1.3@sha256:b94d8953d824bd9f80d7176e2eed11fde1f7689fc880f5c1fdd2ed812ead92a8"
 
 [tasks.ap-elf]
 description = "Install aggchain proof ELF file"
