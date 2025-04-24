@@ -1,7 +1,9 @@
 use std::time::Duration;
 
+use op_succinct_grpc::proofs::{GetMockProofRequest, GetMockProofResponse};
 use tonic::transport::server::TcpIncoming;
 pub use tonic::transport::Error as TransportError;
+use tonic::{Request, Response, Status};
 use tracing::info;
 
 use crate::rpc::grpc::{self, proofs_server::Proofs};
@@ -17,7 +19,10 @@ mockall::mock! {
             &self,
             request: tonic::Request<grpc::AggProofRequest>,
         ) -> Result<tonic::Response<grpc::AggProofResponse>, tonic::Status>;
-    }
+
+        async fn get_mock_proof(&self, request: Request<GetMockProofRequest>) -> Result<Response<GetMockProofResponse>, Status> {
+            todo!()
+        }}
 }
 
 impl MockProofsService {

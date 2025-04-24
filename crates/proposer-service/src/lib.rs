@@ -7,7 +7,7 @@ use educe::Educe;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use proposer_client::aggregation_prover::AggregationProver;
-use proposer_client::mock_prover::MockProver;
+use proposer_client::mock_grpc_prover::MockGrpcProver;
 use proposer_client::network_prover::new_network_prover;
 use proposer_client::rpc::{AggregationProofProposerRequest, ProposerRpcClient};
 use proposer_client::FepProposerRequest;
@@ -57,11 +57,13 @@ where
         config: &ProposerServiceConfig,
         l1_rpc: Arc<L1Rpc>,
     ) -> Result<Self, Error> {
-        let proposer_rpc_client = ProposerRpcClient::new(
-            config.client.proposer_endpoint.clone(),
-            config.client.request_timeout,
-        )
-        .await?;
+        let proposer_rpc_client = Arc::new(
+            ProposerRpcClient::new(
+                config.client.proposer_endpoint.clone(),
+                config.client.request_timeout,
+            )
+            .await?,
+        );
 
         let aggregation_vkey = Self::extract_aggregation_vkey(&prover, AGGREGATION_ELF);
 
@@ -103,7 +105,12 @@ impl<L1Rpc>
     }
 }
 
-impl<L1Rpc> ProposerService<L1Rpc, proposer_client::client::Client<ProposerRpcClient, MockProver>> {
+impl<L1Rpc>
+    ProposerService<
+        L1Rpc,
+        proposer_client::client::Client<ProposerRpcClient, MockGrpcProver<ProposerRpcClient>>,
+    >
+{
     pub async fn new_mock(
         config: &ProposerServiceConfig,
         l1_rpc: Arc<L1Rpc>,
@@ -112,9 +119,16 @@ impl<L1Rpc> ProposerService<L1Rpc, proposer_client::client::Client<ProposerRpcCl
             config.mock,
             "Building a mock proposer service with a non-mock config"
         );
+        let proposer_rpc_client = Arc::new(
+            ProposerRpcClient::new(
+                config.client.proposer_endpoint.clone(),
+                config.client.request_timeout,
+            )
+            .await?,
+        );
+
         Self::new(
-            MockProver::new(&config.client.proposer_endpoint)
-                .map_err(Error::UnableToCreateProver)?,
+            MockGrpcProver::new(proposer_rpc_client).map_err(Error::UnableToCreateProver)?,
             config,
             l1_rpc,
         )

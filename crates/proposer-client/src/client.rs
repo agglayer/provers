@@ -29,12 +29,12 @@ pub struct Client<Proposer, Prover> {
 
 impl<Proposer, Prover> Client<Proposer, Prover> {
     pub fn new(
-        proposer: Proposer,
+        proposer: Arc<Proposer>,
         prover: Prover,
         proving_timeout: Option<Duration>,
     ) -> Result<Self, error::Error> {
         Ok(Self {
-            proposer_rpc: Arc::new(proposer),
+            proposer_rpc: proposer,
             prover_rpc: Arc::new(prover),
             proving_timeout,
         })

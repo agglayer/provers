@@ -12,6 +12,7 @@ pub mod aggregation_prover;
 pub mod client;
 pub mod config;
 pub mod error;
+pub mod mock_grpc_prover;
 pub mod mock_prover;
 pub mod network_prover;
 pub mod rpc;

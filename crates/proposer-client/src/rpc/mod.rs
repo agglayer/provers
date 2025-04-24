@@ -23,6 +23,11 @@ pub trait AggregationProofProposer {
         &self,
         request: AggregationProofProposerRequest,
     ) -> Result<AggregationProofProposerResponse, Error>;
+
+    async fn get_mock_proof(
+        &self,
+        request: MockProofProposerRequest,
+    ) -> Result<MockProofProposerResponse, Error>;
 }
 
 /// Request format for the proposer `proofs_requestAggProof`
@@ -62,6 +67,20 @@ impl Display for AggregationProofProposerResponse {
             self.last_proven_block, self.end_block, self.request_id
         )
     }
+}
+
+/// Request format for the proposer `proofs_getMockProof`
+#[derive(Debug)]
+pub struct MockProofProposerRequest {
+    /// The ID of the mock proof to retrieve
+    pub proof_id: u64,
+}
+
+/// Response for the proposer `proofs_getMockProof` call
+#[derive(Debug)]
+pub struct MockProofProposerResponse {
+    /// Generated aggregated mock proof
+    pub proof: Vec<u8>,
 }
 
 pub struct ProposerRpcClient {
@@ -104,6 +123,26 @@ impl AggregationProofProposer for ProposerRpcClient {
             request_id = response.to_string(),
             "agg proof request submitted"
         );
+
+        Ok(response)
+    }
+
+    async fn get_mock_proof(
+        &self,
+        request: MockProofProposerRequest,
+    ) -> Result<MockProofProposerResponse, Error> {
+        let request = grpc::GetMockProofRequest::from(request);
+
+        let mut client = self.client.clone();
+        let response: MockProofProposerResponse = client
+            .get_mock_proof(request)
+            .await
+            .map_err(ProofRequestError::Grpc)
+            .and_then(|resp| resp.into_inner().try_into())
+            .inspect_err(|e| error!("Get mock proof request failed: {e:?}"))
+            .map_err(Error::Requesting)?;
+
+        info!(proof_id = request.proof_id, "mock proof request fullfilled");
 
         Ok(response)
     }
