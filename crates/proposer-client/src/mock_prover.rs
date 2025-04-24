@@ -43,7 +43,7 @@ impl AggregationProver for MockProver {
         request_id: B256,
         timeout: Option<Duration>,
     ) -> anyhow::Result<SP1ProofWithPublicValues> {
-        let real_request_id: u64 = u64::from_be_bytes(request_id[24..].try_into().unwrap());
+        let real_request_id: u64 = u64::from_be_bytes(request_id[24..].try_into()?);
         debug_assert!(request_id[..24].iter().all(|v| *v == 0));
 
         let mut builder = HttpClient::builder();

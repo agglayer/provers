@@ -40,8 +40,6 @@ async fn request_an_aggregated_span_proof() {
             ))
             .returning(move |_request| {
                 let response = AggProofResponse {
-                    success: true,
-                    error: String::new(),
                     last_proven_block: 110,
                     end_block: 205,
                     proof_request_id: Bytes::from_owner(proof_request_id.to_vec()),

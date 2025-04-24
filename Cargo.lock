@@ -3322,7 +3322,7 @@ dependencies = [
 [[package]]
 name = "grpc"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/op-succinct.git?branch=vcastellm%2Frust-agglayer#8a6b76a64ead1a6cb8a6fc79604bfa26c475993e"
+source = "git+https://github.com/agglayer/op-succinct.git?branch=vcastellm%2Fgrpc-mock-flow#e1cb3ed9656df82b3fc0d33fffbc5a3aea3b8a80"
 dependencies = [
  "bytes",
  "pbjson",

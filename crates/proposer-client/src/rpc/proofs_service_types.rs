@@ -1,6 +1,7 @@
 use super::{
     error::{GrpcConversionError, ProofRequestError},
     grpc, AggregationProofProposerRequest, AggregationProofProposerResponse,
+    MockProofProposerRequest, MockProofProposerResponse,
 };
 
 fn convert_field<T, U: TryFrom<T, Error = E>, E: Into<anyhow::Error>>(
@@ -29,16 +30,10 @@ impl TryFrom<grpc::AggProofResponse> for AggregationProofProposerResponse {
 
     fn try_from(response: grpc::AggProofResponse) -> Result<Self, Self::Error> {
         let grpc::AggProofResponse {
-            success,
-            error,
             last_proven_block,
             end_block,
             proof_request_id,
         } = response;
-
-        if !success {
-            return Err(ProofRequestError::Failed(error));
-        }
 
         let request_id = convert_field("proof_request_id", &*proof_request_id)
             .map_err(ProofRequestError::ParsingResponse)?;
@@ -47,6 +42,26 @@ impl TryFrom<grpc::AggProofResponse> for AggregationProofProposerResponse {
             request_id,
             last_proven_block,
             end_block,
+        })
+    }
+}
+
+impl From<MockProofProposerRequest> for grpc::GetMockProofRequest {
+    fn from(request: MockProofProposerRequest) -> Self {
+        grpc::GetMockProofRequest {
+            proof_id: request.proof_id as i64,
+        }
+    }
+}
+
+impl TryFrom<grpc::GetMockProofResponse> for MockProofProposerResponse {
+    type Error = ProofRequestError;
+
+    fn try_from(response: grpc::GetMockProofResponse) -> Result<Self, Self::Error> {
+        let grpc::GetMockProofResponse { proof } = response;
+
+        Ok(MockProofProposerResponse {
+            proof: convert_field("proof", &*proof).map_err(ProofRequestError::ParsingResponse)?,
         })
     }
 }
