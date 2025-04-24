@@ -3,10 +3,8 @@ use std::time::Duration;
 
 use prover_utils::from_env_or_default;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, DisplayFromStr, DurationSeconds};
+use serde_with::{serde_as, DurationSeconds};
 use url::Url;
-
-use crate::GrpcUri;
 
 /// The default proposer service endpoint
 const DEFAULT_PROPOSER_SERVICE_ENDPOINT: &str = "http://proposer-mock-rpc:3000";
@@ -20,18 +18,14 @@ const DEFAULT_SP1_CLUSTER_ENDPOINT: &str = "https://rpc.production.succinct.xyz/
 pub struct ProposerClientConfig {
     /// The proposer service http endpoint.
     #[serde(default = "default_proposer_service_endpoint")]
-    #[serde_as(as = "DisplayFromStr")]
-    pub proposer_endpoint: GrpcUri,
-
+    pub proposer_endpoint: Url,
     /// The sp1 proving cluster endpoint.
     #[serde(default = "default_sp1_cluster_endpoint")]
     pub sp1_cluster_endpoint: Url,
-
     /// Proposer request timeout in seconds.
     #[serde(default = "default_request_timeout")]
     #[serde_as(as = "DurationSeconds<u64>")]
     pub request_timeout: Duration,
-
     /// Proving timeout in seconds.
     #[serde(default = "default_proving_timeout")]
     #[serde_as(as = "DurationSeconds<u64>")]
@@ -49,10 +43,10 @@ impl Default for ProposerClientConfig {
     }
 }
 
-fn default_proposer_service_endpoint() -> GrpcUri {
+fn default_proposer_service_endpoint() -> Url {
     from_env_or_default(
         "PROPOSER_SERVICE_ENDPOINT",
-        GrpcUri::from_str(DEFAULT_PROPOSER_SERVICE_ENDPOINT).unwrap(),
+        Url::from_str(DEFAULT_PROPOSER_SERVICE_ENDPOINT).unwrap(),
     )
 }
 
