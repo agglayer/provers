@@ -56,17 +56,17 @@ fn aggchain_pattern() {
 
 #[tokio::test]
 async fn test_custom_chain_data_builder_service() {
-    let response = compute_custom_chain_data(Digest([1u8; 32]), 10u64).unwrap();
+    let response = compute_custom_chain_data(Digest([1u8; 32]), 10u64);
 
-    let mut expected = [0u8; 66];
+    let mut expected = [0u8; 96];
     // program selector
-    expected[0..2].copy_from_slice(&[0, 0]);
+    expected[0..4].copy_from_slice(&[0, 0, 0, 1]);
 
     // output root
-    expected[2..34].copy_from_slice(&[1u8; 32]);
+    expected[32..64].copy_from_slice(&[1u8; 32]);
 
     // l2 block number
-    expected[58..66].copy_from_slice(&10u64.to_be_bytes());
+    expected[64..96].copy_from_slice(&U256::from(10u64).to_be_bytes::<32>());
 
     assert_eq!(response, expected.to_vec());
 }
