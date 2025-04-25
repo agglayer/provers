@@ -43,13 +43,13 @@ where
         request_id: B256,
         _timeout: Option<Duration>,
     ) -> anyhow::Result<SP1ProofWithPublicValues> {
-        let real_request_id: u64 = u64::from_be_bytes(request_id[24..].try_into()?);
+        let proof_id: i64 = i64::from_be_bytes(request_id[24..].try_into()?);
         debug_assert!(request_id[..24].iter().all(|v| *v == 0));
 
         let response = self
             .proposer_rpc
             .get_mock_proof(MockProofProposerRequest {
-                proof_id: real_request_id,
+                proof_id: crate::ProofId(proof_id),
             })
             .await?;
 

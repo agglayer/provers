@@ -49,7 +49,7 @@ impl TryFrom<grpc::AggProofResponse> for AggregationProofProposerResponse {
 impl From<MockProofProposerRequest> for grpc::GetMockProofRequest {
     fn from(request: MockProofProposerRequest) -> Self {
         grpc::GetMockProofRequest {
-            proof_id: request.proof_id as i64,
+            proof_id: request.proof_id.0,
         }
     }
 }

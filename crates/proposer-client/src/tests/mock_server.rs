@@ -20,9 +20,11 @@ mockall::mock! {
             request: tonic::Request<grpc::AggProofRequest>,
         ) -> Result<tonic::Response<grpc::AggProofResponse>, tonic::Status>;
 
-        async fn get_mock_proof(&self, request: Request<GetMockProofRequest>) -> Result<Response<GetMockProofResponse>, Status> {
-            todo!()
-        }}
+        async fn get_mock_proof(
+            &self,
+            request: Request<GetMockProofRequest>
+        ) -> Result<Response<GetMockProofResponse>, Status>;
+    }
 }
 
 impl MockProofsService {
