@@ -27,7 +27,7 @@ tracing.workspace = true
 url.workspace = true
 
 # Ecosystem dependencies
-op-succinct-grpc = { git = "https://github.com/agglayer/op-succinct.git", branch = "vcastellm/grpc-mock-flow", package = "grpc" }
+op-succinct-grpc = { git = "https://github.com/agglayer/op-succinct.git", tag = "v2.1.3-agglayer", package = "grpc" }
 
 # Local dependencies
 prover-utils.workspace = true
