@@ -59,7 +59,7 @@ pub struct FepProposerResponse {
 pub struct RequestId(pub B256);
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
-pub struct ProofId(pub i64);
+pub struct MockProofId(pub i64);
 
 impl Display for RequestId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
