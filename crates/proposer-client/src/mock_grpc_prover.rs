@@ -49,7 +49,7 @@ where
         let response = self
             .proposer_rpc
             .get_mock_proof(MockProofProposerRequest {
-                proof_id: crate::ProofId(proof_id),
+                proof_id: crate::MockProofId(proof_id),
             })
             .await?;
 

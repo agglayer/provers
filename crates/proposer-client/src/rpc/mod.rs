@@ -7,7 +7,7 @@ use tracing::{error, info};
 
 use crate::{
     error::{self, Error, ProofRequestError},
-    GrpcUri, ProofId, RequestId,
+    GrpcUri, MockProofId, RequestId,
 };
 
 mod proofs_service_types;
@@ -73,7 +73,7 @@ impl Display for AggregationProofProposerResponse {
 #[derive(Debug)]
 pub struct MockProofProposerRequest {
     /// The ID of the mock proof to retrieve
-    pub proof_id: ProofId,
+    pub proof_id: MockProofId,
 }
 
 /// Response for the proposer `proofs_getMockProof` call
