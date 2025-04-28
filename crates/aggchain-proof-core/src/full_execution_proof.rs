@@ -1,3 +1,4 @@
+use agglayer_primitives::bytes::{BigEndian, ByteOrder as _};
 use agglayer_primitives::keccak::keccak256_combine;
 use agglayer_primitives::{digest::Digest, keccak::keccak256};
 use alloy_primitives::{Address, PrimitiveSignature, B256, U256};
@@ -7,13 +8,6 @@ use sha2::{Digest as Sha256Digest, Sha256};
 use unified_bridge::imported_bridge_exit::{L1InfoTreeLeaf, MerkleProof};
 
 use crate::{error::ProofError, vkey_hash::HashU32};
-
-/// Hardcoded hash of the "aggregation vkey".
-/// NOTE: Format being `hash_u32()` of the `SP1StarkVerifyingKey`.
-pub const AGGREGATION_VKEY_HASH: HashU32 = proposer_vkeys_raw::aggregation::VKEY_HASH;
-
-/// Specific commitment for the range proofs.
-pub const RANGE_VKEY_COMMITMENT: [u8; 32] = proposer_vkeys_raw::range::VKEY_COMMITMENT;
 
 /// Hardcoded for now, might see if we might need it as input
 pub const OUTPUT_ROOT_VERSION: [u8; 32] = [0u8; 32];
@@ -33,6 +27,12 @@ pub struct FepInputs {
     pub new_state_root: Digest,
     pub new_withdrawal_storage_root: Digest,
     pub new_block_hash: Digest,
+
+    /// Aggregation vkey hash.
+    pub aggregation_vkey_hash: HashU32,
+
+    /// Range vkey commitment.
+    pub range_vkey_commitment: [u8; 32],
 
     /// Trusted sequencer address.
     pub trusted_sequencer: Address,
@@ -64,7 +64,7 @@ impl From<&FepInputs> for AggregationProofPublicValues {
             l2PostRoot: inputs.compute_claim_root().0.into(),
             l2BlockNumber: inputs.claim_block_num.into(),
             rollupConfigHash: inputs.rollup_config_hash.0.into(),
-            multiBlockVKey: RANGE_VKEY_COMMITMENT.into(),
+            multiBlockVKey: inputs.range_vkey_commitment.into(),
         }
     }
 }
@@ -78,6 +78,8 @@ sol! {
         bytes32 rollupConfigHash;
         bool optimisticMode;
         address trustedSequencer;
+        bytes32 range_vkey_commitment;
+        bytes32 aggregation_vkey_hash;
     }
 }
 
@@ -90,6 +92,15 @@ impl From<&FepInputs> for AggchainParamsValues {
             rollupConfigHash: inputs.rollup_config_hash.0.into(),
             optimisticMode: inputs.optimistic_mode() == OptimisticMode::Ecdsa,
             trustedSequencer: inputs.trusted_sequencer,
+            range_vkey_commitment: inputs.range_vkey_commitment.into(),
+            aggregation_vkey_hash: {
+                let mut aggregation_vkey_hash = [0u8; 32];
+                BigEndian::write_u32_into(
+                    inputs.aggregation_vkey_hash.as_slice(),
+                    &mut aggregation_vkey_hash,
+                );
+                aggregation_vkey_hash.into()
+            },
         }
     }
 }
@@ -166,7 +177,7 @@ impl FepInputs {
             #[cfg(target_os = "zkvm")]
             {
                 sp1_zkvm::lib::verify::verify_sp1_proof(
-                    &AGGREGATION_VKEY_HASH,
+                    &self.aggregation_vkey_hash,
                     &self.sha256_public_values().into(),
                 );
 
