@@ -8,7 +8,7 @@ fn convert_field<T, U: TryFrom<T, Error = E>, E: Into<anyhow::Error>>(
     field: &'static str,
     value: T,
 ) -> Result<U, GrpcConversionError> {
-    U::try_from(value).map_err(|e| GrpcConversionError::Conversion {
+    U::try_from(value).map_err(|e| GrpcConversionError {
         field,
         source: e.into(),
     })

@@ -21,11 +21,11 @@ impl<Proposer> MockGrpcProver<Proposer>
 where
     Proposer: crate::rpc::AggregationProofProposer + Sync + Send,
 {
-    pub fn new(proposer: Arc<Proposer>) -> anyhow::Result<MockGrpcProver<Proposer>> {
-        Ok(MockGrpcProver {
+    pub fn new(proposer: Arc<Proposer>) -> MockGrpcProver<Proposer> {
+        MockGrpcProver {
             proposer_rpc: proposer,
             sp1_prover: sp1_sdk::CpuProver::mock(),
-        })
+        }
     }
 }
 
