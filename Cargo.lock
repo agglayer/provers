@@ -44,7 +44,6 @@ dependencies = [
  "bincode",
  "futures",
  "proposer-elfs",
- "proposer-vkeys-raw",
  "prover-config",
  "prover-executor",
  "serde",
@@ -5684,8 +5683,9 @@ name = "proposer-elfs"
 version = "0.1.0"
 dependencies = [
  "aggkit-prover-types",
+ "alloy-primitives",
  "op-succinct-elfs",
- "proposer-vkeys-raw",
+ "prover-elf-utils",
  "rstest",
  "sp1-sdk",
 ]
@@ -5718,15 +5718,6 @@ dependencies = [
  "tower 0.4.13",
  "tracing",
  "url",
-]
-
-[[package]]
-name = "proposer-vkeys-raw"
-version = "0.1.0"
-dependencies = [
- "alloy-primitives",
- "op-succinct-elfs",
- "prover-elf-utils",
 ]
 
 [[package]]
