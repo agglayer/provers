@@ -15,7 +15,7 @@ pub enum Error {
     Requesting(#[source] ProofRequestError),
 
     #[error("Error initializing grpc connection")]
-    Connect(tonic::transport::Error),
+    Connect(#[source] tonic::transport::Error),
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -31,10 +31,8 @@ pub enum ProofRequestError {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum GrpcConversionError {
-    #[error("Conversion of `{field}` failed")]
-    Conversion {
-        field: &'static str,
-        source: anyhow::Error,
-    },
+#[error("Conversion of `{field}` failed")]
+pub struct GrpcConversionError {
+    pub field: &'static str,
+    pub source: anyhow::Error,
 }

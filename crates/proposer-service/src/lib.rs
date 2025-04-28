@@ -127,12 +127,7 @@ impl<L1Rpc>
             .await?,
         );
 
-        Self::new(
-            MockGrpcProver::new(proposer_rpc_client).map_err(Error::UnableToCreateProver)?,
-            config,
-            l1_rpc,
-        )
-        .await
+        Self::new(MockGrpcProver::new(proposer_rpc_client), config, l1_rpc).await
     }
 }
 
