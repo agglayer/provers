@@ -1,4 +1,5 @@
-use aggchain_proof_core::{Digest, AGGCHAIN_PROOF_PROGRAM_VERSION, AGGCHAIN_TYPE};
+use aggchain_proof_core::{AGGCHAIN_PROOF_PROGRAM_VERSION, AGGCHAIN_TYPE};
+use agglayer_interop::types::Digest;
 use alloy_primitives::U256;
 use alloy_sol_types::{sol, SolValue};
 use serde::{Deserialize, Serialize};

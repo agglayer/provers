@@ -1,6 +1,6 @@
 use agglayer_primitives::bytes::{BigEndian, ByteOrder as _};
 use agglayer_primitives::keccak::keccak256_combine;
-use agglayer_primitives::{digest::Digest, keccak::keccak256};
+use agglayer_primitives::{keccak::keccak256, Digest};
 use alloy_primitives::{Address, PrimitiveSignature, B256, U256};
 use alloy_sol_types::{sol, SolValue};
 use serde::{Deserialize, Serialize};

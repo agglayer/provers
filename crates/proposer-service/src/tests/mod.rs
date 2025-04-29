@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
+use agglayer_blockchain::MockRpc;
 use alloy_primitives::FixedBytes;
 use proposer_client::{
     rpc::AggregationProofProposerRequest, FepProposerRequest, MockProposerClient, RequestId,
 };
-use prover_alloy::MockProvider;
 use sp1_sdk::{Prover as _, SP1PublicValues, SP1_CIRCUIT_VERSION};
 use tower::Service as _;
 
@@ -39,12 +39,12 @@ fn generate_keys() -> (
 
 #[tokio::test]
 async fn test_proposer_service() {
-    let mut l1_rpc = MockProvider::new();
+    let mut l1_rpc = MockRpc::new();
 
     l1_rpc
         .expect_get_block_number()
         .once()
-        .returning(|_| Box::pin(async { Ok(10) }));
+        .returning(|_| Ok(10));
 
     let mut client = MockProposerClient::new();
     client.expect_request_agg_proof().once().returning(
@@ -99,11 +99,11 @@ async fn test_proposer_service() {
 
 #[tokio::test]
 async fn unable_to_fetch_block_hash() {
-    let mut l1_rpc = MockProvider::new();
+    let mut l1_rpc = MockRpc::new();
     l1_rpc
         .expect_get_block_number()
         .once()
-        .returning(|_| Box::pin(async { anyhow::bail!("Failed to fetch block number") }));
+        .returning(|_| anyhow::bail!("Failed to fetch block number"));
 
     let client = MockProposerClient::new();
 

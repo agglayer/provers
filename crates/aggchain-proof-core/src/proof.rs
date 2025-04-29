@@ -1,4 +1,4 @@
-use agglayer_primitives::digest::Digest;
+use agglayer_primitives::Digest;
 use serde::{Deserialize, Serialize};
 use unified_bridge::{aggchain_proof::AggchainProofPublicValues, CommitmentVersion};
 

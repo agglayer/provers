@@ -1,12 +1,13 @@
 use std::str::FromStr;
 use std::time::Duration;
 
+use agglayer_blockchain::AlloyRpc;
 use alloy::network::Ethereum;
 use alloy::providers::fillers::{
     BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller,
 };
 use alloy::providers::Identity;
-use alloy::providers::{Provider as _, ProviderBuilder};
+use alloy::providers::ProviderBuilder;
 use alloy::transports::http::reqwest;
 use alloy::transports::layers::RetryBackoffLayer;
 use alloy::{providers::RootProvider, rpc::client::ClientBuilder};
@@ -52,14 +53,6 @@ pub fn build_alloy_fill_provider(
     Ok(ProviderBuilder::new().on_client(client))
 }
 
-#[async_trait]
-#[cfg_attr(feature = "testutils", mockall::automock)]
-pub trait Provider {
-    async fn get_block_hash(&self, block_number: u64) -> anyhow::Result<alloy::primitives::B256>;
-
-    async fn get_block_number(&self, block_hash: alloy::primitives::B256) -> anyhow::Result<u64>;
-}
-
 /// Wrapper around alloy `Provider` client.
 /// Performs ETH node response data processing where needed but
 /// allows direct use of the provider if necessary.
@@ -91,44 +84,11 @@ impl AlloyProvider {
             client: ProviderBuilder::new().on_client(client),
         })
     }
-
-    pub fn provider(&self) -> &AlloyFillProvider {
-        &self.client
-    }
 }
 
-#[async_trait]
-impl Provider for AlloyProvider {
-    async fn get_block_hash(
-        &self,
-        block_number: u64,
-    ) -> Result<alloy::primitives::B256, anyhow::Error> {
-        let hash = self
-            .client
-            .get_block_by_number(block_number.into())
-            .await
-            .map_err(|error| anyhow::anyhow!("Failed to get L1 block hash: {:?}", error))?
-            .ok_or(anyhow::anyhow!(
-                "target block {block_number} does not exist"
-            ))?
-            .header
-            .hash;
-        Ok(hash)
-    }
-
-    async fn get_block_number(
-        &self,
-        block_hash: alloy::primitives::B256,
-    ) -> Result<u64, anyhow::Error> {
-        let number = self
-            .client
-            .get_block_by_hash(block_hash)
-            .await
-            .map_err(|error| anyhow::anyhow!("Failed to get L1 block number: {:?}", error))?
-            .ok_or(anyhow::anyhow!("target block {block_hash} does not exist"))?
-            .header
-            .number;
-        Ok(number)
+impl AlloyRpc for AlloyProvider {
+    fn alloy_rpc(&self) -> &AlloyFillProvider {
+        &self.client
     }
 }
 

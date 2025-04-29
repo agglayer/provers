@@ -2,7 +2,7 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use agglayer_primitives::digest::Digest;
+use agglayer_primitives::Digest;
 use agglayer_primitives::keccak::keccak256_combine;
 use alloy_primitives::{address, Address, U256};
 use alloy_sol_macro::sol;

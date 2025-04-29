@@ -2,21 +2,21 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 
 use aggchain_proof_core::full_execution_proof::AggregationProofPublicValues;
+use agglayer_blockchain::GetBlockNumber;
 use alloy_sol_types::SolType;
 use educe::Educe;
-pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use proposer_client::aggregation_prover::AggregationProver;
 use proposer_client::mock_prover::MockProver;
 use proposer_client::network_prover::new_network_prover;
 use proposer_client::rpc::{AggregationProofProposerRequest, ProposerRpcClient};
 use proposer_client::FepProposerRequest;
-use prover_alloy::Provider;
 use sp1_prover::SP1VerifyingKey;
 use sp1_sdk::NetworkProver;
 use tracing::info;
 
 use crate::config::ProposerServiceConfig;
+pub use error::Error;
 
 type AggregationProof = Box<sp1_core_executor::SP1ReduceProof<sp1_prover::InnerSC>>;
 
@@ -116,7 +116,7 @@ impl<L1Rpc> ProposerService<L1Rpc, proposer_client::client::Client<ProposerRpcCl
 impl<L1Rpc, ProposerClient> tower::Service<FepProposerRequest>
     for ProposerService<L1Rpc, ProposerClient>
 where
-    L1Rpc: Provider + Send + Sync + 'static,
+    L1Rpc: GetBlockNumber<Error: Into<anyhow::Error>> + Send + Sync + 'static,
     ProposerClient: proposer_client::ProposerClient + Send + Sync + 'static,
 {
     type Response = ProposerResponse;
@@ -143,9 +143,14 @@ where
 
         async move {
             let l1_block_number = l1_rpc
-                .get_block_number(l1_block_hash)
+                .get_block_number(l1_block_hash.into())
                 .await
-                .map_err(Error::AlloyProviderError)?;
+                .map_err(|e| {
+                    Error::AlloyProviderError(
+                        e.into()
+                            .context(format!("Getting the block number for hash {l1_block_hash}")),
+                    )
+                })?;
 
             // Request the AggregationProof generation from the proposer.
             let response = client

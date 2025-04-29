@@ -130,7 +130,7 @@ where
     RpcProvider: alloy::providers::Provider + Send + Sync,
 {
     async fn get_trusted_sequencer_address(&self) -> Result<Address, Error> {
-        Ok(self.trusted_sequencer_addr)
+        Ok(self.trusted_sequencer_addr.into())
     }
 }
 
