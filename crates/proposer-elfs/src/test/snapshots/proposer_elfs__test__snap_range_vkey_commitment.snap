@@ -1,0 +1,39 @@
+---
+source: crates/proposer-elfs/src/test/mod.rs
+expression: "range::VKEY_COMMITMENT"
+snapshot_kind: text
+---
+[
+    3,
+    103,
+    119,
+    96,
+    54,
+    176,
+    216,
+    177,
+    39,
+    32,
+    234,
+    183,
+    117,
+    182,
+    81,
+    199,
+    37,
+    30,
+    99,
+    162,
+    73,
+    203,
+    132,
+    246,
+    62,
+    177,
+    194,
+    4,
+    24,
+    178,
+    78,
+    156,
+]

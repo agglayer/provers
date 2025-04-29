@@ -5683,7 +5683,7 @@ name = "proposer-elfs"
 version = "0.1.0"
 dependencies = [
  "aggkit-prover-types",
- "alloy-primitives",
+ "insta",
  "op-succinct-elfs",
  "prover-elf-utils",
  "rstest",

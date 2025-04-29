@@ -1,0 +1,6 @@
+---
+source: crates/proposer-elfs/src/test/mod.rs
+expression: "aggregation::VKEY_HASH"
+snapshot_kind: text
+---
+0x742d413a2dae62de235fdde919b0089562cdaf170462113734afdb5001dbb10d
