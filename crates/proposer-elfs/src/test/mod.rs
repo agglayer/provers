@@ -3,11 +3,7 @@ use super::*;
 #[rstest::rstest]
 #[case::agg(aggregation::ELF, &aggregation::VKEY, aggregation::VKEY_HASH)]
 #[case::range(range::ELF, &range::VKEY, range::VKEY_HASH)]
-fn consistency(
-    #[case] elf: &[u8],
-    #[case] vkey: &LazyVerifyingKey,
-    #[case] vkey_hash: VKeyHash,
-) {
+fn consistency(#[case] elf: &[u8], #[case] vkey: &LazyVerifyingKey, #[case] vkey_hash: VKeyHash) {
     let prover = sp1_sdk::CpuProver::new();
     let (_proving_key, computed_vkey) = sp1_sdk::Prover::setup(&prover, elf);
 
