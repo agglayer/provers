@@ -22,9 +22,9 @@ pub mod aggregation {
 
 pub mod range {
     pub use op_succinct_elfs::RANGE_ELF as ELF;
+    pub use vkeys_raw::range::VKEY_COMMITMENT;
 
     use crate::{vkeys_raw, HashU32, LazyVerifyingKey, VKeyHash};
-    pub use vkeys_raw::range::VKEY_COMMITMENT;
 
     pub static VKEY: LazyVerifyingKey =
         LazyVerifyingKey::from_unparsed_bytes(vkeys_raw::range::VKEY_BYTES);
