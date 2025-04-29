@@ -89,6 +89,7 @@ pub struct ProposerRpcClient {
 
 impl ProposerRpcClient {
     pub async fn new(rpc_endpoint: GrpcUri, timeout: Duration) -> Result<Self, Error> {
+        println!(">>>>>>>>>>>>>> Checkpoint 2, rpc_endpoint: {rpc_endpoint:?}, timeout: {timeout:?}");
         // TODO: Configure various other limits besides timeout on the channel.
         let channel = tonic::transport::Channel::builder(rpc_endpoint)
             .timeout(timeout)
@@ -96,8 +97,10 @@ impl ProposerRpcClient {
             .await
             .inspect_err(|e| error!("Error connecting to proposer gRPC: {e}"))
             .map_err(Error::Connect)?;
+        println!(">>>>>>>>>>>>>> Checkpoint 3");
 
         let client = ProofsClient::new(channel);
+        println!(">>>>>>>>>>>>>> Checkpoint 4");
         Ok(ProposerRpcClient { client })
     }
 }

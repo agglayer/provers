@@ -57,6 +57,7 @@ where
         config: &ProposerServiceConfig,
         l1_rpc: Arc<L1Rpc>,
     ) -> Result<Self, Error> {
+        println!(">>>>>>>>>>>>>> Checkpoint 1, proposer service config: {config:#?}");
         let proposer_rpc_client = Arc::new(
             ProposerRpcClient::new(
                 config.client.proposer_endpoint.clone(),
@@ -64,6 +65,7 @@ where
             )
             .await?,
         );
+        println!(">>>>>>>>>>>>>> Checkpoint 5");
 
         let aggregation_vkey = Self::extract_aggregation_vkey(&prover, AGGREGATION_ELF);
 
