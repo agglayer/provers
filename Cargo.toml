@@ -55,7 +55,9 @@ unified-bridge = { git = "https://github.com/agglayer/interop.git", rev = "171ea
 op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v1.2.7-agglayer" }
 
 # SP1 dependencies
-# Remember updating the *-proof-programs whenever bumping this
+# Please check if the toolchain image at the top `scripts/make/Makefile.elf.toml` could also be
+# updated whenever updating the below dependencies; as well as updating the proof-program binary
+# crate dependencies.
 sp1-core-executor = "=4.1.4"
 sp1-core-machine = "=4.1.4"
 sp1-sdk = "=4.1.4"
