@@ -14,6 +14,11 @@ fn consistency(#[case] elf: &[u8], #[case] vkey: &LazyVerifyingKey, #[case] vkey
     assert_eq!(VKeyHash::from_vkey(vkey.vkey()), vkey_hash);
 }
 
+#[test]
+fn range_commitment_consistency() {
+    assert_eq!(range::VKEY.hash_bytes(), range::VKEY_COMMITMENT);
+}
+
 #[rstest::rstest]
 #[case::agg("aggregation", &aggregation::VKEY)]
 #[case::range("range", &range::VKEY)]
