@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use agglayer_blockchain::MockRpc;
+use agglayer_evm_client::MockRpc;
 use alloy_primitives::FixedBytes;
 use proposer_client::{
     rpc::AggregationProofProposerRequest, FepProposerRequest, MockProposerClient, RequestId,

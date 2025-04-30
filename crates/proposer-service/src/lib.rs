@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 
 use aggchain_proof_core::full_execution_proof::AggregationProofPublicValues;
-use agglayer_blockchain::GetBlockNumber;
+use agglayer_evm_client::GetBlockNumber;
 use alloy_sol_types::SolType;
 use educe::Educe;
 use futures::{future::BoxFuture, FutureExt};

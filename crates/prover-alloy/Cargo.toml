@@ -11,7 +11,7 @@ workspace = true
 testutils = ["dep:mockall"]
 
 [dependencies]
-agglayer-blockchain.workspace = true
+agglayer-evm-client.workspace = true
 
 alloy.workspace = true
 async-trait.workspace = true

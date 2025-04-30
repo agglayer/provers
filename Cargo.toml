@@ -44,17 +44,18 @@ prover-utils = { path = "crates/prover-utils" }
 agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
 
 # Interop dependencies
-agglayer-blockchain = { git = "https://github.com/agglayer/interop.git", rev = "e84c54456e39992e8c56dc9d203dc3f282a289dd" }
-agglayer-interop = { git = "https://github.com/agglayer/interop.git", rev = "e84c54456e39992e8c56dc9d203dc3f282a289dd" }
-agglayer-interop-types = { git = "https://github.com/agglayer/interop.git", rev = "e84c54456e39992e8c56dc9d203dc3f282a289dd" }
-agglayer-primitives = { git = "https://github.com/agglayer/interop.git", rev = "e84c54456e39992e8c56dc9d203dc3f282a289dd" }
-agglayer-tries = { git = "https://github.com/agglayer/interop.git", rev = "e84c54456e39992e8c56dc9d203dc3f282a289dd" }
-unified-bridge = { git = "https://github.com/agglayer/interop.git", rev = "e84c54456e39992e8c56dc9d203dc3f282a289dd" }
+agglayer-evm-client = { git = "https://github.com/agglayer/interop.git", rev = "171eacc400a2aebf539ec2e5381ffa69d4c6107f" }
+agglayer-interop = { git = "https://github.com/agglayer/interop.git", rev = "171eacc400a2aebf539ec2e5381ffa69d4c6107f" }
+agglayer-interop-types = { git = "https://github.com/agglayer/interop.git", rev = "171eacc400a2aebf539ec2e5381ffa69d4c6107f" }
+agglayer-primitives = { git = "https://github.com/agglayer/interop.git", rev = "171eacc400a2aebf539ec2e5381ffa69d4c6107f" }
+agglayer-tries = { git = "https://github.com/agglayer/interop.git", rev = "171eacc400a2aebf539ec2e5381ffa69d4c6107f" }
+unified-bridge = { git = "https://github.com/agglayer/interop.git", rev = "171eacc400a2aebf539ec2e5381ffa69d4c6107f" }
 
 # Ecosystem dependencies
 op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v1.2.7-agglayer" }
 
 # SP1 dependencies
+# Remember updating the *-proof-programs whenever bumping this
 sp1-core-executor = "=4.1.4"
 sp1-core-machine = "=4.1.4"
 sp1-sdk = "=4.1.4"

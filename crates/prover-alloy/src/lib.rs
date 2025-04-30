@@ -1,7 +1,7 @@
 use std::str::FromStr;
 use std::time::Duration;
 
-use agglayer_blockchain::AlloyRpc;
+use agglayer_evm_client::AlloyRpc;
 use alloy::network::Ethereum;
 use alloy::providers::fillers::{
     BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller,

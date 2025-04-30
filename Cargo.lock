@@ -231,9 +231,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "agglayer-blockchain"
+name = "agglayer-evm-client"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?rev=e84c54456e39992e8c56dc9d203dc3f282a289dd#e84c54456e39992e8c56dc9d203dc3f282a289dd"
+source = "git+https://github.com/agglayer/interop.git?rev=171eacc400a2aebf539ec2e5381ffa69d4c6107f#171eacc400a2aebf539ec2e5381ffa69d4c6107f"
 dependencies = [
  "agglayer-primitives",
  "alloy",
@@ -247,7 +247,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?rev=e84c54456e39992e8c56dc9d203dc3f282a289dd#e84c54456e39992e8c56dc9d203dc3f282a289dd"
+source = "git+https://github.com/agglayer/interop.git?rev=171eacc400a2aebf539ec2e5381ffa69d4c6107f#171eacc400a2aebf539ec2e5381ffa69d4c6107f"
 dependencies = [
  "agglayer-interop-grpc-types",
  "agglayer-interop-types",
@@ -256,7 +256,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop-grpc-types"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?rev=e84c54456e39992e8c56dc9d203dc3f282a289dd#e84c54456e39992e8c56dc9d203dc3f282a289dd"
+source = "git+https://github.com/agglayer/interop.git?rev=171eacc400a2aebf539ec2e5381ffa69d4c6107f#171eacc400a2aebf539ec2e5381ffa69d4c6107f"
 dependencies = [
  "agglayer-interop-types",
  "bincode",
@@ -271,7 +271,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop-types"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?rev=e84c54456e39992e8c56dc9d203dc3f282a289dd#e84c54456e39992e8c56dc9d203dc3f282a289dd"
+source = "git+https://github.com/agglayer/interop.git?rev=171eacc400a2aebf539ec2e5381ffa69d4c6107f#171eacc400a2aebf539ec2e5381ffa69d4c6107f"
 dependencies = [
  "agglayer-primitives",
  "agglayer-tries",
@@ -291,7 +291,7 @@ dependencies = [
 [[package]]
 name = "agglayer-primitives"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?rev=e84c54456e39992e8c56dc9d203dc3f282a289dd#e84c54456e39992e8c56dc9d203dc3f282a289dd"
+source = "git+https://github.com/agglayer/interop.git?rev=171eacc400a2aebf539ec2e5381ffa69d4c6107f#171eacc400a2aebf539ec2e5381ffa69d4c6107f"
 dependencies = [
  "alloy-primitives",
  "byteorder",
@@ -377,7 +377,7 @@ dependencies = [
 [[package]]
 name = "agglayer-tries"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?rev=e84c54456e39992e8c56dc9d203dc3f282a289dd#e84c54456e39992e8c56dc9d203dc3f282a289dd"
+source = "git+https://github.com/agglayer/interop.git?rev=171eacc400a2aebf539ec2e5381ffa69d4c6107f#171eacc400a2aebf539ec2e5381ffa69d4c6107f"
 dependencies = [
  "agglayer-primitives",
  "serde",
@@ -5710,7 +5710,7 @@ version = "0.1.0"
 dependencies = [
  "aggchain-proof-core",
  "aggkit-prover-types",
- "agglayer-blockchain",
+ "agglayer-evm-client",
  "alloy-primitives",
  "alloy-sol-types",
  "anyhow",
@@ -5826,7 +5826,7 @@ checksum = "106dd99e98437432fed6519dedecfade6a06a73bb7b2a1e019fdd2bee5778d94"
 name = "prover-alloy"
 version = "0.1.0"
 dependencies = [
- "agglayer-blockchain",
+ "agglayer-evm-client",
  "alloy",
  "anyhow",
  "async-trait",
@@ -9202,7 +9202,7 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 [[package]]
 name = "unified-bridge"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?rev=e84c54456e39992e8c56dc9d203dc3f282a289dd#e84c54456e39992e8c56dc9d203dc3f282a289dd"
+source = "git+https://github.com/agglayer/interop.git?rev=171eacc400a2aebf539ec2e5381ffa69d4c6107f#171eacc400a2aebf539ec2e5381ffa69d4c6107f"
 dependencies = [
  "agglayer-primitives",
  "agglayer-tries",

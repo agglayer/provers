@@ -4,10 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-sp1-zkvm.workspace = true
-tiny-keccak.workspace = true
+sp1-zkvm = "=4.1.4"
+tiny-keccak = { version = "2.0", features = ["keccak"] }
 
-aggchain-proof-core = { workspace = true, default-features = false }
+aggchain-proof-core = { path = "../aggchain-proof-core", default-features = false }
 
 [patch.crates-io]
 crypto-bigint = { git = "https://github.com/sp1-patches/RustCrypto-bigint", tag = "patch-0.5.5-sp1-4.0.0" }
