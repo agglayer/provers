@@ -5,6 +5,7 @@ use aggchain_proof_core::full_execution_proof::AggregationProofPublicValues;
 use agglayer_evm_client::GetBlockNumber;
 use alloy_sol_types::SolType;
 use educe::Educe;
+pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use proposer_client::aggregation_prover::AggregationProver;
 use proposer_client::mock_prover::MockProver;
@@ -16,7 +17,6 @@ use sp1_sdk::NetworkProver;
 use tracing::info;
 
 use crate::config::ProposerServiceConfig;
-pub use error::Error;
 
 type AggregationProof = Box<sp1_core_executor::SP1ReduceProof<sp1_prover::InnerSC>>;
 
