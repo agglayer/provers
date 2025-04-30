@@ -23,16 +23,11 @@ fn range_commitment_consistency() {
 #[case::agg("aggregation", &aggregation::VKEY)]
 #[case::range("range", &range::VKEY)]
 fn snap_vkey_hash(#[case] name: &'static str, #[case] vkey: &LazyVerifyingKey) {
-    let hash_u32 = vkey.hash_u32();
-    let hash_bytes32 = B256::new(vkey.bytes32_raw());
-    let hash_bytes = B256::new(vkey.hash_bytes());
+    let hu32 = vkey.hash_u32();
+    let bytes32 = B256::new(vkey.bytes32_raw());
+    let bytes = B256::new(vkey.hash_bytes());
 
-    let snap = format!(
-        "{name} vkey\n\
-        hash_u32 {hash_u32:?}\n\
-        bytes32  {hash_bytes32}\n\
-        bytes    {hash_bytes}\n"
-    );
+    let snap = format!("{name} vkey\nhash_u32 {hu32:?}\nbytes32  {bytes32}\nbytes    {bytes}\n");
 
     insta::assert_snapshot!(format!("{name}_vkey"), snap);
 }
