@@ -7,25 +7,14 @@ license.workspace = true
 [lints]
 workspace = true
 
-[dependencies]
-anyhow.workspace = true
-bincode.workspace = true
-clap = { workspace = true, features = ["derive", "env", "string"] }
-dotenvy.workspace = true
-hex.workspace = true
-http = "1.2.0"
-jsonrpsee.workspace = true
-prost.workspace = true
-sp1-sdk.workspace = true
-sp1-zkvm.workspace = true
-tokio = { workspace = true, features = ["full"] }
-tokio-util.workspace = true
-toml.workspace = true
-tonic = { workspace = true, features = ["zstd"] }
-tonic-types = { workspace = true }
-tower = { workspace = true, features = ["timeout"] }
-tracing.workspace = true
+[features]
+default = []
+testutils = []
 
+[build-dependencies]
+vergen-git2 = { workspace = true, features = ["build"] }
+
+[dependencies]
 aggchain-proof-service.workspace = true
 aggchain-proof-types.workspace = true
 aggkit-prover-config.workspace = true
@@ -38,13 +27,32 @@ prover-engine.workspace = true
 prover-executor.workspace = true
 prover-logger.workspace = true
 
+anyhow.workspace = true
+bincode.workspace = true
+clap = { workspace = true, features = ["derive", "env", "string"] }
+dotenvy.workspace = true
+hex.workspace = true
+http.workspace = true
+jsonrpsee.workspace = true
+prost.workspace = true
+sp1-sdk.workspace = true
+sp1-zkvm.workspace = true
+tokio = { workspace = true, features = ["full"] }
+tokio-util.workspace = true
+toml.workspace = true
+tonic = { workspace = true, features = ["zstd"] }
+tonic-types = { workspace = true }
+tower = { workspace = true, features = ["timeout"] }
+tracing.workspace = true
+
 [dev-dependencies]
-hyper-util = "0.1.10"
+aggchain-proof-contracts = { workspace = true, features = ["testutils"] }
+aggchain-proof-core.workspace = true
+agglayer-evm-client = { workspace = true, features = ["testutils"] }
+
+alloy.workspace = true
+hyper-util.workspace = true
+mockall.workspace = true
+rsp-mpt.workspace = true
+sp1-cc-client-executor.workspace = true
 tokio-stream = { workspace = true, features = ["sync"] }
-
-[build-dependencies]
-vergen-git2 = { version = "1.0.0", features = ["build"] }
-
-[features]
-default = []
-testutils = []

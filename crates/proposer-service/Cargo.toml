@@ -8,6 +8,9 @@ license.workspace = true
 name = "proposer-service-test"
 path = "src/tests/proposer_service_test_program.rs"
 
+[features]
+testutils = ["agglayer-evm-client/testutils", "proposer-client/testutils", "prover-alloy/testutils"]
+
 [lints]
 workspace = true
 
@@ -39,9 +42,7 @@ tracing.workspace = true
 url.workspace = true
 
 [dev-dependencies]
-agglayer-evm-client = { workspace = true, features = ["testutils"] }
-proposer-client = { workspace = true, features = ["testutils"] }
-prover-alloy = { workspace = true, features = ["testutils"] }
+proposer-service = { workspace = true, features = ["testutils"] }
 
 bincode.workspace = true
 mockall.workspace = true

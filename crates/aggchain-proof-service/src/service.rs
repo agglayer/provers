@@ -139,6 +139,36 @@ impl AggchainProofService {
             aggchain_proof_builder,
         })
     }
+
+    #[cfg(feature = "testutils")]
+    pub async fn mocked(
+        config: &AggchainProofServiceConfig,
+        proposer_l1_rpc: Arc<agglayer_evm_client::MockRpc>,
+        aggregation_prover: proposer_client::MockAggregationProver,
+        aggregation_proof_proposer: proposer_client::MockAggregationProofProposer,
+        contracts_rpc: Arc<aggchain_proof_contracts::MockContractsClient>,
+    ) -> Result<Self, Error> {
+        Ok(AggchainProofService {
+            proposer_service: tower::ServiceBuilder::new()
+                .service(
+                    ProposerService::with_aggregation_proof_proposer(
+                        aggregation_prover,
+                        &config.proposer_service,
+                        aggregation_proof_proposer,
+                        proposer_l1_rpc,
+                    )
+                    .map_err(Error::ProposerServiceInitFailed)?,
+                )
+                .boxed_clone(),
+            aggchain_proof_builder: tower::ServiceBuilder::new()
+                .service(
+                    AggchainProofBuilder::new(&config.aggchain_proof_builder, contracts_rpc)
+                        .await
+                        .map_err(Error::AggchainProofBuilderInitFailed)?,
+                )
+                .boxed_clone(),
+        })
+    }
 }
 
 impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {

@@ -16,6 +16,7 @@ use alloy::network::AnyNetwork;
 use alloy::primitives::{Address, B256};
 use alloy::providers::{Provider, RootProvider};
 use alloy::sol_types::SolCall;
+use async_trait::async_trait;
 use contracts::{
     GetTrustedSequencerAddress, GlobalExitRootManagerL2SovereignChainRpcClient,
     L2EvmStateSketchFetcher,
@@ -72,7 +73,7 @@ pub struct AggchainContractsRpcClient<RpcProvider> {
 
 impl<T: alloy::providers::Provider> AggchainContractsClient for AggchainContractsRpcClient<T> {}
 
-#[async_trait::async_trait]
+#[async_trait]
 impl<RpcProvider> L2LocalExitRootFetcher for AggchainContractsRpcClient<RpcProvider>
 where
     RpcProvider: alloy::providers::Provider + Send + Sync,
@@ -90,7 +91,7 @@ where
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait]
 impl<RpcProvider> L2OutputAtBlockFetcher for AggchainContractsRpcClient<RpcProvider>
 where
     RpcProvider: alloy::providers::Provider + Send + Sync,
@@ -107,7 +108,7 @@ where
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait]
 impl<RpcProvider> L1RollupConfigHashFetcher for AggchainContractsRpcClient<RpcProvider>
 where
     RpcProvider: alloy::providers::Provider + Send + Sync,
@@ -124,7 +125,7 @@ where
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait]
 impl<RpcProvider> GetTrustedSequencerAddress for AggchainContractsRpcClient<RpcProvider>
 where
     RpcProvider: alloy::providers::Provider + Send + Sync,
@@ -134,7 +135,7 @@ where
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait]
 impl<RpcProvider> L2EvmStateSketchFetcher for AggchainContractsRpcClient<RpcProvider>
 where
     RpcProvider: alloy::providers::Provider + Send + Sync,
@@ -401,4 +402,48 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             trusted_sequencer_addr,
         })
     }
+}
+
+#[cfg(feature = "testutils")]
+mockall::mock! {
+    pub ContractsClient {}
+
+    impl Clone for ContractsClient {
+        fn clone(&self) -> Self;
+    }
+
+    #[async_trait]
+    impl L2LocalExitRootFetcher for ContractsClient {
+        async fn get_l2_local_exit_root(&self, block_number: u64) -> Result<Digest, Error>;
+    }
+    
+    #[async_trait]
+    impl L2OutputAtBlockFetcher for ContractsClient {
+        async fn get_l2_output_at_block(&self, block_number: u64) -> Result<L2OutputAtBlock, Error>;
+    }
+    
+    #[async_trait]
+    impl L1RollupConfigHashFetcher for ContractsClient {
+        async fn get_rollup_config_hash(&self) -> Result<Digest, Error>;
+    }
+    
+    #[async_trait]
+    impl GetTrustedSequencerAddress for ContractsClient {
+        async fn get_trusted_sequencer_address(&self) -> Result<Address, Error>;
+    }
+    
+    #[async_trait]
+    impl L2EvmStateSketchFetcher for ContractsClient {
+        async fn get_prev_l2_block_sketch(
+            &self,
+            prev_l2_block: BlockNumberOrTag,
+        ) -> Result<EVMStateSketch, Error>;
+    
+        async fn get_new_l2_block_sketch(
+            &self,
+            new_l2_block: BlockNumberOrTag,
+        ) -> Result<EVMStateSketch, Error>;
+    }    
+
+    impl AggchainContractsClient for ContractsClient {}
 }
