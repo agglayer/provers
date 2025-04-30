@@ -1,3 +1,6 @@
+use alloy_primitives::B256;
+use sp1_sdk::HashableKey;
+
 use super::*;
 
 #[rstest::rstest]
@@ -11,12 +14,20 @@ fn consistency(#[case] elf: &[u8], #[case] vkey: &LazyVerifyingKey, #[case] vkey
     assert_eq!(VKeyHash::from_vkey(vkey.vkey()), vkey_hash);
 }
 
-#[test]
-fn snap_agg_vkey_hash() {
-    insta::assert_debug_snapshot!(aggregation::VKEY_HASH)
-}
+#[rstest::rstest]
+#[case::agg("aggregation", &aggregation::VKEY)]
+#[case::range("range", &range::VKEY)]
+fn snap_vkey_hash(#[case] name: &'static str, #[case] vkey: &LazyVerifyingKey) {
+    let hash_u32 = vkey.hash_u32();
+    let hash_bytes32 = B256::new(vkey.bytes32_raw());
+    let hash_bytes = B256::new(vkey.hash_bytes());
 
-#[test]
-fn snap_range_vkey_commitment() {
-    insta::assert_debug_snapshot!(range::VKEY_COMMITMENT);
+    let snap = format!(
+        "{name} vkey\n\
+        hash_u32 {hash_u32:?}\n\
+        bytes32  {hash_bytes32}\n\
+        bytes    {hash_bytes}\n"
+    );
+
+    insta::assert_snapshot!(format!("{name}_vkey"), snap);
 }

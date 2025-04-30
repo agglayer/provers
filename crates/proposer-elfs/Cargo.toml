@@ -14,6 +14,7 @@ aggkit-prover-types = { workspace = true, features = ["sp1"] }
 op-succinct-elfs.workspace = true
 
 [dev-dependencies]
+alloy-primitives.workspace = true
 insta.workspace = true
 rstest.workspace = true
 sp1-sdk.workspace = true
