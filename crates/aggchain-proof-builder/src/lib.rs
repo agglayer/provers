@@ -278,6 +278,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             l1_head_inclusion_proof: request.aggchain_proof_inputs.l1_info_tree_merkle_proof,
             aggregation_vkey_hash: AGGREGATION_VKEY_HASH,
             range_vkey_commitment: RANGE_VKEY_COMMITMENT,
+            prover_address: request.aggchain_proof_inputs.prover_address,
         };
 
         {

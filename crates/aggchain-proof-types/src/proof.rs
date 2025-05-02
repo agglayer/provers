@@ -35,6 +35,9 @@ pub struct AggchainProofInputs {
 
     /// Imported bridge exits.
     pub imported_bridge_exits: Vec<ImportedBridgeExitWithBlockNumber>,
+
+    /// The prover address.
+    pub prover_address: [u8; 20],
 }
 
 impl AggchainProofInputs {

@@ -28,6 +28,9 @@ impl serde::Serialize for GenerateAggchainProofRequest {
         if !self.imported_bridge_exits.is_empty() {
             len += 1;
         }
+        if self.prover_address.is_some() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("aggkit.prover.v1.GenerateAggchainProofRequest", len)?;
         if self.last_proven_block != 0 {
             #[allow(clippy::needless_borrow)]
@@ -54,6 +57,9 @@ impl serde::Serialize for GenerateAggchainProofRequest {
         if !self.imported_bridge_exits.is_empty() {
             struct_ser.serialize_field("importedBridgeExits", &self.imported_bridge_exits)?;
         }
+        if let Some(v) = self.prover_address.as_ref() {
+            struct_ser.serialize_field("proverAddress", v)?;
+        }
         struct_ser.end()
     }
 }
@@ -78,6 +84,8 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
             "gerLeaves",
             "imported_bridge_exits",
             "importedBridgeExits",
+            "prover_address",
+            "proverAddress",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -89,6 +97,7 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
             L1InfoTreeMerkleProof,
             GerLeaves,
             ImportedBridgeExits,
+            ProverAddress,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -117,6 +126,7 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
                             "l1InfoTreeMerkleProof" | "l1_info_tree_merkle_proof" => Ok(GeneratedField::L1InfoTreeMerkleProof),
                             "gerLeaves" | "ger_leaves" => Ok(GeneratedField::GerLeaves),
                             "importedBridgeExits" | "imported_bridge_exits" => Ok(GeneratedField::ImportedBridgeExits),
+                            "proverAddress" | "prover_address" => Ok(GeneratedField::ProverAddress),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -143,6 +153,7 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
                 let mut l1_info_tree_merkle_proof__ = None;
                 let mut ger_leaves__ = None;
                 let mut imported_bridge_exits__ = None;
+                let mut prover_address__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::LastProvenBlock => {
@@ -193,6 +204,12 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
                             }
                             imported_bridge_exits__ = Some(map_.next_value()?);
                         }
+                        GeneratedField::ProverAddress => {
+                            if prover_address__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("proverAddress"));
+                            }
+                            prover_address__ = map_.next_value()?;
+                        }
                     }
                 }
                 Ok(GenerateAggchainProofRequest {
@@ -203,6 +220,7 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
                     l1_info_tree_merkle_proof: l1_info_tree_merkle_proof__,
                     ger_leaves: ger_leaves__.unwrap_or_default(),
                     imported_bridge_exits: imported_bridge_exits__.unwrap_or_default(),
+                    prover_address: prover_address__,
                 })
             }
         }

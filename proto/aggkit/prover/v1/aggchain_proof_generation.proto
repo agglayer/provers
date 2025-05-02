@@ -35,6 +35,9 @@ message GenerateAggchainProofRequest {
 
   // bridge exits
   repeated ImportedBridgeExitWithBlockNumber imported_bridge_exits = 7;
+
+  // prover address
+  agglayer.interop.types.v1.FixedBytes20 prover_address = 8;
 }
 
 // The aggchain proof response message.

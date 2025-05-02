@@ -67,6 +67,16 @@ impl TryFrom<v1::GenerateAggchainProofRequest> for AggchainProofInputs {
                     field_path: "imported_bridge_exits".to_string(),
                     source: anyhow::Error::from(error),
                 })?,
+            prover_address: value
+                .prover_address
+                .ok_or_else(|| Error::MissingProverAddress {
+                    field_path: "prover_address".to_string(),
+                })?
+                .try_into()
+                .map_err(|error| Error::InvalidProverAddress {
+                    field_path: "prover_address".to_string(),
+                    source: anyhow::Error::from(error),
+                })?,
         })
     }
 }

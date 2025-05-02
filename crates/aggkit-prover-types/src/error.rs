@@ -65,6 +65,13 @@ pub enum AggchainProofRequestError {
         field_path: String,
         source: anyhow::Error,
     },
+    #[error("Missing prover address")]
+    MissingProverAddress { field_path: String },
+    #[error("Invalid prover address")]
+    InvalidProverAddress {
+        field_path: String,
+        source: anyhow::Error,
+    },
 }
 
 impl AggchainProofRequestError {
@@ -89,6 +96,8 @@ impl AggchainProofRequestError {
             | AggchainProofRequestError::MissingImportedBridgeExit { field_path }
             | AggchainProofRequestError::MissingInclusionProof { field_path }
             | AggchainProofRequestError::InvalidDigest { field_path, .. } => field_path,
+            AggchainProofRequestError::MissingProverAddress { field_path }
+            | AggchainProofRequestError::InvalidProverAddress { field_path, .. } => field_path,
         }
     }
 }

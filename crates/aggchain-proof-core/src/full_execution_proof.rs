@@ -42,6 +42,9 @@ pub struct FepInputs {
     pub l1_info_tree_leaf: L1InfoTreeLeaf,
     /// Inclusion proof of the leaf to the l1 info root.
     pub l1_head_inclusion_proof: MerkleProof,
+
+    /// Prover address.
+    pub prover_address: [u8; 20],
 }
 
 sol! {
@@ -53,6 +56,7 @@ sol! {
         uint64 l2BlockNumber;
         bytes32 rollupConfigHash;
         bytes32 multiBlockVKey;
+        bytes32 proverAddress;
     }
 }
 
@@ -65,6 +69,11 @@ impl From<&FepInputs> for AggregationProofPublicValues {
             l2BlockNumber: inputs.claim_block_num.into(),
             rollupConfigHash: inputs.rollup_config_hash.0.into(),
             multiBlockVKey: inputs.range_vkey_commitment.into(),
+            proverAddress: {
+                let mut padded_address = [0u8; 32];
+                padded_address[12..].copy_from_slice(&inputs.prover_address);
+                padded_address.into()
+            },
         }
     }
 }
