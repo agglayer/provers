@@ -14,10 +14,10 @@ use aggchain_proof_contracts::contracts::{
 use aggchain_proof_contracts::AggchainContractsClient;
 use aggchain_proof_core::bridge::inserted_ger::InsertedGER;
 use aggchain_proof_core::bridge::BridgeWitness;
+use aggchain_proof_core::full_execution_proof::FepInputs;
 use aggchain_proof_core::full_execution_proof::{
     AggchainParamsValues, AggregationProofPublicValues,
 };
-use aggchain_proof_core::full_execution_proof::{FepInputs, AGGREGATION_VKEY_HASH};
 use aggchain_proof_core::proof::{AggchainProofWitness, IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION};
 use aggchain_proof_core::Digest;
 use aggchain_proof_types::AggchainProofInputs;
@@ -28,6 +28,7 @@ use alloy::hex;
 use bincode::Options;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
+use proposer_elfs::HashU32;
 use prover_executor::{Executor, ProofType};
 use serde::{Deserialize, Serialize};
 use sp1_sdk::{SP1Stdin, SP1VerifyingKey};
@@ -43,6 +44,13 @@ const MAX_CONCURRENT_REQUESTS: usize = 100;
 
 pub const AGGCHAIN_PROOF_ELF: &[u8] =
     include_bytes!("../../../crates/aggchain-proof-program/elf/riscv32im-succinct-zkvm-elf");
+
+/// Hardcoded hash of the "aggregation vkey".
+/// NOTE: Format being `hash_u32()` of the `SP1StarkVerifyingKey`.
+pub const AGGREGATION_VKEY_HASH: HashU32 = proposer_vkeys_raw::aggregation::VKEY_HASH;
+
+/// Specific commitment for the range proofs.
+pub const RANGE_VKEY_COMMITMENT: [u8; 32] = proposer_vkeys_raw::range::VKEY_COMMITMENT;
 
 pub(crate) type ProverService = Buffer<
     BoxService<prover_executor::Request, prover_executor::Response, prover_executor::Error>,
@@ -269,6 +277,8 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             signature_optimistic_mode: None, // NOTE: disabled for now
             l1_info_tree_leaf,
             l1_head_inclusion_proof: request.aggchain_proof_inputs.l1_info_tree_merkle_proof,
+            aggregation_vkey_hash: AGGREGATION_VKEY_HASH,
+            range_vkey_commitment: RANGE_VKEY_COMMITMENT,
         };
 
         {
