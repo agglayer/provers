@@ -65,6 +65,20 @@ pub enum AggchainProofRequestError {
         field_path: String,
         source: anyhow::Error,
     },
+    #[error("Invalid OptimisticMode signature")]
+    InvalidOptimisticModeSignature {
+        field_path: String,
+        source: anyhow::Error,
+    },
+    #[error("Invalid AggchainProofRequest")]
+    InvalidAggchainProofRequest {
+        field_path: String,
+        source: anyhow::Error,
+    },
+    #[error("Missing AggchainProofRequest")]
+    MissingAggchainProofRequest { field_path: String },
+    #[error("Missing OptimisticMode signature")]
+    MissingOptimisticModeSignature { field_path: String },
 }
 
 impl AggchainProofRequestError {
@@ -88,7 +102,13 @@ impl AggchainProofRequestError {
             | AggchainProofRequestError::InvalidInsertedGer { field_path, .. }
             | AggchainProofRequestError::MissingImportedBridgeExit { field_path }
             | AggchainProofRequestError::MissingInclusionProof { field_path }
-            | AggchainProofRequestError::InvalidDigest { field_path, .. } => field_path,
+            | AggchainProofRequestError::InvalidDigest { field_path, .. }
+            | AggchainProofRequestError::MissingAggchainProofRequest { field_path }
+            | AggchainProofRequestError::InvalidAggchainProofRequest { field_path, .. }
+            | AggchainProofRequestError::MissingOptimisticModeSignature { field_path }
+            | AggchainProofRequestError::InvalidOptimisticModeSignature { field_path, .. } => {
+                field_path
+            }
         }
     }
 }

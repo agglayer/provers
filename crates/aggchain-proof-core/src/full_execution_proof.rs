@@ -1,7 +1,7 @@
 use agglayer_primitives::bytes::{BigEndian, ByteOrder as _};
 use agglayer_primitives::keccak::keccak256_combine;
 use agglayer_primitives::{digest::Digest, keccak::keccak256};
-use alloy_primitives::{Address, PrimitiveSignature, B256, U256};
+use alloy_primitives::{Address, B256, U256};
 use alloy_sol_types::{sol, SolValue};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest as Sha256Digest, Sha256};
@@ -37,7 +37,7 @@ pub struct FepInputs {
     /// Trusted sequencer address.
     pub trusted_sequencer: Address,
     /// Signature in the "OptimisticMode" case.
-    pub signature_optimistic_mode: Option<PrimitiveSignature>,
+    pub signature_optimistic_mode: Option<agglayer_primitives::Signature>,
     /// L1 info tree leaf containing the `l1Head` as block hash.
     pub l1_info_tree_leaf: L1InfoTreeLeaf,
     /// Inclusion proof of the leaf to the l1 info root.

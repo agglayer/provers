@@ -61,15 +61,28 @@ pub(crate) type ProverService = Buffer<
 /// proof generation. Collected from various sources.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AggchainProverInputs {
+    pub output_root: Digest,
     pub stdin: SP1Stdin,
-    pub last_proven_block: u64,
-    pub end_block: u64,
+}
+
+pub enum AggchainProofMode {
+    Proof {
+        /// Aggregated full execution proof for the number of aggregated block
+        /// spans.
+        aggregation_proof: Box<sp1_core_executor::SP1ReduceProof<sp1_prover::InnerSC>>,
+
+        /// Aggregation proof's public values produced by the prover. Used to
+        /// verify the proof.
+        aggregation_proof_public_values: AggregationProofPublicValues,
+    },
+
+    Optimistic {
+        signature: agglayer_primitives::Signature,
+    },
 }
 
 pub struct AggchainProofBuilderRequest {
-    /// Aggregated full execution proof for the number of aggregated block
-    /// spans.
-    pub aggregation_proof: Box<sp1_core_executor::SP1ReduceProof<sp1_prover::InnerSC>>,
+    pub aggchain_proof_mode: AggchainProofMode,
 
     /// Last block in the agg_span_proof provided by the proposer.
     /// Could be different from the requested_end_block requested by the
@@ -78,10 +91,6 @@ pub struct AggchainProofBuilderRequest {
 
     /// Aggchain proof partial prover inputs coming from the aggsender request.
     pub aggchain_proof_inputs: AggchainProofInputs,
-
-    /// Aggregation proof's public values produced by the prover. Used to verify
-    /// the proof.
-    pub aggregation_proof_public_values: AggregationProofPublicValues,
 }
 
 pub struct AggchainProofBuilderResponse {
@@ -282,23 +291,29 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         };
 
         {
-            let retrieved_from_contracts = AggregationProofPublicValues::from(&fep_inputs);
+            if let AggchainProofMode::Proof {
+                ref aggregation_proof_public_values,
+                ..
+            } = request.aggchain_proof_mode
+            {
+                let retrieved_from_contracts = AggregationProofPublicValues::from(&fep_inputs);
 
-            info!(
-                "Aggregation proof public values received with the proof: {:?}",
-                request.aggregation_proof_public_values
-            );
+                info!(
+                    "Aggregation proof public values received with the proof: {:?}",
+                    aggregation_proof_public_values
+                );
 
-            info!(
-                "Aggregation proof public values retrieved from contracts: {:?}",
-                retrieved_from_contracts
-            );
+                info!(
+                    "Aggregation proof public values retrieved from contracts: {:?}",
+                    retrieved_from_contracts
+                );
 
-            if request.aggregation_proof_public_values != retrieved_from_contracts {
-                return Err(Error::MismatchAggregationProofPublicValues {
-                    expected_by_contract: Box::new(retrieved_from_contracts),
-                    expected_by_verifier: Box::new(request.aggregation_proof_public_values),
-                });
+                if aggregation_proof_public_values != &retrieved_from_contracts {
+                    return Err(Error::MismatchAggregationProofPublicValues {
+                        expected_by_contract: Box::new(retrieved_from_contracts),
+                        expected_by_verifier: Box::new(aggregation_proof_public_values.clone()),
+                    });
+                }
             }
         }
 
@@ -337,16 +352,23 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             },
         };
 
+        let output_root = prover_witness.fep.compute_claim_root();
+
         let sp1_stdin = {
             let mut stdin = SP1Stdin::new();
             stdin.write(&prover_witness);
-            stdin.write_proof(*request.aggregation_proof, aggregation_vkey.vk.clone());
+
+            if let AggchainProofMode::Proof {
+                aggregation_proof, ..
+            } = request.aggchain_proof_mode
+            {
+                stdin.write_proof(*aggregation_proof, aggregation_vkey.vk.clone());
+            }
             stdin
         };
 
         Ok(AggchainProverInputs {
-            last_proven_block: request.aggchain_proof_inputs.last_proven_block,
-            end_block: request.end_block,
+            output_root,
             stdin: sp1_stdin,
         })
     }
@@ -380,8 +402,6 @@ where
         let aggregation_vkey = self.aggregation_vkey.clone();
         let aggchain_vkey = self.aggchain_vkey.clone();
 
-        let output_root: Digest = (*req.aggregation_proof_public_values.l2PostRoot).into();
-
         async move {
             let last_proven_block = req.aggchain_proof_inputs.last_proven_block;
             let end_block = req.end_block;
@@ -391,6 +411,7 @@ where
                 Self::retrieve_chain_data(contracts_client, req, network_id, aggregation_vkey)
                     .await?;
 
+            let output_root = aggchain_prover_inputs.output_root;
             let prover_executor::Response { proof } = prover
                 .ready()
                 .await

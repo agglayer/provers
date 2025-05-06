@@ -3,11 +3,13 @@ use crate::AggchainProverInputs;
 #[allow(unused)]
 pub fn dump_aggchain_prover_inputs_json(
     aggchain_prover_inputs: &AggchainProverInputs,
+    last_proven_block: u64,
+    end_block: u64,
 ) -> Result<(), anyhow::Error> {
     use std::io::Write;
     let file_name = format!(
         "aggchain_prover_inputs_001_lpb_{}_eb_{}.json",
-        aggchain_prover_inputs.last_proven_block, aggchain_prover_inputs.end_block
+        last_proven_block, end_block
     );
     let mut file = std::fs::File::create(file_name)?;
     let data = serde_json::to_string(&aggchain_prover_inputs)?;
