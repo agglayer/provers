@@ -53,6 +53,7 @@ sol! {
         uint64 l2BlockNumber;
         bytes32 rollupConfigHash;
         bytes32 multiBlockVKey;
+        address proverAddress;
     }
 }
 
@@ -65,6 +66,7 @@ impl From<&FepInputs> for AggregationProofPublicValues {
             l2BlockNumber: inputs.claim_block_num.into(),
             rollupConfigHash: inputs.rollup_config_hash.0.into(),
             multiBlockVKey: RANGE_VKEY_COMMITMENT.into(),
+            proverAddress: inputs.trusted_sequencer,
         }
     }
 }
