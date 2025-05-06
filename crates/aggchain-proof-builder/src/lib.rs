@@ -34,7 +34,7 @@ use sp1_sdk::{SP1Stdin, SP1VerifyingKey};
 use tower::buffer::Buffer;
 use tower::util::BoxService;
 use tower::ServiceExt as _;
-use tracing::info;
+use tracing::{error, info};
 use unified_bridge::aggchain_proof::AggchainProofPublicValues;
 
 use crate::config::AggchainProofBuilderConfig;
@@ -273,17 +273,12 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         {
             let retrieved_from_contracts = AggregationProofPublicValues::from(&fep_inputs);
 
-            info!(
-                "Aggregation proof public values received with the proof: {:?}",
-                request.aggregation_proof_public_values
-            );
-
-            info!(
-                "Aggregation proof public values retrieved from contracts: {:?}",
-                retrieved_from_contracts
-            );
-
             if request.aggregation_proof_public_values != retrieved_from_contracts {
+                error!(
+                    "Mismatch between the aggregation proof public values - retrieved from the \
+                     contracts: {retrieved_from_contracts:?}, received with the proof: {:?}",
+                    request.aggregation_proof_public_values
+                );
                 return Err(Error::MismatchAggregationProofPublicValues {
                     expected_by_contract: Box::new(retrieved_from_contracts),
                     expected_by_verifier: Box::new(request.aggregation_proof_public_values),
