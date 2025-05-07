@@ -79,7 +79,8 @@ pub struct AggchainProofBuilderRequest {
     /// Aggchain proof partial prover inputs coming from the aggsender request.
     pub aggchain_proof_inputs: AggchainProofInputs,
 
-    /// Aggregation proof public values coming from the generated proof.
+    /// Aggregation proof's public values produced by the prover. Used to verify
+    /// the proof.
     pub aggregation_proof_public_values: AggregationProofPublicValues,
 }
 

@@ -111,6 +111,8 @@ rstest = "0.22.0"
 test-log = "0.2.16"
 
 # SP1 dependencies
+# Please check if the toolchain image at the top `scripts/make/Makefile.elf.toml` could also be
+# updated whenever updating the below dependencies.
 sp1-core-executor = "=4.1.4"
 sp1-core-machine = "=4.1.4"
 sp1-sdk = "=4.1.4"
