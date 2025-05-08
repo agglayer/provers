@@ -14,10 +14,10 @@ use aggchain_proof_contracts::contracts::{
 use aggchain_proof_contracts::AggchainContractsClient;
 use aggchain_proof_core::bridge::inserted_ger::InsertedGER;
 use aggchain_proof_core::bridge::BridgeWitness;
-use aggchain_proof_core::full_execution_proof::FepInputs;
 use aggchain_proof_core::full_execution_proof::{
     AggchainParamsValues, AggregationProofPublicValues,
 };
+use aggchain_proof_core::full_execution_proof::{BabyBearDigest, FepInputs};
 use aggchain_proof_core::proof::{AggchainProofWitness, IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION};
 use aggchain_proof_core::Digest;
 use aggchain_proof_types::AggchainProofInputs;
@@ -31,7 +31,7 @@ use futures::{future::BoxFuture, FutureExt};
 use proposer_elfs::HashU32;
 use prover_executor::{Executor, ProofType};
 use serde::{Deserialize, Serialize};
-use sp1_sdk::{SP1Stdin, SP1VerifyingKey};
+use sp1_sdk::{HashableKey, SP1Stdin, SP1VerifyingKey};
 use tower::buffer::Buffer;
 use tower::util::BoxService;
 use tower::ServiceExt as _;
@@ -277,7 +277,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             signature_optimistic_mode: None, // NOTE: disabled for now
             l1_info_tree_leaf,
             l1_head_inclusion_proof: request.aggchain_proof_inputs.l1_info_tree_merkle_proof,
-            aggregation_vkey_hash: AGGREGATION_VKEY_HASH,
+            aggregation_vkey_hash: BabyBearDigest(aggregation_vkey.hash_babybear()),
             range_vkey_commitment: RANGE_VKEY_COMMITMENT,
         };
 
