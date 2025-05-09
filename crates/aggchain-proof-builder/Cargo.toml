@@ -9,7 +9,6 @@ anyhow.workspace = true
 alloy.workspace = true
 alloy-primitives.workspace = true
 bincode.workspace = true
-proposer-vkeys-raw.workspace = true
 
 futures.workspace = true
 thiserror.workspace = true
