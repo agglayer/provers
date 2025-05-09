@@ -37,6 +37,13 @@ pub struct AggchainProofInputs {
     pub imported_bridge_exits: Vec<ImportedBridgeExitWithBlockNumber>,
 }
 
+/// Data needed as the input for the aggchain proof generation.
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct OptimisticAggchainProofInputs {
+    pub aggchain_proof_inputs: AggchainProofInputs,
+    pub signature_optimistic_mode: agglayer_primitives::Signature,
+}
+
 impl AggchainProofInputs {
     pub fn sorted_inserted_gers(&self, range: &RangeInclusive<u64>) -> Vec<InsertedGER> {
         let mut values: Vec<InsertedGER> = self

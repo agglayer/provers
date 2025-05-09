@@ -12,6 +12,7 @@ thiserror.workspace = true
 
 aggchain-proof-core.workspace = true
 agglayer-interop.workspace = true
+agglayer-primitives.workspace = true
 
 [lints]
 workspace = true

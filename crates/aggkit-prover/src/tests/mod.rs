@@ -27,26 +27,24 @@ async fn service_can_be_called() {
     let mut service = AggchainProofService::new(&AggchainProofServiceConfig::default())
         .await
         .expect("create aggchain proof service");
-    let request = AggchainProofServiceRequest {
-        aggchain_proof_inputs: AggchainProofInputs {
-            last_proven_block: 0,
-            requested_end_block: 100,
-            l1_info_tree_root_hash: Default::default(),
-            l1_info_tree_leaf: L1InfoTreeLeaf {
-                l1_info_tree_index: 1,
-                rer: Default::default(),
-                mer: Default::default(),
-                inner: L1InfoTreeLeafInner {
-                    global_exit_root: Default::default(),
-                    block_hash: Default::default(),
-                    timestamp: 0u64,
-                },
+    let request = AggchainProofServiceRequest::Normal(AggchainProofInputs {
+        last_proven_block: 0,
+        requested_end_block: 100,
+        l1_info_tree_root_hash: Default::default(),
+        l1_info_tree_leaf: L1InfoTreeLeaf {
+            l1_info_tree_index: 1,
+            rer: Default::default(),
+            mer: Default::default(),
+            inner: L1InfoTreeLeafInner {
+                global_exit_root: Default::default(),
+                block_hash: Default::default(),
+                timestamp: 0u64,
             },
-            l1_info_tree_merkle_proof: MerkleProof::new(Digest::default(), [Digest::default(); 32]),
-            ger_leaves: Default::default(),
-            imported_bridge_exits: Default::default(),
         },
-    };
+        l1_info_tree_merkle_proof: MerkleProof::new(Digest::default(), [Digest::default(); 32]),
+        ger_leaves: Default::default(),
+        imported_bridge_exits: Default::default(),
+    });
     let response = service.call(request).await;
     assert!(response.is_ok());
 }
