@@ -18,6 +18,10 @@ alloy-rlp = "0.3.10"
 sp1-zkvm = { version = "=4.1.4", features = ["verify"] }
 sp1-cc-client-executor.workspace = true
 
+p3-baby-bear = { version = "=0.2.1-succinct", features = ["nightly-features"] }
+p3-bn254-fr = "=0.2.1-succinct"
+p3-field = "=0.2.1-succinct"
+
 eyre.workspace = true
 hex.workspace = true
 k256 = "0.13.4"

@@ -26,6 +26,9 @@ dependencies = [
  "eyre",
  "hex",
  "k256",
+ "p3-baby-bear",
+ "p3-bn254-fr",
+ "p3-field",
  "semver 1.0.26",
  "serde",
  "serde_with",
@@ -1446,6 +1449,7 @@ version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c0b50bfb653653f9ca9095b427bed08ab8d75a137839d9ad64eb11810d5b6393"
 dependencies = [
+ "bitvec",
  "byteorder",
  "ff_derive",
  "rand_core 0.6.4",
@@ -2368,6 +2372,21 @@ dependencies = [
  "num-bigint 0.4.6",
  "p3-field",
  "p3-mds",
+ "p3-poseidon2",
+ "p3-symmetric",
+ "rand 0.8.5",
+ "serde",
+]
+
+[[package]]
+name = "p3-bn254-fr"
+version = "0.2.1-succinct"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ffd31ad7999da119ef0012717ddf1aa1fe7583dd4482f40e6cbefc6ad12c0b72"
+dependencies = [
+ "ff",
+ "num-bigint 0.4.6",
+ "p3-field",
  "p3-poseidon2",
  "p3-symmetric",
  "rand 0.8.5",

@@ -49,7 +49,8 @@ agglayer-tries = { git = "https://github.com/agglayer/interop.git", tag = "v0.2.
 unified-bridge = { git = "https://github.com/agglayer/interop.git", tag = "v0.2.1" }
 
 # Ecosystem dependencies
-op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v1.2.7-agglayer" }
+op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v2.1.3-agglayer" }
+op-succinct-grpc = { git = "https://github.com/agglayer/op-succinct.git", tag = "v2.1.3-agglayer", package = "grpc" }
 
 # Core dependencies
 alloy = { version = '0.12.6', features = ["full"] }

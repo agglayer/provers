@@ -31,6 +31,7 @@ fn generate_keys() -> (
         l2_block_number: u64,
         rollup_config_hash: B256,
         multi_block_vkey: B256,
+        prover_address: B256,
     }
     let data = TestAggregationOutputs::default();
     let public_values = SP1PublicValues::from(&bincode::serialize(&data).unwrap());
