@@ -1,7 +1,0 @@
----
-source: crates/proposer-vkeys-raw/src/test/mod.rs
-assertion_line: 10
-expression: "B256::new(crate::range::VKEY_COMMITMENT)"
-snapshot_kind: text
----
-0x35882a76205af8c12eaeea7551ff8dbc392dc2a95b0f7f31660a5468237d4434

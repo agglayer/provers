@@ -1,0 +1,9 @@
+---
+source: crates/proposer-elfs/src/test/mod.rs
+expression: snap
+snapshot_kind: text
+---
+aggregation vkey
+hash_u32 [1949122874, 766403294, 593485289, 430966933, 1657646871, 73535799, 883940176, 31174925]
+bytes32  0x00e85a8274b6b98b791afeef499b00895c59b5e2e118844dda57eda801dbb10d
+bytes    0x742d413a2dae62de235fdde919b0089562cdaf170462113734afdb5001dbb10d
