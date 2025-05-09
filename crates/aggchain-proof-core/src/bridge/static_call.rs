@@ -1,9 +1,9 @@
+use agglayer_primitives::Digest;
 use alloy_primitives::Address;
 use alloy_sol_types::SolCall;
 use sp1_cc_client_executor::{io::EVMStateSketch, ClientExecutor, ContractInput};
 
 use super::BridgeConstraintsError;
-use crate::Digest;
 
 /// Context giver about the stage of the error.
 #[derive(Clone, Copy, Debug)]

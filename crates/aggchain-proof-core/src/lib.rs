@@ -6,6 +6,4 @@ pub mod vkey_hash;
 
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
-pub use agglayer_primitives::digest::Digest;
-
 pub const AGGCHAIN_TYPE: u16 = 0x0001;

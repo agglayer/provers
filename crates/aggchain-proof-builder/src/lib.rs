@@ -19,10 +19,10 @@ use aggchain_proof_core::full_execution_proof::{
     AggchainParamsValues, AggregationProofPublicValues,
 };
 use aggchain_proof_core::proof::{AggchainProofWitness, IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION};
-use aggchain_proof_core::Digest;
 use aggchain_proof_types::AggchainProofInputs;
 use aggkit_prover_types::vkey_hash::VKeyHash;
 use agglayer_interop::types::{GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues};
+use agglayer_primitives::Digest;
 use alloy::eips::BlockNumberOrTag;
 use alloy::hex;
 use bincode::Options;
