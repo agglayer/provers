@@ -28,7 +28,6 @@ use alloy::hex;
 use bincode::Options;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
-use proposer_elfs::HashU32;
 use prover_executor::{Executor, ProofType};
 use serde::{Deserialize, Serialize};
 use sp1_sdk::{HashableKey, SP1Stdin, SP1VerifyingKey};
@@ -47,10 +46,10 @@ pub const AGGCHAIN_PROOF_ELF: &[u8] =
 
 /// Hardcoded hash of the "aggregation vkey".
 /// NOTE: Format being `hash_u32()` of the `SP1StarkVerifyingKey`.
-pub const AGGREGATION_VKEY_HASH: HashU32 = proposer_vkeys_raw::aggregation::VKEY_HASH;
+pub const AGGREGATION_VKEY_HASH: VKeyHash = proposer_elfs::aggregation::VKEY_HASH;
 
 /// Specific commitment for the range proofs.
-pub const RANGE_VKEY_COMMITMENT: [u8; 32] = proposer_vkeys_raw::range::VKEY_COMMITMENT;
+pub const RANGE_VKEY_COMMITMENT: [u8; 32] = proposer_elfs::range::VKEY_COMMITMENT;
 
 pub(crate) type ProverService = Buffer<
     BoxService<prover_executor::Request, prover_executor::Response, prover_executor::Error>,
@@ -159,7 +158,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         // Check mismatch on aggregation vkey
         {
             let retrieved = VKeyHash::from_vkey(&aggregation_vkey);
-            let expected = VKeyHash::from_hash_u32(AGGREGATION_VKEY_HASH);
+            let expected = AGGREGATION_VKEY_HASH;
 
             if retrieved != expected {
                 return Err(Error::MismatchAggregationVkeyHash {
