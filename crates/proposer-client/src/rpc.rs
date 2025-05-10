@@ -17,6 +17,7 @@ use crate::RequestId;
 /// of the aggregation proof from the proposer and gets
 /// request_id in response.
 #[tonic::async_trait]
+#[cfg_attr(feature = "testutils", mockall::automock)]
 pub trait AggregationProofProposer {
     async fn request_agg_proof(
         &self,

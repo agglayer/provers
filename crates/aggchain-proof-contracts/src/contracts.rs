@@ -3,6 +3,7 @@ use agglayer_primitives::Address;
 use alloy::eips::BlockNumberOrTag;
 use alloy::network::Ethereum;
 use alloy::sol;
+use async_trait::async_trait;
 use sp1_cc_client_executor::io::EVMStateSketch;
 
 use crate::Error;
@@ -55,27 +56,27 @@ pub(crate) type GlobalExitRootManagerL2SovereignChainRpcClient<RpcProvider> =
         Ethereum,
     >;
 
-#[async_trait::async_trait]
+#[async_trait]
 pub trait L2LocalExitRootFetcher {
     async fn get_l2_local_exit_root(&self, block_number: u64) -> Result<Digest, Error>;
 }
 
-#[async_trait::async_trait]
+#[async_trait]
 pub trait L2OutputAtBlockFetcher {
     async fn get_l2_output_at_block(&self, block_number: u64) -> Result<L2OutputAtBlock, Error>;
 }
 
-#[async_trait::async_trait]
+#[async_trait]
 pub trait L1RollupConfigHashFetcher {
     async fn get_rollup_config_hash(&self) -> Result<Digest, Error>;
 }
 
-#[async_trait::async_trait]
+#[async_trait]
 pub trait GetTrustedSequencerAddress {
     async fn get_trusted_sequencer_address(&self) -> Result<Address, Error>;
 }
 
-#[async_trait::async_trait]
+#[async_trait]
 pub trait L2EvmStateSketchFetcher {
     async fn get_prev_l2_block_sketch(
         &self,

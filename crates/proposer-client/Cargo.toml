@@ -7,6 +7,9 @@ license.workspace = true
 [lints]
 workspace = true
 
+[features]
+testutils = ["dep:mockall"]
+
 [dependencies]
 alloy-primitives.workspace = true
 anyhow.workspace = true
@@ -16,6 +19,8 @@ bincode.workspace = true
 educe.workspace = true
 hex.workspace = true
 jsonrpsee.workspace = true
+mockall = { workspace = true, optional = true }
+prover-utils.workspace = true
 reqwest = { workspace = true, features = ["json"] }
 serde.workspace = true
 serde_with = { workspace = true, features = ["hex"] }
@@ -26,16 +31,9 @@ tonic.workspace = true
 tracing.workspace = true
 url.workspace = true
 
-# Local dependencies
-prover-utils.workspace = true
-
-# Optional dependencies
-mockall = { workspace = true, optional = true }
-
 [dev-dependencies]
+proposer-client = { workspace = true, features = ["testutils"] }
+
 mockito.workspace = true
 serde_json.workspace = true
 tokio.workspace = true
-
-[features]
-testutils = ["dep:mockall"]
