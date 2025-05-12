@@ -8,7 +8,7 @@ mod vkeys_raw {
 }
 
 pub mod aggregation {
-    pub use op_succinct_elfs::AGG_ELF as ELF;
+    pub use op_succinct_elfs::AGGREGATION_ELF as ELF;
 
     use crate::{vkeys_raw, HashU32, LazyVerifyingKey, VKeyHash};
 
@@ -21,7 +21,7 @@ pub mod aggregation {
 }
 
 pub mod range {
-    pub use op_succinct_elfs::RANGE_ELF as ELF;
+    pub use op_succinct_elfs::RANGE_ELF_EMBEDDED as ELF;
     pub use vkeys_raw::range::VKEY_COMMITMENT;
 
     use crate::{vkeys_raw, HashU32, LazyVerifyingKey, VKeyHash};

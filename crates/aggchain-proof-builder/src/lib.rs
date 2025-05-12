@@ -14,10 +14,10 @@ use aggchain_proof_contracts::contracts::{
 use aggchain_proof_contracts::AggchainContractsClient;
 use aggchain_proof_core::bridge::inserted_ger::InsertedGER;
 use aggchain_proof_core::bridge::BridgeWitness;
-use aggchain_proof_core::full_execution_proof::FepInputs;
 use aggchain_proof_core::full_execution_proof::{
     AggchainParamsValues, AggregationProofPublicValues,
 };
+use aggchain_proof_core::full_execution_proof::{BabyBearDigest, FepInputs};
 use aggchain_proof_core::proof::{AggchainProofWitness, IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION};
 use aggchain_proof_core::Digest;
 use aggchain_proof_types::AggchainProofInputs;
@@ -30,11 +30,11 @@ pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use prover_executor::{Executor, ProofType};
 use serde::{Deserialize, Serialize};
-use sp1_sdk::{SP1Stdin, SP1VerifyingKey};
+use sp1_sdk::{HashableKey, SP1Stdin, SP1VerifyingKey};
 use tower::buffer::Buffer;
 use tower::util::BoxService;
 use tower::ServiceExt as _;
-use tracing::info;
+use tracing::{error, info};
 use unified_bridge::aggchain_proof::AggchainProofPublicValues;
 
 use crate::config::AggchainProofBuilderConfig;
@@ -276,24 +276,19 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             signature_optimistic_mode: None, // NOTE: disabled for now
             l1_info_tree_leaf,
             l1_head_inclusion_proof: request.aggchain_proof_inputs.l1_info_tree_merkle_proof,
-            aggregation_vkey_hash: AGGREGATION_VKEY_HASH.to_hash_u32(),
+            aggregation_vkey_hash: BabyBearDigest(aggregation_vkey.hash_babybear()),
             range_vkey_commitment: RANGE_VKEY_COMMITMENT,
         };
 
         {
             let retrieved_from_contracts = AggregationProofPublicValues::from(&fep_inputs);
 
-            info!(
-                "Aggregation proof public values received with the proof: {:?}",
-                request.aggregation_proof_public_values
-            );
-
-            info!(
-                "Aggregation proof public values retrieved from contracts: {:?}",
-                retrieved_from_contracts
-            );
-
             if request.aggregation_proof_public_values != retrieved_from_contracts {
+                error!(
+                    "Mismatch between the aggregation proof public values - retrieved from the \
+                     contracts: {retrieved_from_contracts:?}, received with the proof: {:?}",
+                    request.aggregation_proof_public_values
+                );
                 return Err(Error::MismatchAggregationProofPublicValues {
                     expected_by_contract: Box::new(retrieved_from_contracts),
                     expected_by_verifier: Box::new(request.aggregation_proof_public_values),
