@@ -5,7 +5,7 @@ use std::{
     task::{Context, Poll},
 };
 
-use aggchain_proof_builder::{AggchainProofBuilder, AggchainProofMode};
+use aggchain_proof_builder::{AggchainProofBuilder, FepVerification};
 use aggchain_proof_contracts::AggchainContractsRpcClient;
 use aggchain_proof_core::Digest;
 use aggchain_proof_types::{AggchainProofInputs, OptimisticAggchainProofInputs};
@@ -170,7 +170,7 @@ impl AggchainProofService {
 
             let aggchain_proof_builder_request =
                 aggchain_proof_builder::AggchainProofBuilderRequest {
-                    aggchain_proof_mode: AggchainProofMode::Proof {
+                    fep_verification: FepVerification::Proof {
                         aggregation_proof: aggregation_proof_response.aggregation_proof,
                         aggregation_proof_public_values: aggregation_proof_response.public_values,
                     },
@@ -216,7 +216,7 @@ impl AggchainProofService {
 
             let aggchain_proof_builder_request =
                 aggchain_proof_builder::AggchainProofBuilderRequest {
-                    aggchain_proof_mode: AggchainProofMode::Optimistic {
+                    fep_verification: FepVerification::Optimistic {
                         signature: signature_optimistic_mode,
                     },
                     // In optimistic mode, the end_block is the one defined in the request.

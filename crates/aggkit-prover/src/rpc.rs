@@ -1,6 +1,7 @@
 use aggchain_proof_service::config::AggchainProofServiceConfig;
 use aggchain_proof_service::service::{AggchainProofService, AggchainProofServiceRequest};
 use aggchain_proof_types::{AggchainProofInputs, OptimisticAggchainProofInputs};
+use aggkit_prover_types::conversion::v1::context::Contextualize as _;
 use aggkit_prover_types::error::AggchainProofRequestError;
 use aggkit_prover_types::v1::{
     aggchain_proof_service_server::AggchainProofService as AggchainProofGrpcService,
@@ -17,8 +18,6 @@ use tonic_types::{ErrorDetails, StatusExt};
 use tower::buffer::Buffer;
 use tower::{Service, ServiceExt};
 use tracing::instrument;
-
-use crate::utils::context::Contextualize;
 
 const MAX_CONCURRENT_REQUESTS: usize = 100;
 
@@ -212,24 +211,9 @@ impl AggchainProofGrpcService for GrpcService {
                     custom_chain_data: response.custom_chain_data.into(),
                 }))
             }
-            Err(e) => {
-                let e = match e.downcast::<aggchain_proof_service::Error>() {
-                    Ok(e) => e,
-                    Err(e) => return Err(Status::internal(e.to_string())),
-                };
-                match *e {
-                    aggchain_proof_service::Error::ProposerServiceError(
-                        proposer_service::Error::Client(
-                            proposer_client::Error::AggProofRequestFailed(
-                                jsonrpsee::core::client::error::Error::Call(e),
-                            ),
-                        ),
-                    ) if e.code() == -2000 => Err(Status::unavailable(
-                        "Proposer service has not built any proof yet",
-                    )),
-                    e => Err(Status::internal(e.to_string())),
-                }
-            }
+            // TODO: Return a different error when the proof is not yet ready.
+            // The gRPC API currently does not expose the status.
+            Err(e) => Err(Status::internal(e.to_string())),
         }
     }
 }

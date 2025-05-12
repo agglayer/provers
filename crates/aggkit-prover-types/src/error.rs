@@ -65,20 +65,21 @@ pub enum AggchainProofRequestError {
         field_path: String,
         source: anyhow::Error,
     },
-    #[error("Invalid OptimisticMode signature")]
+    #[error("Invalid optimistic mode signature")]
     InvalidOptimisticModeSignature {
         field_path: String,
         source: anyhow::Error,
     },
-    #[error("Invalid AggchainProofRequest")]
+    #[error("Missing optimistic mode signature")]
+    MissingOptimisticModeSignature { field_path: String },
+
+    #[error("Invalid aggchain-proof request")]
     InvalidAggchainProofRequest {
         field_path: String,
         source: anyhow::Error,
     },
-    #[error("Missing AggchainProofRequest")]
+    #[error("Missing aggchain-proof request")]
     MissingAggchainProofRequest { field_path: String },
-    #[error("Missing OptimisticMode signature")]
-    MissingOptimisticModeSignature { field_path: String },
 }
 
 impl AggchainProofRequestError {

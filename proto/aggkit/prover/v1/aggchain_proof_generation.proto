@@ -71,10 +71,10 @@ message GenerateOptimisticAggchainProofResponse {
   agglayer.interop.types.v1.AggchainProof aggchain_proof = 1;
 
   // Local exit root hash.
-  agglayer.interop.types.v1.FixedBytes32 local_exit_root_hash = 4;
+  agglayer.interop.types.v1.FixedBytes32 local_exit_root_hash = 2;
 
   // Custom chain data.
-  bytes custom_chain_data = 5;
+  bytes custom_chain_data = 3;
 }
 
 // Imported bridge exit with block number.

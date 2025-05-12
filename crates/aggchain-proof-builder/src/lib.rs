@@ -15,7 +15,7 @@ use aggchain_proof_contracts::AggchainContractsClient;
 use aggchain_proof_core::bridge::inserted_ger::InsertedGER;
 use aggchain_proof_core::bridge::BridgeWitness;
 use aggchain_proof_core::full_execution_proof::{
-    AggchainParamsValues, AggregationProofPublicValues,
+    AggchainParamsValues, AggregationProofPublicValues, OutputRoot,
 };
 use aggchain_proof_core::full_execution_proof::{BabyBearDigest, FepInputs};
 use aggchain_proof_core::proof::{AggchainProofWitness, IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION};
@@ -60,11 +60,11 @@ pub(crate) type ProverService = Buffer<
 /// proof generation. Collected from various sources.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AggchainProverInputs {
-    pub output_root: Digest,
+    pub output_root: OutputRoot,
     pub stdin: SP1Stdin,
 }
 
-pub enum AggchainProofMode {
+pub enum FepVerification {
     Proof {
         /// Aggregated full execution proof for the number of aggregated block
         /// spans.
@@ -81,7 +81,7 @@ pub enum AggchainProofMode {
 }
 
 pub struct AggchainProofBuilderRequest {
-    pub aggchain_proof_mode: AggchainProofMode,
+    pub fep_verification: FepVerification,
 
     /// Last block in the agg_span_proof provided by the proposer.
     /// Could be different from the requested_end_block requested by the
@@ -109,7 +109,7 @@ pub struct AggchainProofBuilderResponse {
     pub end_block: u64,
 
     /// Output root.
-    pub output_root: Digest,
+    pub output_root: OutputRoot,
 
     /// New Local exit root.
     pub new_local_exit_root: Digest,
@@ -290,80 +290,82 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         };
 
         {
-            if let AggchainProofMode::Proof {
+            if let FepVerification::Proof {
                 ref aggregation_proof_public_values,
                 ..
-            } = request.aggchain_proof_mode
+            } = request.fep_verification
             {
                 let retrieved_from_contracts = AggregationProofPublicValues::from(&fep_inputs);
 
-            if request.aggregation_proof_public_values != retrieved_from_contracts {
-                error!(
-                    "Mismatch between the aggregation proof public values - retrieved from the \
-                     contracts: {retrieved_from_contracts:?}, received with the proof: {:?}",
-                    request.aggregation_proof_public_values
-                );
-                return Err(Error::MismatchAggregationProofPublicValues {
-                    expected_by_contract: Box::new(retrieved_from_contracts),
-                    expected_by_verifier: Box::new(request.aggregation_proof_public_values),
-                });
+                if aggregation_proof_public_values != &retrieved_from_contracts {
+                    error!(
+                        "Mismatch between the aggregation proof public values - retrieved from \
+                         the contracts: {retrieved_from_contracts:?}, received with the proof: \
+                         {:?}",
+                        aggregation_proof_public_values
+                    );
+                    return Err(Error::MismatchAggregationProofPublicValues {
+                        expected_by_contract: Box::new(retrieved_from_contracts),
+                        expected_by_verifier: Box::new(aggregation_proof_public_values.clone()),
+                    });
+                }
             }
-        }
 
-        {
-            let aggchain_params_values = AggchainParamsValues::from(&fep_inputs);
-
-            info!("Aggchain-params unrolled values: {aggchain_params_values:?}");
-            info!(
-                "Aggchain-params abi encoded packed: {}",
-                hex::encode(fep_inputs.encoded_aggchain_params())
-            );
-            info!(
-                "Aggchain-params keccak-hashed: {}",
-                fep_inputs.aggchain_params()
-            );
-        }
-
-        let prover_witness = AggchainProofWitness {
-            prev_local_exit_root,
-            new_local_exit_root,
-            l1_info_root: request.aggchain_proof_inputs.l1_info_tree_root_hash,
-            origin_network: network_id,
-            fep: fep_inputs,
-            commit_imported_bridge_exits: ImportedBridgeExitCommitmentValues {
-                claims: bridge_exits_claimed.clone(),
-            }
-            .commitment(IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION),
-            bridge_witness: BridgeWitness {
-                inserted_gers,
-                bridge_exits_claimed,
-                global_indices_unset: vec![], // NOTE: no unset yet.
-                raw_inserted_gers: inserted_gers_hash_chain,
-                removed_gers: vec![], // NOTE: no removed GERs yet.
-                prev_l2_block_sketch,
-                new_l2_block_sketch,
-            },
-        };
-
-        let output_root = prover_witness.fep.compute_claim_root();
-
-        let sp1_stdin = {
-            let mut stdin = SP1Stdin::new();
-            stdin.write(&prover_witness);
-
-            if let AggchainProofMode::Proof {
-                aggregation_proof, ..
-            } = request.aggchain_proof_mode
             {
-                stdin.write_proof(*aggregation_proof, aggregation_vkey.vk.clone());
-            }
-            stdin
-        };
+                let aggchain_params_values = AggchainParamsValues::from(&fep_inputs);
 
-        Ok(AggchainProverInputs {
-            output_root,
-            stdin: sp1_stdin,
-        })
+                info!("Aggchain-params unrolled values: {aggchain_params_values:?}");
+                info!(
+                    "Aggchain-params abi encoded packed: {}",
+                    hex::encode(fep_inputs.encoded_aggchain_params())
+                );
+                info!(
+                    "Aggchain-params keccak-hashed: {}",
+                    fep_inputs.aggchain_params()
+                );
+            }
+
+            let prover_witness = AggchainProofWitness {
+                prev_local_exit_root,
+                new_local_exit_root,
+                l1_info_root: request.aggchain_proof_inputs.l1_info_tree_root_hash,
+                origin_network: network_id,
+                fep: fep_inputs,
+                commit_imported_bridge_exits: ImportedBridgeExitCommitmentValues {
+                    claims: bridge_exits_claimed.clone(),
+                }
+                .commitment(IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION),
+                bridge_witness: BridgeWitness {
+                    inserted_gers,
+                    bridge_exits_claimed,
+                    global_indices_unset: vec![], // NOTE: no unset yet.
+                    raw_inserted_gers: inserted_gers_hash_chain,
+                    removed_gers: vec![], // NOTE: no removed GERs yet.
+                    prev_l2_block_sketch,
+                    new_l2_block_sketch,
+                },
+            };
+
+            let output_root = prover_witness.fep.compute_claim_root();
+
+            let sp1_stdin = {
+                let mut stdin = SP1Stdin::new();
+                stdin.write(&prover_witness);
+
+                if let FepVerification::Proof {
+                    aggregation_proof, ..
+                } = request.fep_verification
+                {
+                    stdin.write_proof(*aggregation_proof, aggregation_vkey.vk.clone());
+                }
+                stdin
+            };
+
+            Ok(AggchainProverInputs {
+                output_root,
+                stdin: sp1_stdin,
+            })
+        }
     }
 }
 

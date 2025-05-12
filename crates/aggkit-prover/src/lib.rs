@@ -8,7 +8,6 @@ use tracing::info;
 
 pub mod cli;
 pub mod rpc;
-pub(crate) mod utils;
 
 #[cfg(test)]
 mod tests;
