@@ -111,6 +111,7 @@ impl AggchainProofService {
             tower::ServiceBuilder::new()
                 .service(
                     ProposerService::new_mock(&config.proposer_service, l1_rpc_client)
+                        .await
                         .map_err(Error::ProposerServiceInitFailed)?,
                 )
                 .boxed_clone()
@@ -118,6 +119,7 @@ impl AggchainProofService {
             tower::ServiceBuilder::new()
                 .service(
                     ProposerService::new_network(&config.proposer_service, l1_rpc_client)
+                        .await
                         .map_err(Error::ProposerServiceInitFailed)?,
                 )
                 .boxed_clone()

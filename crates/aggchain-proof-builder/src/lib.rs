@@ -14,10 +14,10 @@ use aggchain_proof_contracts::contracts::{
 use aggchain_proof_contracts::AggchainContractsClient;
 use aggchain_proof_core::bridge::inserted_ger::InsertedGER;
 use aggchain_proof_core::bridge::BridgeWitness;
-use aggchain_proof_core::full_execution_proof::FepInputs;
 use aggchain_proof_core::full_execution_proof::{
     AggchainParamsValues, AggregationProofPublicValues,
 };
+use aggchain_proof_core::full_execution_proof::{BabyBearDigest, FepInputs};
 use aggchain_proof_core::proof::{AggchainProofWitness, IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION};
 use aggchain_proof_core::Digest;
 use aggchain_proof_types::AggchainProofInputs;
@@ -28,14 +28,13 @@ use alloy::hex;
 use bincode::Options;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
-use proposer_elfs::HashU32;
 use prover_executor::{Executor, ProofType};
 use serde::{Deserialize, Serialize};
-use sp1_sdk::{SP1Stdin, SP1VerifyingKey};
+use sp1_sdk::{HashableKey, SP1Stdin, SP1VerifyingKey};
 use tower::buffer::Buffer;
 use tower::util::BoxService;
 use tower::ServiceExt as _;
-use tracing::info;
+use tracing::{error, info};
 use unified_bridge::aggchain_proof::AggchainProofPublicValues;
 
 use crate::config::AggchainProofBuilderConfig;
@@ -47,10 +46,10 @@ pub const AGGCHAIN_PROOF_ELF: &[u8] =
 
 /// Hardcoded hash of the "aggregation vkey".
 /// NOTE: Format being `hash_u32()` of the `SP1StarkVerifyingKey`.
-pub const AGGREGATION_VKEY_HASH: HashU32 = proposer_vkeys_raw::aggregation::VKEY_HASH;
+pub const AGGREGATION_VKEY_HASH: VKeyHash = proposer_elfs::aggregation::VKEY_HASH;
 
 /// Specific commitment for the range proofs.
-pub const RANGE_VKEY_COMMITMENT: [u8; 32] = proposer_vkeys_raw::range::VKEY_COMMITMENT;
+pub const RANGE_VKEY_COMMITMENT: [u8; 32] = proposer_elfs::range::VKEY_COMMITMENT;
 
 pub(crate) type ProverService = Buffer<
     BoxService<prover_executor::Request, prover_executor::Response, prover_executor::Error>,
@@ -168,7 +167,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         // Check mismatch on aggregation vkey
         {
             let retrieved = VKeyHash::from_vkey(&aggregation_vkey);
-            let expected = VKeyHash::from_hash_u32(AGGREGATION_VKEY_HASH);
+            let expected = AGGREGATION_VKEY_HASH;
 
             if retrieved != expected {
                 return Err(Error::MismatchAggregationVkeyHash {
@@ -286,7 +285,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             signature_optimistic_mode: None, // NOTE: disabled for now
             l1_info_tree_leaf,
             l1_head_inclusion_proof: request.aggchain_proof_inputs.l1_info_tree_merkle_proof,
-            aggregation_vkey_hash: AGGREGATION_VKEY_HASH,
+            aggregation_vkey_hash: BabyBearDigest(aggregation_vkey.hash_babybear()),
             range_vkey_commitment: RANGE_VKEY_COMMITMENT,
         };
 
@@ -298,22 +297,16 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             {
                 let retrieved_from_contracts = AggregationProofPublicValues::from(&fep_inputs);
 
-                info!(
-                    "Aggregation proof public values received with the proof: {:?}",
-                    aggregation_proof_public_values
+            if request.aggregation_proof_public_values != retrieved_from_contracts {
+                error!(
+                    "Mismatch between the aggregation proof public values - retrieved from the \
+                     contracts: {retrieved_from_contracts:?}, received with the proof: {:?}",
+                    request.aggregation_proof_public_values
                 );
-
-                info!(
-                    "Aggregation proof public values retrieved from contracts: {:?}",
-                    retrieved_from_contracts
-                );
-
-                if aggregation_proof_public_values != &retrieved_from_contracts {
-                    return Err(Error::MismatchAggregationProofPublicValues {
-                        expected_by_contract: Box::new(retrieved_from_contracts),
-                        expected_by_verifier: Box::new(aggregation_proof_public_values.clone()),
-                    });
-                }
+                return Err(Error::MismatchAggregationProofPublicValues {
+                    expected_by_contract: Box::new(retrieved_from_contracts),
+                    expected_by_verifier: Box::new(request.aggregation_proof_public_values),
+                });
             }
         }
 
