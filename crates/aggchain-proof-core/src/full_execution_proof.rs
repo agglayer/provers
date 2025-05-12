@@ -19,12 +19,7 @@ pub struct BabyBearDigest(pub [BabyBear; 8]);
 
 impl BabyBearDigest {
     pub fn to_hash_u32(&self) -> HashU32 {
-        self.0
-            .into_iter()
-            .map(|n| n.as_canonical_u32())
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap()
+        self.0.map(|n| n.as_canonical_u32())
     }
 
     pub fn to_hash_bn254(&self) -> [u8; 32] {
