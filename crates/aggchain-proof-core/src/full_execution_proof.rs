@@ -20,11 +20,12 @@ pub struct L2PreRoot(pub Digest);
 
 impl From<L2PreRoot> for FixedBytes<32> {
     fn from(value: L2PreRoot) -> FixedBytes<32> {
-        value.0 .0.into()
+        value.0.as_bytes().into()
     }
 }
 
-/// OutputRoot is the concatenation of the OutputRoot version + payload
+/// OutputRoot is the hash of the concatenation of the OutputRoot version +
+/// payload
 ///
 /// Payload composed of `state_root`, `withdrawal_storage_root`,
 /// `latest_block_hash`
@@ -35,7 +36,7 @@ pub struct OutputRoot(pub Digest);
 
 impl From<OutputRoot> for FixedBytes<32> {
     fn from(value: OutputRoot) -> FixedBytes<32> {
-        value.0 .0.into()
+        value.0.as_bytes().into()
     }
 }
 

@@ -271,7 +271,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .collect();
 
         let l1_info_tree_leaf = request.aggchain_proof_inputs.l1_info_tree_leaf;
-        let fep_inputs = FepInputs {
+        let mut fep_inputs = FepInputs {
             l1_head: l1_info_tree_leaf.inner.block_hash,
             claim_block_num: request.end_block as u32,
             rollup_config_hash,
@@ -290,24 +290,28 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         };
 
         {
-            if let FepVerification::Proof {
-                ref aggregation_proof_public_values,
-                ..
-            } = request.fep_verification
-            {
-                let retrieved_from_contracts = AggregationProofPublicValues::from(&fep_inputs);
+            match request.fep_verification {
+                FepVerification::Proof {
+                    ref aggregation_proof_public_values,
+                    ..
+                } => {
+                    let retrieved_from_contracts = AggregationProofPublicValues::from(&fep_inputs);
 
-                if aggregation_proof_public_values != &retrieved_from_contracts {
-                    error!(
-                        "Mismatch between the aggregation proof public values - retrieved from \
-                         the contracts: {retrieved_from_contracts:?}, received with the proof: \
-                         {:?}",
-                        aggregation_proof_public_values
-                    );
-                    return Err(Error::MismatchAggregationProofPublicValues {
-                        expected_by_contract: Box::new(retrieved_from_contracts),
-                        expected_by_verifier: Box::new(aggregation_proof_public_values.clone()),
-                    });
+                    if aggregation_proof_public_values != &retrieved_from_contracts {
+                        error!(
+                            "Mismatch between the aggregation proof public values - retrieved \
+                             from the contracts: {retrieved_from_contracts:?}, received with the \
+                             proof: {:?}",
+                            aggregation_proof_public_values
+                        );
+                        return Err(Error::MismatchAggregationProofPublicValues {
+                            expected_by_contract: Box::new(retrieved_from_contracts),
+                            expected_by_verifier: Box::new(aggregation_proof_public_values.clone()),
+                        });
+                    }
+                }
+                FepVerification::Optimistic { signature } => {
+                    fep_inputs.signature_optimistic_mode = Some(signature);
                 }
             }
 
