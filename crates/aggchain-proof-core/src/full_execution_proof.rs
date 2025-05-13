@@ -24,7 +24,7 @@ impl From<L2PreRoot> for FixedBytes<32> {
     }
 }
 
-/// OutputRoot is the hash of the concatenation of the OutputRoot version +
+/// ClaimRoot is the hash of the concatenation of the OutputRoot version +
 /// payload
 ///
 /// Payload composed of `state_root`, `withdrawal_storage_root`,
@@ -32,16 +32,16 @@ impl From<L2PreRoot> for FixedBytes<32> {
 ///
 /// Details: https://specs.optimism.io/protocol/proposals.html#l2-output-commitment-construction
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct OutputRoot(pub Digest);
+pub struct ClaimRoot(pub Digest);
 
-impl From<OutputRoot> for FixedBytes<32> {
-    fn from(value: OutputRoot) -> FixedBytes<32> {
+impl From<ClaimRoot> for FixedBytes<32> {
+    fn from(value: ClaimRoot) -> FixedBytes<32> {
         value.0.as_bytes().into()
     }
 }
 
-impl From<OutputRoot> for L2PreRoot {
-    fn from(value: OutputRoot) -> L2PreRoot {
+impl From<ClaimRoot> for L2PreRoot {
+    fn from(value: ClaimRoot) -> L2PreRoot {
         L2PreRoot(value.0)
     }
 }
@@ -282,7 +282,7 @@ impl FepInputs {
     }
 
     /// Compute claim root.
-    pub fn compute_claim_root(&self) -> OutputRoot {
+    pub fn compute_claim_root(&self) -> ClaimRoot {
         compute_output_root(
             self.new_state_root.0,
             self.new_withdrawal_storage_root.0,
@@ -297,8 +297,8 @@ pub(crate) fn compute_output_root(
     state_root: [u8; 32],
     withdrawal_storage_root: [u8; 32],
     block_hash: [u8; 32],
-) -> OutputRoot {
-    OutputRoot(keccak256_combine([
+) -> ClaimRoot {
+    ClaimRoot(keccak256_combine([
         OUTPUT_ROOT_VERSION,
         state_root,
         withdrawal_storage_root,

@@ -57,7 +57,7 @@ fn aggchain_pattern() {
 
 #[tokio::test]
 async fn test_custom_chain_data_builder_service() {
-    let response = compute_custom_chain_data(OutputRoot(Digest([1u8; 32])), 10u64);
+    let response = compute_custom_chain_data(ClaimRoot(Digest([1u8; 32])), 10u64);
 
     let mut expected = [0u8; 96];
     // program selector

@@ -1,5 +1,5 @@
 use aggchain_proof_core::{
-    full_execution_proof::OutputRoot, AGGCHAIN_PROOF_PROGRAM_VERSION, AGGCHAIN_TYPE,
+    full_execution_proof::ClaimRoot, AGGCHAIN_PROOF_PROGRAM_VERSION, AGGCHAIN_TYPE,
 };
 use alloy_primitives::U256;
 use alloy_sol_types::{sol, SolValue};
@@ -33,7 +33,7 @@ sol! {
     }
 }
 
-pub fn compute_custom_chain_data(output_root: OutputRoot, l2_block_number: u64) -> Vec<u8> {
+pub fn compute_custom_chain_data(output_root: ClaimRoot, l2_block_number: u64) -> Vec<u8> {
     CustomChainData {
         selector: AGGCHAIN_VKEY_SELECTOR.to_be_bytes().into(),
         output_root: output_root.into(),
