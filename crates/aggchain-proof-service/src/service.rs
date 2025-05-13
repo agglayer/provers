@@ -5,15 +5,15 @@ use std::{
     task::{Context, Poll},
 };
 
-use aggchain_proof_builder::AggchainProofBuilder;
+use aggchain_proof_builder::{AggchainProofBuilder, FepVerification};
 use aggchain_proof_contracts::AggchainContractsRpcClient;
 use aggchain_proof_core::Digest;
-use aggchain_proof_types::AggchainProofInputs;
+use aggchain_proof_types::{AggchainProofInputs, OptimisticAggchainProofInputs};
 use alloy_primitives::B256;
 use futures::FutureExt as _;
 use proposer_client::FepProposerRequest;
 use proposer_service::ProposerService;
-use tower::{util::BoxCloneService, ServiceExt as _};
+use tower::{util::BoxCloneService, Service as _, ServiceExt as _};
 use tracing::debug;
 use unified_bridge::aggchain_proof::AggchainProofPublicValues;
 
@@ -24,9 +24,11 @@ use crate::error::Error;
 /// A request for the AggchainProofService to generate the
 /// aggchain proof for the range of blocks.
 #[derive(Clone, Debug)]
-pub struct AggchainProofServiceRequest {
+pub enum AggchainProofServiceRequest {
     /// Aggchain proof request information
-    pub aggchain_proof_inputs: AggchainProofInputs,
+    Normal(AggchainProofInputs),
+    /// Optimistic aggchain proof request information
+    Optimistic(OptimisticAggchainProofInputs),
 }
 
 /// Resulting generated Aggchain proof
@@ -141,12 +143,119 @@ impl AggchainProofService {
             aggchain_proof_builder,
         })
     }
+
+    fn handle_normal_request(
+        &mut self,
+        aggchain_proof_inputs: AggchainProofInputs,
+    ) -> AggchainProofServiceFuture {
+        let l1_block_hash = aggchain_proof_inputs.l1_info_tree_leaf.inner.block_hash;
+
+        let proposer_request = FepProposerRequest {
+            last_proven_block: aggchain_proof_inputs.last_proven_block,
+            requested_end_block: aggchain_proof_inputs.requested_end_block,
+            l1_block_hash: B256::from(l1_block_hash.0),
+        };
+
+        let mut proposer_service = self.proposer_service.clone();
+        let mut proof_builder = self.aggchain_proof_builder.clone();
+
+        async move {
+            let last_proven_block = aggchain_proof_inputs.last_proven_block;
+            // The ProposerResponse contains the start and end block number
+            // It also contains the generated proof.
+            let aggregation_proof_response = proposer_service
+                .call(proposer_request)
+                .await
+                .map_err(Error::ProposerServiceError)?;
+
+            let aggchain_proof_builder_request =
+                aggchain_proof_builder::AggchainProofBuilderRequest {
+                    fep_verification: FepVerification::Proof {
+                        aggregation_proof: aggregation_proof_response.aggregation_proof,
+                        aggregation_proof_public_values: aggregation_proof_response.public_values,
+                    },
+                    end_block: aggregation_proof_response.end_block,
+                    aggchain_proof_inputs,
+                };
+
+            let end_block = aggchain_proof_builder_request.end_block;
+
+            let aggchain_proof_response = proof_builder
+                .call(aggchain_proof_builder_request)
+                .await
+                .map_err(Error::AggchainProofBuilderRequestFailed)?;
+
+            let custom_chain_data =
+                compute_custom_chain_data(aggchain_proof_response.output_root, end_block);
+
+            Ok(AggchainProofServiceResponse {
+                proof: aggchain_proof_response.proof,
+                aggchain_params: aggchain_proof_response.aggchain_params,
+                last_proven_block,
+                vkey: aggchain_proof_response.vkey,
+                end_block,
+                local_exit_root_hash: aggchain_proof_response.new_local_exit_root,
+                custom_chain_data,
+                public_values: aggchain_proof_response.public_values,
+            })
+        }
+        .boxed()
+    }
+
+    fn handle_optimistic_request(
+        &mut self,
+        OptimisticAggchainProofInputs {
+            aggchain_proof_inputs,
+            signature_optimistic_mode,
+        }: OptimisticAggchainProofInputs,
+    ) -> AggchainProofServiceFuture {
+        let mut proof_builder = self.aggchain_proof_builder.clone();
+
+        async move {
+            let last_proven_block = aggchain_proof_inputs.last_proven_block;
+
+            let aggchain_proof_builder_request =
+                aggchain_proof_builder::AggchainProofBuilderRequest {
+                    fep_verification: FepVerification::Optimistic {
+                        signature: signature_optimistic_mode,
+                    },
+                    // In optimistic mode, the end_block is the one defined in the request.
+                    end_block: aggchain_proof_inputs.requested_end_block,
+                    aggchain_proof_inputs,
+                };
+
+            let end_block = aggchain_proof_builder_request.end_block;
+
+            let aggchain_proof_response = proof_builder
+                .call(aggchain_proof_builder_request)
+                .await
+                .map_err(Error::AggchainProofBuilderRequestFailed)?;
+
+            let custom_chain_data =
+                compute_custom_chain_data(aggchain_proof_response.output_root, end_block);
+
+            Ok(AggchainProofServiceResponse {
+                proof: aggchain_proof_response.proof,
+                aggchain_params: aggchain_proof_response.aggchain_params,
+                last_proven_block,
+                vkey: aggchain_proof_response.vkey,
+                end_block,
+                local_exit_root_hash: aggchain_proof_response.new_local_exit_root,
+                custom_chain_data,
+                public_values: aggchain_proof_response.public_values,
+            })
+        }
+        .boxed()
+    }
 }
+
+type AggchainProofServiceFuture =
+    Pin<Box<dyn Future<Output = Result<AggchainProofServiceResponse, Error>> + Send>>;
 
 impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
     type Response = AggchainProofServiceResponse;
     type Error = Error;
-    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
+    type Future = AggchainProofServiceFuture;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         std::task::ready!(self
@@ -160,54 +269,13 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
     }
 
     fn call(&mut self, req: AggchainProofServiceRequest) -> Self::Future {
-        let l1_block_hash = req.aggchain_proof_inputs.l1_info_tree_leaf.inner.block_hash;
-
-        let proposer_request = FepProposerRequest {
-            last_proven_block: req.aggchain_proof_inputs.last_proven_block,
-            requested_end_block: req.aggchain_proof_inputs.requested_end_block,
-            l1_block_hash: B256::from(l1_block_hash.0),
-        };
-
-        let mut proposer_service = self.proposer_service.clone();
-        let mut proof_builder = self.aggchain_proof_builder.clone();
-
-        async move {
-            // The ProposerResponse contains the start and end block number
-            // It also contains the generated proof.
-            let aggregation_proof_response = proposer_service
-                .call(proposer_request)
-                .await
-                .map_err(Error::ProposerServiceError)?;
-
-            let aggchain_proof_builder_request =
-                aggchain_proof_builder::AggchainProofBuilderRequest {
-                    aggregation_proof: aggregation_proof_response.aggregation_proof,
-                    end_block: aggregation_proof_response.end_block,
-                    aggchain_proof_inputs: req.aggchain_proof_inputs,
-                    aggregation_proof_public_values: aggregation_proof_response.public_values,
-                };
-
-            let aggchain_proof_response = proof_builder
-                .call(aggchain_proof_builder_request)
-                .await
-                .map_err(Error::AggchainProofBuilderRequestFailed)?;
-
-            let custom_chain_data = compute_custom_chain_data(
-                aggchain_proof_response.output_root,
-                aggregation_proof_response.end_block,
-            );
-
-            Ok(AggchainProofServiceResponse {
-                proof: aggchain_proof_response.proof,
-                aggchain_params: aggchain_proof_response.aggchain_params,
-                last_proven_block: aggregation_proof_response.last_proven_block,
-                vkey: aggchain_proof_response.vkey,
-                end_block: aggregation_proof_response.end_block,
-                local_exit_root_hash: aggchain_proof_response.new_local_exit_root,
-                custom_chain_data,
-                public_values: aggchain_proof_response.public_values,
-            })
+        match req {
+            AggchainProofServiceRequest::Normal(aggchain_proof_inputs) => {
+                self.handle_normal_request(aggchain_proof_inputs)
+            }
+            AggchainProofServiceRequest::Optimistic(optimistic_aggchain_proof_inputs) => {
+                self.handle_optimistic_request(optimistic_aggchain_proof_inputs)
+            }
         }
-        .boxed()
     }
 }

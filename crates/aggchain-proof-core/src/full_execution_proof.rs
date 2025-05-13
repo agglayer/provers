@@ -1,6 +1,6 @@
 use agglayer_primitives::keccak::keccak256_combine;
 use agglayer_primitives::{digest::Digest, keccak::keccak256};
-use alloy_primitives::{Address, PrimitiveSignature, B256, U256};
+use alloy_primitives::{Address, FixedBytes, B256, U256};
 use alloy_sol_types::{sol, SolValue};
 use p3_baby_bear::BabyBear;
 use p3_bn254_fr::Bn254Fr;
@@ -13,6 +13,38 @@ use crate::{error::ProofError, vkey_hash::HashU32};
 
 /// Hardcoded for now, might see if we might need it as input
 pub const OUTPUT_ROOT_VERSION: [u8; 32] = [0u8; 32];
+
+/// L2PreRoot is the representation of the previous OutputRoot
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct L2PreRoot(pub Digest);
+
+impl From<L2PreRoot> for FixedBytes<32> {
+    fn from(value: L2PreRoot) -> FixedBytes<32> {
+        value.0.as_bytes().into()
+    }
+}
+
+/// ClaimRoot is the hash of the concatenation of the OutputRoot version +
+/// payload
+///
+/// Payload composed of `state_root`, `withdrawal_storage_root`,
+/// `latest_block_hash`
+///
+/// Details: https://specs.optimism.io/protocol/proposals.html#l2-output-commitment-construction
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ClaimRoot(pub Digest);
+
+impl From<ClaimRoot> for FixedBytes<32> {
+    fn from(value: ClaimRoot) -> FixedBytes<32> {
+        value.0.as_bytes().into()
+    }
+}
+
+impl From<ClaimRoot> for L2PreRoot {
+    fn from(value: ClaimRoot) -> L2PreRoot {
+        L2PreRoot(value.0)
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BabyBearDigest(pub [BabyBear; 8]);
@@ -66,7 +98,7 @@ pub struct FepInputs {
     /// Trusted sequencer address.
     pub trusted_sequencer: Address,
     /// Signature in the "OptimisticMode" case.
-    pub signature_optimistic_mode: Option<PrimitiveSignature>,
+    pub signature_optimistic_mode: Option<agglayer_primitives::Signature>,
     /// L1 info tree leaf containing the `l1Head` as block hash.
     pub l1_info_tree_leaf: L1InfoTreeLeaf,
     /// Inclusion proof of the leaf to the l1 info root.
@@ -90,8 +122,8 @@ impl From<&FepInputs> for AggregationProofPublicValues {
     fn from(inputs: &FepInputs) -> Self {
         Self {
             l1Head: inputs.l1_head.0.into(),
-            l2PreRoot: inputs.compute_l2_pre_root().0.into(),
-            l2PostRoot: inputs.compute_claim_root().0.into(),
+            l2PreRoot: inputs.compute_l2_pre_root().into(),
+            l2PostRoot: inputs.compute_claim_root().into(),
             l2BlockNumber: inputs.claim_block_num.into(),
             rollupConfigHash: inputs.rollup_config_hash.0.into(),
             multiBlockVKey: inputs.range_vkey_commitment.into(),
@@ -117,8 +149,8 @@ sol! {
 impl From<&FepInputs> for AggchainParamsValues {
     fn from(inputs: &FepInputs) -> Self {
         Self {
-            l2PreRoot: inputs.compute_l2_pre_root().0.into(),
-            claimRoot: inputs.compute_claim_root().0.into(),
+            l2PreRoot: inputs.compute_l2_pre_root().into(),
+            claimRoot: inputs.compute_claim_root().into(),
             claimBlockNum: U256::from(inputs.claim_block_num),
             rollupConfigHash: inputs.rollup_config_hash.0.into(),
             optimisticMode: inputs.optimistic_mode() == OptimisticMode::Ecdsa,
@@ -240,16 +272,17 @@ impl FepInputs {
     }
 
     /// Compute l2 pre root.
-    pub fn compute_l2_pre_root(&self) -> Digest {
+    pub fn compute_l2_pre_root(&self) -> L2PreRoot {
         compute_output_root(
             self.prev_state_root.0,
             self.prev_withdrawal_storage_root.0,
             self.prev_block_hash.0,
         )
+        .into()
     }
 
     /// Compute claim root.
-    pub fn compute_claim_root(&self) -> Digest {
+    pub fn compute_claim_root(&self) -> ClaimRoot {
         compute_output_root(
             self.new_state_root.0,
             self.new_withdrawal_storage_root.0,
@@ -264,13 +297,13 @@ pub(crate) fn compute_output_root(
     state_root: [u8; 32],
     withdrawal_storage_root: [u8; 32],
     block_hash: [u8; 32],
-) -> Digest {
-    keccak256_combine([
+) -> ClaimRoot {
+    ClaimRoot(keccak256_combine([
         OUTPUT_ROOT_VERSION,
         state_root,
         withdrawal_storage_root,
         block_hash,
-    ])
+    ]))
 }
 
 #[cfg(test)]
@@ -291,7 +324,7 @@ mod tests {
         let block_hash = hex_str_to_array(block_hash_hex);
         let expected_output_root = hex_str_to_array(expected_output_root_hex);
 
-        let computed_output_root = compute_output_root(state, withdrawal, block_hash).0;
+        let computed_output_root = compute_output_root(state, withdrawal, block_hash).0 .0;
         assert_eq!(
             computed_output_root, expected_output_root,
             "compute_output_root should return the expected hash"
