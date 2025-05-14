@@ -1,7 +1,7 @@
 use std::{env, fs, io::Write, path::Path};
 
 use bincode::Options;
-use sp1_sdk::{CpuProver, HashableKey, Prover as _, SP1VerifyingKey};
+use sp1_prover::{HashableKey, SP1Prover, SP1VerifyingKey};
 
 pub fn bincode_options() -> impl bincode::Options {
     bincode::DefaultOptions::new()
@@ -12,7 +12,7 @@ pub fn bincode_options() -> impl bincode::Options {
 /// Build time tool to emit information about a zkvm ELF.
 pub struct ElfInfo {
     /// Lazily loaded SP1 prover client.
-    prover: Option<CpuProver>,
+    prover: Option<SP1Prover>,
 
     /// Target file.
     output: fs::File,
@@ -49,8 +49,8 @@ impl ElfInfo {
         self.module(module_name, elf_bytes)
     }
 
-    fn prover(&mut self) -> &CpuProver {
-        self.prover.get_or_insert_with(CpuProver::new)
+    fn prover(&mut self) -> &SP1Prover {
+        self.prover.get_or_insert_with(SP1Prover::new)
     }
 }
 
@@ -115,7 +115,8 @@ impl<ElfBytes: AsRef<[u8]>> Emitter<ElfBytes> {
 
     fn vkey(&mut self) -> &SP1VerifyingKey {
         self.vkey.get_or_insert_with(|| {
-            let (_pkey, vkey) = self.context.prover().setup(self.elf.as_ref());
+            let (_sp1_pkey, _stark_pkey, _program, vkey) =
+                self.context.prover().setup(self.elf.as_ref());
             vkey
         })
     }

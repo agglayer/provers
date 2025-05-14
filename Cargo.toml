@@ -31,7 +31,6 @@ agglayer-prover-types = { path = "crates/agglayer-prover-types" }
 proposer-client = { path = "crates/proposer-client" }
 proposer-elfs = { path = "crates/proposer-elfs" }
 proposer-service = { path = "crates/proposer-service" }
-proposer-vkeys-raw = { path = "crates/proposer-vkeys-raw" }
 prover-alloy = { path = "crates/prover-alloy" }
 prover-config = { path = "crates/prover-config" }
 prover-elf-utils = { path = "crates/prover-elf-utils" }
@@ -52,12 +51,16 @@ agglayer-tries = { git = "https://github.com/agglayer/interop.git", tag = "v0.3.
 unified-bridge = { git = "https://github.com/agglayer/interop.git", tag = "v0.3.0" }
 
 # Ecosystem dependencies
-op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v1.2.7-agglayer" }
+op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v2.1.3-agglayer" }
+op-succinct-grpc = { git = "https://github.com/agglayer/op-succinct.git", tag = "v2.1.3-agglayer", package = "grpc" }
 
 # SP1 dependencies
 # Please check if the toolchain image at the top `scripts/make/Makefile.elf.toml` could also be
 # updated whenever updating the below dependencies; as well as updating the proof-program binary
 # crate dependencies.
+p3-baby-bear = "=0.2.1-succinct"
+p3-bn254-fr = "=0.2.1-succinct"
+p3-field = "=0.2.1-succinct"
 sp1-core-executor = "=4.1.4"
 sp1-core-machine = "=4.1.4"
 sp1-sdk = "=4.1.4"

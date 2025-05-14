@@ -26,6 +26,9 @@ dependencies = [
  "eyre",
  "hex",
  "k256",
+ "p3-baby-bear",
+ "p3-bn254-fr",
+ "p3-field",
  "semver 1.0.26",
  "serde",
  "serde_with",
@@ -50,7 +53,7 @@ dependencies = [
 [[package]]
 name = "agglayer-primitives"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?rev=171eacc400a2aebf539ec2e5381ffa69d4c6107f#171eacc400a2aebf539ec2e5381ffa69d4c6107f"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.3.0#c5b75e25e110cd258b1e5a3f26a65c578b58775d"
 dependencies = [
  "alloy-primitives",
  "byteorder",
@@ -63,7 +66,7 @@ dependencies = [
 [[package]]
 name = "agglayer-tries"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?rev=171eacc400a2aebf539ec2e5381ffa69d4c6107f#171eacc400a2aebf539ec2e5381ffa69d4c6107f"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.3.0#c5b75e25e110cd258b1e5a3f26a65c578b58775d"
 dependencies = [
  "agglayer-primitives",
  "serde",
@@ -1446,6 +1449,7 @@ version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c0b50bfb653653f9ca9095b427bed08ab8d75a137839d9ad64eb11810d5b6393"
 dependencies = [
+ "bitvec",
  "byteorder",
  "ff_derive",
  "rand_core 0.6.4",
@@ -2368,6 +2372,21 @@ dependencies = [
  "num-bigint 0.4.6",
  "p3-field",
  "p3-mds",
+ "p3-poseidon2",
+ "p3-symmetric",
+ "rand 0.8.5",
+ "serde",
+]
+
+[[package]]
+name = "p3-bn254-fr"
+version = "0.2.1-succinct"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ffd31ad7999da119ef0012717ddf1aa1fe7583dd4482f40e6cbefc6ad12c0b72"
+dependencies = [
+ "ff",
+ "num-bigint 0.4.6",
+ "p3-field",
  "p3-poseidon2",
  "p3-symmetric",
  "rand 0.8.5",
@@ -4450,7 +4469,7 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 [[package]]
 name = "unified-bridge"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?rev=171eacc400a2aebf539ec2e5381ffa69d4c6107f#171eacc400a2aebf539ec2e5381ffa69d4c6107f"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.3.0#c5b75e25e110cd258b1e5a3f26a65c578b58775d"
 dependencies = [
  "agglayer-primitives",
  "agglayer-tries",

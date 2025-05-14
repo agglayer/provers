@@ -8,6 +8,7 @@ use tracing::info;
 
 pub mod cli;
 pub mod rpc;
+
 #[cfg(test)]
 mod tests;
 
