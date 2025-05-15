@@ -1,6 +1,6 @@
 use std::{fs::File, path::PathBuf};
 
-use aggchain_proof_core::Digest;
+use agglayer_interop::types::Digest;
 use serde::{Deserialize, Deserializer};
 
 use super::*;

@@ -1,5 +1,5 @@
 use agglayer_primitives::keccak::keccak256_combine;
-use agglayer_primitives::{digest::Digest, keccak::keccak256};
+use agglayer_primitives::{keccak::keccak256, Digest};
 use alloy_primitives::{Address, FixedBytes, B256, U256};
 use alloy_sol_types::{sol, SolValue};
 use p3_baby_bear::BabyBear;

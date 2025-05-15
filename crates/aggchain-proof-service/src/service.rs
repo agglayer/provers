@@ -7,8 +7,8 @@ use std::{
 
 use aggchain_proof_builder::{AggchainProofBuilder, FepVerification};
 use aggchain_proof_contracts::AggchainContractsRpcClient;
-use aggchain_proof_core::Digest;
 use aggchain_proof_types::{AggchainProofInputs, OptimisticAggchainProofInputs};
+use agglayer_interop::types::Digest;
 use alloy_primitives::B256;
 use futures::FutureExt as _;
 use proposer_client::FepProposerRequest;

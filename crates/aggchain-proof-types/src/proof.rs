@@ -1,7 +1,7 @@
 use std::{collections::HashMap, ops::RangeInclusive};
 
-use aggchain_proof_core::{bridge::inserted_ger::InsertedGER, Digest};
-use agglayer_interop::types::{L1InfoTreeLeaf, MerkleProof};
+use aggchain_proof_core::bridge::inserted_ger::InsertedGER;
+use agglayer_interop::types::{Digest, L1InfoTreeLeaf, MerkleProof};
 use serde::{Deserialize, Serialize};
 
 use crate::{
