@@ -3,7 +3,6 @@ use std::time::Duration;
 
 use alloy_primitives::B256;
 use anyhow::Context;
-use bincode::Options;
 use sp1_sdk::{
     CpuProver, Prover as _, SP1ProofWithPublicValues, SP1ProvingKey, SP1VerificationError,
     SP1VerifyingKey,
@@ -53,9 +52,7 @@ where
             })
             .await?;
 
-        let proof = bincode::DefaultOptions::new()
-            .with_big_endian()
-            .with_fixint_encoding()
+        let proof = agglayer_interop_types::bincode::default()
             .deserialize(&response.proof)
             .with_context(|| format!("deserializing proof {request_id}"))?;
 

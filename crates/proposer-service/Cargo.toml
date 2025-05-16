@@ -24,7 +24,6 @@ alloy-primitives.workspace = true
 alloy-sol-types.workspace = true
 anyhow.workspace = true
 base64.workspace = true
-bincode.workspace = true
 clap.workspace = true
 educe.workspace = true
 futures.workspace = true
@@ -43,6 +42,5 @@ agglayer-evm-client = { workspace = true, features = ["testutils"] }
 proposer-client = { workspace = true, features = ["testutils"] }
 prover-alloy = { workspace = true, features = ["testutils"] }
 
-bincode.workspace = true
 mockall.workspace = true
 tokio.workspace = true
