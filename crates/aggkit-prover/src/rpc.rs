@@ -105,6 +105,8 @@ impl AggchainProofGrpcService for GrpcService {
                 Ok(Response::new(GenerateAggchainProofResponse {
                     aggchain_proof: Some(AggchainProof {
                         aggchain_params: Some(response.aggchain_params.into()),
+                        // Signature is handled by the initiator
+                        signature: None,
                         context,
                         proof: Some(agglayer_interop::grpc::v1::aggchain_proof::Proof::Sp1Stark(
                             Sp1StarkProof {
@@ -198,6 +200,8 @@ impl AggchainProofGrpcService for GrpcService {
                 Ok(Response::new(GenerateOptimisticAggchainProofResponse {
                     aggchain_proof: Some(AggchainProof {
                         aggchain_params: Some(response.aggchain_params.into()),
+                        // Signature is handled by the initiator
+                        signature: None,
                         context,
                         proof: Some(agglayer_interop::grpc::v1::aggchain_proof::Proof::Sp1Stark(
                             Sp1StarkProof {
