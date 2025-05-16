@@ -41,7 +41,6 @@ dependencies = [
  "alloy",
  "alloy-primitives",
  "anyhow",
- "bincode",
  "futures",
  "proposer-elfs",
  "prover-config",
@@ -134,7 +133,6 @@ dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
  "anyhow",
- "bincode",
  "futures",
  "proposer-client",
  "proposer-service",
@@ -172,7 +170,6 @@ dependencies = [
  "aggkit-prover-types",
  "agglayer-interop",
  "anyhow",
- "bincode",
  "clap",
  "dotenvy",
  "futures",
@@ -224,7 +221,6 @@ dependencies = [
  "agglayer-interop",
  "alloy-primitives",
  "anyhow",
- "bincode",
  "pbjson",
  "prost",
  "prover-elf-utils",
@@ -236,9 +232,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "agglayer-bincode"
+version = "0.6.0"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.6.1#7e64e0a1312e47aaca13f03ea12fbe7fe5bedd95"
+dependencies = [
+ "bincode",
+ "serde",
+]
+
+[[package]]
 name = "agglayer-evm-client"
-version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.6.0#812bc77b4ac5f7159e9eaec525a05657e159d229"
+version = "0.6.0"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.6.1#7e64e0a1312e47aaca13f03ea12fbe7fe5bedd95"
 dependencies = [
  "agglayer-primitives",
  "alloy",
@@ -251,8 +256,8 @@ dependencies = [
 
 [[package]]
 name = "agglayer-interop"
-version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.6.0#812bc77b4ac5f7159e9eaec525a05657e159d229"
+version = "0.6.0"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.6.1#7e64e0a1312e47aaca13f03ea12fbe7fe5bedd95"
 dependencies = [
  "agglayer-interop-grpc-types",
  "agglayer-interop-types",
@@ -260,8 +265,8 @@ dependencies = [
 
 [[package]]
 name = "agglayer-interop-grpc-types"
-version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.6.0#812bc77b4ac5f7159e9eaec525a05657e159d229"
+version = "0.6.0"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.6.1#7e64e0a1312e47aaca13f03ea12fbe7fe5bedd95"
 dependencies = [
  "agglayer-interop-types",
  "bincode",
@@ -275,9 +280,10 @@ dependencies = [
 
 [[package]]
 name = "agglayer-interop-types"
-version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.6.0#812bc77b4ac5f7159e9eaec525a05657e159d229"
+version = "0.6.0"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.6.1#7e64e0a1312e47aaca13f03ea12fbe7fe5bedd95"
 dependencies = [
+ "agglayer-bincode",
  "agglayer-primitives",
  "agglayer-tries",
  "bincode",
@@ -295,8 +301,8 @@ dependencies = [
 
 [[package]]
 name = "agglayer-primitives"
-version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.6.0#812bc77b4ac5f7159e9eaec525a05657e159d229"
+version = "0.6.0"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.6.1#7e64e0a1312e47aaca13f03ea12fbe7fe5bedd95"
 dependencies = [
  "alloy-primitives",
  "byteorder",
@@ -314,7 +320,6 @@ dependencies = [
  "agglayer-prover-types",
  "agglayer-telemetry",
  "anyhow",
- "bincode",
  "buildstructor",
  "prost",
  "prover-engine",
@@ -349,7 +354,6 @@ name = "agglayer-prover-types"
 version = "0.1.0"
 dependencies = [
  "agglayer-interop",
- "bincode",
  "pbjson",
  "prost",
  "prover-executor",
@@ -381,10 +385,11 @@ dependencies = [
 
 [[package]]
 name = "agglayer-tries"
-version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.6.0#812bc77b4ac5f7159e9eaec525a05657e159d229"
+version = "0.6.0"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.6.1#7e64e0a1312e47aaca13f03ea12fbe7fe5bedd95"
 dependencies = [
  "agglayer-primitives",
+ "hex",
  "serde",
  "serde_with",
  "thiserror 2.0.12",
@@ -5709,11 +5714,11 @@ dependencies = [
 name = "proposer-client"
 version = "0.1.0"
 dependencies = [
+ "agglayer-interop-types",
  "alloy-primitives",
  "anyhow",
  "async-trait",
  "base64 0.22.1",
- "bincode",
  "educe",
  "hex",
  "insta",
@@ -5762,7 +5767,6 @@ dependencies = [
  "alloy-sol-types",
  "anyhow",
  "base64 0.22.1",
- "bincode",
  "clap",
  "educe",
  "futures",
@@ -5895,7 +5899,7 @@ dependencies = [
 name = "prover-elf-utils"
 version = "0.1.0"
 dependencies = [
- "bincode",
+ "agglayer-interop-types",
  "sp1-prover",
 ]
 
@@ -5922,7 +5926,6 @@ name = "prover-executor"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bincode",
  "buildstructor",
  "futures",
  "prover-config",
@@ -9240,8 +9243,8 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 
 [[package]]
 name = "unified-bridge"
-version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.6.0#812bc77b4ac5f7159e9eaec525a05657e159d229"
+version = "0.6.0"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.6.1#7e64e0a1312e47aaca13f03ea12fbe7fe5bedd95"
 dependencies = [
  "agglayer-primitives",
  "agglayer-tries",
