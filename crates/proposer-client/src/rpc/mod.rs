@@ -117,7 +117,7 @@ impl AggregationProofProposer for ProposerRpcClient {
             .map_err(ProofRequestError::Grpc)
             .and_then(|resp| resp.into_inner().try_into())
             .inspect_err(|e| error!("Aggregation proof request failed: {e:?}"))
-            .map_err(Error::Requesting)?;
+            .map_err(|e| Error::Requesting(Box::new(e)))?;
 
         info!(
             request_id = response.to_string(),
@@ -140,7 +140,7 @@ impl AggregationProofProposer for ProposerRpcClient {
             .map_err(ProofRequestError::Grpc)
             .and_then(|resp| resp.into_inner().try_into())
             .inspect_err(|e| error!("Get mock proof request failed: {e:?}"))
-            .map_err(Error::Requesting)?;
+            .map_err(|e| Error::Requesting(Box::new(e)))?;
 
         info!(proof_id = request.proof_id, "mock proof request fullfilled");
 
