@@ -41,7 +41,6 @@ dependencies = [
  "alloy",
  "alloy-primitives",
  "anyhow",
- "bincode",
  "futures",
  "proposer-elfs",
  "prover-config",
@@ -134,7 +133,6 @@ dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
  "anyhow",
- "bincode",
  "futures",
  "proposer-client",
  "proposer-service",
@@ -172,7 +170,6 @@ dependencies = [
  "aggkit-prover-types",
  "agglayer-interop",
  "anyhow",
- "bincode",
  "clap",
  "dotenvy",
  "futures",
@@ -224,7 +221,6 @@ dependencies = [
  "agglayer-interop",
  "alloy-primitives",
  "anyhow",
- "bincode",
  "pbjson",
  "prost",
  "prover-elf-utils",
@@ -238,7 +234,7 @@ dependencies = [
 [[package]]
 name = "agglayer-evm-client"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.3.0#c5b75e25e110cd258b1e5a3f26a65c578b58775d"
+source = "git+https://github.com/agglayer/interop.git?branch=refactor%2Fbincode#3dedc8063d801ea9ea9477a52fd67b436a766f04"
 dependencies = [
  "agglayer-primitives",
  "alloy",
@@ -252,7 +248,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.3.0#c5b75e25e110cd258b1e5a3f26a65c578b58775d"
+source = "git+https://github.com/agglayer/interop.git?branch=refactor%2Fbincode#3dedc8063d801ea9ea9477a52fd67b436a766f04"
 dependencies = [
  "agglayer-interop-grpc-types",
  "agglayer-interop-types",
@@ -261,7 +257,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop-grpc-types"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.3.0#c5b75e25e110cd258b1e5a3f26a65c578b58775d"
+source = "git+https://github.com/agglayer/interop.git?branch=refactor%2Fbincode#3dedc8063d801ea9ea9477a52fd67b436a766f04"
 dependencies = [
  "agglayer-interop-types",
  "bincode",
@@ -276,7 +272,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop-types"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.3.0#c5b75e25e110cd258b1e5a3f26a65c578b58775d"
+source = "git+https://github.com/agglayer/interop.git?branch=refactor%2Fbincode#3dedc8063d801ea9ea9477a52fd67b436a766f04"
 dependencies = [
  "agglayer-primitives",
  "agglayer-tries",
@@ -296,7 +292,7 @@ dependencies = [
 [[package]]
 name = "agglayer-primitives"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.3.0#c5b75e25e110cd258b1e5a3f26a65c578b58775d"
+source = "git+https://github.com/agglayer/interop.git?branch=refactor%2Fbincode#3dedc8063d801ea9ea9477a52fd67b436a766f04"
 dependencies = [
  "alloy-primitives",
  "byteorder",
@@ -314,7 +310,6 @@ dependencies = [
  "agglayer-prover-types",
  "agglayer-telemetry",
  "anyhow",
- "bincode",
  "buildstructor",
  "prost",
  "prover-engine",
@@ -349,7 +344,6 @@ name = "agglayer-prover-types"
 version = "0.1.0"
 dependencies = [
  "agglayer-interop",
- "bincode",
  "pbjson",
  "prost",
  "prover-executor",
@@ -382,7 +376,7 @@ dependencies = [
 [[package]]
 name = "agglayer-tries"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.3.0#c5b75e25e110cd258b1e5a3f26a65c578b58775d"
+source = "git+https://github.com/agglayer/interop.git?branch=refactor%2Fbincode#3dedc8063d801ea9ea9477a52fd67b436a766f04"
 dependencies = [
  "agglayer-primitives",
  "serde",
@@ -1855,7 +1849,7 @@ dependencies = [
  "bitflags",
  "cexpr",
  "clang-sys",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "log",
  "prettyplease",
  "proc-macro2",
@@ -2212,7 +2206,7 @@ version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fde0e0ec90c9dfb3b4b1a0891a7dcd0e2bffde2f7efed5fe7c9bb00e5bfb915e"
 dependencies = [
- "windows-sys 0.48.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -4256,7 +4250,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc2f4eb4bc735547cfed7c0a4922cbd04a4655978c09b54f1f7b228750664c34"
 dependencies = [
  "cfg-if",
- "windows-targets 0.48.5",
+ "windows-targets 0.52.6",
 ]
 
 [[package]]
@@ -5706,11 +5700,11 @@ dependencies = [
 name = "proposer-client"
 version = "0.1.0"
 dependencies = [
+ "agglayer-interop-types",
  "alloy-primitives",
  "anyhow",
  "async-trait",
  "base64 0.22.1",
- "bincode",
  "educe",
  "grpc",
  "hex",
@@ -5758,7 +5752,6 @@ dependencies = [
  "alloy-sol-types",
  "anyhow",
  "base64 0.22.1",
- "bincode",
  "clap",
  "educe",
  "futures",
@@ -5815,7 +5808,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be769465445e8c1474e9c5dac2018218498557af32d9ed057325ec9a41ae81bf"
 dependencies = [
  "heck 0.5.0",
- "itertools 0.12.1",
+ "itertools 0.14.0",
  "log",
  "multimap",
  "once_cell",
@@ -5835,7 +5828,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a56d757972c98b346a9b766e3f02746cde6dd1cd1d1d563472929fdd74bec4d"
 dependencies = [
  "anyhow",
- "itertools 0.12.1",
+ "itertools 0.14.0",
  "proc-macro2",
  "quote",
  "syn 2.0.100",
@@ -5891,7 +5884,7 @@ dependencies = [
 name = "prover-elf-utils"
 version = "0.1.0"
 dependencies = [
- "bincode",
+ "agglayer-interop-types",
  "sp1-prover",
 ]
 
@@ -5918,7 +5911,6 @@ name = "prover-executor"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bincode",
  "buildstructor",
  "futures",
  "prover-config",
@@ -9212,7 +9204,7 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 [[package]]
 name = "unified-bridge"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.3.0#c5b75e25e110cd258b1e5a3f26a65c578b58775d"
+source = "git+https://github.com/agglayer/interop.git?branch=refactor%2Fbincode#3dedc8063d801ea9ea9477a52fd67b436a766f04"
 dependencies = [
  "agglayer-primitives",
  "agglayer-tries",
@@ -9538,7 +9530,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.48.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

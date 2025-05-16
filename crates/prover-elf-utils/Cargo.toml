@@ -5,5 +5,5 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-bincode.workspace = true
+agglayer-interop-types.workspace = true
 sp1-prover.workspace = true
