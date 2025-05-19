@@ -193,7 +193,7 @@ impl AggchainProofGrpcService for GrpcService {
                     .aggchain_proof_inputs
                     .l1_info_tree_root_hash
             ),
-            "GenerateOptimisticAggchainProof request received");
+            "Received GenerateOptimisticAggchainProof request");
 
         if aggchain_proof_inputs
             .aggchain_proof_inputs
