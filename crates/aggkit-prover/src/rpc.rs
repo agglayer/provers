@@ -59,7 +59,7 @@ impl AggchainProofGrpcService for GrpcService {
                     .as_ref()
                     .map_or(&Bytes::default(), |v| &v.value)
             ),
-            "Generate aggchain proof request"
+            "Received GenerateAggchainProof request"
         );
 
         if request.requested_end_block <= request.last_proven_block {
@@ -69,12 +69,12 @@ impl AggchainProofGrpcService for GrpcService {
                 "requested_end_block must be greater than last_proven_block",
             );
 
-            error!(%last_proven_block, %requested_end_block,
-                "Invalid generate aggchain proof request: {error:?}");
+            error!(%last_proven_block, %requested_end_block, ?error,
+                "Invalid GenerateAggchainProof request argument(s)");
 
             return Err(Status::with_error_details(
                 tonic::Code::InvalidArgument,
-                "Invalid request argument(s)",
+                "Invalid GenerateAggchainProof request argument(s)",
                 error,
             ));
         }
@@ -83,13 +83,13 @@ impl AggchainProofGrpcService for GrpcService {
             request
                 .try_into()
                 .map_err(|error: AggchainProofRequestError| {
-                    error!(%last_proven_block, %requested_end_block, "Invalid aggchain proof request data: {error:?}");
+                    error!(%last_proven_block, %requested_end_block, ?error, "Invalid GenerateAggchainProof request data");
                     let field = error.field_path();
                     let mut error_details = ErrorDetails::new();
                     error_details.add_bad_request_violation(field, error.to_string());
                     Status::with_error_details(
                         tonic::Code::InvalidArgument,
-                        "Invalid aggchain proof request data",
+                        "Invalid GenerateAggchainProof request data",
                         error_details,
                     )
                 })?;
@@ -125,7 +125,7 @@ impl AggchainProofGrpcService for GrpcService {
                 );
                 info!(last_proven_block = %response.last_proven_block,
                     end_block = %response.end_block,
-                    "Generate aggchain proof request executed successfully");
+                    "GenerateAggchainProof request executed successfully");
                 Ok(Response::new(GenerateAggchainProofResponse {
                     aggchain_proof: Some(AggchainProof {
                         aggchain_params: Some(response.aggchain_params.into()),
@@ -148,9 +148,9 @@ impl AggchainProofGrpcService for GrpcService {
             }
             // TODO: Return a different error when the proof is not yet ready.
             // The gRPC API currently does not expose the status.
-            Err(e) => {
-                error!(%last_proven_block, %requested_end_block, "Unable to generate aggchain proof: {e:?}");
-                Err(Status::internal(e.to_string()))
+            Err(error) => {
+                error!(%last_proven_block, %requested_end_block, ?error, "Unable to execute GenerateAggchainProof request");
+                Err(Status::internal(error.to_string()))
             }
         }
     }
@@ -169,10 +169,12 @@ impl AggchainProofGrpcService for GrpcService {
                     let field = error.field_path();
                     let mut error_details = ErrorDetails::new();
                     error_details.add_bad_request_violation(field, error.to_string());
-                    error!("Invalid generate optimistic aggchain proof request: {error_details:?}");
+                    error!(
+                        "Invalid GenerateOptimisticAggchainProof request data: {error_details:?}"
+                    );
                     Status::with_error_details(
                         tonic::Code::InvalidArgument,
-                        "Invalid aggchain proof request data",
+                        "Invalid GenerateOptimisticAggchainProof request data",
                         error_details,
                     )
                 })?;
@@ -191,7 +193,7 @@ impl AggchainProofGrpcService for GrpcService {
                     .aggchain_proof_inputs
                     .l1_info_tree_root_hash
             ),
-            "Generate optimistic aggchain proof request");
+            "GenerateOptimisticAggchainProof request received");
 
         if aggchain_proof_inputs
             .aggchain_proof_inputs
@@ -207,11 +209,11 @@ impl AggchainProofGrpcService for GrpcService {
             );
 
             error!(%last_proven_block, %requested_end_block,
-                "Invalid request argument(s): {error:?}");
+                "Invalid GenerateOptimisticAggchainProof request argument(s): {error:?}");
 
             return Err(Status::with_error_details(
                 tonic::Code::InvalidArgument,
-                "Invalid request argument(s)",
+                "Invalid GenerateOptimisticAggchainProof request argument(s)",
                 error,
             ));
         }
@@ -268,9 +270,9 @@ impl AggchainProofGrpcService for GrpcService {
             }
             // TODO: Return a different error when the proof is not yet ready.
             // The gRPC API currently does not expose the status.
-            Err(e) => {
-                error!(%last_proven_block, %requested_end_block, "Unable to generate optimistic aggchain proof: {e:?}");
-                Err(Status::internal(e.to_string()))
+            Err(error) => {
+                error!(%last_proven_block, %requested_end_block, ?error, "Unable to execute GenerateOptimisticAggchainProof request");
+                Err(Status::internal(error.to_string()))
             }
         }
     }

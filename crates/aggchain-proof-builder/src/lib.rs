@@ -14,7 +14,9 @@ use aggchain_proof_contracts::contracts::{
 use aggchain_proof_contracts::AggchainContractsClient;
 use aggchain_proof_core::bridge::inserted_ger::InsertedGER;
 use aggchain_proof_core::bridge::BridgeWitness;
-use aggchain_proof_core::full_execution_proof::{AggregationProofPublicValues, ClaimRoot};
+use aggchain_proof_core::full_execution_proof::{
+    AggchainParamsValues, AggregationProofPublicValues, ClaimRoot,
+};
 use aggchain_proof_core::full_execution_proof::{BabyBearDigest, FepInputs};
 use aggchain_proof_core::proof::{AggchainProofWitness, IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION};
 use aggchain_proof_types::AggchainProofInputs;
@@ -314,6 +316,12 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                     fep_inputs.signature_optimistic_mode = Some(signature);
                 }
             }
+
+            info!(
+                "Aggchain-params unrolled values: {:?}; Aggchain-params keccak-hashed: {}",
+                AggchainParamsValues::from(&fep_inputs),
+                fep_inputs.aggchain_params()
+            );
 
             let prover_witness = AggchainProofWitness {
                 prev_local_exit_root,
