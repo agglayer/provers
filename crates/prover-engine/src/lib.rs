@@ -165,18 +165,12 @@ impl ProverEngine {
             },
         );
 
-        let (reflection_v1, reflection_v1alpha) = self.reflection.iter().fold(
-            (reflection_v1, reflection_v1alpha),
-            |(reflection_v1, reflection_v1alpha), descriptor| {
-                (
-                    reflection_v1.register_encoded_file_descriptor_set(descriptor),
-                    reflection_v1alpha.register_encoded_file_descriptor_set(descriptor),
-                )
-            },
-        );
-
-        let reflection_v1 = reflection_v1.build_v1().unwrap();
-        let reflection_v1alpha = reflection_v1alpha.build_v1alpha().unwrap();
+        let reflection_v1 = reflection_v1.build_v1().map_err(|error| {
+            anyhow::Error::new(error).context("Unable to build the reflection_v1")
+        })?;
+        let reflection_v1alpha = reflection_v1alpha.build_v1alpha().map_err(|error| {
+            anyhow::Error::new(error).context("Unable to build the reflection_v1alph")
+        })?;
 
         debug!("Setting the health status of the services to healthy");
         prover_runtime.block_on(async {
