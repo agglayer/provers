@@ -14,9 +14,7 @@ use aggchain_proof_contracts::contracts::{
 use aggchain_proof_contracts::AggchainContractsClient;
 use aggchain_proof_core::bridge::inserted_ger::InsertedGER;
 use aggchain_proof_core::bridge::BridgeWitness;
-use aggchain_proof_core::full_execution_proof::{
-    AggchainParamsValues, AggregationProofPublicValues, ClaimRoot,
-};
+use aggchain_proof_core::full_execution_proof::{AggregationProofPublicValues, ClaimRoot};
 use aggchain_proof_core::full_execution_proof::{BabyBearDigest, FepInputs};
 use aggchain_proof_core::proof::{AggchainProofWitness, IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION};
 use aggchain_proof_types::AggchainProofInputs;
@@ -33,7 +31,7 @@ use sp1_sdk::{HashableKey, SP1Stdin, SP1VerifyingKey};
 use tower::buffer::Buffer;
 use tower::util::BoxService;
 use tower::ServiceExt as _;
-use tracing::{error, info};
+use tracing::{debug, error, info};
 use unified_bridge::aggchain_proof::AggchainProofPublicValues;
 
 use crate::config::AggchainProofBuilderConfig;
@@ -200,6 +198,9 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             + GetTrustedSequencerAddress
             + L1RollupConfigHashFetcher,
     {
+        info!(last_proven_block=%request.aggchain_proof_inputs.last_proven_block,
+            end_block=%request.end_block,
+            "Retrieving chain data for aggchain proof generation");
         let new_blocks_range =
             (request.aggchain_proof_inputs.last_proven_block + 1)..=request.end_block;
 
@@ -314,16 +315,6 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                 }
             }
 
-            {
-                let aggchain_params_values = AggchainParamsValues::from(&fep_inputs);
-
-                info!("Aggchain-params unrolled values: {aggchain_params_values:?}");
-                info!(
-                    "Aggchain-params keccak-hashed: {}",
-                    fep_inputs.aggchain_params()
-                );
-            }
-
             let prover_witness = AggchainProofWitness {
                 prev_local_exit_root,
                 new_local_exit_root,
@@ -359,6 +350,10 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                 }
                 stdin
             };
+
+            info!(last_proven_block=%request.aggchain_proof_inputs.last_proven_block,
+            end_block=%request.end_block,
+            "Chain data for aggchain proof generation successfully retrieved");
 
             Ok(AggchainProverInputs {
                 output_root,
@@ -399,6 +394,7 @@ where
         async move {
             let last_proven_block = req.aggchain_proof_inputs.last_proven_block;
             let end_block = req.end_block;
+            info!(%last_proven_block, %end_block, "Starting generation of the aggchain proof");
             // Retrieve all the necessary public inputs. Combine with
             // the data provided by the agg-sender in the request.
             let aggchain_prover_inputs =
@@ -425,7 +421,7 @@ where
                 .try_as_compressed()
                 .ok_or(Error::GeneratedProofIsNotCompressed)?;
 
-            info!(
+            debug!(
                 "AP public values: prev_local_exit_root: {:?}, new_local_exit_root: {:?}, \
                  l1_info_root: {:?}, origin_network: {:?}, aggchain_params: {:?}, \
                  commit_imported_bridge_exits: {:?}",
@@ -436,6 +432,8 @@ where
                 public_input.aggchain_params,
                 public_input.commit_imported_bridge_exits
             );
+
+            info!(%last_proven_block, %end_block, "Aggchain proof generated");
 
             Ok(AggchainProofBuilderResponse {
                 vkey: bincode::DefaultOptions::new()
