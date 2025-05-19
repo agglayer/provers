@@ -1,9 +1,7 @@
 //! A program that verifies the bridge integrity
-use std::collections::HashMap;
-use std::hash::Hash;
+use std::{collections::HashMap, hash::Hash};
 
-use agglayer_primitives::keccak::keccak256_combine;
-use agglayer_primitives::Digest;
+use agglayer_primitives::{keccak::keccak256_combine, Digest};
 use alloy_primitives::{address, Address, U256};
 use alloy_sol_macro::sol;
 use alloy_sol_types::SolCall;
@@ -11,9 +9,7 @@ use inserted_ger::InsertedGER;
 use serde::{Deserialize, Serialize};
 use sp1_cc_client_executor::io::EVMStateSketch;
 use static_call::{HashChainType, StaticCallError, StaticCallStage, StaticCallWithContext};
-use unified_bridge::imported_bridge_exit::{
-    GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues,
-};
+use unified_bridge::{GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues};
 
 use crate::proof::IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION;
 
@@ -468,19 +464,15 @@ fn filter_values<K: Eq + Hash + Copy, V: Copy>(
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-    use std::fs::File;
-    use std::io::BufReader;
-    use std::str::FromStr;
+    use std::{collections::HashMap, fs::File, io::BufReader, str::FromStr};
 
-    use alloy::providers::RootProvider;
-    use alloy::rpc::types::BlockNumberOrTag;
+    use alloy::{providers::RootProvider, rpc::types::BlockNumberOrTag};
     use alloy_primitives::hex;
     use alloy_sol_types::SolCall;
     use serde_json::Value;
     use sp1_cc_client_executor::ContractInput;
     use sp1_cc_host_executor::HostExecutor;
-    use unified_bridge::imported_bridge_exit::{L1InfoTreeLeaf, L1InfoTreeLeafInner, MerkleProof};
+    use unified_bridge::{L1InfoTreeLeaf, L1InfoTreeLeafInner, MerkleProof};
     use url::Url;
 
     use super::*;

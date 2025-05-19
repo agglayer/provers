@@ -5,37 +5,39 @@ mod error;
 #[cfg(test)]
 mod tests;
 
-use std::str::FromStr;
-use std::sync::Arc;
+use std::{str::FromStr, sync::Arc};
 
-use aggchain_proof_core::bridge::static_call::{HashChainType, StaticCallStage};
-use aggchain_proof_core::bridge::BridgeL2SovereignChain;
+use aggchain_proof_core::bridge::{
+    static_call::{HashChainType, StaticCallStage},
+    BridgeL2SovereignChain,
+};
 use agglayer_interop::types::Digest;
-use alloy::eips::BlockNumberOrTag;
-use alloy::network::AnyNetwork;
-use alloy::primitives::{Address, B256};
-use alloy::providers::{Provider, RootProvider};
-use alloy::sol_types::SolCall;
+use alloy::{
+    eips::BlockNumberOrTag,
+    network::AnyNetwork,
+    primitives::{Address, B256},
+    providers::{Provider, RootProvider},
+    sol_types::SolCall,
+};
 use contracts::{
     GetTrustedSequencerAddress, GlobalExitRootManagerL2SovereignChainRpcClient,
     L2EvmStateSketchFetcher,
 };
-use jsonrpsee::core::client::ClientT;
-use jsonrpsee::http_client::HttpClient;
-use jsonrpsee::rpc_params;
+use jsonrpsee::{core::client::ClientT, http_client::HttpClient, rpc_params};
 use prover_alloy::{build_alloy_fill_provider, AlloyFillProvider};
-use sp1_cc_client_executor::io::EVMStateSketch;
-use sp1_cc_client_executor::ContractInput;
+use sp1_cc_client_executor::{io::EVMStateSketch, ContractInput};
 use sp1_cc_host_executor::HostExecutor;
 use tracing::info;
 
-use crate::config::AggchainProofContractsConfig;
-use crate::contracts::{
-    AggchainFep, AggchainFepRpcClient, GlobalExitRootManagerL2SovereignChain,
-    L1RollupConfigHashFetcher, L2LocalExitRootFetcher, L2OutputAtBlock, L2OutputAtBlockFetcher,
-    PolygonRollupManagerRpcClient, PolygonZkevmBridgeV2, ZkevmBridgeRpcClient,
-};
 pub use crate::error::Error;
+use crate::{
+    config::AggchainProofContractsConfig,
+    contracts::{
+        AggchainFep, AggchainFepRpcClient, GlobalExitRootManagerL2SovereignChain,
+        L1RollupConfigHashFetcher, L2LocalExitRootFetcher, L2OutputAtBlock, L2OutputAtBlockFetcher,
+        PolygonRollupManagerRpcClient, PolygonZkevmBridgeV2, ZkevmBridgeRpcClient,
+    },
+};
 
 /// `AggchainContractsClient` is a trait for interacting with the smart
 /// contracts relevant for the aggchain prover.

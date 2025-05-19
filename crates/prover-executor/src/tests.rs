@@ -1,13 +1,14 @@
-use std::sync::{Arc, OnceLock};
-use std::time::Duration;
+use std::{
+    sync::{Arc, OnceLock},
+    time::Duration,
+};
 
 use prover_config::MockProverConfig;
 use sp1_sdk::{
     CpuProver, Prover, SP1ProofMode, SP1ProofWithPublicValues, SP1ProvingKey, SP1Stdin,
     SP1VerifyingKey, SP1_CIRCUIT_VERSION,
 };
-use tower::timeout::TimeoutLayer;
-use tower::{service_fn, Service, ServiceBuilder, ServiceExt};
+use tower::{service_fn, timeout::TimeoutLayer, Service, ServiceBuilder, ServiceExt};
 
 use crate::{Executor, LocalExecutor, ProofType, Request, Response};
 const ELF: &[u8] = include_bytes!("../../prover-dummy-program/elf/riscv32im-succinct-zkvm-elf");

@@ -1,5 +1,4 @@
-use std::sync::Arc;
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use alloy_primitives::B256;
 use anyhow::Context;
@@ -9,8 +8,7 @@ use sp1_sdk::{
     SP1VerifyingKey,
 };
 
-use crate::aggregation_prover::AggregationProver;
-use crate::rpc::MockProofProposerRequest;
+use crate::{aggregation_prover::AggregationProver, rpc::MockProofProposerRequest};
 
 pub struct MockGrpcProver<Proposer> {
     proposer_rpc: Arc<Proposer>,

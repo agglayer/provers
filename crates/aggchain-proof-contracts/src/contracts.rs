@@ -1,8 +1,6 @@
 use agglayer_interop::types::Digest;
 use agglayer_primitives::Address;
-use alloy::eips::BlockNumberOrTag;
-use alloy::network::Ethereum;
-use alloy::sol;
+use alloy::{eips::BlockNumberOrTag, network::Ethereum, sol};
 use sp1_cc_client_executor::io::EVMStateSketch;
 
 use crate::Error;
