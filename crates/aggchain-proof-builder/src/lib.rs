@@ -352,8 +352,8 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             };
 
             info!(last_proven_block=%request.aggchain_proof_inputs.last_proven_block,
-            end_block=%request.end_block,
-            "Chain data for aggchain proof generation successfully retrieved");
+                end_block=%request.end_block,
+                "Chain data for aggchain proof generation successfully retrieved");
 
             Ok(AggchainProverInputs {
                 output_root,

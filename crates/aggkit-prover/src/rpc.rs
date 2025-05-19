@@ -224,7 +224,7 @@ impl AggchainProofGrpcService for GrpcService {
             .ready()
             .await
             .inspect_err(|e| error!(%last_proven_block, %requested_end_block, "Unable to use the aggchain proof service: {e:?} "))
-            .map_err(|_| Status::internal("Unable to get the service"))?;
+            .map_err(|_| Status::internal("Unable to use the aggchain proof service"))?;
 
         match service.call(proof_request).await {
             Ok(response) => {
