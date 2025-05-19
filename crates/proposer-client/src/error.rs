@@ -12,7 +12,7 @@ pub enum Error {
     },
 
     #[error("Error requesting proof")]
-    Requesting(#[source] ProofRequestError),
+    Requesting(#[source] Box<ProofRequestError>),
 
     #[error("Error initializing grpc connection")]
     Connect(#[source] tonic::transport::Error),
