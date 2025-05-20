@@ -121,7 +121,7 @@ async fn request_and_receive_an_error() {
     if let crate::error::Error::Requesting(ref err) = response.unwrap_err() {
         if let crate::error::ProofRequestError::Grpc(ref status) = **err {
             assert_eq!(status.code(), tonic::Code::Unknown);
-            assert_eq!(status.message(), "Service was not ready");
+            insta::assert_snapshot!(status.message());
         } else {
             panic!("Expected a grpcerror");
         }
@@ -169,7 +169,7 @@ async fn receive_end_block_higher_than_last_chain_block() {
     if let crate::error::Error::Requesting(ref err) = response.unwrap_err() {
         if let crate::error::ProofRequestError::Grpc(ref status) = **err {
             assert_eq!(status.code(), tonic::Code::NotFound);
-            assert_eq!(status.message(), "No consecutive span proof range found");
+            insta::assert_snapshot!(status.message());
         } else {
             panic!("Expected a grpcerror");
         }
@@ -217,10 +217,7 @@ async fn receive_an_invalid_start_end_block() {
     if let crate::error::Error::Requesting(ref err) = response.unwrap_err() {
         if let crate::error::ProofRequestError::Grpc(ref status) = **err {
             assert_eq!(status.code(), tonic::Code::InvalidArgument);
-            assert_eq!(
-                status.message(),
-                "Requested end block must be greater than the last proven block"
-            );
+            insta::assert_snapshot!(status.message());
         } else {
             panic!("Expected a grpcerror");
         }

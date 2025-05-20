@@ -5714,6 +5714,7 @@ dependencies = [
  "educe",
  "grpc",
  "hex",
+ "insta",
  "jsonrpsee",
  "mockall",
  "mockito",
