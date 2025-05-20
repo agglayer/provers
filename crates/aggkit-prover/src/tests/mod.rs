@@ -1,13 +1,17 @@
 use std::collections::HashMap;
 
-use aggchain_proof_service::config::AggchainProofServiceConfig;
-use aggchain_proof_service::service::{AggchainProofService, AggchainProofServiceRequest};
-use aggchain_proof_types::AggchainProofInputs;
-use aggkit_prover_types::v1::{
-    aggchain_proof_service_client::AggchainProofServiceClient,
-    aggchain_proof_service_server::AggchainProofServiceServer, GenerateAggchainProofRequest,
+use aggchain_proof_service::{
+    config::AggchainProofServiceConfig,
+    service::{AggchainProofService, AggchainProofServiceRequest},
 };
-use aggkit_prover_types::Digest;
+use aggchain_proof_types::AggchainProofInputs;
+use aggkit_prover_types::{
+    v1::{
+        aggchain_proof_service_client::AggchainProofServiceClient,
+        aggchain_proof_service_server::AggchainProofServiceServer, GenerateAggchainProofRequest,
+    },
+    Digest,
+};
 use agglayer_interop::types::{L1InfoTreeLeaf, L1InfoTreeLeafInner, MerkleProof};
 use http::Uri;
 use hyper_util::rt::TokioIo;

@@ -1,13 +1,10 @@
-use std::str::FromStr;
-use std::sync::Arc;
+use std::{str::FromStr, sync::Arc};
 
 use alloy_primitives::B256;
 use anyhow::anyhow;
 use clap::Parser;
-use proposer_client::FepProposerRequest;
-use proposer_client::{config::ProposerClientConfig, GrpcUri};
-use proposer_service::config::ProposerServiceConfig;
-use proposer_service::ProposerService;
+use proposer_client::{config::ProposerClientConfig, FepProposerRequest, GrpcUri};
+use proposer_service::{config::ProposerServiceConfig, ProposerService};
 use prover_alloy::L1RpcEndpoint;
 use prover_logger::log::Log;
 use tower::{Service, ServiceExt};

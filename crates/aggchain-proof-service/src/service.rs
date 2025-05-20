@@ -15,11 +15,11 @@ use proposer_client::FepProposerRequest;
 use proposer_service::ProposerService;
 use tower::{util::BoxCloneService, Service as _, ServiceExt as _};
 use tracing::debug;
-use unified_bridge::aggchain_proof::AggchainProofPublicValues;
+use unified_bridge::AggchainProofPublicValues;
 
-use crate::config::AggchainProofServiceConfig;
-use crate::custom_chain_data::compute_custom_chain_data;
-use crate::error::Error;
+use crate::{
+    config::AggchainProofServiceConfig, custom_chain_data::compute_custom_chain_data, error::Error,
+};
 
 /// A request for the AggchainProofService to generate the
 /// aggchain proof for the range of blocks.

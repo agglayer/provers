@@ -30,11 +30,11 @@ mod aggchain_proof_builder {
 
     use prover_config::{NetworkProverConfig, ProverType};
     use prover_executor::Executor;
-    use tower::buffer::Buffer;
-    use tower::{Service, ServiceExt};
+    use tower::{buffer::Buffer, Service, ServiceExt};
 
-    use crate::tests::load_aggchain_prover_inputs_json;
-    use crate::{AggchainProverInputs, Error, ProverService};
+    use crate::{
+        tests::load_aggchain_prover_inputs_json, AggchainProverInputs, Error, ProverService,
+    };
 
     fn init_network_prover() -> Result<ProverService, anyhow::Error> {
         let executor = Executor::new(
