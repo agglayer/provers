@@ -1,12 +1,10 @@
 use std::{env, fs, io::Write, path::Path};
 
-use bincode::Options;
+use agglayer_interop_types::bincode;
 use sp1_prover::{HashableKey, SP1Prover, SP1VerifyingKey};
 
-pub fn bincode_options() -> impl bincode::Options {
-    bincode::DefaultOptions::new()
-        .with_big_endian()
-        .with_fixint_encoding()
+pub fn bincode_codec() -> bincode::Codec<impl bincode::Options> {
+    bincode::default()
 }
 
 /// Build time tool to emit information about a zkvm ELF.
@@ -82,7 +80,7 @@ impl<ElfBytes> Emitter<ElfBytes> {
 impl<ElfBytes: AsRef<[u8]>> Emitter<ElfBytes> {
     /// Emit bincode-encoded vkey for given proof.
     pub fn emit_vkey_bytes(mut self) -> Self {
-        let bytes = bincode_options().serialize(self.vkey()).unwrap();
+        let bytes = bincode_codec().serialize(self.vkey()).unwrap();
         writeln!(
             self.output(),
             "    pub const VKEY_BYTES: &[u8] = &{bytes:?};"
