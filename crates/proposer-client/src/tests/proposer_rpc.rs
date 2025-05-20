@@ -118,7 +118,7 @@ async fn request_and_receive_an_error() {
     let response = service.request_agg_proof(request.clone()).await;
 
     assert!(response.is_err());
-    if let Err(crate::error::Error::Requesting(ref err)) = response {
+    if let crate::error::Error::Requesting(ref err) = response.unwrap_err() {
         if let crate::error::ProofRequestError::Grpc(ref status) = **err {
             assert_eq!(status.code(), tonic::Code::Unknown);
             assert_eq!(status.message(), "Service was not ready");
@@ -166,7 +166,7 @@ async fn receive_end_block_higher_than_last_chain_block() {
     let response = service.request_agg_proof(request.clone()).await;
 
     assert!(response.is_err());
-    if let Err(crate::error::Error::Requesting(ref err)) = response {
+    if let crate::error::Error::Requesting(ref err) = response.unwrap_err() {
         if let crate::error::ProofRequestError::Grpc(ref status) = **err {
             assert_eq!(status.code(), tonic::Code::NotFound);
             assert_eq!(status.message(), "No consecutive span proof range found");
@@ -214,7 +214,7 @@ async fn receive_an_invalid_start_end_block() {
     let response = service.request_agg_proof(request.clone()).await;
 
     assert!(response.is_err());
-    if let Err(crate::error::Error::Requesting(ref err)) = response {
+    if let crate::error::Error::Requesting(ref err) = response.unwrap_err() {
         if let crate::error::ProofRequestError::Grpc(ref status) = **err {
             assert_eq!(status.code(), tonic::Code::InvalidArgument);
             assert_eq!(
