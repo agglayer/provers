@@ -1,5 +1,4 @@
-use std::str::FromStr;
-use std::time::Duration;
+use std::{str::FromStr, time::Duration};
 
 use prover_utils::{from_env_or_default, with};
 use serde::{Deserialize, Serialize};

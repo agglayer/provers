@@ -1,5 +1,4 @@
-use std::fmt::Display;
-use std::time::Duration;
+use std::{fmt::Display, time::Duration};
 
 use alloy_primitives::B256;
 pub use op_succinct_grpc::proofs as grpc;

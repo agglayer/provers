@@ -27,6 +27,8 @@ pub enum ProofVerificationError {
     Groth16(String),
     #[error("Invalid public values")]
     InvalidPublicValues,
+    #[error("Other verification error: {0}")]
+    Other(String),
 }
 
 impl From<SP1VerificationError> for ProofVerificationError {
@@ -46,6 +48,7 @@ impl From<SP1VerificationError> for ProofVerificationError {
             SP1VerificationError::InvalidPublicValues => {
                 ProofVerificationError::InvalidPublicValues
             }
+            SP1VerificationError::Other(error) => ProofVerificationError::Core(error.to_string()),
         }
     }
 }

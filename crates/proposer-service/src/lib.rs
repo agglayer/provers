@@ -1,5 +1,7 @@
-use std::sync::Arc;
-use std::task::{Context, Poll};
+use std::{
+    sync::Arc,
+    task::{Context, Poll},
+};
 
 use aggchain_proof_core::full_execution_proof::AggregationProofPublicValues;
 use agglayer_evm_client::GetBlockNumber;
@@ -7,11 +9,13 @@ use alloy_sol_types::SolType;
 use educe::Educe;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
-use proposer_client::aggregation_prover::AggregationProver;
-use proposer_client::mock_grpc_prover::MockGrpcProver;
-use proposer_client::network_prover::new_network_prover;
-use proposer_client::rpc::{AggregationProofProposerRequest, ProposerRpcClient};
-use proposer_client::FepProposerRequest;
+use proposer_client::{
+    aggregation_prover::AggregationProver,
+    mock_grpc_prover::MockGrpcProver,
+    network_prover::new_network_prover,
+    rpc::{AggregationProofProposerRequest, ProposerRpcClient},
+    FepProposerRequest,
+};
 use sp1_prover::SP1VerifyingKey;
 use sp1_sdk::NetworkProver;
 use tracing::{debug, info};
@@ -188,11 +192,9 @@ where
             // Wait for the prover to finish aggregating span proofs
             let proof_with_pv = client.wait_for_proof(request_id.clone()).await?;
 
-            let public_values = AggregationProofPublicValues::abi_decode(
-                proof_with_pv.public_values.as_slice(),
-                false,
-            )
-            .map_err(Error::FepPublicValuesDeserializeFailure)?;
+            let public_values =
+                AggregationProofPublicValues::abi_decode(proof_with_pv.public_values.as_slice())
+                    .map_err(Error::FepPublicValuesDeserializeFailure)?;
 
             debug!(%last_proven_block, %end_block, %request_id, "Aggregation proof received from the proposer");
 

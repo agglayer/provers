@@ -1,5 +1,7 @@
-use agglayer_primitives::keccak::keccak256_combine;
-use agglayer_primitives::{keccak::keccak256, Digest};
+use agglayer_primitives::{
+    keccak::{keccak256, keccak256_combine},
+    Digest,
+};
 use alloy_primitives::{Address, FixedBytes, B256, U256};
 use alloy_sol_types::{sol, SolValue};
 use p3_baby_bear::BabyBear;
@@ -7,7 +9,7 @@ use p3_bn254_fr::Bn254Fr;
 use p3_field::{AbstractField, PrimeField, PrimeField32};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest as Sha256Digest, Sha256};
-use unified_bridge::imported_bridge_exit::{L1InfoTreeLeaf, MerkleProof};
+use unified_bridge::{L1InfoTreeLeaf, MerkleProof};
 
 use crate::{error::ProofError, vkey_hash::HashU32};
 

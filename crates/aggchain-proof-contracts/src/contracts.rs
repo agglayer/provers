@@ -1,8 +1,6 @@
 use agglayer_interop::types::Digest;
 use agglayer_primitives::Address;
-use alloy::eips::BlockNumberOrTag;
-use alloy::network::Ethereum;
-use alloy::sol;
+use alloy::{eips::BlockNumberOrTag, network::Ethereum, sol};
 use sp1_cc_client_executor::io::EVMStateSketch;
 
 use crate::Error;
@@ -40,17 +38,16 @@ sol!(
 );
 
 pub(crate) type ZkevmBridgeRpcClient<RpcProvider> =
-    PolygonZkevmBridgeV2::PolygonZkevmBridgeV2Instance<(), RpcProvider, Ethereum>;
+    PolygonZkevmBridgeV2::PolygonZkevmBridgeV2Instance<RpcProvider, Ethereum>;
 
 pub(crate) type PolygonRollupManagerRpcClient<RpcProvider> =
-    PolygonRollupManager::PolygonRollupManagerInstance<(), RpcProvider, Ethereum>;
+    PolygonRollupManager::PolygonRollupManagerInstance<RpcProvider, Ethereum>;
 
 pub(crate) type AggchainFepRpcClient<RpcProvider> =
-    AggchainFep::AggchainFepInstance<(), RpcProvider, Ethereum>;
+    AggchainFep::AggchainFepInstance<RpcProvider, Ethereum>;
 
 pub(crate) type GlobalExitRootManagerL2SovereignChainRpcClient<RpcProvider> =
     GlobalExitRootManagerL2SovereignChain::GlobalExitRootManagerL2SovereignChainInstance<
-        (),
         RpcProvider,
         Ethereum,
     >;

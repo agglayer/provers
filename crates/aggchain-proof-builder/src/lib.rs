@@ -4,21 +4,25 @@ mod error;
 #[cfg(test)]
 mod tests;
 
-use std::sync::Arc;
-use std::task::{Context, Poll};
+use std::{
+    sync::Arc,
+    task::{Context, Poll},
+};
 
-use aggchain_proof_contracts::contracts::{
-    GetTrustedSequencerAddress, L1RollupConfigHashFetcher, L2EvmStateSketchFetcher,
-    L2LocalExitRootFetcher, L2OutputAtBlockFetcher,
+use aggchain_proof_contracts::{
+    contracts::{
+        GetTrustedSequencerAddress, L1RollupConfigHashFetcher, L2EvmStateSketchFetcher,
+        L2LocalExitRootFetcher, L2OutputAtBlockFetcher,
+    },
+    AggchainContractsClient,
 };
-use aggchain_proof_contracts::AggchainContractsClient;
-use aggchain_proof_core::bridge::inserted_ger::InsertedGER;
-use aggchain_proof_core::bridge::BridgeWitness;
-use aggchain_proof_core::full_execution_proof::{
-    AggchainParamsValues, AggregationProofPublicValues, ClaimRoot,
+use aggchain_proof_core::{
+    bridge::{inserted_ger::InsertedGER, BridgeWitness},
+    full_execution_proof::{
+        AggchainParamsValues, AggregationProofPublicValues, BabyBearDigest, ClaimRoot, FepInputs,
+    },
+    proof::{AggchainProofWitness, IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION},
 };
-use aggchain_proof_core::full_execution_proof::{BabyBearDigest, FepInputs};
-use aggchain_proof_core::proof::{AggchainProofWitness, IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION};
 use aggchain_proof_types::AggchainProofInputs;
 use aggkit_prover_types::vkey_hash::VKeyHash;
 use agglayer_interop::types::{GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues};
@@ -30,11 +34,9 @@ use futures::{future::BoxFuture, FutureExt};
 use prover_executor::{Executor, ProofType};
 use serde::{Deserialize, Serialize};
 use sp1_sdk::{HashableKey, SP1Stdin, SP1VerifyingKey};
-use tower::buffer::Buffer;
-use tower::util::BoxService;
-use tower::ServiceExt as _;
+use tower::{buffer::Buffer, util::BoxService, ServiceExt as _};
 use tracing::{debug, error, info};
-use unified_bridge::aggchain_proof::AggchainProofPublicValues;
+use unified_bridge::AggchainProofPublicValues;
 
 use crate::config::AggchainProofBuilderConfig;
 

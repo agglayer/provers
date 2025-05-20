@@ -1,16 +1,15 @@
-use std::str::FromStr;
-use std::time::Duration;
+use std::{str::FromStr, time::Duration};
 
 use agglayer_evm_client::AlloyRpc;
-use alloy::network::Ethereum;
-use alloy::providers::fillers::{
-    BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller,
+use alloy::{
+    network::Ethereum,
+    providers::{
+        fillers::{BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller},
+        Identity, ProviderBuilder, RootProvider,
+    },
+    rpc::client::ClientBuilder,
+    transports::{http::reqwest, layers::RetryBackoffLayer},
 };
-use alloy::providers::Identity;
-use alloy::providers::ProviderBuilder;
-use alloy::transports::http::reqwest;
-use alloy::transports::layers::RetryBackoffLayer;
-use alloy::{providers::RootProvider, rpc::client::ClientBuilder};
 pub use async_trait::async_trait;
 use derive_more::{From, FromStr};
 use educe::Educe;

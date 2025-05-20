@@ -1,7 +1,6 @@
 use aggchain_proof_types::OptimisticAggchainProofInputs;
 
-use crate::error::AggchainProofRequestError as Error;
-use crate::v1;
+use crate::{error::AggchainProofRequestError as Error, v1};
 
 impl TryFrom<v1::GenerateOptimisticAggchainProofRequest> for OptimisticAggchainProofInputs {
     type Error = Error;

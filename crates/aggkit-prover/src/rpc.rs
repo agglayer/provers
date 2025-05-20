@@ -1,22 +1,23 @@
-use aggchain_proof_service::config::AggchainProofServiceConfig;
-use aggchain_proof_service::service::{AggchainProofService, AggchainProofServiceRequest};
-use aggchain_proof_types::{AggchainProofInputs, OptimisticAggchainProofInputs};
-use aggkit_prover_types::conversion::v1::context::Contextualize as _;
-use aggkit_prover_types::error::AggchainProofRequestError;
-use aggkit_prover_types::v1::{
-    aggchain_proof_service_server::AggchainProofService as AggchainProofGrpcService,
-    GenerateAggchainProofRequest, GenerateAggchainProofResponse,
+use aggchain_proof_service::{
+    config::AggchainProofServiceConfig,
+    service::{AggchainProofService, AggchainProofServiceRequest},
 };
-use aggkit_prover_types::v1::{
-    GenerateOptimisticAggchainProofRequest, GenerateOptimisticAggchainProofResponse,
+use aggchain_proof_types::{AggchainProofInputs, OptimisticAggchainProofInputs};
+use aggkit_prover_types::{
+    conversion::v1::context::Contextualize as _,
+    error::AggchainProofRequestError,
+    v1::{
+        aggchain_proof_service_server::AggchainProofService as AggchainProofGrpcService,
+        GenerateAggchainProofRequest, GenerateAggchainProofResponse,
+        GenerateOptimisticAggchainProofRequest, GenerateOptimisticAggchainProofResponse,
+    },
 };
 use agglayer_interop::grpc::v1::{AggchainProof, Sp1StarkProof};
 use prost::bytes::Bytes;
 use sp1_sdk::SP1_CIRCUIT_VERSION;
 use tonic::{Request, Response, Status};
 use tonic_types::{ErrorDetails, StatusExt};
-use tower::buffer::Buffer;
-use tower::{Service, ServiceExt};
+use tower::{buffer::Buffer, Service, ServiceExt};
 use tracing::{error, info, instrument};
 
 const MAX_CONCURRENT_REQUESTS: usize = 100;

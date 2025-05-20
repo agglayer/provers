@@ -1,9 +1,7 @@
 //! A program that verifies the bridge integrity
-use std::collections::HashMap;
-use std::hash::Hash;
+use std::{collections::HashMap, hash::Hash};
 
-use agglayer_primitives::keccak::keccak256_combine;
-use agglayer_primitives::Digest;
+use agglayer_primitives::{keccak::keccak256_combine, Digest};
 use alloy_primitives::{address, Address, U256};
 use alloy_sol_macro::sol;
 use alloy_sol_types::SolCall;
@@ -11,9 +9,7 @@ use inserted_ger::InsertedGER;
 use serde::{Deserialize, Serialize};
 use sp1_cc_client_executor::io::EVMStateSketch;
 use static_call::{HashChainType, StaticCallError, StaticCallStage, StaticCallWithContext};
-use unified_bridge::imported_bridge_exit::{
-    GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues,
-};
+use unified_bridge::{GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues};
 
 use crate::proof::IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION;
 
@@ -187,7 +183,7 @@ impl BridgeConstraintsInput {
                     self.ger_addr,
                     GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
                 )
-                .map(|(prev, new)| (prev.hashChain.0.into(), new.hashChain.0.into()))?;
+                .map(|(prev, new)| (prev.0.into(), new.0.into()))?;
 
             self.validate_hash_chain(
                 &self.bridge_witness.raw_inserted_gers,
@@ -206,7 +202,7 @@ impl BridgeConstraintsInput {
                     self.ger_addr,
                     GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
                 )
-                .map(|(prev, new)| (prev.hashChain.0.into(), new.hashChain.0.into()))?;
+                .map(|(prev, new)| (prev.0.into(), new.0.into()))?;
 
             self.validate_hash_chain(
                 &self.bridge_witness.removed_gers,
@@ -233,7 +229,7 @@ impl BridgeConstraintsInput {
                     bridge_address,
                     BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
                 )
-                .map(|(prev, new)| (prev.hashChain.0.into(), new.hashChain.0.into()))?;
+                .map(|(prev, new)| (prev.0.into(), new.0.into()))?;
 
             let claims: Vec<Digest> = self
                 .bridge_witness
@@ -254,7 +250,7 @@ impl BridgeConstraintsInput {
                     bridge_address,
                     BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
                 )
-                .map(|(prev, new)| (prev.hashChain.0.into(), new.hashChain.0.into()))?;
+                .map(|(prev, new)| (prev.0.into(), new.0.into()))?;
 
             let unset_claims: Vec<Digest> = self
                 .bridge_witness
@@ -286,7 +282,6 @@ impl BridgeConstraintsInput {
             &self.bridge_witness.new_l2_block_sketch,
             BridgeL2SovereignChain::getRootCall {},
         )?
-        .lastRollupExitRoot
         .0
         .into();
 
@@ -315,8 +310,7 @@ impl BridgeConstraintsInput {
         .execute(
             &self.bridge_witness.new_l2_block_sketch,
             GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
-        )?
-        .bridgeAddress;
+        )?;
 
         Ok(bridge_address)
     }
@@ -468,19 +462,15 @@ fn filter_values<K: Eq + Hash + Copy, V: Copy>(
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-    use std::fs::File;
-    use std::io::BufReader;
-    use std::str::FromStr;
+    use std::{collections::HashMap, fs::File, io::BufReader, str::FromStr};
 
-    use alloy::providers::RootProvider;
-    use alloy::rpc::types::BlockNumberOrTag;
+    use alloy::{providers::RootProvider, rpc::types::BlockNumberOrTag};
     use alloy_primitives::hex;
     use alloy_sol_types::SolCall;
     use serde_json::Value;
     use sp1_cc_client_executor::ContractInput;
     use sp1_cc_host_executor::HostExecutor;
-    use unified_bridge::imported_bridge_exit::{L1InfoTreeLeaf, L1InfoTreeLeafInner, MerkleProof};
+    use unified_bridge::{L1InfoTreeLeaf, L1InfoTreeLeafInner, MerkleProof};
     use url::Url;
 
     use super::*;
@@ -662,7 +652,7 @@ mod tests {
             .collect();
 
         // Instantiate the HostExecutor for the prev and new L2 blocks
-        let (mut prev_l2_block_executor, mut new_l2_block_executor) = {
+        let (prev_l2_block_executor, new_l2_block_executor) = {
             let rpc_url_l2 = std::env::var(format!("RPC_{chain_id_l2}"))
                 .expect("RPC URL must be defined")
                 .parse::<Url>()
@@ -728,11 +718,9 @@ mod tests {
             bridge_address_bytes
         );
         let bridge_address =
-            GlobalExitRootManagerL2SovereignChain::bridgeAddressCall::abi_decode_returns(
+            GlobalExitRootManagerL2SovereignChain::bridgeAddressCall::abi_decode_returns_validate(
                 &bridge_address_bytes,
-                true,
-            )?
-            .bridgeAddress;
+            )?;
 
         // 4. Get the new local exit root from the bridge on the new L2 block.
         println!("Step 4: Fetching new local exit root from bridge...");
@@ -748,8 +736,7 @@ mod tests {
             new_ler_bytes
         );
         let new_ler: Digest =
-            BridgeL2SovereignChain::getRootCall::abi_decode_returns(&new_ler_bytes, true)?
-                .lastRollupExitRoot
+            BridgeL2SovereignChain::getRootCall::abi_decode_returns_validate(&new_ler_bytes)?
                 .0
                 .into();
         let expected_new_ler: Digest = {
@@ -962,6 +949,15 @@ mod tests {
         let file = File::open(path).unwrap();
         let reader = BufReader::new(file);
         let bridge_data_input: BridgeConstraintsInput = serde_json::from_reader(reader).unwrap();
+        // If the alloy version changes, this can lead to the file no longer parsing
+        // correctly, and thus this test failing.
+        // In that case, you should update the file.
+        // The process is to:
+        // 1. Obtain a Sepolia RPC key, and run `export RPC_11155111=https://eth-sepolia.g.alchemy.com/v2/[censored]`
+        // 2. Run `cargo test --workspace -- bridge::tests::test_bridge_contraints
+        //    --exact --show-output --include-ignored` (Or you can limit to `--package
+        //    aggchain-proof-core --lib` if your cargo folder is not filled yet)
+        // 3. The file should then be ready for committing
 
         assert_bridge_data(bridge_data_input);
     }

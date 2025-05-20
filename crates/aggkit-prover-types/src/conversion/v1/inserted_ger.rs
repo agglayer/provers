@@ -1,7 +1,6 @@
 use aggchain_proof_types::inserted_ger::{InsertedGer, InsertedGerWithBlockNumber};
 
-use crate::error::AggchainProofRequestError as Error;
-use crate::v1;
+use crate::{error::AggchainProofRequestError as Error, v1};
 
 impl TryFrom<v1::ProvenInsertedGerWithBlockNumber> for InsertedGerWithBlockNumber {
     type Error = Error;
