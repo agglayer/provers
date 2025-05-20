@@ -191,7 +191,6 @@ where
 
             let public_values = AggregationProofPublicValues::abi_decode(
                 proof_with_pv.public_values.as_slice(),
-                false,
             )
             .map_err(Error::FepPublicValuesDeserializeFailure)?;
 

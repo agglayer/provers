@@ -183,7 +183,7 @@ impl BridgeConstraintsInput {
                     self.ger_addr,
                     GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
                 )
-                .map(|(prev, new)| (prev.hashChain.0.into(), new.hashChain.0.into()))?;
+                .map(|(prev, new)| (prev.0.into(), new.0.into()))?;
 
             self.validate_hash_chain(
                 &self.bridge_witness.raw_inserted_gers,
@@ -202,7 +202,7 @@ impl BridgeConstraintsInput {
                     self.ger_addr,
                     GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
                 )
-                .map(|(prev, new)| (prev.hashChain.0.into(), new.hashChain.0.into()))?;
+                .map(|(prev, new)| (prev.0.into(), new.0.into()))?;
 
             self.validate_hash_chain(
                 &self.bridge_witness.removed_gers,
@@ -229,7 +229,7 @@ impl BridgeConstraintsInput {
                     bridge_address,
                     BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
                 )
-                .map(|(prev, new)| (prev.hashChain.0.into(), new.hashChain.0.into()))?;
+                .map(|(prev, new)| (prev.0.into(), new.0.into()))?;
 
             let claims: Vec<Digest> = self
                 .bridge_witness
@@ -250,7 +250,7 @@ impl BridgeConstraintsInput {
                     bridge_address,
                     BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
                 )
-                .map(|(prev, new)| (prev.hashChain.0.into(), new.hashChain.0.into()))?;
+                .map(|(prev, new)| (prev.0.into(), new.0.into()))?;
 
             let unset_claims: Vec<Digest> = self
                 .bridge_witness
@@ -282,7 +282,6 @@ impl BridgeConstraintsInput {
             &self.bridge_witness.new_l2_block_sketch,
             BridgeL2SovereignChain::getRootCall {},
         )?
-        .lastRollupExitRoot
         .0
         .into();
 
@@ -311,8 +310,7 @@ impl BridgeConstraintsInput {
         .execute(
             &self.bridge_witness.new_l2_block_sketch,
             GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
-        )?
-        .bridgeAddress;
+        )?;
 
         Ok(bridge_address)
     }
@@ -654,7 +652,7 @@ mod tests {
             .collect();
 
         // Instantiate the HostExecutor for the prev and new L2 blocks
-        let (mut prev_l2_block_executor, mut new_l2_block_executor) = {
+        let (prev_l2_block_executor, new_l2_block_executor) = {
             let rpc_url_l2 = std::env::var(format!("RPC_{}", chain_id_l2))
                 .expect("RPC URL must be defined")
                 .parse::<Url>()
@@ -720,11 +718,9 @@ mod tests {
             bridge_address_bytes
         );
         let bridge_address =
-            GlobalExitRootManagerL2SovereignChain::bridgeAddressCall::abi_decode_returns(
+            GlobalExitRootManagerL2SovereignChain::bridgeAddressCall::abi_decode_returns_validate(
                 &bridge_address_bytes,
-                true,
-            )?
-            .bridgeAddress;
+            )?;
 
         // 4. Get the new local exit root from the bridge on the new L2 block.
         println!("Step 4: Fetching new local exit root from bridge...");
@@ -740,8 +736,7 @@ mod tests {
             new_ler_bytes
         );
         let new_ler: Digest =
-            BridgeL2SovereignChain::getRootCall::abi_decode_returns(&new_ler_bytes, true)?
-                .lastRollupExitRoot
+            BridgeL2SovereignChain::getRootCall::abi_decode_returns_validate(&new_ler_bytes)?
                 .0
                 .into();
         let expected_new_ler: Digest = {

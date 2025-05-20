@@ -88,7 +88,7 @@ where
             .await
             .map_err(Error::LocalExitRootError)?;
 
-        Ok((*response._0).into())
+        Ok((response.0).into())
     }
 }
 
@@ -122,7 +122,7 @@ where
             .await
             .map_err(Error::RollupConfigHashError)?;
 
-        Ok((*response._0).into())
+        Ok((response.0).into())
     }
 }
 
@@ -361,7 +361,7 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
 
         // Create client for Polygon zkevm bridge v2 smart contract.
         let polygon_zkevm_bridge_v2 =
-            PolygonZkevmBridgeV2::new(polygon_zkevm_bridge_address._0, l2_el_client.clone());
+            PolygonZkevmBridgeV2::new(polygon_zkevm_bridge_address, l2_el_client.clone());
 
         // Create client for Polygon rollup manager contract.
         let polygon_rollup_manager =
@@ -373,7 +373,6 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             .call()
             .await
             .map_err(Error::AggchainFepAddressError)?
-            .rollupData
             .rollupContract;
 
         // Create client for AggchainFep smart contract.
@@ -383,8 +382,7 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             .trustedSequencer()
             .call()
             .await
-            .map_err(Error::UnableToRetrieveTrustedSequencerAddress)?
-            ._0;
+            .map_err(Error::UnableToRetrieveTrustedSequencerAddress)?;
         let l2_root_provider =
             RootProvider::<AnyNetwork>::new_http(config.l2_execution_layer_rpc_endpoint.clone());
 
