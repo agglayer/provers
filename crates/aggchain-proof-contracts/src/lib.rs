@@ -5,37 +5,39 @@ mod error;
 #[cfg(test)]
 mod tests;
 
-use std::str::FromStr;
-use std::sync::Arc;
+use std::{str::FromStr, sync::Arc};
 
-use aggchain_proof_core::bridge::static_call::{HashChainType, StaticCallStage};
-use aggchain_proof_core::bridge::BridgeL2SovereignChain;
+use aggchain_proof_core::bridge::{
+    static_call::{HashChainType, StaticCallStage},
+    BridgeL2SovereignChain,
+};
 use agglayer_interop::types::Digest;
-use alloy::eips::BlockNumberOrTag;
-use alloy::network::AnyNetwork;
-use alloy::primitives::{Address, B256};
-use alloy::providers::{Provider, RootProvider};
-use alloy::sol_types::SolCall;
+use alloy::{
+    eips::BlockNumberOrTag,
+    network::AnyNetwork,
+    primitives::{Address, B256},
+    providers::{Provider, RootProvider},
+    sol_types::SolCall,
+};
 use contracts::{
     GetTrustedSequencerAddress, GlobalExitRootManagerL2SovereignChainRpcClient,
     L2EvmStateSketchFetcher,
 };
-use jsonrpsee::core::client::ClientT;
-use jsonrpsee::http_client::HttpClient;
-use jsonrpsee::rpc_params;
+use jsonrpsee::{core::client::ClientT, http_client::HttpClient, rpc_params};
 use prover_alloy::{build_alloy_fill_provider, AlloyFillProvider};
-use sp1_cc_client_executor::io::EVMStateSketch;
-use sp1_cc_client_executor::ContractInput;
+use sp1_cc_client_executor::{io::EVMStateSketch, ContractInput};
 use sp1_cc_host_executor::HostExecutor;
 use tracing::info;
 
-use crate::config::AggchainProofContractsConfig;
-use crate::contracts::{
-    AggchainFep, AggchainFepRpcClient, GlobalExitRootManagerL2SovereignChain,
-    L1RollupConfigHashFetcher, L2LocalExitRootFetcher, L2OutputAtBlock, L2OutputAtBlockFetcher,
-    PolygonRollupManagerRpcClient, PolygonZkevmBridgeV2, ZkevmBridgeRpcClient,
-};
 pub use crate::error::Error;
+use crate::{
+    config::AggchainProofContractsConfig,
+    contracts::{
+        AggchainFep, AggchainFepRpcClient, GlobalExitRootManagerL2SovereignChain,
+        L1RollupConfigHashFetcher, L2LocalExitRootFetcher, L2OutputAtBlock, L2OutputAtBlockFetcher,
+        PolygonRollupManagerRpcClient, PolygonZkevmBridgeV2, ZkevmBridgeRpcClient,
+    },
+};
 
 /// `AggchainContractsClient` is a trait for interacting with the smart
 /// contracts relevant for the aggchain prover.
@@ -86,7 +88,7 @@ where
             .await
             .map_err(Error::LocalExitRootError)?;
 
-        Ok((*response._0).into())
+        Ok((response.0).into())
     }
 }
 
@@ -120,7 +122,7 @@ where
             .await
             .map_err(Error::RollupConfigHashError)?;
 
-        Ok((*response._0).into())
+        Ok((response.0).into())
     }
 }
 
@@ -359,7 +361,7 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
 
         // Create client for Polygon zkevm bridge v2 smart contract.
         let polygon_zkevm_bridge_v2 =
-            PolygonZkevmBridgeV2::new(polygon_zkevm_bridge_address._0, l2_el_client.clone());
+            PolygonZkevmBridgeV2::new(polygon_zkevm_bridge_address, l2_el_client.clone());
 
         // Create client for Polygon rollup manager contract.
         let polygon_rollup_manager =
@@ -371,7 +373,6 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             .call()
             .await
             .map_err(Error::AggchainFepAddressError)?
-            .rollupData
             .rollupContract;
 
         // Create client for AggchainFep smart contract.
@@ -381,8 +382,7 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             .trustedSequencer()
             .call()
             .await
-            .map_err(Error::UnableToRetrieveTrustedSequencerAddress)?
-            ._0;
+            .map_err(Error::UnableToRetrieveTrustedSequencerAddress)?;
         let l2_root_provider =
             RootProvider::<AnyNetwork>::new_http(config.l2_execution_layer_rpc_endpoint.clone());
 

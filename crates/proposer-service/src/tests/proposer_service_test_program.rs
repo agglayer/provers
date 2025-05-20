@@ -1,13 +1,10 @@
-use std::str::FromStr;
-use std::sync::Arc;
+use std::{str::FromStr, sync::Arc};
 
 use alloy_primitives::B256;
 use anyhow::anyhow;
 use clap::Parser;
-use proposer_client::FepProposerRequest;
-use proposer_client::{config::ProposerClientConfig, GrpcUri};
-use proposer_service::config::ProposerServiceConfig;
-use proposer_service::ProposerService;
+use proposer_client::{config::ProposerClientConfig, FepProposerRequest, GrpcUri};
+use proposer_service::{config::ProposerServiceConfig, ProposerService};
 use prover_alloy::L1RpcEndpoint;
 use prover_logger::log::Log;
 use tower::{Service, ServiceExt};
@@ -96,11 +93,11 @@ pub async fn main() -> anyhow::Result<()> {
     };
     match proposer_service.call(request).await {
         Ok(response) => {
-            println!("Proposer response: {:?}", response);
+            println!("Proposer response: {response:?}");
             Ok(())
         }
         Err(e) => {
-            eprintln!("Error: {:?}", e);
+            eprintln!("Error: {e:?}");
             Err(anyhow!(e.to_string()))
         }
     }

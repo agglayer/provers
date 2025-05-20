@@ -1,6 +1,6 @@
-use std::path::Path;
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
+    path::Path,
     time::Duration,
 };
 

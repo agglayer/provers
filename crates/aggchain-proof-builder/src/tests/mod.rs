@@ -3,15 +3,15 @@ use crate::AggchainProverInputs;
 #[allow(unused)]
 pub fn dump_aggchain_prover_inputs_json(
     aggchain_prover_inputs: &AggchainProverInputs,
+    last_proven_block: u64,
+    end_block: u64,
 ) -> Result<(), anyhow::Error> {
     use std::io::Write;
-    let file_name = format!(
-        "aggchain_prover_inputs_001_lpb_{}_eb_{}.json",
-        aggchain_prover_inputs.last_proven_block, aggchain_prover_inputs.end_block
-    );
+    let file_name =
+        format!("aggchain_prover_inputs_001_lpb_{last_proven_block}_eb_{end_block}.json",);
     let mut file = std::fs::File::create(file_name)?;
     let data = serde_json::to_string(&aggchain_prover_inputs)?;
-    write!(file, "{}", data)?;
+    write!(file, "{data}")?;
     Ok(())
 }
 
@@ -28,11 +28,11 @@ mod aggchain_proof_builder {
 
     use prover_config::{NetworkProverConfig, ProverType};
     use prover_executor::Executor;
-    use tower::buffer::Buffer;
-    use tower::{Service, ServiceExt};
+    use tower::{buffer::Buffer, Service, ServiceExt};
 
-    use crate::tests::load_aggchain_prover_inputs_json;
-    use crate::{AggchainProverInputs, Error, ProverService};
+    use crate::{
+        tests::load_aggchain_prover_inputs_json, AggchainProverInputs, Error, ProverService,
+    };
 
     fn init_network_prover() -> Result<ProverService, anyhow::Error> {
         let executor = Executor::new(
@@ -69,10 +69,7 @@ mod aggchain_proof_builder {
             .await
             .map_err(|error| Error::ProverFailedToExecute(anyhow::Error::from_boxed(error)))?;
 
-        println!(
-            "Prover executor successfully returned response: {:?} ",
-            proof
-        );
+        println!("Prover executor successfully returned response: {proof:?}");
 
         Ok(())
     }

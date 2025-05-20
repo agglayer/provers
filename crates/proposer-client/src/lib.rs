@@ -32,6 +32,7 @@ pub trait ProposerClient {
         request_id: RequestId,
     ) -> Result<SP1ProofWithPublicValues, Error>;
 
+    #[allow(clippy::result_large_err)]
     fn verify_agg_proof(
         &self,
         request_id: RequestId,

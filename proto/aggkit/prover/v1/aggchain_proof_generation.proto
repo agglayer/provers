@@ -11,6 +11,9 @@ import "agglayer/interop/types/v1/merkle_proof.proto";
 service AggchainProofService {
   // Generates a aggchain proof for a given last_proven_block.
   rpc GenerateAggchainProof(GenerateAggchainProofRequest) returns (GenerateAggchainProofResponse);
+
+  // Generates an optimistic aggchain proof for a given last_proven_block.
+  rpc GenerateOptimisticAggchainProof(GenerateOptimisticAggchainProofRequest) returns (GenerateOptimisticAggchainProofResponse);
 }
 
 // The request message for generating aggchain proof.
@@ -37,6 +40,13 @@ message GenerateAggchainProofRequest {
   repeated ImportedBridgeExitWithBlockNumber imported_bridge_exits = 7;
 }
 
+// The request message for generating optimistic aggchain proof.
+message GenerateOptimisticAggchainProofRequest {
+  GenerateAggchainProofRequest aggchain_proof_request = 1;
+  // Signature in the "OptimisticMode" case.
+  agglayer.interop.types.v1.FixedBytes65 optimistic_mode_signature = 2;
+}
+
 // The aggchain proof response message.
 message GenerateAggchainProofResponse {
   // Aggchain proof.
@@ -53,6 +63,18 @@ message GenerateAggchainProofResponse {
 
   // Custom chain data.
   bytes custom_chain_data = 5;
+}
+
+// The optimistic aggchain proof response message.
+message GenerateOptimisticAggchainProofResponse {
+  // Aggchain proof.
+  agglayer.interop.types.v1.AggchainProof aggchain_proof = 1;
+
+  // Local exit root hash.
+  agglayer.interop.types.v1.FixedBytes32 local_exit_root_hash = 2;
+
+  // Custom chain data.
+  bytes custom_chain_data = 3;
 }
 
 // Imported bridge exit with block number.

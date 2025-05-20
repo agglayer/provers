@@ -1,6 +1,7 @@
+use agglayer_primitives::Digest;
 use alloy_primitives::Address;
 
-use crate::{bridge::BridgeConstraintsError, Digest};
+use crate::bridge::BridgeConstraintsError;
 
 /// Represents all the aggchain proof errors.
 #[derive(thiserror::Error, Debug)]

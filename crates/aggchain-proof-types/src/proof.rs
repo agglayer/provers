@@ -1,7 +1,7 @@
 use std::{collections::HashMap, ops::RangeInclusive};
 
-use aggchain_proof_core::{bridge::inserted_ger::InsertedGER, Digest};
-use agglayer_interop::types::{L1InfoTreeLeaf, MerkleProof};
+use aggchain_proof_core::bridge::inserted_ger::InsertedGER;
+use agglayer_interop::types::{Digest, L1InfoTreeLeaf, MerkleProof};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -35,6 +35,13 @@ pub struct AggchainProofInputs {
 
     /// Imported bridge exits.
     pub imported_bridge_exits: Vec<ImportedBridgeExitWithBlockNumber>,
+}
+
+/// Data needed as the input for the aggchain proof generation.
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct OptimisticAggchainProofInputs {
+    pub aggchain_proof_inputs: AggchainProofInputs,
+    pub signature_optimistic_mode: agglayer_primitives::Signature,
 }
 
 impl AggchainProofInputs {

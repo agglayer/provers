@@ -1,6 +1,6 @@
-use agglayer_primitives::digest::Digest;
+use agglayer_primitives::Digest;
 use serde::{Deserialize, Serialize};
-use unified_bridge::{aggchain_proof::AggchainProofPublicValues, CommitmentVersion};
+use unified_bridge::{AggchainProofPublicValues, CommitmentVersion};
 
 use crate::{
     bridge::{BridgeConstraintsInput, BridgeWitness, L2_GER_ADDR},
@@ -51,7 +51,7 @@ impl AggchainProofWitness {
             prev_local_exit_root: self.prev_local_exit_root,
             new_local_exit_root: self.new_local_exit_root,
             l1_info_root: self.l1_info_root,
-            origin_network: self.origin_network,
+            origin_network: self.origin_network.into(),
             commit_imported_bridge_exits: self.commit_imported_bridge_exits,
             aggchain_params: self.fep.aggchain_params(),
         }

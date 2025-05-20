@@ -1,9 +1,8 @@
 use std::time::Duration;
 
 use op_succinct_grpc::proofs::{GetMockProofRequest, GetMockProofResponse};
-use tonic::transport::server::TcpIncoming;
 pub use tonic::transport::Error as TransportError;
-use tonic::{Request, Response, Status};
+use tonic::{transport::server::TcpIncoming, Request, Response, Status};
 use tracing::info;
 
 use crate::rpc::grpc::{self, proofs_server::Proofs};

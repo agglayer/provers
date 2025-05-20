@@ -23,7 +23,6 @@ pub enum Proof {
     SP1(SP1ProofWithPublicValues),
 }
 pub mod error;
-pub use error::Error;
-pub use error::ErrorWrapper;
+pub use error::{Error, ErrorWrapper};
 use serde::{Deserialize, Serialize};
 use sp1_sdk::SP1ProofWithPublicValues;
