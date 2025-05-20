@@ -26,10 +26,7 @@ fn main() {
     let dest_path = Path::new(&env::var_os("OUT_DIR").expect("OUT_DIR not set")).join("version.rs");
     fs::write(
         &dest_path,
-        format!(
-            "pub const AGGCHAIN_PROOF_PROGRAM_VERSION: u16 = {};\n",
-            major_version
-        ),
+        format!("pub const AGGCHAIN_PROOF_PROGRAM_VERSION: u16 = {major_version};\n"),
     )
     .expect("Failed to write aggchain-proof-core version.rs");
 }

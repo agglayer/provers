@@ -30,6 +30,7 @@ pub struct Client<Proposer, Prover> {
 }
 
 impl<Proposer, Prover> Client<Proposer, Prover> {
+    #[allow(clippy::result_large_err)]
     pub fn new(
         proposer: Arc<Proposer>,
         prover: Prover,

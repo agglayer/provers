@@ -265,7 +265,7 @@ mod aggchain_contracts_rpc_client {
         mock_l2.assert_async().await;
         match result {
             Err(crate::Error::BridgeAddressError(_)) => Ok(()),
-            Err(e) => panic!("Expected BridgeAddressError, got {:?}", e),
+            Err(e) => panic!("Expected BridgeAddressError, got {e:?}"),
             Ok(_) => panic!("Expected BridgeAddressError, got valid client"),
         }
     }
@@ -359,12 +359,9 @@ mod aggchain_contracts_rpc_client {
                 Ok(())
             }
             Err(crate::Error::LocalExitRootError(error)) => {
-                panic!(
-                    "Expected alloy transport deserialization error, got {:?}",
-                    error
-                );
+                panic!("Expected alloy transport deserialization error, got {error:?}");
             }
-            Err(e) => panic!("Expected LocalExitRootError, got {:?}", e),
+            Err(e) => panic!("Expected LocalExitRootError, got {e:?}"),
             Ok(_) => panic!("Expected LocalExitRootError, got valid Digest"),
         }
     }
