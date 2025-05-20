@@ -169,7 +169,7 @@ impl ProverEngine {
             anyhow::Error::new(error).context("Unable to build the reflection_v1")
         })?;
         let reflection_v1alpha = reflection_v1alpha.build_v1alpha().map_err(|error| {
-            anyhow::Error::new(error).context("Unable to build the reflection_v1alph")
+            anyhow::Error::new(error).context("Unable to build the reflection_v1alpha")
         })?;
 
         debug!("Setting the health status of the services to healthy");
