@@ -949,6 +949,14 @@ mod tests {
         let file = File::open(path).unwrap();
         let reader = BufReader::new(file);
         let bridge_data_input: BridgeConstraintsInput = serde_json::from_reader(reader).unwrap();
+        // If the alloy version changes, this can lead to the file no longer parsing correctly,
+        // and thus this test failing.
+        // In that case, you should update the file.
+        // The process is to:
+        // 1. Obtain a Sepolia RPC key, and run `export RPC_11155111=https://eth-sepolia.g.alchemy.com/v2/[censored]`
+        // 2. Run `cargo test --workspace -- bridge::tests::test_bridge_contraints --exact --show-output --include-ignored`
+        //    (Or you can limit to `--package aggchain-proof-core --lib` if your cargo folder is not filled yet)
+        // 3. The file should then be ready for committing
 
         assert_bridge_data(bridge_data_input);
     }
