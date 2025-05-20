@@ -43,7 +43,7 @@ impl Display for LogLevel {
             LogLevel::Fatal => "fatal",
         };
 
-        write!(f, "{}", level)
+        write!(f, "{level}")
     }
 }
 

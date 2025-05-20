@@ -96,11 +96,11 @@ pub async fn main() -> anyhow::Result<()> {
     };
     match proposer_service.call(request).await {
         Ok(response) => {
-            println!("Proposer response: {:?}", response);
+            println!("Proposer response: {response:?}");
             Ok(())
         }
         Err(e) => {
-            eprintln!("Error: {:?}", e);
+            eprintln!("Error: {e:?}");
             Err(anyhow!(e.to_string()))
         }
     }

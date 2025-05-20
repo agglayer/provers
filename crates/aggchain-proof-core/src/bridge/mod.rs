@@ -663,7 +663,7 @@ mod tests {
 
         // Instantiate the HostExecutor for the prev and new L2 blocks
         let (mut prev_l2_block_executor, mut new_l2_block_executor) = {
-            let rpc_url_l2 = std::env::var(format!("RPC_{}", chain_id_l2))
+            let rpc_url_l2 = std::env::var(format!("RPC_{chain_id_l2}"))
                 .expect("RPC URL must be defined")
                 .parse::<Url>()
                 .expect("Invalid URL format");
@@ -908,7 +908,7 @@ mod tests {
         serde_json::to_writer_pretty(file, &bridge_data_input)
             .expect("Failed to write bridge_data_input to file");
 
-        println!("Bridge constraints input file created at: {:?}", file_path);
+        println!("Bridge constraints input file created at: {file_path:?}");
 
         assert_bridge_data(bridge_data_input);
 

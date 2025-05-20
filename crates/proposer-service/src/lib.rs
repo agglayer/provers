@@ -14,7 +14,7 @@ use proposer_client::rpc::{AggregationProofProposerRequest, ProposerRpcClient};
 use proposer_client::FepProposerRequest;
 use sp1_prover::SP1VerifyingKey;
 use sp1_sdk::NetworkProver;
-use tracing::info;
+use tracing::{debug, info};
 
 use crate::config::ProposerServiceConfig;
 
@@ -160,6 +160,7 @@ where
         let aggregation_vkey = self.aggregation_vkey.clone();
 
         async move {
+            info!(%last_proven_block, %requested_end_block, "Requesting fep aggregation proof");
             let l1_block_number = l1_rpc
                 .get_block_number(l1_block_hash.into())
                 .await
@@ -180,7 +181,9 @@ where
                 })
                 .await?;
             let request_id = response.request_id;
-            info!("Aggregation proof request submitted: {}", request_id);
+            let end_block = response.end_block;
+            let last_proven_block = response.last_proven_block;
+            debug!(%last_proven_block, %end_block, %request_id, "Aggregation proof request submitted");
 
             // Wait for the prover to finish aggregating span proofs
             let proof_with_pv = client.wait_for_proof(request_id.clone()).await?;
@@ -191,8 +194,12 @@ where
             )
             .map_err(Error::FepPublicValuesDeserializeFailure)?;
 
+            debug!(%last_proven_block, %end_block, %request_id, "Aggregation proof received from the proposer");
+
             // Verify received proof
-            client.verify_agg_proof(request_id, &proof_with_pv, &aggregation_vkey)?;
+            client.verify_agg_proof(request_id.clone(), &proof_with_pv, &aggregation_vkey)?;
+
+            debug!(%last_proven_block, %end_block, %request_id, "Aggregation proof verified successfully");
 
             let proof_mode: sp1_sdk::SP1ProofMode = (&proof_with_pv.proof).into();
             let aggregation_proof = proof_with_pv
@@ -200,6 +207,8 @@ where
                 .clone()
                 .try_as_compressed()
                 .ok_or_else(|| Error::UnsupportedAggregationProofMode(proof_mode))?;
+
+            info!(%last_proven_block, %end_block, %request_id, "Aggregation proof successfully acquired");
 
             Ok(ProposerResponse {
                 aggregation_proof,
