@@ -189,10 +189,9 @@ where
             // Wait for the prover to finish aggregating span proofs
             let proof_with_pv = client.wait_for_proof(request_id.clone()).await?;
 
-            let public_values = AggregationProofPublicValues::abi_decode(
-                proof_with_pv.public_values.as_slice(),
-            )
-            .map_err(Error::FepPublicValuesDeserializeFailure)?;
+            let public_values =
+                AggregationProofPublicValues::abi_decode(proof_with_pv.public_values.as_slice())
+                    .map_err(Error::FepPublicValuesDeserializeFailure)?;
 
             // Verify received proof
             client.verify_agg_proof(request_id, &proof_with_pv, &aggregation_vkey)?;
