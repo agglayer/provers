@@ -3,13 +3,12 @@ use std::time::Duration;
 use alloy_primitives::B256;
 use prost::bytes::Bytes;
 
-use crate::tests::mock_server;
 use crate::{
     rpc::{
         grpc::{AggProofRequest, AggProofResponse},
         AggregationProofProposer, AggregationProofProposerRequest, ProposerRpcClient,
     },
-    tests::mock_server::MockProofsService,
+    tests::{mock_server, mock_server::MockProofsService},
     RequestId,
 };
 
@@ -39,7 +38,7 @@ where
     server
         .expect_request_agg_proof()
         .with(mockall::predicate::function(
-            move |req: &tonic::Request<AggProofRequest>| req.get_ref() == &request.clone(),
+            move |req: &tonic::Request<AggProofRequest>| req.get_ref() == &request,
         ))
         .returning(response_handler);
 
@@ -119,11 +118,13 @@ async fn request_and_receive_an_error() {
     let response = service.request_agg_proof(request.clone()).await;
 
     assert!(response.is_err());
-    if let Err(crate::error::Error::Requesting(crate::error::ProofRequestError::Grpc(status))) =
-        response
-    {
-        assert_eq!(status.code(), tonic::Code::Unknown);
-        assert_eq!(status.message(), "Service was not ready");
+    if let Err(crate::error::Error::Requesting(ref err)) = response {
+        if let crate::error::ProofRequestError::Grpc(ref status) = **err {
+            assert_eq!(status.code(), tonic::Code::Unknown);
+            assert_eq!(status.message(), "Service was not ready");
+        } else {
+            panic!("Expected a grpcerror");
+        }
     } else {
         panic!("Expected an invalid request error");
     }
@@ -165,11 +166,13 @@ async fn receive_end_block_higher_than_last_chain_block() {
     let response = service.request_agg_proof(request.clone()).await;
 
     assert!(response.is_err());
-    if let Err(crate::error::Error::Requesting(crate::error::ProofRequestError::Grpc(status))) =
-        response
-    {
-        assert_eq!(status.code(), tonic::Code::NotFound);
-        assert_eq!(status.message(), "No consecutive span proof range found");
+    if let Err(crate::error::Error::Requesting(ref err)) = response {
+        if let crate::error::ProofRequestError::Grpc(ref status) = **err {
+            assert_eq!(status.code(), tonic::Code::NotFound);
+            assert_eq!(status.message(), "No consecutive span proof range found");
+        } else {
+            panic!("Expected a grpcerror");
+        }
     } else {
         panic!("Expected an invalid request error");
     }
@@ -211,14 +214,16 @@ async fn receive_an_invalid_start_end_block() {
     let response = service.request_agg_proof(request.clone()).await;
 
     assert!(response.is_err());
-    if let Err(crate::error::Error::Requesting(crate::error::ProofRequestError::Grpc(status))) =
-        response
-    {
-        assert_eq!(status.code(), tonic::Code::InvalidArgument);
-        assert_eq!(
-            status.message(),
-            "Requested end block must be greater than the last proven block"
-        );
+    if let Err(crate::error::Error::Requesting(ref err)) = response {
+        if let crate::error::ProofRequestError::Grpc(ref status) = **err {
+            assert_eq!(status.code(), tonic::Code::InvalidArgument);
+            assert_eq!(
+                status.message(),
+                "Requested end block must be greater than the last proven block"
+            );
+        } else {
+            panic!("Expected a grpcerror");
+        }
     } else {
         panic!("Expected an invalid request error");
     }
