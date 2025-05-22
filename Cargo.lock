@@ -5716,6 +5716,7 @@ dependencies = [
  "bincode",
  "educe",
  "hex",
+ "insta",
  "jsonrpsee",
  "mockall",
  "mockito",
