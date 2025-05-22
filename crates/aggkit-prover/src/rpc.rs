@@ -109,6 +109,10 @@ impl AggchainProofGrpcService for GrpcService {
 
         match service.call(proof_request).await {
             Ok(response) => {
+                info!(?response.custom_chain_data,
+                    "customchaindata: {}",
+                    hex::encode(&response.custom_chain_data)
+                );
                 context.insert(
                     "public_values".to_owned(),
                     Bytes::from(
