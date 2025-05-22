@@ -51,8 +51,8 @@ agglayer-tries = { git = "https://github.com/agglayer/interop.git", tag = "v0.6.
 unified-bridge = { git = "https://github.com/agglayer/interop.git", tag = "v0.6.0" }
 
 # Ecosystem dependencies
-op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v2.2.0-agglayer" }
-op-succinct-grpc = { git = "https://github.com/agglayer/op-succinct-grpc.git", branch = "main" }
+op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v2.2.1-agglayer" }
+op-succinct-grpc = { git = "https://github.com/agglayer/op-succinct-grpc.git", tag = "v0.1.0" }
 
 # SP1 dependencies
 # Please check if the toolchain image at the top `scripts/make/Makefile.elf.toml` could also be
