@@ -36,6 +36,7 @@ prover-utils.workspace = true
 mockall = { workspace = true, optional = true }
 
 [dev-dependencies]
+insta.workspace = true
 proposer-client = { path = ".", features = ["testutils"] }
 mockito.workspace = true
 serde_json.workspace = true

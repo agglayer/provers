@@ -90,8 +90,9 @@ impl StaticCallWithContext {
             ))
             .map_err(StaticCallError::ClientExecution)?;
 
-        let decoded_contract_output = C::abi_decode_returns(&cc_public_values.contractOutput, true)
-            .map_err(StaticCallError::DecodeContractOutput)?;
+        let decoded_contract_output =
+            C::abi_decode_returns_validate(&cc_public_values.contractOutput)
+                .map_err(StaticCallError::DecodeContractOutput)?;
 
         Ok((decoded_contract_output, cc_public_values.blockHash.0.into()))
     }

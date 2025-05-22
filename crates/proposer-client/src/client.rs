@@ -1,14 +1,16 @@
-use std::sync::Arc;
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use educe::Educe;
 use sp1_sdk::{SP1ProofWithPublicValues, SP1VerifyingKey};
 
-use crate::aggregation_prover::AggregationProver;
-use crate::rpc::{
-    AggregationProofProposer, AggregationProofProposerRequest, AggregationProofProposerResponse,
+use crate::{
+    aggregation_prover::AggregationProver,
+    error,
+    rpc::{
+        AggregationProofProposer, AggregationProofProposerRequest, AggregationProofProposerResponse,
+    },
+    Error, ProposerClient, RequestId,
 };
-use crate::{error, Error, ProposerClient, RequestId};
 
 /// Implementation of the proposer client.
 /// The Proposer client is responsible for retrieval of the AggregationProof.
@@ -28,6 +30,7 @@ pub struct Client<Proposer, Prover> {
 }
 
 impl<Proposer, Prover> Client<Proposer, Prover> {
+    #[allow(clippy::result_large_err)]
     pub fn new(
         proposer: Arc<Proposer>,
         prover: Prover,
