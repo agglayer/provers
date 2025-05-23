@@ -202,7 +202,15 @@ impl Service<Request> for Executor {
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.primary.poll_ready(cx)
+        if self.primary.poll_ready(cx)?.is_pending() {
+            return Poll::Pending;
+        }
+
+        if let Some(fallback) = &mut self.fallback {
+            fallback.poll_ready(cx)
+        } else {
+            Poll::Ready(Ok(()))
+        }
     }
 
     fn call(&mut self, req: Request) -> Self::Future {
