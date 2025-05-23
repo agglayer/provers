@@ -1,4 +1,4 @@
-use std::{convert::Infallible, future::IntoFuture, net::SocketAddr};
+use std::{convert::Infallible, future::IntoFuture, net::SocketAddr, time::Duration};
 
 use agglayer_telemetry::ServerBuilder as MetricsBuilder;
 use http::{Request, Response};
@@ -22,6 +22,7 @@ pub struct ProverEngine {
     cancellation_token: Option<CancellationToken>,
     metric_socket_addr: Option<SocketAddr>,
     rpc_socket_addr: Option<SocketAddr>,
+    shutdown_runtime_timeout: Option<Duration>,
 }
 
 impl ProverEngine {
@@ -35,6 +36,7 @@ impl ProverEngine {
             cancellation_token: None,
             metric_socket_addr: None,
             rpc_socket_addr: None,
+            shutdown_runtime_timeout: None,
         }
     }
 
@@ -72,6 +74,13 @@ impl ProverEngine {
 
         self
     }
+
+    pub fn set_shutdown_runtime_timeout(mut self, timeout: Duration) -> Self {
+        self.shutdown_runtime_timeout = Some(timeout);
+
+        self
+    }
+
     pub fn add_rpc_service<S>(mut self, rpc_service: S) -> Self
     where
         S: Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
@@ -235,8 +244,10 @@ impl ProverEngine {
                 }
             });
 
-        // prover_runtime.shutdown_timeout(config.shutdown.runtime_timeout);
-        // metrics_runtime.shutdown_timeout(config.shutdown.runtime_timeout);
+        if let Some(timeout) = self.shutdown_runtime_timeout {
+            prover_runtime.shutdown_timeout(timeout);
+            metrics_runtime.shutdown_timeout(timeout);
+        }
 
         Ok(())
     }
