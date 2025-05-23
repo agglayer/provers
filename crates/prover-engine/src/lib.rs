@@ -22,7 +22,7 @@ pub struct ProverEngine {
     cancellation_token: Option<CancellationToken>,
     metric_socket_addr: Option<SocketAddr>,
     rpc_socket_addr: Option<SocketAddr>,
-    shutdown_runtime_timeout: Option<Duration>,
+    runtime_shutdown_timeout: Option<Duration>,
 }
 
 impl ProverEngine {
@@ -36,7 +36,7 @@ impl ProverEngine {
             cancellation_token: None,
             metric_socket_addr: None,
             rpc_socket_addr: None,
-            shutdown_runtime_timeout: None,
+            runtime_shutdown_timeout: None,
         }
     }
 
@@ -75,8 +75,8 @@ impl ProverEngine {
         self
     }
 
-    pub fn set_shutdown_runtime_timeout(mut self, timeout: Duration) -> Self {
-        self.shutdown_runtime_timeout = Some(timeout);
+    pub fn set_runtime_shutdown_timeout(mut self, timeout: Duration) -> Self {
+        self.runtime_shutdown_timeout = Some(timeout);
 
         self
     }
@@ -244,7 +244,7 @@ impl ProverEngine {
                 }
             });
 
-        if let Some(timeout) = self.shutdown_runtime_timeout {
+        if let Some(timeout) = self.runtime_shutdown_timeout {
             prover_runtime.shutdown_timeout(timeout);
             metrics_runtime.shutdown_timeout(timeout);
         }
