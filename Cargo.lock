@@ -3355,19 +3355,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "grpc"
-version = "0.1.0"
-source = "git+https://github.com/agglayer/op-succinct.git?tag=v2.1.3-agglayer#e68913c86570a0dda0d4ac786ca6581ff9258516"
-dependencies = [
- "bytes",
- "pbjson",
- "pbjson-types",
- "prost",
- "serde",
- "tonic 0.12.3",
-]
-
-[[package]]
 name = "h2"
 version = "0.4.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4851,7 +4838,23 @@ dependencies = [
 [[package]]
 name = "op-succinct-elfs"
 version = "0.1.0"
-source = "git+https://github.com/agglayer/op-succinct.git?tag=v2.1.3-agglayer#e68913c86570a0dda0d4ac786ca6581ff9258516"
+source = "git+https://github.com/agglayer/op-succinct.git?tag=v2.2.1-agglayer#d540f4a6ddd0c9f546fe64ebe517ac3e6cb064ba"
+
+[[package]]
+name = "op-succinct-grpc"
+version = "0.1.0"
+source = "git+https://github.com/agglayer/op-succinct-grpc.git?tag=v0.1.0#ac519a1cb16e566b3e49ccae5cbe1a9959a70118"
+dependencies = [
+ "bincode",
+ "bytes",
+ "pbjson",
+ "pbjson-types",
+ "prost",
+ "serde",
+ "tonic 0.12.3",
+ "tonic-build",
+ "tracing",
+]
 
 [[package]]
 name = "opaque-debug"
@@ -5712,11 +5715,12 @@ dependencies = [
  "base64 0.22.1",
  "bincode",
  "educe",
- "grpc",
  "hex",
+ "insta",
  "jsonrpsee",
  "mockall",
  "mockito",
+ "op-succinct-grpc",
  "proposer-client",
  "prost",
  "prover-utils",

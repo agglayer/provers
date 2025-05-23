@@ -30,7 +30,7 @@ pub trait AggregationProofProposer {
 }
 
 /// Request format for the proposer `proofs_requestAggProof`
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AggregationProofProposerRequest {
     /// Last block that has already been proven before this request.
     pub last_proven_block: u64,
@@ -46,7 +46,7 @@ pub struct AggregationProofProposerRequest {
 }
 
 /// Response for the external proposer `request_span_proof` call
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AggregationProofProposerResponse {
     /// Proof request_id, used to fetch the proof from the cluster.
     pub request_id: RequestId,
