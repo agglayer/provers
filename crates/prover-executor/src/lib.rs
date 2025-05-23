@@ -153,7 +153,6 @@ impl Executor {
                     ),
                 )
             }
-            ProverType::GpuProver(_) => todo!(),
         }
     }
 
