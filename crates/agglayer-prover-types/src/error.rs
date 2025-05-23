@@ -49,6 +49,30 @@ impl ErrorWrapper {
 
                 (tonic::Code::InvalidArgument, value.to_string(), details)
             }
+            Error::UnableToInitializePrimaryProver => {
+                let details = default_bincode_options().serialize(&GenerateProofError {
+                    error: Bytes::new(),
+                    error_type: ErrorKind::ExecutorFailed.into(),
+                })?;
+
+                (
+                    tonic::Code::Internal,
+                    "Executor failed to initialize the primary prover".to_string(),
+                    details,
+                )
+            }
+            Error::UnableToInitializeFallbackProver => {
+                let details = default_bincode_options().serialize(&GenerateProofError {
+                    error: Bytes::new(),
+                    error_type: ErrorKind::ExecutorFailed.into(),
+                })?;
+
+                (
+                    tonic::Code::Internal,
+                    "Executor failed to initialize the fallback prover".to_string(),
+                    details,
+                )
+            }
         };
 
         Ok(Status::with_details(code, message, details.into()))

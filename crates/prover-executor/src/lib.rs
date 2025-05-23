@@ -202,14 +202,16 @@ impl Service<Request> for Executor {
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        if self.primary.poll_ready(cx)?.is_pending() {
-            return Poll::Pending;
-        }
+        std::task::ready!(self
+            .primary
+            .poll_ready(cx)
+            .map_err(|_| Error::UnableToInitializePrimaryProver)?);
 
-        if let Some(fallback) = &mut self.fallback {
-            fallback.poll_ready(cx)
-        } else {
-            Poll::Ready(Ok(()))
+        match &mut self.fallback {
+            Some(fallback) => fallback
+                .poll_ready(cx)
+                .map_err(|_| Error::UnableToInitializeFallbackProver),
+            None => Poll::Ready(Ok(())),
         }
     }
 
