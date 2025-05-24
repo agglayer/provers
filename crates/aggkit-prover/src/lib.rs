@@ -48,6 +48,7 @@ pub fn runtime(cfg: PathBuf, version: &str) -> anyhow::Result<()> {
         .set_cancellation_token(global_cancellation_token)
         .set_rpc_socket_addr(config.grpc_endpoint)
         .set_metric_socket_addr(config.telemetry.addr)
+        .set_runtime_shutdown_timeout(config.shutdown.runtime_timeout)
         .start();
 
     Ok(())
