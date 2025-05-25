@@ -3,6 +3,8 @@ name = "prover-executor"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+description = "prover-executor exposes structs and functions to generate ZKP."
+repository.workspace = true
 
 [dependencies]
 serde.workspace = true

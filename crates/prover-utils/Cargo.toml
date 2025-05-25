@@ -3,6 +3,8 @@ name = "prover-utils"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+description = "prover-utils offers utility functions and structs, used in prover-engine."
+repository.workspace = true
 
 [dependencies]
 humantime-serde = "1.1.1"

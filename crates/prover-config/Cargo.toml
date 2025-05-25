@@ -3,6 +3,8 @@ name = "prover-config"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+description = "prover-config exposes the config structs for the prover-engine."
+repository.workspace = true
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }

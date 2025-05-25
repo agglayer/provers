@@ -33,12 +33,12 @@ proposer-client = { path = "crates/proposer-client" }
 proposer-elfs = { path = "crates/proposer-elfs" }
 proposer-service = { path = "crates/proposer-service" }
 prover-alloy = { path = "crates/prover-alloy" }
-prover-config = { path = "crates/prover-config" }
+prover-config = { path = "crates/prover-config", version = "1.0.0" }
 prover-elf-utils = { path = "crates/prover-elf-utils" }
-prover-engine = { path = "crates/prover-engine" }
-prover-executor = { path = "crates/prover-executor" }
+prover-engine = { path = "crates/prover-engine", version = "1.0.0" }
+prover-executor = { path = "crates/prover-executor", version = "1.0.0" }
 prover-logger = { path = "crates/prover-logger" }
-prover-utils = { path = "crates/prover-utils" }
+prover-utils = { path = "crates/prover-utils", version = "1.0.0" }
 
 # TODO: this should probably move to interop
 agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
