@@ -1,0 +1,164 @@
+[env]
+# Define the list of folders to generate changelogs for
+CHANGELOG_FOLDERS = "proto,crates/prover-engine,crates/prover-executor,crates/prover-config,crates/aggkit-prover"
+
+[tasks.default]
+alias = "changelog-all"
+
+[tasks.check-git-cliff]
+description = "Check if git-cliff is installed"
+script = [
+    '''
+    if ! command -v git-cliff &> /dev/null; then
+        echo "git-cliff is not installed. Installing..."
+        cargo install git-cliff
+    else
+        echo "git-cliff is already installed"
+    fi
+    '''
+]
+
+[tasks.changelog-all]
+description = "Generate changelogs for all configured folders"
+dependencies = ["check-git-cliff"]
+script = [
+    '''
+    IFS=',' read -ra FOLDERS <<< "${CHANGELOG_FOLDERS}"
+    for folder in "${FOLDERS[@]}"; do
+        if [ -d "$folder" ]; then
+            echo "Generating changelog for folder: $folder"
+            git cliff --include-path "$folder/**" --output "${folder}/CHANGELOG.md" || {
+                echo "Warning: Failed to generate changelog for $folder"
+            }
+        else
+            echo "Warning: Folder '$folder' does not exist, skipping..."
+        fi
+    done
+    echo "All changelogs generated"
+    '''
+]
+
+[tasks.changelog-folder]
+description = "Generate changelog for a specific folder"
+dependencies = ["check-git-cliff"]
+script = [
+    '''
+    if [ -z "${FOLDER}" ]; then
+        echo "Error: Please specify FOLDER environment variable"
+        echo "Usage: cargo make changelog-folder --env FOLDER=src"
+        exit 1
+    fi
+
+    if [ -d "${FOLDER}" ]; then
+        echo "Generating changelog for folder: ${FOLDER}"
+        git cliff --include-path "${FOLDER}/**" --output "${FOLDER}/CHANGELOG.md"
+        echo "Changelog generated: ${FOLDER}/CHANGELOG.md"
+    else
+        echo "Error: Folder '${FOLDER}' does not exist"
+        exit 1
+    fi
+    '''
+]
+
+[tasks.changelog-full]
+description = "Generate full project changelog"
+dependencies = ["check-git-cliff"]
+script = [
+    "echo 'Generating full project changelog...'",
+    "git cliff --output CHANGELOG.md",
+    "echo 'Full changelog generated: CHANGELOG.md'"
+]
+
+[tasks.changelog-unreleased]
+description = "Generate changelog for unreleased changes only"
+dependencies = ["check-git-cliff"]
+script = [
+    "echo 'Generating unreleased changelog...'",
+    "git cliff --unreleased --output UNRELEASED.md",
+    "echo 'Unreleased changelog generated: UNRELEASED.md'"
+]
+
+[tasks.changelog-since-tag]
+description = "Generate changelog since a specific tag"
+dependencies = ["check-git-cliff"]
+script = [
+    '''
+    if [ -z "${TAG}" ]; then
+        echo "Error: Please specify TAG environment variable"
+        echo "Usage: cargo make changelog-since-tag --env TAG=v1.0.0"
+        exit 1
+    fi
+
+    echo "Generating changelog since tag: ${TAG}"
+    git cliff "${TAG}.." --output "CHANGELOG-since-${TAG}.md"
+    echo "Changelog generated: CHANGELOG-since-${TAG}.md"
+    '''
+]
+
+[tasks.changelog-custom-path]
+description = "Generate changelog for custom path pattern"
+dependencies = ["check-git-cliff"]
+script = [
+    '''
+    if [ -z "${PATH_PATTERN}" ]; then
+        echo "Error: Please specify PATH_PATTERN environment variable"
+        echo "Usage: cargo make changelog-custom-path --env PATH_PATTERN='src/lib/**'"
+        exit 1
+    fi
+
+    OUTPUT_NAME=$(echo "${PATH_PATTERN}" | sed 's/[^a-zA-Z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
+    echo "Generating changelog for path pattern: ${PATH_PATTERN}"
+    git cliff --include-path "${PATH_PATTERN}" --output "${OUTPUT_NAME}/CHANGELOG.md"
+    echo "Changelog generated: ${OUTPUT_NAME}/CHANGELOG.md"
+    '''
+]
+
+[tasks.changelog-clean]
+description = "Clean generated changelog files"
+script = [
+    "echo 'Cleaning changelog files...'",
+    "rm -rf ${CHANGELOG_OUTPUT_DIR}",
+    "rm -f CHANGELOG.md UNRELEASED.md CHANGELOG-since-*.md",
+    "echo 'Changelog files cleaned'"
+]
+
+[tasks.changelog-list-folders]
+description = "List configured folders for changelog generation"
+script = [
+    '''
+    echo "Configured folders for changelog generation:"
+    IFS=',' read -ra FOLDERS <<< "${CHANGELOG_FOLDERS}"
+    for folder in "${FOLDERS[@]}"; do
+        if [ -d "$folder" ]; then
+            echo "  ✓ $folder (exists)"
+        else
+            echo "  ✗ $folder (missing)"
+        fi
+    done
+    '''
+]
+
+[tasks.changelog-help]
+description = "Show available changelog tasks"
+script = [
+    '''
+    echo "Available changelog tasks:"
+    echo ""
+    echo "  cargo make changelog-all           - Generate changelogs for all configured folders"
+    echo "  cargo make changelog-folder        - Generate changelog for specific folder"
+    echo "                                       Usage: --env FOLDER=src"
+    echo "  cargo make changelog-full          - Generate full project changelog"
+    echo "  cargo make changelog-unreleased    - Generate changelog for unreleased changes"
+    echo "  cargo make changelog-since-tag     - Generate changelog since specific tag"
+    echo "                                       Usage: --env TAG=v1.0.0"
+    echo "  cargo make changelog-custom-path   - Generate changelog for custom path pattern"
+    echo "                                       Usage: --env PATH_PATTERN='src/lib/**'"
+    echo "  cargo make changelog-clean         - Clean generated changelog files"
+    echo "  cargo make changelog-list-folders  - List configured folders"
+    echo "  cargo make changelog-help          - Show this help"
+    echo ""
+    echo "Configuration:"
+    echo "  Edit CHANGELOG_FOLDERS in [env] section to customize folder list"
+    echo "  Current folders: ${CHANGELOG_FOLDERS}"
+    '''
+]
