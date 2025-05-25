@@ -30,7 +30,7 @@ checksum = "512761e0bb2578dd7380c6baaa0f4ce03e84f95e960231d1dec8bf4d7d6e2627"
 
 [[package]]
 name = "aggchain-proof-builder"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "aggchain-proof-contracts",
  "aggchain-proof-core",
@@ -60,7 +60,7 @@ dependencies = [
 
 [[package]]
 name = "aggchain-proof-contracts"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "aggchain-proof-core",
  "aggchain-proof-types",
@@ -124,7 +124,7 @@ dependencies = [
 
 [[package]]
 name = "aggchain-proof-service"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "aggchain-proof-builder",
  "aggchain-proof-contracts",
@@ -151,7 +151,7 @@ dependencies = [
 
 [[package]]
 name = "aggchain-proof-types"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "aggchain-proof-core",
  "agglayer-interop",
@@ -164,7 +164,7 @@ dependencies = [
 
 [[package]]
 name = "aggkit-prover"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "aggchain-proof-service",
  "aggchain-proof-types",
@@ -203,7 +203,7 @@ dependencies = [
 
 [[package]]
 name = "aggkit-prover-config"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "aggchain-proof-service",
  "insta",
@@ -218,7 +218,7 @@ dependencies = [
 
 [[package]]
 name = "aggkit-prover-types"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "aggchain-proof-types",
  "agglayer-interop",
@@ -237,8 +237,9 @@ dependencies = [
 
 [[package]]
 name = "agglayer-evm-client"
-version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.6.0#812bc77b4ac5f7159e9eaec525a05657e159d229"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "220db20abc1f3515506e594194863c10ce8e2063d6ba3443bfb1d806ae0bf5e4"
 dependencies = [
  "agglayer-primitives",
  "alloy",
@@ -251,8 +252,9 @@ dependencies = [
 
 [[package]]
 name = "agglayer-interop"
-version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.6.0#812bc77b4ac5f7159e9eaec525a05657e159d229"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f7a34a3a16b4df2ff85ed0a87a6efd8d4dfcf5b3f687760919ffb2d40bb86459"
 dependencies = [
  "agglayer-interop-grpc-types",
  "agglayer-interop-types",
@@ -260,8 +262,9 @@ dependencies = [
 
 [[package]]
 name = "agglayer-interop-grpc-types"
-version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.6.0#812bc77b4ac5f7159e9eaec525a05657e159d229"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "08fecb03d0a80e0b369e39faf0022ae5617bc17d8b1f17e724ff2e9670edcee1"
 dependencies = [
  "agglayer-interop-types",
  "bincode",
@@ -275,8 +278,9 @@ dependencies = [
 
 [[package]]
 name = "agglayer-interop-types"
-version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.6.0#812bc77b4ac5f7159e9eaec525a05657e159d229"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4c80802140154c2bef037cc0b3bb3abb6ff67fdff68dd992324b8b857614043"
 dependencies = [
  "agglayer-primitives",
  "agglayer-tries",
@@ -295,8 +299,9 @@ dependencies = [
 
 [[package]]
 name = "agglayer-primitives"
-version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.6.0#812bc77b4ac5f7159e9eaec525a05657e159d229"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f730056393f3e4a339687dc370557d4537a085c2ffdabe90abbe043c036f4ed2"
 dependencies = [
  "alloy-primitives",
  "byteorder",
@@ -308,7 +313,7 @@ dependencies = [
 
 [[package]]
 name = "agglayer-prover"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "agglayer-prover-config",
  "agglayer-prover-types",
@@ -332,7 +337,7 @@ dependencies = [
 
 [[package]]
 name = "agglayer-prover-config"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "insta",
  "pretty_assertions",
@@ -346,7 +351,7 @@ dependencies = [
 
 [[package]]
 name = "agglayer-prover-types"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "agglayer-interop",
  "bincode",
@@ -381,8 +386,9 @@ dependencies = [
 
 [[package]]
 name = "agglayer-tries"
-version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.6.0#812bc77b4ac5f7159e9eaec525a05657e159d229"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5c41feb67f6ad9f86ac52cbc12eafb9880f51b04efb1879202646cca6f0fb5a"
 dependencies = [
  "agglayer-primitives",
  "serde",
@@ -5707,7 +5713,7 @@ dependencies = [
 
 [[package]]
 name = "proposer-client"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "alloy-primitives",
  "anyhow",
@@ -5739,7 +5745,7 @@ dependencies = [
 
 [[package]]
 name = "proposer-elfs"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "aggkit-prover-types",
  "alloy-primitives",
@@ -5752,7 +5758,7 @@ dependencies = [
 
 [[package]]
 name = "proposer-service"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "aggchain-proof-core",
  "aggkit-prover-types",
@@ -5861,7 +5867,7 @@ checksum = "106dd99e98437432fed6519dedecfade6a06a73bb7b2a1e019fdd2bee5778d94"
 
 [[package]]
 name = "prover-alloy"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "agglayer-evm-client",
  "alloy",
@@ -5877,7 +5883,7 @@ dependencies = [
 
 [[package]]
 name = "prover-config"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "insta",
  "pretty_assertions",
@@ -5892,7 +5898,7 @@ dependencies = [
 
 [[package]]
 name = "prover-elf-utils"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "bincode",
  "sp1-prover",
@@ -5900,13 +5906,13 @@ dependencies = [
 
 [[package]]
 name = "prover-engine"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
- "agglayer-telemetry",
  "anyhow",
  "axum 0.8.4",
  "http",
  "http-body-util",
+ "prover-telemetry",
  "tokio",
  "tokio-util",
  "tonic 0.12.3",
@@ -5918,7 +5924,7 @@ dependencies = [
 
 [[package]]
 name = "prover-executor"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "bincode",
@@ -5944,7 +5950,7 @@ dependencies = [
 
 [[package]]
 name = "prover-logger"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "serde",
  "tracing",
@@ -5953,8 +5959,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "prover-telemetry"
+version = "1.0.0"
+dependencies = [
+ "axum 0.7.9",
+ "buildstructor",
+ "futures",
+ "lazy_static",
+ "opentelemetry",
+ "opentelemetry-prometheus",
+ "opentelemetry_sdk",
+ "prometheus",
+ "thiserror 2.0.12",
+ "tokio",
+ "tokio-util",
+ "tracing",
+]
+
+[[package]]
 name = "prover-utils"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "humantime-serde",
  "serde",
@@ -9239,8 +9263,9 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 
 [[package]]
 name = "unified-bridge"
-version = "0.1.0"
-source = "git+https://github.com/agglayer/interop.git?tag=v0.6.0#812bc77b4ac5f7159e9eaec525a05657e159d229"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b8a167a9861e75cf97729f36c917292440dae21030fdf09ca0b9fb6df9cc7dd"
 dependencies = [
  "agglayer-primitives",
  "agglayer-tries",

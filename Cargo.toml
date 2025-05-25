@@ -5,9 +5,10 @@ members = ["crates/*"]
 exclude = ["crates/prover-dummy-program", "crates/aggchain-proof-program"]
 
 [workspace.package]
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/agglayer/provers"
 
 [workspace.lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
@@ -41,14 +42,16 @@ prover-utils = { path = "crates/prover-utils" }
 
 # TODO: this should probably move to interop
 agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
+prover-telemetry = { path = "crates/prover-telemetry", version = "1.0.0" }
+
+agglayer-primitives = "0.6.0"
+unified-bridge = "0.6.0"
 
 # Interop dependencies
-agglayer-evm-client = { git = "https://github.com/agglayer/interop.git", tag = "v0.6.0" }
-agglayer-interop = { git = "https://github.com/agglayer/interop.git", tag = "v0.6.0" }
-agglayer-interop-types = { git = "https://github.com/agglayer/interop.git", tag = "v0.6.0" }
-agglayer-primitives = { git = "https://github.com/agglayer/interop.git", tag = "v0.6.0" }
-agglayer-tries = { git = "https://github.com/agglayer/interop.git", tag = "v0.6.0" }
-unified-bridge = { git = "https://github.com/agglayer/interop.git", tag = "v0.6.0" }
+agglayer-evm-client = "0.6.0"
+agglayer-interop = "0.6.0"
+agglayer-interop-types = "0.6.0"
+agglayer-tries = "0.6.0"
 
 # Ecosystem dependencies
 op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v2.2.1-agglayer" }

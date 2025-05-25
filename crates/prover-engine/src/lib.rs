@@ -1,7 +1,7 @@
 use std::{convert::Infallible, future::IntoFuture, net::SocketAddr};
 
-use agglayer_telemetry::ServerBuilder as MetricsBuilder;
 use http::{Request, Response};
+use prover_telemetry::ServerBuilder as MetricsBuilder;
 use tokio::{net::TcpListener, runtime::Runtime};
 use tokio_util::sync::CancellationToken;
 use tonic::{
