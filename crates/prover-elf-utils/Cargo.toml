@@ -3,6 +3,8 @@ name = "prover-elf-utils"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+description = "Crate providing utilites to manage ELF related structs."
+repository.workspace = true
 
 [dependencies]
 bincode.workspace = true
