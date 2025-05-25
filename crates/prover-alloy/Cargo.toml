@@ -3,6 +3,8 @@ name = "prover-alloy"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+description = "prover-alloy reexports alloy crates while adding contextualized structs for agglayer."
+repository.workspace = true
 
 [lints]
 workspace = true
