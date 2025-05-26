@@ -40,16 +40,17 @@ pub fn runtime(cfg: PathBuf, version: &str) -> anyhow::Result<()> {
         )
     })?;
 
-    _ = ProverEngine::builder()
-        .add_rpc_service(aggchain_proof_service)
-        .add_reflection_service(aggkit_prover_types::v1::FILE_DESCRIPTOR_SET)
-        .set_rpc_runtime(prover_runtime)
-        .set_metrics_runtime(metrics_runtime)
-        .set_cancellation_token(global_cancellation_token)
-        .set_rpc_socket_addr(config.grpc_endpoint)
-        .set_metric_socket_addr(config.telemetry.addr)
-        .set_runtime_shutdown_timeout(config.shutdown.runtime_timeout)
-        .start();
+    _ = ProverEngine::new(
+        config.grpc_endpoint,
+        config.telemetry.addr,
+        config.shutdown.runtime_timeout,
+    )
+    .add_rpc_service(aggchain_proof_service)
+    .add_reflection_service(aggkit_prover_types::v1::FILE_DESCRIPTOR_SET)
+    .set_rpc_runtime(prover_runtime)
+    .set_metrics_runtime(metrics_runtime)
+    .set_cancellation_token(global_cancellation_token)
+    .start();
 
     Ok(())
 }

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub struct ShutdownConfig {
-    #[serde(default = "default_shutdown_runtime_timeout")]
+    #[serde(default = "default_runtime_shutdown_timeout")]
     #[serde(with = "prover_utils::with::HumanDuration")]
     pub runtime_timeout: Duration,
 }
@@ -13,11 +13,11 @@ pub struct ShutdownConfig {
 impl Default for ShutdownConfig {
     fn default() -> Self {
         Self {
-            runtime_timeout: default_shutdown_runtime_timeout(),
+            runtime_timeout: default_runtime_shutdown_timeout(),
         }
     }
 }
 
-const fn default_shutdown_runtime_timeout() -> Duration {
-    Duration::from_secs(5)
+const fn default_runtime_shutdown_timeout() -> Duration {
+    Duration::from_secs(30)
 }
