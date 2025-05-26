@@ -23,11 +23,10 @@ tonic-reflection = "0.12.3"
 
 agglayer-prover-config.workspace = true
 agglayer-prover-types.workspace = true
-agglayer-telemetry.workspace = true
+prover-telemetry.workspace = true
 prover-engine.workspace = true
 prover-executor.workspace = true
 prover-logger.workspace = true
-
 
 
 [features]

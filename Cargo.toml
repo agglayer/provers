@@ -38,20 +38,17 @@ prover-elf-utils = { path = "crates/prover-elf-utils", version = "1.0.0" }
 prover-engine = { path = "crates/prover-engine", version = "1.0.0" }
 prover-executor = { path = "crates/prover-executor", version = "1.0.0" }
 prover-logger = { path = "crates/prover-logger", version = "1.0.0" }
+prover-telemetry = { path = "crates/prover-telemetry", version = "1.0.0" }
 prover-utils = { path = "crates/prover-utils", version = "1.0.0" }
 
-# TODO: this should probably move to interop
-agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
-prover-telemetry = { path = "crates/prover-telemetry", version = "1.0.0" }
-
-agglayer-primitives = "0.6.0"
-unified-bridge = "0.6.0"
 
 # Interop dependencies
 agglayer-evm-client = "0.6.0"
 agglayer-interop = "0.6.0"
 agglayer-interop-types = "0.6.0"
+agglayer-primitives = "0.6.0"
 agglayer-tries = "0.6.0"
+unified-bridge = "0.6.0"
 
 # Ecosystem dependencies
 op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v2.2.1-agglayer" }
