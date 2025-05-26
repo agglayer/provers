@@ -98,6 +98,7 @@ impl ProverEngine {
     pub fn start(mut self) -> anyhow::Result<()> {
         info!("Starting the prover engine");
         let cancellation_token = self.cancellation_token.take().unwrap_or_default();
+        let _cancel_on_panic = cancellation_token.clone().drop_guard();
 
         let metrics_runtime = self
             .metrics_runtime
