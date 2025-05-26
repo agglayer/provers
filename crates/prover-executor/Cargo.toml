@@ -3,7 +3,7 @@ name = "prover-executor"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "prover-executor exposes structs and functions to generate ZKP."
+description = "prover-executor exposes structs and functions to generate ZKP used in Agglayer."
 repository.workspace = true
 
 [dependencies]
