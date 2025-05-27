@@ -16,4 +16,3 @@ prover-config.workspace = true
 [dev-dependencies]
 insta = { workspace = true, features = ["toml", "redactions", "filters"] }
 pretty_assertions = "1.4.0"
-
