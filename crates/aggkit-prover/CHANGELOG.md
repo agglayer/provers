@@ -1,0 +1,96 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [unreleased]
+
+### 🚀 Features
+
+- Adding logs and regenerate vkey (#220)
+
+## [0.1.0-rc.26] - 2025-05-20
+
+### 🚀 Features
+
+- Update interop to version with strong rollup index types (#218)
+
+## [0.1.0-rc.25] - 2025-05-20
+
+### 🚀 Features
+
+- Add support for optimistic aggchain proof generation (#201)
+- Update interop dependencies to feature branch and adjust RPC (#211)
+- Improved logs (#213)
+
+## [0.1.0-rc.22] - 2025-05-12
+
+### 🚀 Features
+
+- Integrate rust proposer (#186)
+
+## [0.1.0-rc.21] - 2025-04-28
+
+### 🚀 Features
+
+- Port `proposer-client` to grpc (#113)
+- Append 0x prefix to vkey and vkey selector (#190)
+
+### ◀️ Revert
+
+- Feat: port `proposer-client` to grpc (#113) (#182)
+
+## [0.1.0-rc.20] - 2025-04-18
+
+### 🚀 Features
+
+- Add context useful for debugging to the aggchain proof (#175)
+- Return a different error when op-proposer is just not ready yet (#176)
+
+## [0.1.0-rc.16] - 2025-04-14
+
+### 🚀 Features
+
+- Adjust start/end block properly (#122)
+- Make aggkit-prover startup faster by 2x (#131)
+- Update proto response (#140)
+- Export AGGCHAIN_VKEY_SELECTOR and update vkey command with selector (#142)
+- Separate `vkey` and `vkey-selector` subcommands (#147)
+
+### 🐛 Bug Fixes
+
+- Add missing socket addr (#111)
+- Align vk and public value mismatch (#135)
+- Update vkey_hex encoding method to use hash_bytes (#170)
+
+### 🚜 Refactor
+
+- Add request to skip list in instrument macro (#160)
+
+## [0.1.0-rc.1] - 2025-03-18
+
+### 🚀 Features
+
+- Adding aggkit-prover binary (#14)
+- First shot at initializing service (#22)
+- Add l1infotreesync (#21)
+- Proposer client backbone (#17)
+- Add fields in aggchain proof (#34)
+- Aggchain-proof-builder (#29)
+- Refactor configuration (#41)
+- Aggchain-proof-builder members (#51)
+- Add fields (#40)
+- Add gerLeaves (#61)
+- Aggchain contracts client (#71)
+- Adding customchaindata computation (#62)
+- Refactor and update proof types (#87)
+- Update protobuf to use interop (#106)
+
+### 💼 Other
+
+- Make docker compile and update aggkit binary (#98)
+
+### 🧪 Testing
+
+- Adding tests to proposer & client (#54)
+
+

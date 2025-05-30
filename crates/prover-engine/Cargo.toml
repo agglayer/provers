@@ -3,6 +3,8 @@ name = "prover-engine"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+description = "prover-engine contains the framework engine used to build proof on agglayer protocol."
+repository.workspace = true
 
 [dependencies]
 axum = { version = "0.8", features = [
@@ -29,7 +31,7 @@ tokio.workspace = true
 tokio-util = { workspace = true }
 http-body-util = "0.1.2"
 
-agglayer-telemetry.workspace = true
+prover-telemetry.workspace = true
 
 [lints]
 workspace = true

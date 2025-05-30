@@ -3,6 +3,8 @@ name = "prover-logger"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+description = "prover-logger exposes structs and functions to manage logs in the prover-engine."
+repository.workspace = true
 
 [dependencies]
 serde.workspace = true
