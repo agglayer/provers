@@ -18,12 +18,7 @@ mod rpc;
 pub fn main(cfg: PathBuf, version: &str, program: &'static [u8]) -> anyhow::Result<()> {
     let config = Arc::new(agglayer_prover_config::ProverConfig::try_load(&cfg)?);
 
-    // Initialize the logger
-    prover_logger::tracing(&config.log);
-
     let global_cancellation_token = CancellationToken::new();
-
-    info!("Starting agglayer prover version info: {}", version);
 
     let prover_runtime = tokio::runtime::Builder::new_multi_thread()
         .thread_name("agglayer-prover-runtime")
@@ -35,6 +30,11 @@ pub fn main(cfg: PathBuf, version: &str, program: &'static [u8]) -> anyhow::Resu
         .worker_threads(2)
         .enable_all()
         .build()?;
+
+    // Initialize the tracing
+    metrics_runtime.block_on(async { prover_tracer::setup_tracing(&config.log, version) })?;
+
+    info!("Running agglayer prover version info: {}", version);
 
     let pp_service =
         prover_runtime.block_on(async { crate::prover::Prover::create_service(&config, program) });
