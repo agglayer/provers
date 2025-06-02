@@ -1,7 +1,7 @@
 use agglayer_primitives::Digest;
 use alloy_primitives::Address;
 use alloy_sol_types::SolCall;
-use sp1_cc_client_executor::{io::EVMStateSketch, ClientExecutor, ContractInput};
+use sp1_cc_client_executor::{io::EvmSketchInput, ClientExecutor, ContractInput};
 
 use super::BridgeConstraintsError;
 
@@ -31,7 +31,7 @@ pub enum StaticCallStage {
 #[derive(thiserror::Error, Debug)]
 pub enum StaticCallError {
     #[error("Failure on the initialization of the ClientExecutor.")]
-    ClientInitialization(#[source] eyre::Report),
+    ClientInitialization(#[source] sp1_cc_client_executor::ClientError),
     #[error("Failure on the execution of the ClientExecutor.")]
     ClientExecution(#[source] eyre::Report),
     #[error("Failure on the decoding of the contractOutput.")]
@@ -48,7 +48,7 @@ impl StaticCallWithContext {
     /// Returns the decoded output values of a static call.
     pub fn execute<C: SolCall>(
         &self,
-        state_sketch: &EVMStateSketch,
+        state_sketch: &EvmSketchInput,
         calldata: C,
     ) -> Result<C::Return, BridgeConstraintsError> {
         let (decoded_return, retrieved_block_hash) = self
@@ -77,7 +77,7 @@ impl StaticCallWithContext {
     /// important to keep them in mind when updating the code.
     fn execute_helper<C: SolCall>(
         &self,
-        state_sketch: &EVMStateSketch,
+        state_sketch: &EvmSketchInput,
         calldata: C,
     ) -> Result<(C::Return, Digest), StaticCallError> {
         let caller_address = Address::default();
@@ -94,6 +94,6 @@ impl StaticCallWithContext {
             C::abi_decode_returns_validate(&cc_public_values.contractOutput)
                 .map_err(StaticCallError::DecodeContractOutput)?;
 
-        Ok((decoded_contract_output, cc_public_values.blockHash.0.into()))
+        Ok((decoded_contract_output, cc_public_values.anchorHash.0.into()))
     }
 }

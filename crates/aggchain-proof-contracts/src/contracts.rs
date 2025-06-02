@@ -1,7 +1,7 @@
 use agglayer_interop::types::Digest;
 use agglayer_primitives::Address;
 use alloy::{eips::BlockNumberOrTag, network::Ethereum, sol};
-use sp1_cc_client_executor::io::EVMStateSketch;
+use sp1_cc_client_executor::io::EvmSketchInput;
 
 use crate::Error;
 

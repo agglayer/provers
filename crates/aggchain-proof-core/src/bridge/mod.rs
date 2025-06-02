@@ -7,7 +7,7 @@ use alloy_sol_macro::sol;
 use alloy_sol_types::SolCall;
 use inserted_ger::InsertedGER;
 use serde::{Deserialize, Serialize};
-use sp1_cc_client_executor::io::EVMStateSketch;
+use sp1_cc_client_executor::io::EvmSketchInput;
 use static_call::{HashChainType, StaticCallError, StaticCallStage, StaticCallWithContext};
 use unified_bridge::{GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues};
 
@@ -129,9 +129,9 @@ pub struct BridgeWitness {
     /// List of the global index of each unset bridge exit.
     pub global_indices_unset: Vec<U256>,
     /// State sketch for the prev L2 block.
-    pub prev_l2_block_sketch: EVMStateSketch,
+    pub prev_l2_block_sketch: EvmSketchInput,
     /// State sketch for the new L2 block.
-    pub new_l2_block_sketch: EVMStateSketch,
+    pub new_l2_block_sketch: EvmSketchInput,
 }
 
 /// Bridge data required to verify the bridge smart contract integrity.

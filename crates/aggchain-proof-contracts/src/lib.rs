@@ -25,7 +25,7 @@ use contracts::{
 };
 use jsonrpsee::{core::client::ClientT, http_client::HttpClient, rpc_params};
 use prover_alloy::{build_alloy_fill_provider, AlloyFillProvider};
-use sp1_cc_client_executor::{io::EVMStateSketch, ContractInput};
+use sp1_cc_client_executor::{io::EvmSketchInput, ContractInput};
 use sp1_cc_host_executor::HostExecutor;
 use tracing::info;
 
@@ -144,7 +144,7 @@ where
     async fn get_prev_l2_block_sketch(
         &self,
         prev_l2_block: BlockNumberOrTag,
-    ) -> Result<EVMStateSketch, Error> {
+    ) -> Result<EVMStateInput, Error> {
         let mut executor: HostExecutor<RootProvider<AnyNetwork>> =
             HostExecutor::new(self.l2_root_provider.clone(), prev_l2_block)
                 .await
