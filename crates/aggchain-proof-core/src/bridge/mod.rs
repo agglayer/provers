@@ -8,7 +8,6 @@ use alloy_sol_types::SolCall;
 use inserted_ger::InsertedGER;
 use serde::{Deserialize, Serialize};
 use sp1_cc_client_executor::io::EvmSketchInput;
-use sp1_cc_host_executor::EvmSketch;
 use static_call::{HashChainType, StaticCallError, StaticCallStage, StaticCallWithContext};
 use unified_bridge::{GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues}; 
 
@@ -467,16 +466,16 @@ mod tests {
 
     use alloy::rpc::types::BlockNumberOrTag;
     use alloy_primitives::hex;
-    use alloy_sol_types::SolCall;
     use serde_json::Value;
     use unified_bridge::{L1InfoTreeLeaf, L1InfoTreeLeafInner, MerkleProof};
     use url::Url;
+    use sp1_cc_host_executor::EvmSketch;
 
     use super::*;
 
     #[tokio::test(flavor = "multi_thread")]
     #[ignore = "e2e test, sepolia provider needed"]
-    async fn test_bridge_contraints() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_bridge_constraints() -> Result<(), Box<dyn std::error::Error>> {
         // Initialize the environment variables.
         dotenvy::dotenv().ok();
 
@@ -533,7 +532,7 @@ mod tests {
             .map(|s| {
                 let s_str = s.as_str().unwrap();
                 // Pad left with zeros to 64 hex characters if needed
-                let padded = format!("{:0>64}", s_str);
+                let padded = format!("{s_str:0>64}");
                 U256::from_be_slice(hex::decode(padded).unwrap().as_slice())
             })
             .collect();
@@ -544,7 +543,7 @@ mod tests {
             .iter()
             .map(|s| {
                 let s_str = s.as_str().unwrap();
-                let padded = format!("{:0>64}", s_str);
+                let padded = format!("{s_str:0>64}");
                 U256::from_be_slice(hex::decode(padded).unwrap().as_slice())
             })
             .collect();
@@ -682,8 +681,7 @@ mod tests {
             )
             .await?;
         println!(
-            "Step 1: Received prev inserted GER hash chain: {:?}",
-            hash_chain
+            "Step 1: Received prev inserted GER hash chain: {hash_chain:?}"
         );
 
         // 2. Get the new inserted GER hash chain (new block on L2)
@@ -696,8 +694,7 @@ mod tests {
             )
             .await?;
         println!(
-            "Step 2: Received new inserted GER hash chain: {:?}",
-            new_hash_chain
+            "Step 2: Received new inserted GER hash chain: {new_hash_chain:?}"
         );
 
         // 3. Get the bridge address.
@@ -710,8 +707,7 @@ mod tests {
             )
             .await?;
         println!(
-            "Step 3: Received bridge address: {:?}",
-            bridge_address
+            "Step 3: Received bridge address: {bridge_address:?}"
         );
 
         // 4. Get the new local exit root from the bridge on the new L2 block.
@@ -724,8 +720,7 @@ mod tests {
             )
             .await?;
         println!(
-            "Step 4: Received new local exit root result: {:?}",
-            new_ler_result
+            "Step 4: Received new local exit root result: {new_ler_result:?}"
         );
         let new_ler: Digest = new_ler_result.0.into();
         let expected_new_ler: Digest = {
@@ -745,8 +740,7 @@ mod tests {
             )
             .await?;
         println!(
-            "Step 5: Received previous removed GER hash chain: {:?}",
-            prev_removed
+            "Step 5: Received previous removed GER hash chain: {prev_removed:?}"
         );
 
         // 6. Get the removed GER hash chain for the new block.
@@ -759,8 +753,7 @@ mod tests {
             )
             .await?;
         println!(
-            "Step 6: Received new removed GER hash chain: {:?}",
-            new_removed
+            "Step 6: Received new removed GER hash chain: {new_removed:?}"
         );
 
         // 7. Get the claimed global index hash chain for the previous block.
@@ -773,8 +766,7 @@ mod tests {
             )
             .await?;
         println!(
-            "Step 7: Received previous claimed global index hash chain: {:?}",
-            prev_claimed
+            "Step 7: Received previous claimed global index hash chain: {prev_claimed:?}"
         );
 
         // 8. Get the claimed global index hash chain for the new block.
@@ -787,8 +779,7 @@ mod tests {
             )
             .await?;
         println!(
-            "Step 8: Received new claimed global index hash chain: {:?}",
-            new_claimed
+            "Step 8: Received new claimed global index hash chain: {new_claimed:?}"
         );
 
         // 9. Get the unset global index hash chain for the previous block.
@@ -801,8 +792,7 @@ mod tests {
             )
             .await?;
         println!(
-            "Step 9: Received previous unset global index hash chain: {:?}",
-            prev_unset
+            "Step 9: Received previous unset global index hash chain: {prev_unset:?}"
         );
 
         // 10. Get the unset global index hash chain for the new block.
@@ -815,8 +805,7 @@ mod tests {
             )
             .await?;
         println!(
-            "Step 10: Received new unset global index hash chain: {:?}",
-            new_unset
+            "Step 10: Received new unset global index hash chain: {new_unset:?}"
         );
 
         let bridge_exits_claimed: Vec<GlobalIndexWithLeafHash> = claimed_global_indexes
@@ -856,8 +845,8 @@ mod tests {
         // Commit the bridge proof.
         let bridge_data_input = BridgeConstraintsInput {
             ger_addr: ger_address,
-            prev_l2_block_hash: prev_l2_block_sketch.header.hash_slow().0.into(),
-            new_l2_block_hash: new_l2_block_sketch.header.hash_slow().0.into(),
+            prev_l2_block_hash: prev_l2_block_sketch.anchor.header().hash_slow().0.into(),
+            new_l2_block_hash: new_l2_block_sketch.anchor.header().hash_slow().0.into(),
             new_local_exit_root: expected_new_ler,
             l1_info_root,
             commit_imported_bridge_exits: ImportedBridgeExitCommitmentValues {

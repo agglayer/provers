@@ -224,7 +224,7 @@ where
         .map_err(|e| {
             // Join errors are very rare and indicate a critical system issue
             // For now, we'll just panic since this is an unexpected error case
-            panic!("Task join error in get_prev_l2_block_sketch: {}", e);
+            panic!("Task join error in get_prev_l2_block_sketch: {e}");
         })?
         ?;
 
@@ -342,7 +342,7 @@ where
         .map_err(|e| {
             // Join errors are very rare and indicate a critical system issue
             // For now, we'll just panic since this is an unexpected error case
-            panic!("Task join error in get_new_l2_block_sketch: {}", e);
+            panic!("Task join error in get_new_l2_block_sketch: {e}");
         })?
         ?;
 
