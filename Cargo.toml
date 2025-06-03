@@ -58,9 +58,9 @@ op-succinct-grpc = { git = "https://github.com/agglayer/op-succinct-grpc.git", t
 # Please check if the toolchain image at the top `scripts/make/Makefile.elf.toml` could also be
 # updated whenever updating the below dependencies; as well as updating the proof-program binary
 # crate dependencies.
-p3-baby-bear = "=0.1.4-succinct"
-p3-bn254-fr = "=0.1.4-succinct"
-p3-field = "=0.1.4-succinct"
+p3-baby-bear = "=0.2.3-succinct"
+p3-bn254-fr = "=0.2.3-succinct"
+p3-field = "=0.2.3-succinct"
 sp1-core-executor = "=5.0.0"
 sp1-core-machine = "=5.0.0"
 sp1-sdk = "=5.0.3"

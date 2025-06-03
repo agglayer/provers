@@ -26,6 +26,7 @@ p3-baby-bear = { workspace = true, features = ["nightly-features"] }
 p3-bn254-fr.workspace = true
 p3-field.workspace = true
 sp1-cc-client-executor.workspace = true
+sp1-cc-host-executor.workspace = true
 sp1-zkvm = { workspace = true, features = ["verify"] }
 thiserror.workspace = true
 tiny-keccak.workspace = true

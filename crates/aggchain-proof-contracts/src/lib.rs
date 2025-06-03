@@ -14,10 +14,7 @@ use aggchain_proof_core::bridge::{
 use agglayer_interop::types::Digest;
 use alloy::{
     eips::BlockNumberOrTag,
-    network::AnyNetwork,
     primitives::{Address, B256},
-    providers::Provider,
-    sol_types::SolCall,
 };
 use contracts::{
     GetTrustedSequencerAddress, GlobalExitRootManagerL2SovereignChainRpcClient,
@@ -146,56 +143,90 @@ where
         &self,
         prev_l2_block: BlockNumberOrTag,
     ) -> Result<EvmSketchInput, Error> {
-        let mut sketch = EvmSketch::builder()
-            .at_block(prev_l2_block)
-            .el_rpc_url(self.l2_root_provider_endpoint.clone())
-            .build()
-            .await
-            .map_err(Error::HostExecutorPreBlockInitialization)?;
-
+        let l2_root_provider_endpoint = self.l2_root_provider_endpoint.clone();
         let ger_address = *self.global_exit_root_manager_l2.address();
         let bridge_address = *self.polygon_zkevm_bridge_v2.address();
 
-        // Static calls on the hash chains
-        {
-            host_execute(
-                ger_address,
-                &mut sketch,
-                GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
-                StaticCallStage::PrevHashChain(HashChainType::InsertedGER),
-            )
-            .await?;
+        // Use spawn_blocking to handle the non-Sync EvmSketch
+        let prev_l2_block_sketch = tokio::task::spawn_blocking(move || {
+            use tokio::runtime::Handle;
+            
+            // Create a new runtime handle for the blocking task
+            let handle = Handle::current();
+            
+            handle.block_on(async move {
+                let sketch = EvmSketch::builder()
+                    .at_block(prev_l2_block)
+                    .el_rpc_url(l2_root_provider_endpoint)
+                    .build()
+                    .await
+                    .map_err(Error::HostExecutorPreBlockInitialization)?;
 
-            host_execute(
-                ger_address,
-                &mut sketch,
-                GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
-                StaticCallStage::PrevHashChain(HashChainType::RemovedGER),
-            )
-            .await?;
+                // Execute all static calls sequentially
+                let _result1 = sketch
+                    .call(
+                        ger_address,
+                        Address::default(),
+                        GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
+                    )
+                    .await
+                    .map_err(|source| Error::InvalidHostStaticCall {
+                        source,
+                        stage: StaticCallStage::PrevHashChain(HashChainType::InsertedGER),
+                    })?;
 
-            host_execute(
-                bridge_address,
-                &mut sketch,
-                BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
-                StaticCallStage::PrevHashChain(HashChainType::ClaimedGlobalIndex),
-            )
-            .await?;
+                let _result2 = sketch
+                    .call(
+                        ger_address,
+                        Address::default(),
+                        GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
+                    )
+                    .await
+                    .map_err(|source| Error::InvalidHostStaticCall {
+                        source,
+                        stage: StaticCallStage::PrevHashChain(HashChainType::RemovedGER),
+                    })?;
 
-            host_execute(
-                bridge_address,
-                &mut sketch,
-                BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
-                StaticCallStage::PrevHashChain(HashChainType::UnsetGlobalIndex),
-            )
-            .await?;
-        }
+                let _result3 = sketch
+                    .call(
+                        bridge_address,
+                        Address::default(),
+                        BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
+                    )
+                    .await
+                    .map_err(|source| Error::InvalidHostStaticCall {
+                        source,
+                        stage: StaticCallStage::PrevHashChain(HashChainType::ClaimedGlobalIndex),
+                    })?;
 
-        // Finalize to retrieve the EVMStateSketch
-        let prev_l2_block_sketch = sketch
-            .finalize()
-            .await
-            .map_err(Error::InvalidPreBlockSketchFinalization)?;
+                let _result4 = sketch
+                    .call(
+                        bridge_address,
+                        Address::default(),
+                        BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
+                    )
+                    .await
+                    .map_err(|source| Error::InvalidHostStaticCall {
+                        source,
+                        stage: StaticCallStage::PrevHashChain(HashChainType::UnsetGlobalIndex),
+                    })?;
+
+                // Finalize to retrieve the EVMStateSketch
+                let prev_l2_block_sketch = sketch
+                    .finalize()
+                    .await
+                    .map_err(Error::InvalidPreBlockSketchFinalization)?;
+
+                Ok::<_, Error>(prev_l2_block_sketch)
+            })
+        })
+        .await
+        .map_err(|e| {
+            // Join errors are very rare and indicate a critical system issue
+            // For now, we'll just panic since this is an unexpected error case
+            panic!("Task join error in get_prev_l2_block_sketch: {}", e);
+        })?
+        ?;
 
         Ok(prev_l2_block_sketch)
     }
@@ -204,93 +235,119 @@ where
         &self,
         new_l2_block: BlockNumberOrTag,
     ) -> Result<EvmSketchInput, Error> {
-        let mut sketch = EvmSketch::builder()
-            .at_block(new_l2_block)
-            .el_rpc_url(self.l2_root_provider_endpoint.clone())
-            .build()
-            .await
-            .map_err(Error::HostExecutorNewBlockInitialization)?;
-
+        let l2_root_provider_endpoint = self.l2_root_provider_endpoint.clone();
         let ger_address = *self.global_exit_root_manager_l2.address();
         let bridge_address = *self.polygon_zkevm_bridge_v2.address();
 
-        // Static call on the bridge address
-        host_execute(
-            ger_address,
-            &mut sketch,
-            GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
-            StaticCallStage::BridgeAddress,
-        )
-        .await?;
+        // Use spawn_blocking to handle the non-Sync EvmSketch
+        let new_l2_block_sketch = tokio::task::spawn_blocking(move || {
+            use tokio::runtime::Handle;
+            
+            // Create a new runtime handle for the blocking task
+            let handle = Handle::current();
+            
+            handle.block_on(async move {
+                let sketch = EvmSketch::builder()
+                    .at_block(new_l2_block)
+                    .el_rpc_url(l2_root_provider_endpoint)
+                    .build()
+                    .await
+                    .map_err(Error::HostExecutorNewBlockInitialization)?;
 
-        // Static call on the new LER
-        host_execute(
-            bridge_address,
-            &mut sketch,
-            BridgeL2SovereignChain::getRootCall {},
-            StaticCallStage::NewHashChain(HashChainType::InsertedGER),
-        )
-        .await?;
+                // Execute static call on the bridge address
+                let _result1 = sketch
+                    .call(
+                        ger_address,
+                        Address::default(),
+                        GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
+                    )
+                    .await
+                    .map_err(|source| Error::InvalidHostStaticCall {
+                        source,
+                        stage: StaticCallStage::BridgeAddress,
+                    })?;
 
-        // Static calls on the hash chains
-        {
-            host_execute(
-                ger_address,
-                &mut sketch,
-                GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
-                StaticCallStage::NewHashChain(HashChainType::InsertedGER),
-            )
-            .await?;
+                // Execute static call on the new LER
+                let _result2 = sketch
+                    .call(
+                        bridge_address,
+                        Address::default(),
+                        BridgeL2SovereignChain::getRootCall {},
+                    )
+                    .await
+                    .map_err(|source| Error::InvalidHostStaticCall {
+                        source,
+                        stage: StaticCallStage::NewHashChain(HashChainType::InsertedGER),
+                    })?;
 
-            host_execute(
-                ger_address,
-                &mut sketch,
-                GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
-                StaticCallStage::NewHashChain(HashChainType::RemovedGER),
-            )
-            .await?;
+                // Execute all remaining static calls
+                let _result3 = sketch
+                    .call(
+                        ger_address,
+                        Address::default(),
+                        GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
+                    )
+                    .await
+                    .map_err(|source| Error::InvalidHostStaticCall {
+                        source,
+                        stage: StaticCallStage::NewHashChain(HashChainType::InsertedGER),
+                    })?;
 
-            host_execute(
-                bridge_address,
-                &mut sketch,
-                BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
-                StaticCallStage::NewHashChain(HashChainType::ClaimedGlobalIndex),
-            )
-            .await?;
+                let _result4 = sketch
+                    .call(
+                        ger_address,
+                        Address::default(),
+                        GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
+                    )
+                    .await
+                    .map_err(|source| Error::InvalidHostStaticCall {
+                        source,
+                        stage: StaticCallStage::NewHashChain(HashChainType::RemovedGER),
+                    })?;
 
-            host_execute(
-                bridge_address,
-                &mut sketch,
-                BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
-                StaticCallStage::NewHashChain(HashChainType::UnsetGlobalIndex),
-            )
-            .await?;
-        }
+                let _result5 = sketch
+                    .call(
+                        bridge_address,
+                        Address::default(),
+                        BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
+                    )
+                    .await
+                    .map_err(|source| Error::InvalidHostStaticCall {
+                        source,
+                        stage: StaticCallStage::NewHashChain(HashChainType::ClaimedGlobalIndex),
+                    })?;
 
-        // Finalize to retrieve the EVMStateSketch
-        let new_l2_block_sketch = sketch
-            .finalize()
-            .await
-            .map_err(Error::InvalidNewBlockSketchFinalization)?;
+                let _result6 = sketch
+                    .call(
+                        bridge_address,
+                        Address::default(),
+                        BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
+                    )
+                    .await
+                    .map_err(|source| Error::InvalidHostStaticCall {
+                        source,
+                        stage: StaticCallStage::NewHashChain(HashChainType::UnsetGlobalIndex),
+                    })?;
+
+                // Finalize to retrieve the EVMStateSketch
+                let new_l2_block_sketch = sketch
+                    .finalize()
+                    .await
+                    .map_err(Error::InvalidNewBlockSketchFinalization)?;
+
+                Ok::<_, Error>(new_l2_block_sketch)
+            })
+        })
+        .await
+        .map_err(|e| {
+            // Join errors are very rare and indicate a critical system issue
+            // For now, we'll just panic since this is an unexpected error case
+            panic!("Task join error in get_new_l2_block_sketch: {}", e);
+        })?
+        ?;
 
         Ok(new_l2_block_sketch)
     }
-}
-
-async fn host_execute<C: SolCall, P: Provider<AnyNetwork> + Clone>(
-    contract_address: Address,
-    sketch: &mut EvmSketch<P>,
-    calldata: C,
-    stage: StaticCallStage,
-) -> Result<(), Error> {
-    let caller_address = Address::default(); // irrelevant caller address
-
-    let _ = sketch
-        .call(contract_address, caller_address, calldata)
-        .await
-        .map_err(|source| Error::InvalidHostStaticCall { source, stage })?;
-
-    Ok(())
 }
 
 impl<RpcProvider> AggchainContractsRpcClient<RpcProvider> {
