@@ -10,7 +10,6 @@ use serde::{Deserialize, Serialize};
 use sp1_cc_client_executor::io::EvmSketchInput;
 use static_call::{HashChainType, StaticCallError, StaticCallStage, StaticCallWithContext};
 use unified_bridge::{GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues};
-use rsp_primitives::genesis::Genesis;
 
 use crate::proof::IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION;
 
