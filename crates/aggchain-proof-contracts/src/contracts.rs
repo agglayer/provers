@@ -77,12 +77,12 @@ pub trait L2EvmStateSketchFetcher {
     async fn get_prev_l2_block_sketch(
         &self,
         prev_l2_block: BlockNumberOrTag,
-    ) -> Result<EVMStateSketch, Error>;
+    ) -> Result<EvmSketchInput, Error>;
 
     async fn get_new_l2_block_sketch(
         &self,
         new_l2_block: BlockNumberOrTag,
-    ) -> Result<EVMStateSketch, Error>;
+    ) -> Result<EvmSketchInput, Error>;
 }
 
 /// L2 output at block data structure.
