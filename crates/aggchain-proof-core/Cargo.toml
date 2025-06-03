@@ -39,3 +39,5 @@ sp1-cc-host-executor.workspace = true
 sp1-sdk.workspace = true
 tokio.workspace = true
 url.workspace = true
+
+rsp-primitives = { git = "https://github.com/succinctlabs/rsp", rev = "34f9ee4898e6727ddc9ce09fea0674bac7aefe8c" }
