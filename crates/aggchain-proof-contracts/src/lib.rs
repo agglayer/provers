@@ -146,6 +146,7 @@ where
         let l2_root_provider_endpoint = self.l2_root_provider_endpoint.clone();
         let ger_address = *self.global_exit_root_manager_l2.address();
         let bridge_address = *self.polygon_zkevm_bridge_v2.address();
+        let caller_address = Address::default(); // irrelevant caller address
 
         // Use spawn_local to handle the non-Sync EvmSketch
         let prev_l2_block_sketch = tokio::task::spawn_local(async move {
@@ -160,7 +161,7 @@ where
             let _result1 = sketch
                 .call(
                     ger_address,
-                    Address::default(),
+                    caller_address,
                     GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
                 )
                 .await
@@ -172,7 +173,7 @@ where
             let _result2 = sketch
                 .call(
                     ger_address,
-                    Address::default(),
+                    caller_address,
                     GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
                 )
                 .await
@@ -184,7 +185,7 @@ where
             let _result3 = sketch
                 .call(
                     bridge_address,
-                    Address::default(),
+                    caller_address,
                     BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
                 )
                 .await
@@ -196,7 +197,7 @@ where
             let _result4 = sketch
                 .call(
                     bridge_address,
-                    Address::default(),
+                    caller_address,
                     BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
                 )
                 .await
@@ -230,6 +231,7 @@ where
         let l2_root_provider_endpoint = self.l2_root_provider_endpoint.clone();
         let ger_address = *self.global_exit_root_manager_l2.address();
         let bridge_address = *self.polygon_zkevm_bridge_v2.address();
+        let caller_address = Address::default(); // irrelevant caller address
 
         // Use spawn_blocking to handle the non-Sync EvmSketch
         let new_l2_block_sketch = tokio::task::spawn_local(async move {
@@ -244,7 +246,7 @@ where
             let _result1 = sketch
                 .call(
                     ger_address,
-                    Address::default(),
+                    caller_address,
                     GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
                 )
                 .await
@@ -257,7 +259,7 @@ where
             let _result2 = sketch
                 .call(
                     bridge_address,
-                    Address::default(),
+                    caller_address,
                     BridgeL2SovereignChain::getRootCall {},
                 )
                 .await
@@ -270,7 +272,7 @@ where
             let _result3 = sketch
                 .call(
                     ger_address,
-                    Address::default(),
+                    caller_address,
                     GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
                 )
                 .await
@@ -282,7 +284,7 @@ where
             let _result4 = sketch
                 .call(
                     ger_address,
-                    Address::default(),
+                    caller_address,
                     GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
                 )
                 .await
@@ -294,7 +296,7 @@ where
             let _result5 = sketch
                 .call(
                     bridge_address,
-                    Address::default(),
+                    caller_address,
                     BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
                 )
                 .await
@@ -306,7 +308,7 @@ where
             let _result6 = sketch
                 .call(
                     bridge_address,
-                    Address::default(),
+                    caller_address,
                     BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
                 )
                 .await
