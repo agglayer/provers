@@ -94,6 +94,9 @@ impl StaticCallWithContext {
             C::abi_decode_returns_validate(&cc_public_values.contractOutput)
                 .map_err(StaticCallError::DecodeContractOutput)?;
 
-        Ok((decoded_contract_output, cc_public_values.anchorHash.0.into()))
+        Ok((
+            decoded_contract_output,
+            cc_public_values.anchorHash.0.into(),
+        ))
     }
 }
