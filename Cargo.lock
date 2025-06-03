@@ -238,7 +238,7 @@ dependencies = [
 [[package]]
 name = "agglayer-bincode"
 version = "0.6.0"
-source = "git+https://github.com/agglayer/interop.git?branch=chore%2Fbump-sp1-sdk-5_0#74ad30766147975a8e596f0d074a78782be559fe"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.7.0#205a983e1c12d533b592493fc99a4a3e68b2d8f5"
 dependencies = [
  "bincode",
  "serde",
@@ -247,7 +247,7 @@ dependencies = [
 [[package]]
 name = "agglayer-evm-client"
 version = "0.6.0"
-source = "git+https://github.com/agglayer/interop.git?branch=chore%2Fbump-sp1-sdk-5_0#74ad30766147975a8e596f0d074a78782be559fe"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.7.0#205a983e1c12d533b592493fc99a4a3e68b2d8f5"
 dependencies = [
  "agglayer-primitives",
  "alloy",
@@ -261,7 +261,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop"
 version = "0.6.0"
-source = "git+https://github.com/agglayer/interop.git?branch=chore%2Fbump-sp1-sdk-5_0#74ad30766147975a8e596f0d074a78782be559fe"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.7.0#205a983e1c12d533b592493fc99a4a3e68b2d8f5"
 dependencies = [
  "agglayer-interop-grpc-types",
  "agglayer-interop-types",
@@ -270,7 +270,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop-grpc-types"
 version = "0.6.0"
-source = "git+https://github.com/agglayer/interop.git?branch=chore%2Fbump-sp1-sdk-5_0#74ad30766147975a8e596f0d074a78782be559fe"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.7.0#205a983e1c12d533b592493fc99a4a3e68b2d8f5"
 dependencies = [
  "agglayer-interop-types",
  "bincode",
@@ -285,7 +285,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop-types"
 version = "0.6.0"
-source = "git+https://github.com/agglayer/interop.git?branch=chore%2Fbump-sp1-sdk-5_0#74ad30766147975a8e596f0d074a78782be559fe"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.7.0#205a983e1c12d533b592493fc99a4a3e68b2d8f5"
 dependencies = [
  "agglayer-bincode",
  "agglayer-primitives",
@@ -306,7 +306,7 @@ dependencies = [
 [[package]]
 name = "agglayer-primitives"
 version = "0.6.0"
-source = "git+https://github.com/agglayer/interop.git?branch=chore%2Fbump-sp1-sdk-5_0#74ad30766147975a8e596f0d074a78782be559fe"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.7.0#205a983e1c12d533b592493fc99a4a3e68b2d8f5"
 dependencies = [
  "alloy-primitives 1.1.1",
  "byteorder",
@@ -392,7 +392,7 @@ dependencies = [
 [[package]]
 name = "agglayer-tries"
 version = "0.6.0"
-source = "git+https://github.com/agglayer/interop.git?branch=chore%2Fbump-sp1-sdk-5_0#74ad30766147975a8e596f0d074a78782be559fe"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.7.0#205a983e1c12d533b592493fc99a4a3e68b2d8f5"
 dependencies = [
  "agglayer-primitives",
  "hex",
@@ -8693,14 +8693,11 @@ dependencies = [
 
 [[package]]
 name = "sp1-sdk"
-version = "5.0.0"
+version = "5.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "690529ed3c6e9ae4e7aa68aefc87db3b2ae82e6edde754dd1dabffa98cc591cb"
+checksum = "463909ee4714c1409d8d169bafe7a61a10b4c727a3c715aff1c9b3e93c7d698a"
 dependencies = [
  "alloy-primitives 1.1.1",
- "alloy-signer",
- "alloy-signer-local",
- "alloy-sol-types",
  "anyhow",
  "async-trait",
  "backoff",
@@ -9805,7 +9802,7 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 [[package]]
 name = "unified-bridge"
 version = "0.6.0"
-source = "git+https://github.com/agglayer/interop.git?branch=chore%2Fbump-sp1-sdk-5_0#74ad30766147975a8e596f0d074a78782be559fe"
+source = "git+https://github.com/agglayer/interop.git?tag=v0.7.0#205a983e1c12d533b592493fc99a4a3e68b2d8f5"
 dependencies = [
  "agglayer-primitives",
  "agglayer-tries",
