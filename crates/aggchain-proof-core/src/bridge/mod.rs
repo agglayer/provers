@@ -660,7 +660,7 @@ mod tests {
             let evm_sketch = |block_number: u64| {
                 EvmSketch::builder()
                     .at_block(BlockNumberOrTag::Number(block_number))
-                    .with_genesis(Genesis::Sepolia)
+                    .with_genesis(Genesis::Mainnet)
                     .el_rpc_url(rpc_url_l2.clone())
             };
 
@@ -669,20 +669,6 @@ mod tests {
 
             (prev, new)
         };
-
-        // 1. Get the prev inserted GER hash chain (previous block on L2)
-        println!("Step 1: Fetching previous inserted GER hash chain...");
-        let hash_chain = prev_l2_block_executor
-            .call(
-                ger_address,
-                Address::default(),
-                GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
-            )
-            .await?;
-        println!(
-            "Step 1: Received prev inserted GER hash chain: {:?}",
-            hash_chain
-        );
 
         // 2. Get the new inserted GER hash chain (new block on L2)
         println!("Step 2: Fetching new inserted GER hash chain...");
