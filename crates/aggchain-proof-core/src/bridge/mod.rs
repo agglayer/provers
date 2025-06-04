@@ -659,14 +659,14 @@ mod tests {
 
             let prev = EvmSketch::builder()
                 .at_block(BlockNumberOrTag::Number(initial_block_number))
-                .with_genesis(Genesis::Sepolia)
+                .with_genesis(Genesis::Mainnet)
                 .el_rpc_url(rpc_url_l2.clone())
                 .build()
                 .await?;
 
             let new = EvmSketch::builder()
                 .at_block(BlockNumberOrTag::Number(final_block_number))
-                .with_genesis(Genesis::Sepolia)
+                .with_genesis(Genesis::Mainnet)
                 .el_rpc_url(rpc_url_l2.clone())
                 .build()
                 .await?;
