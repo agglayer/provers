@@ -5,7 +5,7 @@ use std::{
 };
 
 use prover_config::{default_max_concurrency_limit, NetworkProverConfig, ProverType};
-use prover_logger::log::Log;
+use prover_tracer::TracingConfig;
 use prover_utils::with;
 use serde::{Deserialize, Serialize};
 
@@ -29,7 +29,7 @@ pub struct ProverConfig {
 
     /// The log configuration.
     #[serde(default, alias = "Log")]
-    pub log: Log,
+    pub log: TracingConfig,
 
     /// Telemetry configuration.
     #[serde(default, alias = "Telemetry")]
@@ -65,7 +65,7 @@ impl Default for ProverConfig {
     fn default() -> Self {
         Self {
             grpc_endpoint: default_socket_addr(),
-            log: Log::default(),
+            log: TracingConfig::default(),
             telemetry: TelemetryConfig::default(),
             shutdown: ShutdownConfig::default(),
             max_concurrency_limit: default_max_concurrency_limit(),

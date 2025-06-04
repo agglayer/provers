@@ -6,7 +6,7 @@ use clap::Parser;
 use proposer_client::{config::ProposerClientConfig, FepProposerRequest, GrpcUri};
 use proposer_service::{config::ProposerServiceConfig, ProposerService};
 use prover_alloy::L1RpcEndpoint;
-use prover_logger::log::Log;
+use prover_tracer::TracingConfig;
 use tower::{Service, ServiceExt};
 use tracing::info;
 use url::Url;
@@ -49,7 +49,7 @@ pub async fn main() -> anyhow::Result<()> {
     println!("Starting Proposer service test...");
 
     // Initialize the tracing
-    prover_logger::tracing(&Log::default());
+    prover_tracer::setup_tracing(&TracingConfig::default(), "proposer-service-test")?;
 
     let cli = Cli::parse();
 

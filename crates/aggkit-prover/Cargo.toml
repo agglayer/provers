@@ -37,7 +37,7 @@ proposer-service.workspace = true
 prover-config.workspace = true
 prover-engine.workspace = true
 prover-executor.workspace = true
-prover-logger.workspace = true
+prover-tracer.workspace = true
 
 [dev-dependencies]
 hyper-util = "0.1.10"

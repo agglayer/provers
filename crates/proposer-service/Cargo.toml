@@ -17,7 +17,7 @@ aggkit-prover-types = { workspace = true, features = ["sp1"] }
 agglayer-evm-client.workspace = true
 proposer-client.workspace = true
 prover-alloy.workspace = true
-prover-logger.workspace = true
+prover-tracer.workspace = true
 proposer-elfs.workspace = true
 
 alloy-primitives.workspace = true

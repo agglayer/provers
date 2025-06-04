@@ -15,12 +15,7 @@ mod tests;
 pub fn runtime(cfg: PathBuf, version: &str) -> anyhow::Result<()> {
     let config = Arc::new(aggkit_prover_config::ProverConfig::try_load(&cfg)?);
 
-    // Initialize the logger
-    prover_logger::tracing(&config.log);
-
     let global_cancellation_token = CancellationToken::new();
-
-    info!("Starting AggKit Prover version info: {}", version);
 
     let prover_runtime = tokio::runtime::Builder::new_multi_thread()
         .thread_name("aggkit-prover-runtime")
@@ -32,6 +27,11 @@ pub fn runtime(cfg: PathBuf, version: &str) -> anyhow::Result<()> {
         .worker_threads(2)
         .enable_all()
         .build()?;
+
+    // Initialize the tracing
+    metrics_runtime.block_on(async { prover_tracer::setup_tracing(&config.log, version) })?;
+
+    info!("Running aggkit prover version info: {}", version);
 
     let aggchain_proof_service = prover_runtime.block_on(async {
         let grpc_service = GrpcService::new(&config.aggchain_proof_service).await?;

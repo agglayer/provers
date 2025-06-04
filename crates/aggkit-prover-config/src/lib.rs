@@ -5,7 +5,7 @@ use std::{
 
 use aggchain_proof_service::config::AggchainProofServiceConfig;
 use prover_config::{NetworkProverConfig, ProverType};
-use prover_logger::log::Log;
+use prover_tracer::TracingConfig;
 use serde::{Deserialize, Serialize};
 
 pub use crate::{shutdown::ShutdownConfig, telemetry::TelemetryConfig};
@@ -28,7 +28,7 @@ pub struct ProverConfig {
 
     /// The log configuration.
     #[serde(default)]
-    pub log: Log,
+    pub log: TracingConfig,
 
     /// Telemetry configuration.
     #[serde(default)]
@@ -54,7 +54,7 @@ impl Default for ProverConfig {
     fn default() -> Self {
         Self {
             grpc_endpoint: default_socket_addr(),
-            log: Log::default(),
+            log: TracingConfig::default(),
             telemetry: TelemetryConfig::default(),
             shutdown: ShutdownConfig::default(),
             aggchain_proof_service: AggchainProofServiceConfig::default(),
