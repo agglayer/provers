@@ -4159,7 +4159,7 @@ dependencies = [
 [[package]]
 name = "sp1-cc-client-executor"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/sp1-contract-call/?branch=aurelien%2Ffix-sync#ccd40634ecff4cbd612a343f5109ba4329092271"
+source = "git+https://github.com/succinctlabs/sp1-contract-call/?rev=8e1c03f360d791fb2a5b9b9a836a33cc3cfba9b7#8e1c03f360d791fb2a5b9b9a836a33cc3cfba9b7"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",

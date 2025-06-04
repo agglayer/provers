@@ -67,8 +67,8 @@ sp1-sdk = "=5.0.3"
 sp1-prover = "=5.0.1"
 sp1-zkvm = "=5.0.0"
 
-sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", branch = "aurelien/fix-sync" }
-sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", branch = "aurelien/fix-sync" }
+sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "8e1c03f360d791fb2a5b9b9a836a33cc3cfba9b7" }
+sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "8e1c03f360d791fb2a5b9b9a836a33cc3cfba9b7" }
 
 # Core dependencies
 alloy = { version = '0.14.0', features = ["full"] }
