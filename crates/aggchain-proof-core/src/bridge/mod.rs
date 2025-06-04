@@ -466,8 +466,8 @@ mod tests {
 
     use alloy::rpc::types::BlockNumberOrTag;
     use alloy_primitives::hex;
-    use rsp_primitives::genesis::Genesis;
     use serde_json::Value;
+    use sp1_cc_client_executor::Genesis;
     use sp1_cc_host_executor::EvmSketch;
     use unified_bridge::{L1InfoTreeLeaf, L1InfoTreeLeafInner, MerkleProof};
     use url::Url;
@@ -657,19 +657,15 @@ mod tests {
                 .parse::<Url>()
                 .expect("Invalid URL format");
 
-            let prev = EvmSketch::builder()
-                .at_block(BlockNumberOrTag::Number(initial_block_number))
-                .with_genesis(Genesis::Sepolia)
-                .el_rpc_url(rpc_url_l2.clone())
-                .build()
-                .await?;
+            let evm_sketch = |block_number: u64| {
+                EvmSketch::builder()
+                    .at_block(BlockNumberOrTag::Number(block_number))
+                    .with_genesis(Genesis::Sepolia)
+                    .el_rpc_url(rpc_url_l2.clone())
+            };
 
-            let new = EvmSketch::builder()
-                .at_block(BlockNumberOrTag::Number(final_block_number))
-                .with_genesis(Genesis::Sepolia)
-                .el_rpc_url(rpc_url_l2.clone())
-                .build()
-                .await?;
+            let prev = evm_sketch(initial_block_number).build().await?;
+            let new = evm_sketch(final_block_number).build().await?;
 
             (prev, new)
         };

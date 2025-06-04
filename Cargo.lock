@@ -105,7 +105,6 @@ dependencies = [
  "p3-baby-bear",
  "p3-bn254-fr",
  "p3-field",
- "rsp-primitives",
  "semver 1.0.26",
  "serde",
  "serde_json",
