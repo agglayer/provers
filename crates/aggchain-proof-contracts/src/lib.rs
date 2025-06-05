@@ -146,7 +146,7 @@ where
         &self,
         prev_l2_block: BlockNumberOrTag,
     ) -> Result<EvmSketchInput, Error> {
-        let mut sketch = EvmSketch::builder()
+        let sketch = EvmSketch::builder()
             .at_block(prev_l2_block)
             .el_rpc_url(self.l2_root_provider_endpoint.clone())
             .build()
@@ -160,7 +160,7 @@ where
         {
             host_execute(
                 ger_address,
-                &mut sketch,
+                &sketch,
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
                 StaticCallStage::PrevHashChain(HashChainType::InsertedGER),
             )
@@ -168,7 +168,7 @@ where
 
             host_execute(
                 ger_address,
-                &mut sketch,
+                &sketch,
                 GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
                 StaticCallStage::PrevHashChain(HashChainType::RemovedGER),
             )
@@ -176,7 +176,7 @@ where
 
             host_execute(
                 bridge_address,
-                &mut sketch,
+                &sketch,
                 BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
                 StaticCallStage::PrevHashChain(HashChainType::ClaimedGlobalIndex),
             )
@@ -184,7 +184,7 @@ where
 
             host_execute(
                 bridge_address,
-                &mut sketch,
+                &sketch,
                 BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
                 StaticCallStage::PrevHashChain(HashChainType::UnsetGlobalIndex),
             )
@@ -204,7 +204,7 @@ where
         &self,
         new_l2_block: BlockNumberOrTag,
     ) -> Result<EvmSketchInput, Error> {
-        let mut sketch = EvmSketch::builder()
+        let sketch = EvmSketch::builder()
             .at_block(new_l2_block)
             .el_rpc_url(self.l2_root_provider_endpoint.clone())
             .build()
@@ -217,7 +217,7 @@ where
         // Static call on the bridge address
         host_execute(
             ger_address,
-            &mut sketch,
+            &sketch,
             GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
             StaticCallStage::BridgeAddress,
         )
@@ -226,7 +226,7 @@ where
         // Static call on the new LER
         host_execute(
             bridge_address,
-            &mut sketch,
+            &sketch,
             BridgeL2SovereignChain::getRootCall {},
             StaticCallStage::NewLer,
         )
@@ -236,7 +236,7 @@ where
         {
             host_execute(
                 ger_address,
-                &mut sketch,
+                &sketch,
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
                 StaticCallStage::NewHashChain(HashChainType::InsertedGER),
             )
@@ -244,7 +244,7 @@ where
 
             host_execute(
                 ger_address,
-                &mut sketch,
+                &sketch,
                 GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
                 StaticCallStage::NewHashChain(HashChainType::RemovedGER),
             )
@@ -252,7 +252,7 @@ where
 
             host_execute(
                 bridge_address,
-                &mut sketch,
+                &sketch,
                 BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
                 StaticCallStage::NewHashChain(HashChainType::ClaimedGlobalIndex),
             )
@@ -260,7 +260,7 @@ where
 
             host_execute(
                 bridge_address,
-                &mut sketch,
+                &sketch,
                 BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
                 StaticCallStage::NewHashChain(HashChainType::UnsetGlobalIndex),
             )
@@ -279,7 +279,7 @@ where
 
 async fn host_execute<C: SolCall, P: Provider<AnyNetwork> + Clone>(
     contract_address: Address,
-    sketch: &mut EvmSketch<P>,
+    sketch: &EvmSketch<P>,
     calldata: C,
     stage: StaticCallStage,
 ) -> Result<(), Error> {
