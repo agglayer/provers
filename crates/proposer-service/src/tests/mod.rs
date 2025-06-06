@@ -34,7 +34,11 @@ fn generate_keys() -> (
         prover_address: B256,
     }
     let data = TestAggregationOutputs::default();
-    let public_values = SP1PublicValues::from(&bincode::serialize(&data).unwrap());
+    let public_values = SP1PublicValues::from(
+        &aggkit_prover_types::bincode::sp1v4()
+            .serialize(&data)
+            .unwrap(),
+    );
     (pk, vk, public_values)
 }
 
