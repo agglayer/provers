@@ -41,7 +41,6 @@ dependencies = [
  "alloy",
  "alloy-primitives 1.1.2",
  "anyhow",
- "bincode",
  "futures",
  "proposer-elfs",
  "prover-config",
@@ -134,7 +133,6 @@ dependencies = [
  "alloy-primitives 1.1.2",
  "alloy-sol-types",
  "anyhow",
- "bincode",
  "futures",
  "proposer-client",
  "proposer-service",
@@ -172,7 +170,6 @@ dependencies = [
  "aggkit-prover-types",
  "agglayer-interop",
  "anyhow",
- "bincode",
  "clap",
  "dotenvy",
  "futures",
@@ -224,7 +221,6 @@ dependencies = [
  "agglayer-interop",
  "alloy-primitives 1.1.2",
  "anyhow",
- "bincode",
  "pbjson",
  "prost",
  "prover-elf-utils",
@@ -324,7 +320,6 @@ dependencies = [
  "agglayer-prover-types",
  "agglayer-telemetry",
  "anyhow",
- "bincode",
  "buildstructor",
  "prost",
  "prover-engine",
@@ -359,7 +354,6 @@ name = "agglayer-prover-types"
 version = "0.1.0"
 dependencies = [
  "agglayer-interop",
- "bincode",
  "pbjson",
  "prost",
  "prover-executor",
@@ -6021,11 +6015,11 @@ dependencies = [
 name = "proposer-client"
 version = "0.1.0"
 dependencies = [
+ "agglayer-interop-types",
  "alloy-primitives 1.1.2",
  "anyhow",
  "async-trait",
  "base64 0.22.1",
- "bincode",
  "educe",
  "hex",
  "insta",
@@ -6074,7 +6068,6 @@ dependencies = [
  "alloy-sol-types",
  "anyhow",
  "base64 0.22.1",
- "bincode",
  "clap",
  "educe",
  "futures",
@@ -6207,7 +6200,7 @@ dependencies = [
 name = "prover-elf-utils"
 version = "0.1.0"
 dependencies = [
- "bincode",
+ "agglayer-interop-types",
  "sp1-prover",
 ]
 
@@ -6234,7 +6227,6 @@ name = "prover-executor"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bincode",
  "buildstructor",
  "futures",
  "prover-config",
