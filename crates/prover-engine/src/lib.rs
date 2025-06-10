@@ -14,7 +14,7 @@ use tracing::{debug, info};
 pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
 /// A prover engine that manages RPC and metrics servers.
-/// 
+///
 /// NOTE: The `start()` method can only be called synchronously and will block the calling thread.
 pub struct ProverEngine {
     rpc_server: axum::Router,
@@ -94,8 +94,9 @@ impl ProverEngine {
     }
 
     /// Starts the prover engine.
-    /// 
-    /// NOTE: This function can only be called synchronously and will block the calling thread.
+    ///
+    /// NOTE: This function can only be called synchronously and will block the
+    /// calling thread.
     pub fn start(mut self) -> anyhow::Result<()> {
         info!("Starting the prover engine");
         let cancellation_token = self.cancellation_token.take().unwrap_or_default();
