@@ -39,6 +39,7 @@ pub fn main(cfg: PathBuf, version: &str, program: &'static [u8]) -> anyhow::Resu
     let pp_service =
         prover_runtime.block_on(async { crate::prover::Prover::create_service(&config, program) });
 
+    // NOTE: ProverEngine::start() is synchronous only and blocks the calling thread
     _ = ProverEngine::new(
         config.grpc_endpoint,
         config.telemetry.addr,
