@@ -11,6 +11,10 @@ pub enum Error {
     ProofVerificationFailed(#[from] ProofVerificationError),
     #[error("Prover executor failed")]
     ExecutorFailed(Vec<u8>),
+    #[error("Unable to initialize the primary prover")]
+    UnableToInitializePrimaryProver,
+    #[error("Unable to initialize the fallback prover")]
+    UnableToInitializeFallbackProver,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, thiserror::Error, PartialEq, Eq)]

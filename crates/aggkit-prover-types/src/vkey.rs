@@ -3,7 +3,6 @@ use std::{
     sync::OnceLock,
 };
 
-use bincode::Options;
 pub use sp1_sdk::SP1VerifyingKey;
 
 pub struct LazyVerifyingKey {
@@ -24,7 +23,7 @@ impl LazyVerifyingKey {
     /// Get the associated vkey.
     pub fn vkey(&self) -> &SP1VerifyingKey {
         self.vkey.get_or_init(|| {
-            prover_elf_utils::elf_info::bincode_options()
+            prover_elf_utils::elf_info::bincode_codec()
                 .deserialize(self.bytes)
                 .expect("vkey not encoded correctly")
         })

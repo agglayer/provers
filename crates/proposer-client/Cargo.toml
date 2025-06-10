@@ -12,7 +12,6 @@ alloy-primitives.workspace = true
 anyhow.workspace = true
 async-trait.workspace = true
 base64.workspace = true
-bincode.workspace = true
 educe.workspace = true
 hex.workspace = true
 jsonrpsee.workspace = true
@@ -27,6 +26,7 @@ tracing.workspace = true
 url.workspace = true
 
 # Ecosystem dependencies
+agglayer-interop-types.workspace = true
 op-succinct-grpc.workspace = true
 
 # Local dependencies
@@ -36,6 +36,7 @@ prover-utils.workspace = true
 mockall = { workspace = true, optional = true }
 
 [dev-dependencies]
+insta.workspace = true
 proposer-client = { path = ".", features = ["testutils"] }
 mockito.workspace = true
 serde_json.workspace = true

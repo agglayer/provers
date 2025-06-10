@@ -206,8 +206,9 @@ impl FepInputs {
     ) -> Result<(), ProofError> {
         if let Some(signature) = self.signature_optimistic_mode {
             // Verify only one ECDSA on the public inputs
+            let sha256_fep_public_values = self.sha256_public_values();
             let signature_commitment = keccak256_combine([
-                self.sha256_public_values(),
+                sha256_fep_public_values,
                 new_local_exit_root.0,
                 commit_imported_bridge_exits.0,
             ]);
@@ -217,6 +218,16 @@ impl FepInputs {
                 .map_err(|_| ProofError::InvalidSignature)?;
 
             if recovered_signer != self.trusted_sequencer {
+                eprintln!(
+                    "fep public values: {:?}",
+                    AggregationProofPublicValues::from(self)
+                );
+                eprintln!(
+                    "signed_commitment: {signature_commitment:?} = keccak(sha256_fep_pv: \
+                     {sha256_fep_public_values:?} || new_ler:
+                     {new_local_exit_root:?} || commit_imported_bridge_exits: \
+                     {commit_imported_bridge_exits:?})"
+                );
                 return Err(ProofError::InvalidSigner {
                     declared: self.trusted_sequencer,
                     recovered: recovered_signer,

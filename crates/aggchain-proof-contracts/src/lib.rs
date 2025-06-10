@@ -16,7 +16,7 @@ use alloy::{
     eips::BlockNumberOrTag,
     network::AnyNetwork,
     primitives::{Address, B256},
-    providers::{Provider, RootProvider},
+    providers::Provider,
     sol_types::SolCall,
 };
 use contracts::{
@@ -25,9 +25,10 @@ use contracts::{
 };
 use jsonrpsee::{core::client::ClientT, http_client::HttpClient, rpc_params};
 use prover_alloy::{build_alloy_fill_provider, AlloyFillProvider};
-use sp1_cc_client_executor::{io::EVMStateSketch, ContractInput};
-use sp1_cc_host_executor::HostExecutor;
+use sp1_cc_client_executor::io::EvmSketchInput;
+use sp1_cc_host_executor::EvmSketch;
 use tracing::info;
+use url::Url;
 
 pub use crate::error::Error;
 use crate::{
@@ -53,8 +54,8 @@ pub trait AggchainContractsClient:
 /// smart contracts relevant for the aggchain prover.
 #[derive(Clone)]
 pub struct AggchainContractsRpcClient<RpcProvider> {
-    /// L2 rpc execution layer client.
-    l2_root_provider: RootProvider<AnyNetwork>,
+    /// Url for the evm state sketch builder.
+    l2_root_provider_endpoint: Url,
 
     /// L2 rpc consensus layer client (rollup node).
     l2_cl_client: Arc<HttpClient>,
@@ -144,11 +145,13 @@ where
     async fn get_prev_l2_block_sketch(
         &self,
         prev_l2_block: BlockNumberOrTag,
-    ) -> Result<EVMStateSketch, Error> {
-        let mut executor: HostExecutor<RootProvider<AnyNetwork>> =
-            HostExecutor::new(self.l2_root_provider.clone(), prev_l2_block)
-                .await
-                .map_err(Error::HostExecutorPreBlockInitialization)?;
+    ) -> Result<EvmSketchInput, Error> {
+        let sketch = EvmSketch::builder()
+            .at_block(prev_l2_block)
+            .el_rpc_url(self.l2_root_provider_endpoint.clone())
+            .build()
+            .await
+            .map_err(Error::HostExecutorPreBlockInitialization)?;
 
         let ger_address = *self.global_exit_root_manager_l2.address();
         let bridge_address = *self.polygon_zkevm_bridge_v2.address();
@@ -157,7 +160,7 @@ where
         {
             host_execute(
                 ger_address,
-                &mut executor,
+                &sketch,
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
                 StaticCallStage::PrevHashChain(HashChainType::InsertedGER),
             )
@@ -165,7 +168,7 @@ where
 
             host_execute(
                 ger_address,
-                &mut executor,
+                &sketch,
                 GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
                 StaticCallStage::PrevHashChain(HashChainType::RemovedGER),
             )
@@ -173,7 +176,7 @@ where
 
             host_execute(
                 bridge_address,
-                &mut executor,
+                &sketch,
                 BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
                 StaticCallStage::PrevHashChain(HashChainType::ClaimedGlobalIndex),
             )
@@ -181,7 +184,7 @@ where
 
             host_execute(
                 bridge_address,
-                &mut executor,
+                &sketch,
                 BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
                 StaticCallStage::PrevHashChain(HashChainType::UnsetGlobalIndex),
             )
@@ -189,7 +192,7 @@ where
         }
 
         // Finalize to retrieve the EVMStateSketch
-        let prev_l2_block_sketch = executor
+        let prev_l2_block_sketch = sketch
             .finalize()
             .await
             .map_err(Error::InvalidPreBlockSketchFinalization)?;
@@ -200,11 +203,13 @@ where
     async fn get_new_l2_block_sketch(
         &self,
         new_l2_block: BlockNumberOrTag,
-    ) -> Result<EVMStateSketch, Error> {
-        let mut executor: HostExecutor<RootProvider<AnyNetwork>> =
-            HostExecutor::new(self.l2_root_provider.clone(), new_l2_block)
-                .await
-                .map_err(Error::HostExecutorNewBlockInitialization)?;
+    ) -> Result<EvmSketchInput, Error> {
+        let sketch = EvmSketch::builder()
+            .at_block(new_l2_block)
+            .el_rpc_url(self.l2_root_provider_endpoint.clone())
+            .build()
+            .await
+            .map_err(Error::HostExecutorNewBlockInitialization)?;
 
         let ger_address = *self.global_exit_root_manager_l2.address();
         let bridge_address = *self.polygon_zkevm_bridge_v2.address();
@@ -212,7 +217,7 @@ where
         // Static call on the bridge address
         host_execute(
             ger_address,
-            &mut executor,
+            &sketch,
             GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
             StaticCallStage::BridgeAddress,
         )
@@ -221,9 +226,9 @@ where
         // Static call on the new LER
         host_execute(
             bridge_address,
-            &mut executor,
+            &sketch,
             BridgeL2SovereignChain::getRootCall {},
-            StaticCallStage::NewHashChain(HashChainType::InsertedGER),
+            StaticCallStage::NewLer,
         )
         .await?;
 
@@ -231,7 +236,7 @@ where
         {
             host_execute(
                 ger_address,
-                &mut executor,
+                &sketch,
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
                 StaticCallStage::NewHashChain(HashChainType::InsertedGER),
             )
@@ -239,7 +244,7 @@ where
 
             host_execute(
                 ger_address,
-                &mut executor,
+                &sketch,
                 GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
                 StaticCallStage::NewHashChain(HashChainType::RemovedGER),
             )
@@ -247,7 +252,7 @@ where
 
             host_execute(
                 bridge_address,
-                &mut executor,
+                &sketch,
                 BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
                 StaticCallStage::NewHashChain(HashChainType::ClaimedGlobalIndex),
             )
@@ -255,7 +260,7 @@ where
 
             host_execute(
                 bridge_address,
-                &mut executor,
+                &sketch,
                 BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
                 StaticCallStage::NewHashChain(HashChainType::UnsetGlobalIndex),
             )
@@ -263,7 +268,7 @@ where
         }
 
         // Finalize to retrieve the EVMStateSketch
-        let new_l2_block_sketch = executor
+        let new_l2_block_sketch = sketch
             .finalize()
             .await
             .map_err(Error::InvalidNewBlockSketchFinalization)?;
@@ -274,18 +279,14 @@ where
 
 async fn host_execute<C: SolCall, P: Provider<AnyNetwork> + Clone>(
     contract_address: Address,
-    host_executor: &mut HostExecutor<P>,
+    sketch: &EvmSketch<P>,
     calldata: C,
     stage: StaticCallStage,
 ) -> Result<(), Error> {
     let caller_address = Address::default(); // irrelevant caller address
 
-    let _ = host_executor
-        .execute(ContractInput::new_call(
-            contract_address,
-            caller_address,
-            calldata,
-        ))
+    let _ = sketch
+        .call(contract_address, caller_address, calldata)
         .await
         .map_err(|source| Error::InvalidHostStaticCall { source, stage })?;
 
@@ -383,8 +384,6 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             .call()
             .await
             .map_err(Error::UnableToRetrieveTrustedSequencerAddress)?;
-        let l2_root_provider =
-            RootProvider::<AnyNetwork>::new_http(config.l2_execution_layer_rpc_endpoint.clone());
 
         info!(global_exit_root_manager_l2=%config.global_exit_root_manager_v2_sovereign_chain,
             polygon_zkevm_bridge_v2=%polygon_zkevm_bridge_v2.address(),
@@ -396,7 +395,7 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             l2_cl_client,
             polygon_zkevm_bridge_v2,
             aggchain_fep,
-            l2_root_provider,
+            l2_root_provider_endpoint: config.l2_execution_layer_rpc_endpoint.clone(),
             global_exit_root_manager_l2,
             trusted_sequencer_addr,
         })

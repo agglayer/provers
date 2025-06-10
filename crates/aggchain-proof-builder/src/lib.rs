@@ -25,10 +25,11 @@ use aggchain_proof_core::{
 };
 use aggchain_proof_types::AggchainProofInputs;
 use aggkit_prover_types::vkey_hash::VKeyHash;
-use agglayer_interop::types::{GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues};
+use agglayer_interop::types::{
+    bincode, GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues,
+};
 use agglayer_primitives::Digest;
 use alloy::eips::BlockNumberOrTag;
-use bincode::Options;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
 use prover_executor::{Executor, ProofType};
@@ -423,8 +424,9 @@ where
                 .await
                 .map_err(|error| Error::ProverFailedToExecute(anyhow::Error::from_boxed(error)))?;
 
-            let public_input: AggchainProofPublicValues =
-                bincode::deserialize(proof.public_values.as_slice()).unwrap();
+            let public_input: AggchainProofPublicValues = bincode::sp1v4()
+                .deserialize(proof.public_values.as_slice())
+                .unwrap();
 
             let stark = proof
                 .proof
@@ -446,14 +448,10 @@ where
             info!(%last_proven_block, %end_block, "Aggchain proof generated");
 
             Ok(AggchainProofBuilderResponse {
-                vkey: bincode::DefaultOptions::new()
-                    .with_big_endian()
-                    .with_fixint_encoding()
+                vkey: bincode::default()
                     .serialize(&aggchain_vkey)
                     .map_err(Error::UnableToSerializeVkey)?,
-                proof: bincode::DefaultOptions::new()
-                    .with_big_endian()
-                    .with_fixint_encoding()
+                proof: bincode::default()
                     .serialize(&stark)
                     .map_err(Error::UnableToSerializeProof)?,
                 aggchain_params: public_input.aggchain_params,

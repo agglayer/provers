@@ -7,5 +7,5 @@ description = "Crate providing utilities to manage Agglayer's ELFs related struc
 repository.workspace = true
 
 [dependencies]
-bincode.workspace = true
+agglayer-interop-types.workspace = true
 sp1-prover.workspace = true
