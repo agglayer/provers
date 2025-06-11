@@ -107,8 +107,8 @@ impl ServerBuilder {
     /// # Examples
     /// ```
     /// # use std::sync::Arc;
-    /// # use agglayer_telemetry::ServerBuilder;
-    /// # use agglayer_telemetry::Error;
+    /// # use prover_telemetry::ServerBuilder;
+    /// # use prover_telemetry::Error;
     /// # use tokio_util::sync::CancellationToken;
     /// # use std::net::SocketAddr;
     /// #
