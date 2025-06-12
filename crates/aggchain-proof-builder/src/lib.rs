@@ -280,7 +280,6 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             })
             .collect();
 
-
         let l1_info_tree_leaf = request.aggchain_proof_inputs.l1_info_tree_leaf;
         let mut fep_inputs = FepInputs {
             l1_head: l1_info_tree_leaf.inner.block_hash,
