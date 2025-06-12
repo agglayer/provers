@@ -476,7 +476,7 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     #[ignore = "e2e test, sepolia provider needed"]
-    async fn test_bridge_contraints() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_bridge_constraints() -> Result<(), Box<dyn std::error::Error>> {
         // Initialize the environment variables.
         dotenvy::dotenv().ok();
 
@@ -660,7 +660,7 @@ mod tests {
             let evm_sketch = |block_number: u64| {
                 EvmSketch::builder()
                     .at_block(BlockNumberOrTag::Number(block_number))
-                    .with_genesis(Genesis::Sepolia)
+                    .with_genesis(Genesis::Mainnet)
                     .el_rpc_url(rpc_url_l2.clone())
             };
 
@@ -669,20 +669,6 @@ mod tests {
 
             (prev, new)
         };
-
-        // 1. Get the prev inserted GER hash chain (previous block on L2)
-        println!("Step 1: Fetching previous inserted GER hash chain...");
-        let hash_chain = prev_l2_block_executor
-            .call(
-                ger_address,
-                Address::default(),
-                GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
-            )
-            .await?;
-        println!(
-            "Step 1: Received prev inserted GER hash chain: {:?}",
-            hash_chain
-        );
 
         // 2. Get the new inserted GER hash chain (new block on L2)
         println!("Step 2: Fetching new inserted GER hash chain...");
@@ -939,7 +925,7 @@ mod tests {
         // In that case, you should update the file.
         // The process is to:
         // 1. Obtain a Sepolia RPC key, and run `export RPC_11155111=https://eth-sepolia.g.alchemy.com/v2/[censored]`
-        // 2. Run `cargo test --workspace -- bridge::tests::test_bridge_contraints
+        // 2. Run `cargo test --workspace -- bridge::tests::test_bridge_constraints
         //    --exact --show-output --include-ignored` (Or you can limit to `--package
         //    aggchain-proof-core --lib` if your cargo folder is not filled yet)
         // 3. The file should then be ready for committing
