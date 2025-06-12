@@ -25,7 +25,7 @@ use contracts::{
 };
 use jsonrpsee::{core::client::ClientT, http_client::HttpClient, rpc_params};
 use prover_alloy::{build_alloy_fill_provider, AlloyFillProvider};
-use sp1_cc_client_executor::io::EvmSketchInput;
+use sp1_cc_client_executor::{io::EvmSketchInput, Genesis};
 use sp1_cc_host_executor::EvmSketch;
 use tracing::info;
 use url::Url;
@@ -74,6 +74,9 @@ pub struct AggchainContractsRpcClient<RpcProvider> {
 
     /// Caller address.
     static_call_caller_address: agglayer_primitives::Address,
+
+    /// Evm sketch genesis configuration.
+    evm_sketch_genesis: Genesis,
 }
 
 impl<T: alloy::providers::Provider> AggchainContractsClient for AggchainContractsRpcClient<T> {}
@@ -151,6 +154,7 @@ where
     ) -> Result<EvmSketchInput, Error> {
         let sketch = EvmSketch::builder()
             .at_block(prev_l2_block)
+            .with_genesis(self.evm_sketch_genesis.clone())
             .el_rpc_url(self.l2_root_provider_endpoint.clone())
             .build()
             .await
@@ -214,6 +218,7 @@ where
     ) -> Result<EvmSketchInput, Error> {
         let sketch = EvmSketch::builder()
             .at_block(new_l2_block)
+            .with_genesis(self.evm_sketch_genesis.clone())
             .el_rpc_url(self.l2_root_provider_endpoint.clone())
             .build()
             .await
@@ -413,6 +418,7 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             global_exit_root_manager_l2,
             trusted_sequencer_addr,
             static_call_caller_address: config.static_call_caller_address,
+            evm_sketch_genesis: config::parse_evm_sketch_genesis(&config.evm_sketch_genesis)?,
         })
     }
 }
