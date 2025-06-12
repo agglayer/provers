@@ -280,6 +280,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             })
             .collect();
 
+
         let l1_info_tree_leaf = request.aggchain_proof_inputs.l1_info_tree_leaf;
         let mut fep_inputs = FepInputs {
             l1_head: l1_info_tree_leaf.inner.block_hash,
@@ -407,7 +408,7 @@ where
         let network_id = self.network_id;
         let aggregation_vkey = self.aggregation_vkey.clone();
         let aggchain_vkey = self.aggchain_vkey.clone();
-        let static_call_caller_address = self.static_call_caller_address.clone();
+        let static_call_caller_address = self.static_call_caller_address;
 
         async move {
             let last_proven_block = req.aggchain_proof_inputs.last_proven_block;
