@@ -89,23 +89,31 @@ fn default_evm_sketch_genesis() -> String {
 }
 
 pub(crate) fn parse_evm_sketch_genesis(evm_sketch_genesis: &str) -> Result<Genesis, crate::Error> {
-    match evm_sketch_genesis {
-        "mainnet" => Ok(Genesis::Mainnet),
-        "sepolia" => Ok(Genesis::Sepolia),
-        "opmainnet" => Ok(Genesis::OpMainnet),
-        "linea" => Ok(Genesis::Linea),
-        custom => {
-            // We load the custom genesis from a file, and parse it to a string.
-            if !std::path::Path::new(custom).exists() {
-                Err(crate::Error::InvalidEvmSketchGenesisInput(format!(
-                    "custom genesis json file does not exist: {}",
-                    custom
-                )))
-            } else {
-                let genesis_json_str = std::fs::read_to_string(custom)
-                    .map_err(|e| crate::Error::InvalidEvmSketchGenesisInput(e.to_string()))?;
-                Ok(Genesis::Custom(genesis_json_str))
-            }
-        }
+    let evm_sketch_genesis = evm_sketch_genesis.trim();
+    if evm_sketch_genesis.is_empty() {
+        return Err(crate::Error::InvalidEvmSketchGenesisInput(
+            "evm sketch genesis input is empty".to_string(),
+        ));
+    }
+    // Check if some of the known genesis names are used.
+    match evm_sketch_genesis.to_lowercase().as_str() {
+        "mainnet" => return Ok(Genesis::Mainnet),
+        "sepolia" => return Ok(Genesis::Sepolia),
+        "opmainnet" => return Ok(Genesis::OpMainnet),
+        "linea" => return Ok(Genesis::Linea),
+        _ => {}
+    };
+
+    // We consider the `evm_sketch_genesis` to be file path to the custom genesis
+    // from a file. We parse it to a string.
+    if !std::path::Path::new(evm_sketch_genesis).exists() {
+        Err(crate::Error::InvalidEvmSketchGenesisInput(format!(
+            "custom genesis json file does not exist: {}",
+            evm_sketch_genesis
+        )))
+    } else {
+        let genesis_json_str = std::fs::read_to_string(evm_sketch_genesis)
+            .map_err(|e| crate::Error::InvalidEvmSketchGenesisInput(e.to_string()))?;
+        Ok(Genesis::Custom(genesis_json_str))
     }
 }
