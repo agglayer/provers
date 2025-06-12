@@ -132,6 +132,8 @@ pub struct BridgeWitness {
     pub prev_l2_block_sketch: EvmSketchInput,
     /// State sketch for the new L2 block.
     pub new_l2_block_sketch: EvmSketchInput,
+    /// Caller address for the static call.
+    pub caller_address: Address,
 }
 
 /// Bridge data required to verify the bridge smart contract integrity.
@@ -159,7 +161,11 @@ impl BridgeConstraintsInput {
             stage: StaticCallStage::PrevHashChain(hash_chain),
             block_hash: self.prev_l2_block_hash,
         }
-        .execute(&self.bridge_witness.prev_l2_block_sketch, calldata.clone())?;
+        .execute(
+            self.bridge_witness.caller_address,
+            &self.bridge_witness.prev_l2_block_sketch,
+            calldata.clone(),
+        )?;
 
         // Get the state of the hash chain of the new block on L2
         let new_hash_chain = StaticCallWithContext {
@@ -167,7 +173,11 @@ impl BridgeConstraintsInput {
             stage: StaticCallStage::NewHashChain(hash_chain),
             block_hash: self.new_l2_block_hash,
         }
-        .execute(&self.bridge_witness.new_l2_block_sketch, calldata)?;
+        .execute(
+            self.bridge_witness.caller_address,
+            &self.bridge_witness.new_l2_block_sketch,
+            calldata,
+        )?;
 
         Ok((prev_hash_chain, new_hash_chain))
     }
@@ -279,6 +289,7 @@ impl BridgeConstraintsInput {
             block_hash: self.new_l2_block_hash,
         }
         .execute(
+            self.bridge_witness.caller_address,
             &self.bridge_witness.new_l2_block_sketch,
             BridgeL2SovereignChain::getRootCall {},
         )?
@@ -308,6 +319,7 @@ impl BridgeConstraintsInput {
             block_hash: self.new_l2_block_hash,
         }
         .execute(
+            self.bridge_witness.caller_address,
             &self.bridge_witness.new_l2_block_sketch,
             GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
         )?;
@@ -670,12 +682,13 @@ mod tests {
             (prev, new)
         };
 
+        let caller_address = address!("0x39027D57969aD59161365e0bbd53D2F63eE5AAA6");
         // 1. Get the prev inserted GER hash chain (previous block on L2)
         println!("Step 1: Fetching previous inserted GER hash chain...");
         let hash_chain = prev_l2_block_executor
             .call(
                 ger_address,
-                Address::default(),
+                caller_address,
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
             )
             .await?;
@@ -689,7 +702,7 @@ mod tests {
         let new_hash_chain = new_l2_block_executor
             .call(
                 ger_address,
-                Address::default(),
+                caller_address,
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
             )
             .await?;
@@ -703,7 +716,7 @@ mod tests {
         let bridge_address = new_l2_block_executor
             .call(
                 ger_address,
-                Address::default(),
+                caller_address,
                 GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
             )
             .await?;
@@ -715,7 +728,7 @@ mod tests {
         let new_ler_bytes = new_l2_block_executor
             .call(
                 bridge_address,
-                Address::default(),
+                caller_address,
                 BridgeL2SovereignChain::getRootCall {},
             )
             .await?;
@@ -736,7 +749,7 @@ mod tests {
         let prev_removed = prev_l2_block_executor
             .call(
                 ger_address,
-                Address::default(),
+                caller_address,
                 GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
             )
             .await?;
@@ -750,7 +763,7 @@ mod tests {
         let new_removed = new_l2_block_executor
             .call(
                 ger_address,
-                Address::default(),
+                caller_address,
                 GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
             )
             .await?;
@@ -764,7 +777,7 @@ mod tests {
         let prev_claimed = prev_l2_block_executor
             .call(
                 bridge_address,
-                Address::default(),
+                caller_address,
                 BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
             )
             .await?;
@@ -778,7 +791,7 @@ mod tests {
         let new_claimed = new_l2_block_executor
             .call(
                 bridge_address,
-                Address::default(),
+                caller_address,
                 BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
             )
             .await?;
@@ -792,7 +805,7 @@ mod tests {
         let prev_unset = prev_l2_block_executor
             .call(
                 bridge_address,
-                Address::default(),
+                caller_address,
                 BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
             )
             .await?;
@@ -806,7 +819,7 @@ mod tests {
         let new_unset = new_l2_block_executor
             .call(
                 bridge_address,
-                Address::default(),
+                caller_address,
                 BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
             )
             .await?;
@@ -868,6 +881,7 @@ mod tests {
                 global_indices_unset: unclaimed_global_indexes,
                 prev_l2_block_sketch,
                 new_l2_block_sketch,
+                caller_address: address!("0x39027D57969aD59161365e0bbd53D2F63eE5AAA6"),
             },
         };
 

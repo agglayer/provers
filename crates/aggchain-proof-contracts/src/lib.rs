@@ -71,6 +71,9 @@ pub struct AggchainContractsRpcClient<RpcProvider> {
 
     /// Trusted sequencer address.
     trusted_sequencer_addr: agglayer_primitives::Address,
+
+    /// Caller address.
+    static_call_caller_address: agglayer_primitives::Address,
 }
 
 impl<T: alloy::providers::Provider> AggchainContractsClient for AggchainContractsRpcClient<T> {}
@@ -153,12 +156,14 @@ where
             .await
             .map_err(Error::HostExecutorPreBlockInitialization)?;
 
+        let caller_address = self.static_call_caller_address;
         let ger_address = *self.global_exit_root_manager_l2.address();
         let bridge_address = *self.polygon_zkevm_bridge_v2.address();
 
         // Static calls on the hash chains
         {
             host_execute(
+                caller_address,
                 ger_address,
                 &sketch,
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
@@ -167,6 +172,7 @@ where
             .await?;
 
             host_execute(
+                caller_address,
                 ger_address,
                 &sketch,
                 GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
@@ -175,6 +181,7 @@ where
             .await?;
 
             host_execute(
+                caller_address,
                 bridge_address,
                 &sketch,
                 BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
@@ -183,6 +190,7 @@ where
             .await?;
 
             host_execute(
+                caller_address,
                 bridge_address,
                 &sketch,
                 BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
@@ -211,11 +219,13 @@ where
             .await
             .map_err(Error::HostExecutorNewBlockInitialization)?;
 
+        let caller_address = self.static_call_caller_address;
         let ger_address = *self.global_exit_root_manager_l2.address();
         let bridge_address = *self.polygon_zkevm_bridge_v2.address();
 
         // Static call on the bridge address
         host_execute(
+            caller_address,
             ger_address,
             &sketch,
             GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
@@ -225,6 +235,7 @@ where
 
         // Static call on the new LER
         host_execute(
+            caller_address,
             bridge_address,
             &sketch,
             BridgeL2SovereignChain::getRootCall {},
@@ -235,6 +246,7 @@ where
         // Static calls on the hash chains
         {
             host_execute(
+                caller_address,
                 ger_address,
                 &sketch,
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
@@ -243,6 +255,7 @@ where
             .await?;
 
             host_execute(
+                caller_address,
                 ger_address,
                 &sketch,
                 GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
@@ -251,6 +264,7 @@ where
             .await?;
 
             host_execute(
+                caller_address,
                 bridge_address,
                 &sketch,
                 BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
@@ -259,6 +273,7 @@ where
             .await?;
 
             host_execute(
+                caller_address,
                 bridge_address,
                 &sketch,
                 BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
@@ -278,13 +293,12 @@ where
 }
 
 async fn host_execute<C: SolCall, P: Provider<AnyNetwork> + Clone>(
+    caller_address: Address,
     contract_address: Address,
     sketch: &EvmSketch<P>,
     calldata: C,
     stage: StaticCallStage,
 ) -> Result<(), Error> {
-    let caller_address = Address::default(); // irrelevant caller address
-
     let _ = sketch
         .call(contract_address, caller_address, calldata)
         .await
@@ -398,6 +412,7 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             l2_root_provider_endpoint: config.l2_execution_layer_rpc_endpoint.clone(),
             global_exit_root_manager_l2,
             trusted_sequencer_addr,
+            static_call_caller_address: config.static_call_caller_address,
         })
     }
 }

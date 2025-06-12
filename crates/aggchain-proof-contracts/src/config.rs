@@ -13,6 +13,9 @@ const GLOBAL_EXIT_ROOT_MANAGER_L2_SOVEREIGN_CHAIN_ADDRESS: Address =
 /// on the L1 chain.
 const POLYGON_ROLLUP_MANAGER: Address = address!("0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e");
 
+/// Default random address just for the static call caller address.
+const STATIC_CALL_CALLER_ADDRESS: Address = address!("0x39027D57969aD59161365e0bbd53D2F63eE5AAA6");
+
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct AggchainProofContractsConfig {
@@ -34,6 +37,10 @@ pub struct AggchainProofContractsConfig {
     /// Address of the L2 GlobalExitRootManagerL2SovereignChain.sol contract
     #[serde(default = "default_global_exit_root_manager_v2_sovereign_chain")]
     pub global_exit_root_manager_v2_sovereign_chain: Address,
+
+    /// Caller address for the static calls
+    #[serde(default = "default_static_call_caller_address")]
+    pub static_call_caller_address: Address,
 }
 
 impl Default for AggchainProofContractsConfig {
@@ -45,6 +52,7 @@ impl Default for AggchainProofContractsConfig {
             polygon_rollup_manager: default_polygon_rollup_manager(),
             global_exit_root_manager_v2_sovereign_chain:
                 default_global_exit_root_manager_v2_sovereign_chain(),
+            static_call_caller_address: default_static_call_caller_address(),
         }
     }
 }
@@ -62,4 +70,8 @@ fn default_polygon_rollup_manager() -> Address {
 
 fn default_global_exit_root_manager_v2_sovereign_chain() -> Address {
     GLOBAL_EXIT_ROOT_MANAGER_L2_SOVEREIGN_CHAIN_ADDRESS
+}
+
+fn default_static_call_caller_address() -> Address {
+    STATIC_CALL_CALLER_ADDRESS
 }

@@ -28,7 +28,7 @@ use aggkit_prover_types::vkey_hash::VKeyHash;
 use agglayer_interop::types::{
     bincode, GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues,
 };
-use agglayer_primitives::Digest;
+use agglayer_primitives::{Address, Digest};
 use alloy::eips::BlockNumberOrTag;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
@@ -139,6 +139,9 @@ pub struct AggchainProofBuilder<ContractsClient> {
 
     /// Verification key for the aggchain proof.
     aggchain_vkey: Arc<SP1VerifyingKey>,
+
+    /// Static call caller address.
+    static_call_caller_address: Address,
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
@@ -185,6 +188,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             prover,
             network_id: config.network_id,
             aggregation_vkey: Arc::new(aggregation_vkey),
+            static_call_caller_address: config.contracts.static_call_caller_address,
         })
     }
 
@@ -195,6 +199,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         request: AggchainProofBuilderRequest,
         network_id: u32,
         aggregation_vkey: Arc<SP1VerifyingKey>,
+        static_call_caller_address: Address,
     ) -> Result<AggchainProverInputs, Error>
     where
         ContractsClient: L2LocalExitRootFetcher
@@ -344,6 +349,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                     removed_gers: vec![], // NOTE: no removed GERs yet.
                     prev_l2_block_sketch,
                     new_l2_block_sketch,
+                    caller_address: static_call_caller_address,
                 },
             };
 
@@ -401,6 +407,7 @@ where
         let network_id = self.network_id;
         let aggregation_vkey = self.aggregation_vkey.clone();
         let aggchain_vkey = self.aggchain_vkey.clone();
+        let static_call_caller_address = self.static_call_caller_address.clone();
 
         async move {
             let last_proven_block = req.aggchain_proof_inputs.last_proven_block;
@@ -408,9 +415,14 @@ where
             info!(%last_proven_block, %end_block, "Starting generation of the aggchain proof");
             // Retrieve all the necessary public inputs. Combine with
             // the data provided by the agg-sender in the request.
-            let aggchain_prover_inputs =
-                Self::retrieve_chain_data(contracts_client, req, network_id, aggregation_vkey)
-                    .await?;
+            let aggchain_prover_inputs = Self::retrieve_chain_data(
+                contracts_client,
+                req,
+                network_id,
+                aggregation_vkey,
+                static_call_caller_address,
+            )
+            .await?;
 
             let output_root = aggchain_prover_inputs.output_root;
             let prover_executor::Response { proof } = prover

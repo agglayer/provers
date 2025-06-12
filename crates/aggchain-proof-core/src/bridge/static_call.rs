@@ -48,11 +48,12 @@ impl StaticCallWithContext {
     /// Returns the decoded output values of a static call.
     pub fn execute<C: SolCall>(
         &self,
+        caller_address: Address,
         state_sketch: &EvmSketchInput,
         calldata: C,
     ) -> Result<C::Return, BridgeConstraintsError> {
         let (decoded_return, retrieved_block_hash) = self
-            .execute_helper(state_sketch, calldata)
+            .execute_helper(state_sketch, calldata, caller_address)
             .map_err(|e| BridgeConstraintsError::static_call_error(e, self.stage))?;
 
         // check on block hash
@@ -79,8 +80,8 @@ impl StaticCallWithContext {
         &self,
         state_sketch: &EvmSketchInput,
         calldata: C,
+        caller_address: Address,
     ) -> Result<(C::Return, Digest), StaticCallError> {
-        let caller_address = Address::default();
         let cc_public_values = ClientExecutor::new(state_sketch)
             .map_err(StaticCallError::ClientInitialization)?
             .execute(ContractInput::new_call(
