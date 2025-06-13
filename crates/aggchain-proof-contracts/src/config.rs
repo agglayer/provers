@@ -2,6 +2,8 @@ use alloy::primitives::{address, Address};
 use prover_alloy::L1RpcEndpoint;
 use prover_utils::from_env_or_default;
 use serde::{Deserialize, Serialize};
+use sp1_cc_client_executor::Genesis;
+use tracing::info;
 use url::Url;
 
 /// Address of the `GlobalExitRootManagerL2SovereignChain.sol` contract
@@ -41,6 +43,12 @@ pub struct AggchainProofContractsConfig {
     /// Caller address for the static calls
     #[serde(default = "default_static_call_caller_address")]
     pub static_call_caller_address: Address,
+
+    // EVM sketch genesis configuration
+    // Default is "mainnet", could be "sepolia", "opmainnet"
+    // or path to a custom genesis file.
+    #[serde(default = "default_evm_sketch_genesis")]
+    pub evm_sketch_genesis: String,
 }
 
 impl Default for AggchainProofContractsConfig {
@@ -53,6 +61,7 @@ impl Default for AggchainProofContractsConfig {
             global_exit_root_manager_v2_sovereign_chain:
                 default_global_exit_root_manager_v2_sovereign_chain(),
             static_call_caller_address: default_static_call_caller_address(),
+            evm_sketch_genesis: default_evm_sketch_genesis(),
         }
     }
 }
@@ -74,4 +83,45 @@ fn default_global_exit_root_manager_v2_sovereign_chain() -> Address {
 
 fn default_static_call_caller_address() -> Address {
     STATIC_CALL_CALLER_ADDRESS
+}
+
+fn default_evm_sketch_genesis() -> String {
+    String::from("mainnet")
+}
+
+pub(crate) fn parse_evm_sketch_genesis(evm_sketch_genesis: &str) -> Result<Genesis, crate::Error> {
+    let evm_sketch_genesis = evm_sketch_genesis.trim();
+    if evm_sketch_genesis.is_empty() {
+        return Err(crate::Error::InvalidEvmSketchGenesisInput(
+            "evm sketch genesis input is empty".to_string(),
+        ));
+    }
+    // Check if some of the known genesis names are used.
+    match evm_sketch_genesis.to_lowercase().as_str() {
+        "mainnet" => return Ok(Genesis::Mainnet),
+        "sepolia" => return Ok(Genesis::Sepolia),
+        "opmainnet" => return Ok(Genesis::OpMainnet),
+        "linea" => return Ok(Genesis::Linea),
+        _ => {}
+    };
+
+    // We consider the `evm_sketch_genesis` to be file path to the custom genesis
+    // from a file. We parse it to a string.
+    if !std::path::Path::new(evm_sketch_genesis).exists() {
+        Err(crate::Error::InvalidEvmSketchGenesisInput(format!(
+            "custom genesis json file does not exist: {}",
+            evm_sketch_genesis
+        )))
+    } else {
+        let genesis_json_str = std::fs::read_to_string(evm_sketch_genesis)
+            .map_err(|e| crate::Error::InvalidEvmSketchGenesisInput(e.to_string()))?;
+
+        // Validate the JSON string.
+        let genesis_check = serde_json::from_str::<alloy::genesis::Genesis>(&genesis_json_str)
+            .map_err(|e| {
+                crate::Error::InvalidEvmSketchGenesisInput(format!("could not parse json str: {e}"))
+            })?;
+        info!("Using evm sketch genesis: {genesis_check:?}");
+        Ok(Genesis::Custom(genesis_json_str))
+    }
 }
