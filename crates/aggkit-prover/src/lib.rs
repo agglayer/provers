@@ -40,6 +40,7 @@ pub fn runtime(cfg: PathBuf, version: &str) -> anyhow::Result<()> {
         )
     })?;
 
+    // NOTE: ProverEngine::start() is synchronous only and blocks the calling thread
     _ = ProverEngine::new(
         config.grpc_endpoint,
         config.telemetry.addr,
