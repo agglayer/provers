@@ -82,30 +82,34 @@
       "0x0"
     ],
     "prev_l2_block_sketch": {
-      "genesis": "Mainnet",
-      "header": {
-        "parent_hash": "0x440770477c61fe77219095d25fb009e631e6c5af512a9cc52b237afe6663d972",
-        "ommers_hash": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
-        "beneficiary": "0x4df6eb2ec570b58cc64f540247a8adfa11f1cf63",
-        "state_root": "0xd59512336e24e681dcf9bb2a6312ebe9f507da1ee629d9c79c2965b3f7ef8639",
-        "transactions_root": "0x438305c568f7c7199472b1b63a5136f926f363d4688ce79597d6478923587956",
-        "receipts_root": "0x91ddd91d87d1add37138efef2c3a8191c39c72de6cba4e22edc665cf6d3df303",
-        "withdrawals_root": "0x3ed3112ff78860fb40c40b62960a1ac623e8fd8247a88b4c25b428f7a4bfcf5a",
-        "logs_bloom": "0x9221870c80a80012922c0d64ea0f090442a914186600414618ac1a3d10bbc093a100249902b0800620982bcb54308c2c4b440a5001a03a08c080820110b741be552042410d11034a1848aa4a8b0dcae224a1440421cc04c8d290dc0328009a01adcd222223063058a68888569300094020c82084c2112941040184f88b8a834801531108020046356a4a810bb941dad0922000001595ba29c151744424e00510230a2764f00b800816d10250508ee08024c0c621905a2a1028c4d300068654d18801282211611082048e5035985d1b08b871d019a70880f0ea001a08000664650158561450c19001650502379892c02c2066402060ba031814de494e580ce4a8",
-        "difficulty": "0x0",
-        "number": 8087767,
-        "gas_limit": 36000000,
-        "gas_used": 31413864,
-        "timestamp": 1744249872,
-        "mix_hash": "0xd3ded40257a3e3086f1e94fff7f4dd77513be0c08b5e4ca56babc7d4b6912374",
-        "nonce": "0x0000000000000000",
-        "base_fee_per_gas": 80,
-        "blob_gas_used": 262144,
-        "excess_blob_gas": 262144,
-        "parent_beacon_block_root": "0x55f0255e767a18b1bd05fe45e8dd57424cf545da7193bd43670ddc2e007a2c68",
-        "requests_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "extra_data": "0x"
+      "anchor": {
+        "Header": {
+          "header": {
+            "parent_hash": "0x440770477c61fe77219095d25fb009e631e6c5af512a9cc52b237afe6663d972",
+            "ommers_hash": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+            "beneficiary": "0x4df6eb2ec570b58cc64f540247a8adfa11f1cf63",
+            "state_root": "0xd59512336e24e681dcf9bb2a6312ebe9f507da1ee629d9c79c2965b3f7ef8639",
+            "transactions_root": "0x438305c568f7c7199472b1b63a5136f926f363d4688ce79597d6478923587956",
+            "receipts_root": "0x91ddd91d87d1add37138efef2c3a8191c39c72de6cba4e22edc665cf6d3df303",
+            "withdrawals_root": "0x3ed3112ff78860fb40c40b62960a1ac623e8fd8247a88b4c25b428f7a4bfcf5a",
+            "logs_bloom": "0x9221870c80a80012922c0d64ea0f090442a914186600414618ac1a3d10bbc093a100249902b0800620982bcb54308c2c4b440a5001a03a08c080820110b741be552042410d11034a1848aa4a8b0dcae224a1440421cc04c8d290dc0328009a01adcd222223063058a68888569300094020c82084c2112941040184f88b8a834801531108020046356a4a810bb941dad0922000001595ba29c151744424e00510230a2764f00b800816d10250508ee08024c0c621905a2a1028c4d300068654d18801282211611082048e5035985d1b08b871d019a70880f0ea001a08000664650158561450c19001650502379892c02c2066402060ba031814de494e580ce4a8",
+            "difficulty": "0x0",
+            "number": 8087767,
+            "gas_limit": 36000000,
+            "gas_used": 31413864,
+            "timestamp": 1744249872,
+            "mix_hash": "0xd3ded40257a3e3086f1e94fff7f4dd77513be0c08b5e4ca56babc7d4b6912374",
+            "nonce": "0x0000000000000000",
+            "base_fee_per_gas": 80,
+            "blob_gas_used": 262144,
+            "excess_blob_gas": 262144,
+            "parent_beacon_block_root": "0x55f0255e767a18b1bd05fe45e8dd57424cf545da7193bd43670ddc2e007a2c68",
+            "requests_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "extra_data": "0x"
+          }
+        }
       },
+      "genesis": "Sepolia",
       "ancestor_headers": [],
       "state": {
         "state_trie": {
@@ -1090,7 +1094,408 @@
               },
               {
                 "data": {
-                  "Digest": "0x938c833e18506ceca6f6a140b26ddf64be890e8cc31aa5c4780bdefd4c0e15d9"
+                  "Branch": [
+                    {
+                      "data": {
+                        "Digest": "0x0dee3a1a58861256a32f85074b71c24877d964ff3db00a4078f52f52410a1c7e"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0xef458edf9b8ce6462cef69bd1879f79708b2960a1ea50531dd7fd1d60b5f54cd"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0x53a8789e20d327a2b9007b933b439b45fd974d21d1ba90ea6f3c018cccb50e24"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0x18a6eb6fb6cfdbda41e8cda3c8d13bedf3fbc6b302fbd8239606b44d357bd581"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0x13f3d4a87f21c691fc1da47b3648288022f330389bf2b577e04b2c9eed94eb1e"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0x2008a40aeeeddfde50e538afdbceb57c58354a443dbb9eb398a57f3f1ad53f32"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0x6fec70170b2f253a5cfc4974530ea4bf1e071d40105718f43d6984ed0ed98bb4"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0x8bf0b0249e3d26ef654d4b745719cbb56af708330a4bb53a813e524799c657b9"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0xaabe06c5b53182f1d58216eed9331d4aac7b1627d7f2ba6b9577dede71adc2ce"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Branch": [
+                          {
+                            "data": {
+                              "Digest": "0x3efa7ceed278051a81e915ff65458358768cb22618e21cd6f823414b8647ebcf"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0x1251026225a2469b9be6a2044bb8e0155e7a66104a813d5b54023813a66b6320"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0x3bb0782ea552f81734c7bd40c0bb3ad4b02af6f79c5b0938f51cb9528421ded5"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0x4379f1b60f3211a74144157edcbf4e0fc59ab917e3bd43ff98c9648c84cc207e"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0xeaa45300edf02bf51c1d0fbca7efbeff9ec1836dad556a94a5af05d9a1494530"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0xa4e05d395fac2bbe4f33a5ec3512e6ba4a6ddfc440e6cf6d720c84db828cff4c"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0xb6b2a3fe6efd82b31796c2ca013fd964c85f0d71e7063062f4b433e018d76b49"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0xa017ab42cb39e84ec8517f819d95bab0edb525bcf6e910d9082217d5cc7ddb19"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0xa9c2e6495f2b20478efe229d3e9d0dfc0745ec811e087071ced9d8fbd49eadbe"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0x4ed6cd6a175957878f985014d992c15c143aedb84eb2922f72d443834d23fbbf"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0xc7822a020c784b6e87c9f39127360325fff97457a9534a93b943f68b691e930c"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0x5875fbd0d00088d48f67c93621e7ce9d4d98f52c9cedd7e7bd383ade5581c8f5"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0x74009f9986300ad2a4cd38fd65b6bccd4b2f46d5cc97f40338fbc070d97e067a"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0xa3475677c1956c5e237d20bc20a8e2fb5a92b50400c1b4c588be2039533b4162"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0x9474e4d0f765049870e619ff5dd49ca4955c49f9cfcf55ec2bf98ae8482c6412"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Branch": [
+                                {
+                                  "data": {
+                                    "Digest": "0x92d6094730da47cc02c0de1ecb3bbbd79fa586c6c59be9721b928710891df538"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0xdea9d17ba4a8922e7e88e2241a78a168e2f68dddd33ede49f64517807e54e4bc"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0x0a53102b2be7b640a703bc42e11013cad5822f5b28d72261c938dd417b0b996d"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0x7ec6485e2ac0c24f969e24246651861683b7526c68058a73dff226bf5491d757"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0x5388966e6d75bee7c5fcf45276c2c7828ad939d352bafa87e9c82d05b2d6d4ed"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0x428f3fdce08f9b9b150dc66d1051ffde25e418e633ecf4faa9a65b605b86c63c"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0xfa6465eea0adabd9d8cbf920ebd250e24560d85bc44b60fbe350d0461e824e4e"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0x6f87839b1deabbdccf03412da50097f7ffaf1e17f8721c1cbf9b594dad5549e4"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Branch": [
+                                      {
+                                        "data": {
+                                          "Digest": "0x3babea96a949aa7dae9e8f801798f863070c1973b1b9ac4169ed7a4ff853881d"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0xd11cd8d775040a08b26c0b56b45ab65ede6857d8c5fab1283b7c14daf00bc374"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0xc2ce5ed4e3bcbba870ff7249f7b1ad7f50f1c2f2aee7070fbf590a7cc83f40a2"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0x349635796a1e0f2531c887e7a39d1300a087b9d5ab18301a83f213126567a0e4"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0x5533892ad8f4bfd41c2080a52f69a71e135a039c6c8ada475470726b23c1f4f5"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0x8dd64f0c49315bdd28a9f1028ce921ad0dbdee5838dfd04fa5f22dd014ee107c"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0x6f4f8ee7379f1c11a94272900ac6b28a410fd8a65e4b37bd570eeff93f443b14"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Branch": [
+                                            {
+                                              "data": {
+                                                "Digest": "0x6416997ad688a8ae53db27700f5de5020e5fa6d39fc5c96428e9bf5513dc6516"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0xd82077df54a5678eb08e0eb1830c7cdcdea0f69d6e9d694cfad779ad63c182ec"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0x83c5d9458621c657e8b676620f8e96fd31682daecb0f9b35e7b40580d396ed83"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0x781d519cc2fe4f6ac5a163fab114cfec06d0fbc81cf142dc1e00c147b4dc1ee9"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0xce074437480cfb7a9cff36f6d6c79cf7e09494b6d001764623838b1540cff1ca"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0xa2379718056d322b27b3d16b3e3e18961afed5ff7f3bc0c94a85535e3086547a"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0x586f73f55158f58936be3fde0a0810df49153411daf07094e09cf39cf455fd15"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0x542642560d4f17596dd501c93a1b4b477922717219c9751f9db96997686c9a6c"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0x8bf1c0de2e2106b566f1e8836641bb82276e0168791e350829730c0e500811d9"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0x383a100c8a6388a87ee05bbc66f0176769ba2667c9dbca537cb65f1f1eabe8c8"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0xa50f7ab9486c69335944a4cdefd16e70d42df6af4b8fd466b39a72e140cf2d6c"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0xd8df63d1fcda6de59df0a3f8330b7e76d40fe9f2ddf1f78ce6d53c5f8bc602f4"
+                                              }
+                                            },
+                                            null,
+                                            {
+                                              "data": {
+                                                "Digest": "0x4ace0bf33f7bb1821043b2437d3528f5a50bb6b03e18cd995caedadb09d5577b"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0x7c3c18d285bf831b026857564c35225b626b9ca6f349605b6cb87f77f3fdbe45"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0xcd4461f040293b158adec1128067a1a1731303b590f505bac7ccd10ec7fc4985"
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0x1f4ff993627902f3b0f34f724d528a55faa5f23cd31ee4a8e3ccc0cbfc650b1c"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0xb0737854357c265c19c274b3a1b5ebb5701b544b8d1d707143b0129fce048776"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0x1bbd33ecb48eb715b45d96eb39d79df47a935e4d787e2fac7efd99f775ed0579"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0x0538f40a3b0674d61c71dec4daf231b19a5dd8a9ec2cda6632ec83398e706ad0"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0x3001927c2e90b936162ac0f8c68ecb0f0de22d6638dfa1c284d91f2a5beffbfc"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0xfd82958756999a006b8abf8ab5be1f1cb6e7451e89fe75d76aa5e183a7bffd19"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0x2b5cfa4b41d36f98fb3ec81520267be7f1209a18b44afe442ebbddb83e692294"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0xb86ce90c9adaa04dcc617021961c3582048ec6d8f201e2343471c5ca81fcaf32"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0x74874468fc3d83ddb4fc55fef6e9843957fbc45d280276076bef833f81ed3e82"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0xf21c8bf7ecf5b07fb47129455ef87c7bc6084308471b5486fb659110f74e0157"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0x304bc58f4b66ec7bdf201f89ec4bbe04d0383d15226a6fce09f829844e88fa88"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0xfd02e5bc29ab0e9e8e2dfad5a74dc1177e815876b63e0c0b2e675b5655faadee"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0x946d084c76203a0ba7ca4b1461c81f53b4dfbbb36d629a38f5b710a55130e3d7"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0x94cadb4fad185a81fc09e5182f0978f92b057af38830c69306351772ecbadfa3"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0x57ba122e0c498f728d273ae6d8ca4d92485e460a25fea413a8650b9d549143c2"
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0xb146442ad53e16c09ecdb485c7fe602cf7de7260009afd883ed268d7e932aa96"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0x08b63be962e77eac9bec746339a06fcc731c83819b0106b90e87c81ef6e4485c"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0xf1321411ffb57f5c6958da50a2f38479b5176ac1d9a563b234e38da79caf64dc"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0xc0b1e2712dfdd32596cee1885378903c2ca900da6dfb916a32936fbd7f1ef85c"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0x8a7e1b3a155064d121d32d9c387e81971be62f81ec407ab7effc9b2b398c5d9d"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0x9dcb9d6b05f784c225a8d8cd445b8ae0dd4379b9de0510f71495485ce1baa807"
+                      }
+                    }
+                  ]
                 }
               },
               {
@@ -1105,625 +1510,7 @@
               },
               {
                 "data": {
-                  "Branch": [
-                    {
-                      "data": {
-                        "Digest": "0xc70b86c336b4e11ad668e6b794fb37b9d280fcbc4c3ff37fbdd39cdc2429dcec"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0xba47b462b28ef712785af11a7d3af8e3eaff352bf8cc6f829d71b574fda87c97"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0x2c3bf47a723eb2e4a702e98d2645643ba9783ed6b0be833659c1eb08519304a2"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Branch": [
-                          {
-                            "data": {
-                              "Digest": "0x3adb38d0ace935c3b1f4a20e3dd847f511b12378871537c02c75995339849886"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0xf9aa47fe9b8af8549637f45dcc535f6610953b5e426690d9096cbecb48c959bf"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0x7c5d65929b769513289d21060163170424ae2368968ff652917edfba0bcbee3f"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0x72a42ea990fbe15149d58c235eb9d5c048818d730f2167ef6ce826db795109ca"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0xb075d59da91c9be3606704f9734be009455668c4e7eea14fe2226792bf4cb0ba"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0xce70f7d9471296469d2393c9399abe215e8b236ed3f3bf9221a86e17521af276"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0x36a55f1cb6381b58dce2a2f0697edd9bd83062a79e6d3e6020aa4e101e435cb8"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0xdccad44a0d074ec8ad8bb28282a02c5d73a2607848a79ff87141978e704711ec"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Branch": [
-                                {
-                                  "data": {
-                                    "Branch": [
-                                      {
-                                        "data": {
-                                          "Digest": "0xe6e4819e066cba606c555b9cf88498db9ce2c8e54d7d8710b8d5963cd43b5217"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0x81355089727b27af46cc8c95d09e981f00c67d6190f888423331d1c73d9534f1"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0x1705fe3e51ad02ab347f09970785549113f923ee26cb66419137847315b36a43"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0x61502b6fee82bd1e2f8b0a8b8cd93236c06cba967f8419136e71a76c34eea798"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0x2a15aa16f53742e0bfeef39a3c86f0144504769aa0788ddd1130845e7791db9d"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0xe8271afe59229331133a89a4bec0a964e312fed3b0608c5dfaf7babdbb7e4638"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0xd05796eb6aedf5a6e95c3fad668646893b339ca181e37644b9f6eedad26b99e3"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0x78e4c5bdd22e55023a6c7703b4b0deb34b499df61494b35a5aaf940e1d0957b1"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0x817c3797fcd8a0482c968a580e5a9335880082fbb7b2b72cd5747fdf66e18c0a"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0x1920a5141a36e00ee978664c81d85ec8e4eb995b93faa4680cf6b38f199f9c27"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0x5bc6772919580ba91d7b5bedf420836674ad222225ef026996b960cb4a51fe93"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0x55b188a0d7921f3682736881b623f78272bcfc6b25024d45a3088d06a907f8c2"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Branch": [
-                                            {
-                                              "data": {
-                                                "Digest": "0xeec8a26ae54678164215ff235b666f991c1e966e589a47ef17085fcdebeee8a4"
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Digest": "0x18beac47b4b591a361bf717bb4b15426bacefd56fecd667fac36f62b1db2d2bf"
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Digest": "0x9c9e745cedb5bc847c25a6b6fe2a4a221f4d4463bc39a2c0e1008d1615c2553d"
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Digest": "0xc5050e591efb6c518336ec4f315cc696097491ec7800f50e914c5f676f2e9c12"
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Digest": "0xa93b3514bf7e10c90682475c99df893735620b6edec9107f6885daa4aff43881"
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Digest": "0x74eb8a416332ffb35b03d6d8dbb37fe2342d6231e4f31922264253cef85fbecd"
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Digest": "0x4c2559e7697e3cedd528e3c848602fc22c6d935dd970f9afa07443120fb2a0a6"
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Branch": [
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  {
-                                                    "data": {
-                                                      "Digest": "0x54c782365886dd5f2712191e37bd03069d8c025b7f3d1acc58f76b9320d45194"
-                                                    }
-                                                  },
-                                                  {
-                                                    "data": {
-                                                      "Branch": [
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        {
-                                                          "data": {
-                                                            "Branch": [
-                                                              {
-                                                                "data": {
-                                                                  "Digest": "0x373fb608ed0f5df13386f02dd867f841be1fd9572b9fbb924cdc9b53da0457cb"
-                                                                }
-                                                              },
-                                                              null,
-                                                              null,
-                                                              null,
-                                                              null,
-                                                              null,
-                                                              null,
-                                                              null,
-                                                              null,
-                                                              null,
-                                                              {
-                                                                "data": {
-                                                                  "Branch": [
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    {
-                                                                      "data": {
-                                                                        "Leaf": [
-                                                                          [
-                                                                            32,
-                                                                            129,
-                                                                            165,
-                                                                            142,
-                                                                            185,
-                                                                            141,
-                                                                            156,
-                                                                            120,
-                                                                            222,
-                                                                            74,
-                                                                            31,
-                                                                            215,
-                                                                            253,
-                                                                            149,
-                                                                            53,
-                                                                            252,
-                                                                            149,
-                                                                            62,
-                                                                            210,
-                                                                            190,
-                                                                            96,
-                                                                            45,
-                                                                            170,
-                                                                            164,
-                                                                            23,
-                                                                            103,
-                                                                            49,
-                                                                            42
-                                                                          ],
-                                                                          [
-                                                                            248,
-                                                                            78,
-                                                                            128,
-                                                                            138,
-                                                                            25,
-                                                                            143,
-                                                                            227,
-                                                                            25,
-                                                                            166,
-                                                                            36,
-                                                                            69,
-                                                                            170,
-                                                                            206,
-                                                                            171,
-                                                                            160,
-                                                                            86,
-                                                                            232,
-                                                                            31,
-                                                                            23,
-                                                                            27,
-                                                                            204,
-                                                                            85,
-                                                                            166,
-                                                                            255,
-                                                                            131,
-                                                                            69,
-                                                                            230,
-                                                                            146,
-                                                                            192,
-                                                                            248,
-                                                                            110,
-                                                                            91,
-                                                                            72,
-                                                                            224,
-                                                                            27,
-                                                                            153,
-                                                                            108,
-                                                                            173,
-                                                                            192,
-                                                                            1,
-                                                                            98,
-                                                                            47,
-                                                                            181,
-                                                                            227,
-                                                                            99,
-                                                                            180,
-                                                                            33,
-                                                                            160,
-                                                                            197,
-                                                                            210,
-                                                                            70,
-                                                                            1,
-                                                                            134,
-                                                                            247,
-                                                                            35,
-                                                                            60,
-                                                                            146,
-                                                                            126,
-                                                                            125,
-                                                                            178,
-                                                                            220,
-                                                                            199,
-                                                                            3,
-                                                                            192,
-                                                                            229,
-                                                                            0,
-                                                                            182,
-                                                                            83,
-                                                                            202,
-                                                                            130,
-                                                                            39,
-                                                                            59,
-                                                                            123,
-                                                                            250,
-                                                                            216,
-                                                                            4,
-                                                                            93,
-                                                                            133,
-                                                                            164,
-                                                                            112
-                                                                          ]
-                                                                        ]
-                                                                      }
-                                                                    },
-                                                                    {
-                                                                      "data": {
-                                                                        "Digest": "0x17d3b9ff99c67bfd58fae896f90da846a4b445f5117020649bd117aef1a31bce"
-                                                                      }
-                                                                    }
-                                                                  ]
-                                                                }
-                                                              },
-                                                              null,
-                                                              null,
-                                                              null,
-                                                              null,
-                                                              null
-                                                            ]
-                                                          }
-                                                        },
-                                                        {
-                                                          "data": {
-                                                            "Digest": "0x94559a53ce7e36d9a26caa7a72d0f6e9f9554ac46179e4f1b99de0bc81dad18f"
-                                                          }
-                                                        },
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        null
-                                                      ]
-                                                    }
-                                                  },
-                                                  null,
-                                                  null,
-                                                  {
-                                                    "data": {
-                                                      "Digest": "0x4b5811db567cdb0f9fa196de8d04833e150b766d10a03602ea3dff15036f5799"
-                                                    }
-                                                  },
-                                                  null
-                                                ]
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Digest": "0xa021d7b79f5f10445e682c18ef818cbee327fb2ed76bffd593226f3693be117f"
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Digest": "0xc85d8fa58f5d90c85de511b7a27858614fbbd3831dd06c1c78d8bf83fc86f0f0"
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Digest": "0x5238c2422c04266b223c356521fb7e629e2316f19bbc215ab5ae20c3c21a5eaa"
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Digest": "0x2f0dc0c919e9d75870ca213d88550ca899d9d3c5dd63e58c131280bfe657fa68"
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Digest": "0xef2121de75ee5ba388d46da9043d704ce7f74b39ba74b4e4df6c854e9486c3aa"
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Digest": "0x467e412e77ffb9870716b914050a9084d4a8cba5d0ace46f20db8fcae681811a"
-                                              }
-                                            },
-                                            null,
-                                            {
-                                              "data": {
-                                                "Digest": "0xa88f1e25e6e90ae4cd7b2175d2a0448555d369831429477196ec3589a153c871"
-                                              }
-                                            }
-                                          ]
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0xd6ced2f94573547309c441c60aec608bbb1b7ae9177c62cfce924f8e1e34cd2e"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0x2678b10b405bc6f65d03b7c34ca2162250ed75074e21fec8db1aff4a1ecd20cd"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0x523c2d6df0e6ed226bd5b1f5b89611c4633b2205d91feae7d52ed2ee78893cd5"
-                                        }
-                                      }
-                                    ]
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0xf2e97ebcb1206cca06e87a7ca560ac730b6510373f062f9987f855a778acd62e"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0x440bc15310b21f43e9b6d3242bdfc2834eb74743d1bd68361a40e78b72da7ce3"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0x5770426080da627f710949a5d47735f23250e91c68207d2820c0e850ad382469"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0x727178e89fc7582fe04cf22a4d79517218a471c61c7c24c140c391530d73ddfd"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0xfeb3cf3a03dc8ae31537544268d0f251438841af9b2f67b003ddd2c76c22744b"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0x6e05e6f96ba2a00946914e975f494f97676360cec271c539552b9e02e3e70f65"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0xa550c3259d2bc3f4bcb83400b2c59f5a6171dd7c8f27dfe8e24ad2bec7c9de15"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0x60dbb5ec5b8a496102b4acb7ff905dff063c614e959ee5beb07127bbcc27c36a"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0xd7fa22f2ee886d696fa2c6349b6270ba2b7fe5e73c050cfbf39ad20aea14ef7c"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0xe563659fb73ae4a997c44712de11f59511cd2e30a6f3ece76eef419cc3372a93"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0xca6d26100c3293600ffad9586b573a003f693aa28756c01bf03c3f6ebd692f8d"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0x234b7e1ab17d18ae4e1b74150e67028dc30465555cadb63fcd0d26ba23512b18"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0x478289621345702aa7d4acf486abef2b2ff1247a3e289c4fff73919907577334"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0x8fad68c548d1ba49cf1071bcf289af5987ac3d5df40a2c801532c688adc5f15c"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0x9c66155795b8fb2e099841a482998c90558779ce34cb2dcbbaa4a447ba4af97b"
-                                  }
-                                }
-                              ]
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0x8fef8ac721ceae38c474f39805d6491323c5b0d58d8850238edc5540c8b919f6"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0xcfd4e9ce0a732e20a5d71b5f421a5f82540791714c4a3e3e917615e46e2c1f8c"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0xe1672c0ca1de23a101ff85de523b8ae74fd09bdcd4f51c494e8cc149294d5a7b"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0x0117eec3e0f375e879a730900d960fc9896386353548751423f57366536ae067"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0x63535b6aca3af0da6ad0de71092984ae439c45fc9632086846386c5d7bd98aef"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0x6d40e3f73aa432fd4c9559dd1a975ed216e52ce8f75acd8c4b13000baa6d61bd"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0xfeca028342a41e4c8e51f70726af34014d0d469e6bd5d2d5a13048c4217b3eed"
-                            }
-                          }
-                        ]
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0x83f7bc77435cc9f4a487a69d17aeaada991ae458952d8cf216a83b5cd0138728"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0x7a3264fe80aa064a37281e9690648a350cf529d526aab4d326308cb3addf4d6a"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0x7b64a8f9d7ad84f43597e0d39304abc9411b188699f198d661f2b369f5d44629"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0x3c3f70264ae49816aec29ddf837b83692ee2d6640802ba194f07dd5b10f9b8df"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0x36249e2c45504b8a79520eb04c1e75a0400e3cc4e98cb4ec7171b194f28abdb9"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0x8df331ff76c122f7364b5c86c81fd3bedf4b365af7c991886cc35c8e2ff83495"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0x397c230605432f3a1a108939497f55feea948f6ef754f5328d4acb3f6da3ee4d"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0xb15ab27c5c7ca68f719b329655498b7fa23475b980f27c95c89eb126a1b29813"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0x5b2e5ec7547ab95a7881d5324ff0e228d76d78bde9046f6e8f03fb9c19f66bc7"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0x520fe600291ca345efe85711eab47990715498c50c4858c49e8fa51a3621e61f"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0x6d463a77d77d667503d3ec7f7412fe8fc586415a0be9b74dd09aa457df0d0741"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0xde63cddab0e918469f5e4cd96ba30f0ffaacc8a0d8284dbb9b8737fd932ad24d"
-                      }
-                    }
-                  ]
+                  "Digest": "0x2a07aaa176b19b3484b43f12e7643f7a97d2bfe99fdc99bf234bb7494c710390"
                 }
               },
               {
@@ -3384,13 +3171,16 @@
           }
         },
         "storage_tries": {
-          "0xacf7410aa7798f1d6f3b2d99ce19a6046462edb86eff30838b031a1f8aaf28da": {
-            "data": "Null"
-          },
           "0x0f8b1a63391c3b7e95c9ce3acc03cd60c7fd1d8a7e31cf3d342d77ef46e1bd03": {
             "data": {
               "Digest": "0xfd78ce42cf500153ccadd15ca1721327c78c6363b6afbb8c4274f6bf7a7d6170"
             }
+          },
+          "0xacf7410aa7798f1d6f3b2d99ce19a6046462edb86eff30838b031a1f8aaf28da": {
+            "data": "Null"
+          },
+          "0x29f87c9671aacc93302477e51f2b00ad9d36d6e69d872091b6d6b5f7f5fab6fb": {
+            "data": "Null"
           },
           "0xa4306713e17cba536233d6dd201f5d4fb15aeb435bda9e596fac8b534c2f93c2": {
             "data": {
@@ -3606,6 +3396,11 @@
               ]
             }
           },
+          "0xff7a711a1637b1b6078a86ff7c6f239de8aad6537e4b1a47cbfee8705f37b1e9": {
+            "data": {
+              "Digest": "0x01f9e62d19297f681ea2208de1fec6c67ed86a26e55dbf4b27a1b0881060507b"
+            }
+          },
           "0x0d3997a55da3129d8854ef78eb38832a075ead979690a29e58382c98ae862923": {
             "data": {
               "Branch": [
@@ -3805,26 +3600,10 @@
                 null
               ]
             }
-          },
-          "0x5380c7b7ae81a58eb98d9c78de4a1fd7fd9535fc953ed2be602daaa41767312a": {
-            "data": "Null"
-          },
-          "0xff7a711a1637b1b6078a86ff7c6f239de8aad6537e4b1a47cbfee8705f37b1e9": {
-            "data": {
-              "Digest": "0x01f9e62d19297f681ea2208de1fec6c67ed86a26e55dbf4b27a1b0881060507b"
-            }
           }
         }
       },
       "state_requests": {
-        "0x87912ffcc5b9000629473f93422ddcd349cf21a8": [
-          "0xa4",
-          "0xa5",
-          "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc",
-          "0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103"
-        ],
-        "0x4df6eb2ec570b58cc64f540247a8adfa11f1cf63": [],
-        "0x0000000000000000000000000000000000000000": [],
         "0x30e3d5b1fc9e7eba58b224e3909ecfa3dd10dda5": [],
         "0xa29eb8bf175747632f34838769984135aca4ceab": [
           "0x37",
@@ -3832,7 +3611,15 @@
           "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc",
           "0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103"
         ],
-        "0xc4fe7ebf94ab10bc2b8c2cec563d0585d8df9bc2": []
+        "0x4df6eb2ec570b58cc64f540247a8adfa11f1cf63": [],
+        "0x39027d57969ad59161365e0bbd53d2f63ee5aaa6": [],
+        "0xc4fe7ebf94ab10bc2b8c2cec563d0585d8df9bc2": [],
+        "0x87912ffcc5b9000629473f93422ddcd349cf21a8": [
+          "0xa4",
+          "0xa5",
+          "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc",
+          "0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103"
+        ]
       },
       "bytecodes": [
         {
@@ -7341,33 +7128,38 @@
             }
           }
         }
-      ]
+      ],
+      "receipts": null
     },
     "new_l2_block_sketch": {
-      "genesis": "Mainnet",
-      "header": {
-        "parent_hash": "0xacc9c52051644d4ce1beda1d5d0a4aa819f1cafaf9c410dd222490a08a8e27df",
-        "ommers_hash": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
-        "beneficiary": "0xc6e2459991bfe27cca6d86722f35da23a1e4cb97",
-        "state_root": "0x9c9bc7996fb311c57c93ed1d92e6214c81186dc8b2a9d39d13b596cee065827c",
-        "transactions_root": "0x136a7a8e8831d7c7c43cb467b6b9e3612a556598d54b01d7b94eac477fcf844f",
-        "receipts_root": "0x5aeff2f16a57c958bcfcc33567933c250fb3f0a0a7df2ba809036d0798db199f",
-        "withdrawals_root": "0x145abd90a83bbe6fae75d430e9ef49521b09fc1d9dca04df6198a442ab165fef",
-        "logs_bloom": "0x31aac50c80904403d9a6e2a6ca2f160112a905041658d5d710c11cb5e2b3ec89061af1d0062640c568300143fe3426240b42042060647c124c08b608012644e40438cd08088509aa0034229a894848260c61811416ccc6c2c6001100880996113e366262a22c1840a41420d78b341d5504c96d4d182964710d0489180c8e014000731515021e45b12a61e52a7da1a215b244070f05018229039df24454e08615369e622471c00b881b4a4240f00c4e883086060ada0e80500f6e178a0c8016a18e013a0e3d1ad942535b10b91d319bcc4d75f08490118753aa0b12d2518e706b4471d3dd82c5a1d15f46baa2938ae00d086e017448790242700801441a841000",
-        "difficulty": "0x0",
-        "number": 8087778,
-        "gas_limit": 35999930,
-        "gas_used": 29467795,
-        "timestamp": 1744250004,
-        "mix_hash": "0x689ab548b8e6fc073aeed33b1e2b78952388df3ead77df9b96b734c99f767c78",
-        "nonce": "0x0000000000000000",
-        "base_fee_per_gas": 61,
-        "blob_gas_used": 1179648,
-        "excess_blob_gas": 0,
-        "parent_beacon_block_root": "0x4c400d32461eacfad2b35fcaa04e55293371900771a063f2f0a9f6a733447721",
-        "requests_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "extra_data": "0x4e65746865726d696e64"
+      "anchor": {
+        "Header": {
+          "header": {
+            "parent_hash": "0xacc9c52051644d4ce1beda1d5d0a4aa819f1cafaf9c410dd222490a08a8e27df",
+            "ommers_hash": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+            "beneficiary": "0xc6e2459991bfe27cca6d86722f35da23a1e4cb97",
+            "state_root": "0x9c9bc7996fb311c57c93ed1d92e6214c81186dc8b2a9d39d13b596cee065827c",
+            "transactions_root": "0x136a7a8e8831d7c7c43cb467b6b9e3612a556598d54b01d7b94eac477fcf844f",
+            "receipts_root": "0x5aeff2f16a57c958bcfcc33567933c250fb3f0a0a7df2ba809036d0798db199f",
+            "withdrawals_root": "0x145abd90a83bbe6fae75d430e9ef49521b09fc1d9dca04df6198a442ab165fef",
+            "logs_bloom": "0x31aac50c80904403d9a6e2a6ca2f160112a905041658d5d710c11cb5e2b3ec89061af1d0062640c568300143fe3426240b42042060647c124c08b608012644e40438cd08088509aa0034229a894848260c61811416ccc6c2c6001100880996113e366262a22c1840a41420d78b341d5504c96d4d182964710d0489180c8e014000731515021e45b12a61e52a7da1a215b244070f05018229039df24454e08615369e622471c00b881b4a4240f00c4e883086060ada0e80500f6e178a0c8016a18e013a0e3d1ad942535b10b91d319bcc4d75f08490118753aa0b12d2518e706b4471d3dd82c5a1d15f46baa2938ae00d086e017448790242700801441a841000",
+            "difficulty": "0x0",
+            "number": 8087778,
+            "gas_limit": 35999930,
+            "gas_used": 29467795,
+            "timestamp": 1744250004,
+            "mix_hash": "0x689ab548b8e6fc073aeed33b1e2b78952388df3ead77df9b96b734c99f767c78",
+            "nonce": "0x0000000000000000",
+            "base_fee_per_gas": 61,
+            "blob_gas_used": 1179648,
+            "excess_blob_gas": 0,
+            "parent_beacon_block_root": "0x4c400d32461eacfad2b35fcaa04e55293371900771a063f2f0a9f6a733447721",
+            "requests_hash": "0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "extra_data": "0x4e65746865726d696e64"
+          }
+        }
       },
+      "genesis": "Sepolia",
       "ancestor_headers": [],
       "state": {
         "state_trie": {
@@ -8352,7 +8144,408 @@
               },
               {
                 "data": {
-                  "Digest": "0x2d9c2303c8cdcbd616d03c84c6344225e3f333ac1d9a081895e0a082955b6364"
+                  "Branch": [
+                    {
+                      "data": {
+                        "Digest": "0xd60b70b132dc241ac7ebe5a7d72600ad05f3f909f776ead91b43ed16f03d63f0"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0x9ee33e1c306836ef583b15fc0ee1a9bb823133a2274c9e5c0bbd6a49fea856c8"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0x49c62680af6dd2d1e7bfb5c3c5ec982353218f88b9d6d01311f183d3b51e69ec"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0x4a8e9bdb075c6bb50578908443000cf6a8c5df22883746354d34b3bd38dc4e80"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0x6ecb98ee993a02c154979352811bb765579253fb07ade78b21188bb2ea5f4ce8"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0x8545f976848c009f5dc56b8bf1d28cd6585baaf4f456887881d6dcd889019a51"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0x84017c027ab89262c6c01feafbf555a621528a9e10969ff8f6e33ad02e4927e3"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0xd9a66e35bda782bf8c98f520c2b5fadb1d7bae0ebbec5a2b8e04da1e02e80ec2"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0xaabe06c5b53182f1d58216eed9331d4aac7b1627d7f2ba6b9577dede71adc2ce"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Branch": [
+                          {
+                            "data": {
+                              "Digest": "0x3efa7ceed278051a81e915ff65458358768cb22618e21cd6f823414b8647ebcf"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0x55a6e4ef105e3d3ea54111652791b178cf19848696f60cbeba72b56f5be36a6e"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0xe964e30202cca1e4c2afbc797677f8dea3f5db96eb8d392aa9a2dce3b5c267da"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0x4379f1b60f3211a74144157edcbf4e0fc59ab917e3bd43ff98c9648c84cc207e"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0xeaa45300edf02bf51c1d0fbca7efbeff9ec1836dad556a94a5af05d9a1494530"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0xa4e05d395fac2bbe4f33a5ec3512e6ba4a6ddfc440e6cf6d720c84db828cff4c"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0xb6b2a3fe6efd82b31796c2ca013fd964c85f0d71e7063062f4b433e018d76b49"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0xa017ab42cb39e84ec8517f819d95bab0edb525bcf6e910d9082217d5cc7ddb19"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0x7c76199a6c2c0294b2cb914a04933ec928101de54392632f21c36f007705c7d3"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0x4ed6cd6a175957878f985014d992c15c143aedb84eb2922f72d443834d23fbbf"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0xc7822a020c784b6e87c9f39127360325fff97457a9534a93b943f68b691e930c"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0x5875fbd0d00088d48f67c93621e7ce9d4d98f52c9cedd7e7bd383ade5581c8f5"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0x74009f9986300ad2a4cd38fd65b6bccd4b2f46d5cc97f40338fbc070d97e067a"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0xa3475677c1956c5e237d20bc20a8e2fb5a92b50400c1b4c588be2039533b4162"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Digest": "0x2dc31e8a3bc384b96b2d880d04b1e0192695c6f5ed65e5f19e2b30940bce998f"
+                            }
+                          },
+                          {
+                            "data": {
+                              "Branch": [
+                                {
+                                  "data": {
+                                    "Digest": "0x92d6094730da47cc02c0de1ecb3bbbd79fa586c6c59be9721b928710891df538"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0xdea9d17ba4a8922e7e88e2241a78a168e2f68dddd33ede49f64517807e54e4bc"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0x0a53102b2be7b640a703bc42e11013cad5822f5b28d72261c938dd417b0b996d"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0x7ec6485e2ac0c24f969e24246651861683b7526c68058a73dff226bf5491d757"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0x5388966e6d75bee7c5fcf45276c2c7828ad939d352bafa87e9c82d05b2d6d4ed"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0x428f3fdce08f9b9b150dc66d1051ffde25e418e633ecf4faa9a65b605b86c63c"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0xfa6465eea0adabd9d8cbf920ebd250e24560d85bc44b60fbe350d0461e824e4e"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0x6f87839b1deabbdccf03412da50097f7ffaf1e17f8721c1cbf9b594dad5549e4"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Branch": [
+                                      {
+                                        "data": {
+                                          "Digest": "0x3babea96a949aa7dae9e8f801798f863070c1973b1b9ac4169ed7a4ff853881d"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0xd11cd8d775040a08b26c0b56b45ab65ede6857d8c5fab1283b7c14daf00bc374"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0xc2ce5ed4e3bcbba870ff7249f7b1ad7f50f1c2f2aee7070fbf590a7cc83f40a2"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0x349635796a1e0f2531c887e7a39d1300a087b9d5ab18301a83f213126567a0e4"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0x5533892ad8f4bfd41c2080a52f69a71e135a039c6c8ada475470726b23c1f4f5"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0x8dd64f0c49315bdd28a9f1028ce921ad0dbdee5838dfd04fa5f22dd014ee107c"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0x6f4f8ee7379f1c11a94272900ac6b28a410fd8a65e4b37bd570eeff93f443b14"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Branch": [
+                                            {
+                                              "data": {
+                                                "Digest": "0x6416997ad688a8ae53db27700f5de5020e5fa6d39fc5c96428e9bf5513dc6516"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0xd82077df54a5678eb08e0eb1830c7cdcdea0f69d6e9d694cfad779ad63c182ec"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0x83c5d9458621c657e8b676620f8e96fd31682daecb0f9b35e7b40580d396ed83"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0x781d519cc2fe4f6ac5a163fab114cfec06d0fbc81cf142dc1e00c147b4dc1ee9"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0xce074437480cfb7a9cff36f6d6c79cf7e09494b6d001764623838b1540cff1ca"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0xa2379718056d322b27b3d16b3e3e18961afed5ff7f3bc0c94a85535e3086547a"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0x586f73f55158f58936be3fde0a0810df49153411daf07094e09cf39cf455fd15"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0x542642560d4f17596dd501c93a1b4b477922717219c9751f9db96997686c9a6c"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0x8bf1c0de2e2106b566f1e8836641bb82276e0168791e350829730c0e500811d9"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0x383a100c8a6388a87ee05bbc66f0176769ba2667c9dbca537cb65f1f1eabe8c8"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0xa50f7ab9486c69335944a4cdefd16e70d42df6af4b8fd466b39a72e140cf2d6c"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0xd8df63d1fcda6de59df0a3f8330b7e76d40fe9f2ddf1f78ce6d53c5f8bc602f4"
+                                              }
+                                            },
+                                            null,
+                                            {
+                                              "data": {
+                                                "Digest": "0x4ace0bf33f7bb1821043b2437d3528f5a50bb6b03e18cd995caedadb09d5577b"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0x7c3c18d285bf831b026857564c35225b626b9ca6f349605b6cb87f77f3fdbe45"
+                                              }
+                                            },
+                                            {
+                                              "data": {
+                                                "Digest": "0xcd4461f040293b158adec1128067a1a1731303b590f505bac7ccd10ec7fc4985"
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0x1f4ff993627902f3b0f34f724d528a55faa5f23cd31ee4a8e3ccc0cbfc650b1c"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0xb0737854357c265c19c274b3a1b5ebb5701b544b8d1d707143b0129fce048776"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0x1bbd33ecb48eb715b45d96eb39d79df47a935e4d787e2fac7efd99f775ed0579"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0x0538f40a3b0674d61c71dec4daf231b19a5dd8a9ec2cda6632ec83398e706ad0"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0x3001927c2e90b936162ac0f8c68ecb0f0de22d6638dfa1c284d91f2a5beffbfc"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0xfd82958756999a006b8abf8ab5be1f1cb6e7451e89fe75d76aa5e183a7bffd19"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0x2b5cfa4b41d36f98fb3ec81520267be7f1209a18b44afe442ebbddb83e692294"
+                                        }
+                                      },
+                                      {
+                                        "data": {
+                                          "Digest": "0xb86ce90c9adaa04dcc617021961c3582048ec6d8f201e2343471c5ca81fcaf32"
+                                        }
+                                      }
+                                    ]
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0x74874468fc3d83ddb4fc55fef6e9843957fbc45d280276076bef833f81ed3e82"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0xf21c8bf7ecf5b07fb47129455ef87c7bc6084308471b5486fb659110f74e0157"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0x304bc58f4b66ec7bdf201f89ec4bbe04d0383d15226a6fce09f829844e88fa88"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0xfd02e5bc29ab0e9e8e2dfad5a74dc1177e815876b63e0c0b2e675b5655faadee"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0x946d084c76203a0ba7ca4b1461c81f53b4dfbbb36d629a38f5b710a55130e3d7"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0x94cadb4fad185a81fc09e5182f0978f92b057af38830c69306351772ecbadfa3"
+                                  }
+                                },
+                                {
+                                  "data": {
+                                    "Digest": "0x57ba122e0c498f728d273ae6d8ca4d92485e460a25fea413a8650b9d549143c2"
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0x1c2682f75caaf7827383d9d6d2ef4d41b0aa554e92db0be038c770860f94ddaa"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0x08b63be962e77eac9bec746339a06fcc731c83819b0106b90e87c81ef6e4485c"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0xd0a3be29d5a0c934ab2146bd8b0cc9f6721fb290ee6b9fb1c28fed317a31d521"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0xaff619d902d3910c7893ee940b8ff0e410c9c2b82d8688075a2a5b489a81b50d"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0x3cc013a9b927bdc0dfa3935acfc3003a10848a3d93305c1c73ea2f5b35271586"
+                      }
+                    },
+                    {
+                      "data": {
+                        "Digest": "0x167452b52c70349b273c9cff69e0378c327a76cb5eeeca03b288986d4e7d872d"
+                      }
+                    }
+                  ]
                 }
               },
               {
@@ -8367,625 +8560,7 @@
               },
               {
                 "data": {
-                  "Branch": [
-                    {
-                      "data": {
-                        "Digest": "0x4a989b38efad218dd84418c7c75e58cf370ab7dff7b886c16e96f39626a686d1"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0xeb5f0c680aae150c25fe24a1972bb857f0308deaea715526dc34bf2979bc6b2b"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0x251177fb160c1275f01e3716b2c5868a3e29878526c78b92798e665677af71fb"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Branch": [
-                          {
-                            "data": {
-                              "Digest": "0x5ee69be52e90c724d81f15f3981b48b069b84136cbb07e8b000bfb98cadbef20"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0xf9aa47fe9b8af8549637f45dcc535f6610953b5e426690d9096cbecb48c959bf"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0x7c5d65929b769513289d21060163170424ae2368968ff652917edfba0bcbee3f"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0x72a42ea990fbe15149d58c235eb9d5c048818d730f2167ef6ce826db795109ca"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0xb075d59da91c9be3606704f9734be009455668c4e7eea14fe2226792bf4cb0ba"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0xce70f7d9471296469d2393c9399abe215e8b236ed3f3bf9221a86e17521af276"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0x36a55f1cb6381b58dce2a2f0697edd9bd83062a79e6d3e6020aa4e101e435cb8"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0x9ca509aca56088c6edbefac4dbc52aa2baf37a92e7792a58bbadb282edb4767f"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Branch": [
-                                {
-                                  "data": {
-                                    "Branch": [
-                                      {
-                                        "data": {
-                                          "Digest": "0xe6e4819e066cba606c555b9cf88498db9ce2c8e54d7d8710b8d5963cd43b5217"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0x81355089727b27af46cc8c95d09e981f00c67d6190f888423331d1c73d9534f1"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0x1705fe3e51ad02ab347f09970785549113f923ee26cb66419137847315b36a43"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0x61502b6fee82bd1e2f8b0a8b8cd93236c06cba967f8419136e71a76c34eea798"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0x2a15aa16f53742e0bfeef39a3c86f0144504769aa0788ddd1130845e7791db9d"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0xe8271afe59229331133a89a4bec0a964e312fed3b0608c5dfaf7babdbb7e4638"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0xd05796eb6aedf5a6e95c3fad668646893b339ca181e37644b9f6eedad26b99e3"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0x78e4c5bdd22e55023a6c7703b4b0deb34b499df61494b35a5aaf940e1d0957b1"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0x817c3797fcd8a0482c968a580e5a9335880082fbb7b2b72cd5747fdf66e18c0a"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0x1920a5141a36e00ee978664c81d85ec8e4eb995b93faa4680cf6b38f199f9c27"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0x5bc6772919580ba91d7b5bedf420836674ad222225ef026996b960cb4a51fe93"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0x55b188a0d7921f3682736881b623f78272bcfc6b25024d45a3088d06a907f8c2"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Branch": [
-                                            {
-                                              "data": {
-                                                "Digest": "0xeec8a26ae54678164215ff235b666f991c1e966e589a47ef17085fcdebeee8a4"
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Digest": "0x18beac47b4b591a361bf717bb4b15426bacefd56fecd667fac36f62b1db2d2bf"
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Digest": "0x9c9e745cedb5bc847c25a6b6fe2a4a221f4d4463bc39a2c0e1008d1615c2553d"
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Digest": "0xc5050e591efb6c518336ec4f315cc696097491ec7800f50e914c5f676f2e9c12"
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Digest": "0xa93b3514bf7e10c90682475c99df893735620b6edec9107f6885daa4aff43881"
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Digest": "0x74eb8a416332ffb35b03d6d8dbb37fe2342d6231e4f31922264253cef85fbecd"
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Digest": "0x4c2559e7697e3cedd528e3c848602fc22c6d935dd970f9afa07443120fb2a0a6"
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Branch": [
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  null,
-                                                  {
-                                                    "data": {
-                                                      "Digest": "0x54c782365886dd5f2712191e37bd03069d8c025b7f3d1acc58f76b9320d45194"
-                                                    }
-                                                  },
-                                                  {
-                                                    "data": {
-                                                      "Branch": [
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        {
-                                                          "data": {
-                                                            "Branch": [
-                                                              {
-                                                                "data": {
-                                                                  "Digest": "0x373fb608ed0f5df13386f02dd867f841be1fd9572b9fbb924cdc9b53da0457cb"
-                                                                }
-                                                              },
-                                                              null,
-                                                              null,
-                                                              null,
-                                                              null,
-                                                              null,
-                                                              null,
-                                                              null,
-                                                              null,
-                                                              null,
-                                                              {
-                                                                "data": {
-                                                                  "Branch": [
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    {
-                                                                      "data": {
-                                                                        "Leaf": [
-                                                                          [
-                                                                            32,
-                                                                            129,
-                                                                            165,
-                                                                            142,
-                                                                            185,
-                                                                            141,
-                                                                            156,
-                                                                            120,
-                                                                            222,
-                                                                            74,
-                                                                            31,
-                                                                            215,
-                                                                            253,
-                                                                            149,
-                                                                            53,
-                                                                            252,
-                                                                            149,
-                                                                            62,
-                                                                            210,
-                                                                            190,
-                                                                            96,
-                                                                            45,
-                                                                            170,
-                                                                            164,
-                                                                            23,
-                                                                            103,
-                                                                            49,
-                                                                            42
-                                                                          ],
-                                                                          [
-                                                                            248,
-                                                                            78,
-                                                                            128,
-                                                                            138,
-                                                                            25,
-                                                                            143,
-                                                                            227,
-                                                                            25,
-                                                                            166,
-                                                                            36,
-                                                                            69,
-                                                                            170,
-                                                                            206,
-                                                                            171,
-                                                                            160,
-                                                                            86,
-                                                                            232,
-                                                                            31,
-                                                                            23,
-                                                                            27,
-                                                                            204,
-                                                                            85,
-                                                                            166,
-                                                                            255,
-                                                                            131,
-                                                                            69,
-                                                                            230,
-                                                                            146,
-                                                                            192,
-                                                                            248,
-                                                                            110,
-                                                                            91,
-                                                                            72,
-                                                                            224,
-                                                                            27,
-                                                                            153,
-                                                                            108,
-                                                                            173,
-                                                                            192,
-                                                                            1,
-                                                                            98,
-                                                                            47,
-                                                                            181,
-                                                                            227,
-                                                                            99,
-                                                                            180,
-                                                                            33,
-                                                                            160,
-                                                                            197,
-                                                                            210,
-                                                                            70,
-                                                                            1,
-                                                                            134,
-                                                                            247,
-                                                                            35,
-                                                                            60,
-                                                                            146,
-                                                                            126,
-                                                                            125,
-                                                                            178,
-                                                                            220,
-                                                                            199,
-                                                                            3,
-                                                                            192,
-                                                                            229,
-                                                                            0,
-                                                                            182,
-                                                                            83,
-                                                                            202,
-                                                                            130,
-                                                                            39,
-                                                                            59,
-                                                                            123,
-                                                                            250,
-                                                                            216,
-                                                                            4,
-                                                                            93,
-                                                                            133,
-                                                                            164,
-                                                                            112
-                                                                          ]
-                                                                        ]
-                                                                      }
-                                                                    },
-                                                                    {
-                                                                      "data": {
-                                                                        "Digest": "0x17d3b9ff99c67bfd58fae896f90da846a4b445f5117020649bd117aef1a31bce"
-                                                                      }
-                                                                    }
-                                                                  ]
-                                                                }
-                                                              },
-                                                              null,
-                                                              null,
-                                                              null,
-                                                              null,
-                                                              null
-                                                            ]
-                                                          }
-                                                        },
-                                                        {
-                                                          "data": {
-                                                            "Digest": "0x94559a53ce7e36d9a26caa7a72d0f6e9f9554ac46179e4f1b99de0bc81dad18f"
-                                                          }
-                                                        },
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        null,
-                                                        null
-                                                      ]
-                                                    }
-                                                  },
-                                                  null,
-                                                  null,
-                                                  {
-                                                    "data": {
-                                                      "Digest": "0x4b5811db567cdb0f9fa196de8d04833e150b766d10a03602ea3dff15036f5799"
-                                                    }
-                                                  },
-                                                  null
-                                                ]
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Digest": "0xa021d7b79f5f10445e682c18ef818cbee327fb2ed76bffd593226f3693be117f"
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Digest": "0xc85d8fa58f5d90c85de511b7a27858614fbbd3831dd06c1c78d8bf83fc86f0f0"
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Digest": "0x5238c2422c04266b223c356521fb7e629e2316f19bbc215ab5ae20c3c21a5eaa"
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Digest": "0x2f0dc0c919e9d75870ca213d88550ca899d9d3c5dd63e58c131280bfe657fa68"
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Digest": "0xef2121de75ee5ba388d46da9043d704ce7f74b39ba74b4e4df6c854e9486c3aa"
-                                              }
-                                            },
-                                            {
-                                              "data": {
-                                                "Digest": "0x467e412e77ffb9870716b914050a9084d4a8cba5d0ace46f20db8fcae681811a"
-                                              }
-                                            },
-                                            null,
-                                            {
-                                              "data": {
-                                                "Digest": "0xa88f1e25e6e90ae4cd7b2175d2a0448555d369831429477196ec3589a153c871"
-                                              }
-                                            }
-                                          ]
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0xd6ced2f94573547309c441c60aec608bbb1b7ae9177c62cfce924f8e1e34cd2e"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0x2678b10b405bc6f65d03b7c34ca2162250ed75074e21fec8db1aff4a1ecd20cd"
-                                        }
-                                      },
-                                      {
-                                        "data": {
-                                          "Digest": "0x523c2d6df0e6ed226bd5b1f5b89611c4633b2205d91feae7d52ed2ee78893cd5"
-                                        }
-                                      }
-                                    ]
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0xf2e97ebcb1206cca06e87a7ca560ac730b6510373f062f9987f855a778acd62e"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0x440bc15310b21f43e9b6d3242bdfc2834eb74743d1bd68361a40e78b72da7ce3"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0x5770426080da627f710949a5d47735f23250e91c68207d2820c0e850ad382469"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0x727178e89fc7582fe04cf22a4d79517218a471c61c7c24c140c391530d73ddfd"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0xfeb3cf3a03dc8ae31537544268d0f251438841af9b2f67b003ddd2c76c22744b"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0x66d975e0c5294f17707e30babac52c7774a36b384a0623e085cd30829d2a9d2b"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0xa550c3259d2bc3f4bcb83400b2c59f5a6171dd7c8f27dfe8e24ad2bec7c9de15"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0x60dbb5ec5b8a496102b4acb7ff905dff063c614e959ee5beb07127bbcc27c36a"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0xd7fa22f2ee886d696fa2c6349b6270ba2b7fe5e73c050cfbf39ad20aea14ef7c"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0xe563659fb73ae4a997c44712de11f59511cd2e30a6f3ece76eef419cc3372a93"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0xca6d26100c3293600ffad9586b573a003f693aa28756c01bf03c3f6ebd692f8d"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0x234b7e1ab17d18ae4e1b74150e67028dc30465555cadb63fcd0d26ba23512b18"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0x478289621345702aa7d4acf486abef2b2ff1247a3e289c4fff73919907577334"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0x8fad68c548d1ba49cf1071bcf289af5987ac3d5df40a2c801532c688adc5f15c"
-                                  }
-                                },
-                                {
-                                  "data": {
-                                    "Digest": "0x9c66155795b8fb2e099841a482998c90558779ce34cb2dcbbaa4a447ba4af97b"
-                                  }
-                                }
-                              ]
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0x8997426d3fdcf67a09b82dd15216cdb323ead72a899f6437c2e82986cf2ab556"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0xcfd4e9ce0a732e20a5d71b5f421a5f82540791714c4a3e3e917615e46e2c1f8c"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0xe1672c0ca1de23a101ff85de523b8ae74fd09bdcd4f51c494e8cc149294d5a7b"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0x0117eec3e0f375e879a730900d960fc9896386353548751423f57366536ae067"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0x63535b6aca3af0da6ad0de71092984ae439c45fc9632086846386c5d7bd98aef"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0x6d40e3f73aa432fd4c9559dd1a975ed216e52ce8f75acd8c4b13000baa6d61bd"
-                            }
-                          },
-                          {
-                            "data": {
-                              "Digest": "0xfeca028342a41e4c8e51f70726af34014d0d469e6bd5d2d5a13048c4217b3eed"
-                            }
-                          }
-                        ]
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0x74918f5d617ab58299aaa5da2b8e114e9d24aed68355e2b646051e37c41b5fc0"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0xb393d648d04b9f0238626b40d133205bfecbc7018850a45a95d46ba72dedfbf4"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0x1bc53f7d360781fe1d473ee32da54144c2c1dc291a9b881103c748a17da87e3d"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0x3c3f70264ae49816aec29ddf837b83692ee2d6640802ba194f07dd5b10f9b8df"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0x9542bf8cc762d894d0c18d9fa97fb305d0be451360e55c37eb81e22e1f9931a7"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0x00af5bc227f8f5b4601ae38e5f6392f47d927d6cdc9cc1b0fefa2d5ee155818f"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0xdd4e401c7bfdfc76f83625c939f6ec2359000670d9fdf759672790a9da29d84f"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0x8adc7767fc4275de6c53d7d0ad6c5572c2d660e994875a170e44ca2a9c29f8a7"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0xda20623c59b7345d5bedf4d48d7ff67da8b0e1a5437613683f3ee7659143f590"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0x62451f0c65589b220c9eed0ecc2331ec60815bfa0a47e58f3b2b7358e29d80ef"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0x6bc03b8e83252b6941dddbabb198162e5175cb4f9f7881f3987d8bfaec69a0de"
-                      }
-                    },
-                    {
-                      "data": {
-                        "Digest": "0xa06669e50d3fcb9f26e5f22294547aa3af4d34807a7ede748221257510ec2051"
-                      }
-                    }
-                  ]
+                  "Digest": "0x181b2d90328ec611dae42bd76b04def7520909cbc3261407fdabf8a925c744bb"
                 }
               },
               {
@@ -10773,21 +10348,11 @@
           }
         },
         "storage_tries": {
+          "0x29f87c9671aacc93302477e51f2b00ad9d36d6e69d872091b6d6b5f7f5fab6fb": {
+            "data": "Null"
+          },
           "0xc64f8d334d1e73e1c5138400f09d6ce90c1920e9036098c51b1936c7b98a7de2": {
             "data": "Null"
-          },
-          "0x5380c7b7ae81a58eb98d9c78de4a1fd7fd9535fc953ed2be602daaa41767312a": {
-            "data": "Null"
-          },
-          "0x0f8b1a63391c3b7e95c9ce3acc03cd60c7fd1d8a7e31cf3d342d77ef46e1bd03": {
-            "data": {
-              "Digest": "0xfd78ce42cf500153ccadd15ca1721327c78c6363b6afbb8c4274f6bf7a7d6170"
-            }
-          },
-          "0xff7a711a1637b1b6078a86ff7c6f239de8aad6537e4b1a47cbfee8705f37b1e9": {
-            "data": {
-              "Digest": "0x01f9e62d19297f681ea2208de1fec6c67ed86a26e55dbf4b27a1b0881060507b"
-            }
           },
           "0xa4306713e17cba536233d6dd201f5d4fb15aeb435bda9e596fac8b534c2f93c2": {
             "data": {
@@ -11118,6 +10683,11 @@
                 null,
                 null
               ]
+            }
+          },
+          "0x0f8b1a63391c3b7e95c9ce3acc03cd60c7fd1d8a7e31cf3d342d77ef46e1bd03": {
+            "data": {
+              "Digest": "0xfd78ce42cf500153ccadd15ca1721327c78c6363b6afbb8c4274f6bf7a7d6170"
             }
           },
           "0x0d3997a55da3129d8854ef78eb38832a075ead979690a29e58382c98ae862923": {
@@ -11591,19 +11161,16 @@
                 null
               ]
             }
+          },
+          "0xff7a711a1637b1b6078a86ff7c6f239de8aad6537e4b1a47cbfee8705f37b1e9": {
+            "data": {
+              "Digest": "0x01f9e62d19297f681ea2208de1fec6c67ed86a26e55dbf4b27a1b0881060507b"
+            }
           }
         }
       },
       "state_requests": {
-        "0x0000000000000000000000000000000000000000": [],
-        "0xc4fe7ebf94ab10bc2b8c2cec563d0585d8df9bc2": [],
-        "0xa29eb8bf175747632f34838769984135aca4ceab": [
-          "0x37",
-          "0x38",
-          "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc",
-          "0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103"
-        ],
-        "0x30e3d5b1fc9e7eba58b224e3909ecfa3dd10dda5": [],
+        "0xc6e2459991bfe27cca6d86722f35da23a1e4cb97": [],
         "0x87912ffcc5b9000629473f93422ddcd349cf21a8": [
           "0x33",
           "0x53",
@@ -11612,7 +11179,15 @@
           "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc",
           "0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103"
         ],
-        "0xc6e2459991bfe27cca6d86722f35da23a1e4cb97": []
+        "0x30e3d5b1fc9e7eba58b224e3909ecfa3dd10dda5": [],
+        "0xc4fe7ebf94ab10bc2b8c2cec563d0585d8df9bc2": [],
+        "0x39027d57969ad59161365e0bbd53d2f63ee5aaa6": [],
+        "0xa29eb8bf175747632f34838769984135aca4ceab": [
+          "0x37",
+          "0x38",
+          "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc",
+          "0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103"
+        ]
       },
       "bytecodes": [
         {
@@ -15121,7 +14696,9 @@
             }
           }
         }
-      ]
-    }
+      ],
+      "receipts": null
+    },
+    "caller_address": "0x39027d57969ad59161365e0bbd53d2f63ee5aaa6"
   }
 }

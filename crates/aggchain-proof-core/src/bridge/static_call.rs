@@ -1,7 +1,7 @@
 use agglayer_primitives::Digest;
 use alloy_primitives::Address;
 use alloy_sol_types::SolCall;
-use sp1_cc_client_executor::{io::EVMStateSketch, ClientExecutor, ContractInput};
+use sp1_cc_client_executor::{io::EvmSketchInput, ClientExecutor, ContractInput};
 
 use super::BridgeConstraintsError;
 
@@ -31,7 +31,7 @@ pub enum StaticCallStage {
 #[derive(thiserror::Error, Debug)]
 pub enum StaticCallError {
     #[error("Failure on the initialization of the ClientExecutor.")]
-    ClientInitialization(#[source] eyre::Report),
+    ClientInitialization(#[source] sp1_cc_client_executor::ClientError),
     #[error("Failure on the execution of the ClientExecutor.")]
     ClientExecution(#[source] eyre::Report),
     #[error("Failure on the decoding of the contractOutput.")]
@@ -48,11 +48,12 @@ impl StaticCallWithContext {
     /// Returns the decoded output values of a static call.
     pub fn execute<C: SolCall>(
         &self,
-        state_sketch: &EVMStateSketch,
+        caller_address: Address,
+        state_sketch: &EvmSketchInput,
         calldata: C,
     ) -> Result<C::Return, BridgeConstraintsError> {
         let (decoded_return, retrieved_block_hash) = self
-            .execute_helper(state_sketch, calldata)
+            .execute_helper(state_sketch, calldata, caller_address)
             .map_err(|e| BridgeConstraintsError::static_call_error(e, self.stage))?;
 
         // check on block hash
@@ -77,10 +78,10 @@ impl StaticCallWithContext {
     /// important to keep them in mind when updating the code.
     fn execute_helper<C: SolCall>(
         &self,
-        state_sketch: &EVMStateSketch,
+        state_sketch: &EvmSketchInput,
         calldata: C,
+        caller_address: Address,
     ) -> Result<(C::Return, Digest), StaticCallError> {
-        let caller_address = Address::default();
         let cc_public_values = ClientExecutor::new(state_sketch)
             .map_err(StaticCallError::ClientInitialization)?
             .execute(ContractInput::new_call(
@@ -94,6 +95,9 @@ impl StaticCallWithContext {
             C::abi_decode_returns_validate(&cc_public_values.contractOutput)
                 .map_err(StaticCallError::DecodeContractOutput)?;
 
-        Ok((decoded_contract_output, cc_public_values.blockHash.0.into()))
+        Ok((
+            decoded_contract_output,
+            cc_public_values.anchorHash.0.into(),
+        ))
     }
 }
