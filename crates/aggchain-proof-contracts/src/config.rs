@@ -3,6 +3,7 @@ use prover_alloy::L1RpcEndpoint;
 use prover_utils::from_env_or_default;
 use serde::{Deserialize, Serialize};
 use sp1_cc_client_executor::Genesis;
+use tracing::info;
 use url::Url;
 
 /// Address of the `GlobalExitRootManagerL2SovereignChain.sol` contract
@@ -114,6 +115,13 @@ pub(crate) fn parse_evm_sketch_genesis(evm_sketch_genesis: &str) -> Result<Genes
     } else {
         let genesis_json_str = std::fs::read_to_string(evm_sketch_genesis)
             .map_err(|e| crate::Error::InvalidEvmSketchGenesisInput(e.to_string()))?;
+
+        // Validate the JSON string.
+        let genesis_check = serde_json::from_str::<alloy::genesis::Genesis>(&genesis_json_str)
+            .map_err(|e| {
+                crate::Error::InvalidEvmSketchGenesisInput(format!("could not parse json str: {e}"))
+            })?;
+        info!("Using evm sketch genesis: {genesis_check:?}");
         Ok(Genesis::Custom(genesis_json_str))
     }
 }
