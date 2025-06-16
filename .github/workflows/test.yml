@@ -65,7 +65,7 @@ jobs:
 
   check_elf:
     runs-on: ubuntu-latest-16-cores
-    if: ${{ contains('["merge_group", "workflow_dispatch"]', github.event_name) }}
+    if: ${{ contains('["merge_group", "push", "workflow_dispatch"]', github.event_name) }}
     name: ELF Checking
     steps:
       - name: Checkout sources
@@ -99,7 +99,7 @@ jobs:
       - name: Install sp1 toolchain
         run: |
           curl -L https://sp1up.succinct.xyz | bash
-          /home/runner/.sp1/bin/sp1up
+          cargo make install-cargo-prove
           PATH="/home/runner/.sp1/bin:$PATH" cargo prove --version
 
       - name: Build the AP elf
