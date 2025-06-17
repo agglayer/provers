@@ -493,6 +493,10 @@ mod tests {
         dotenvy::dotenv().ok();
 
         println!("Starting bridge constraints test...");
+
+        // Load the custom genesis JSON
+        pub const CUSTOM_JSON: &str = include_str!("../test_input/genesis.json");
+
         // Read and parse the JSON file
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("src/test_input/bridge_input_e2e_sepolia.json");
@@ -670,9 +674,21 @@ mod tests {
                 .expect("Invalid URL format");
 
             let evm_sketch = |block_number: u64| {
+                // Remove comment lines from the JSON string before parsing
+                let json_clean: String = CUSTOM_JSON
+                    .lines()
+                    .filter(|line| !line.trim_start().starts_with("//"))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+
+                // Parse the JSON into alloy_genesis::Genesis first, then extract the config
+                let genesis_parsed: alloy::genesis::Genesis =
+                    serde_json::from_str(&json_clean).expect("Failed to parse genesis JSON");
+
                 EvmSketch::builder()
+                    .optimism()
                     .at_block(BlockNumberOrTag::Number(block_number))
-                    .with_genesis(Genesis::Sepolia)
+                    .with_genesis(Genesis::Custom(genesis_parsed.config))
                     .el_rpc_url(rpc_url_l2.clone())
             };
 
