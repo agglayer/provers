@@ -82,7 +82,7 @@ impl StaticCallWithContext {
         calldata: C,
         caller_address: Address,
     ) -> Result<(C::Return, Digest), StaticCallError> {
-        let cc_public_values = ClientExecutor::new(state_sketch)
+        let cc_public_values = ClientExecutor::optimism(state_sketch)
             .map_err(StaticCallError::ClientInitialization)?
             .execute(ContractInput::new_call(
                 self.address,

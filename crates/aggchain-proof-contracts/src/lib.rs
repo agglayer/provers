@@ -25,7 +25,10 @@ use contracts::{
 };
 use jsonrpsee::{core::client::ClientT, http_client::HttpClient, rpc_params};
 use prover_alloy::{build_alloy_fill_provider, AlloyFillProvider};
-use sp1_cc_client_executor::{io::EvmSketchInput, Genesis};
+use sp1_cc_client_executor::{
+    io::{EvmSketchInput, Primitives},
+    Genesis,
+};
 use sp1_cc_host_executor::EvmSketch;
 use tracing::info;
 use url::Url;
@@ -153,6 +156,7 @@ where
         prev_l2_block: BlockNumberOrTag,
     ) -> Result<EvmSketchInput, Error> {
         let sketch = EvmSketch::builder()
+            .optimism()
             .at_block(prev_l2_block)
             .with_genesis(self.evm_sketch_genesis.clone())
             .el_rpc_url(self.l2_root_provider_endpoint.clone())
@@ -217,6 +221,7 @@ where
         new_l2_block: BlockNumberOrTag,
     ) -> Result<EvmSketchInput, Error> {
         let sketch = EvmSketch::builder()
+            .optimism()
             .at_block(new_l2_block)
             .with_genesis(self.evm_sketch_genesis.clone())
             .el_rpc_url(self.l2_root_provider_endpoint.clone())
@@ -297,10 +302,10 @@ where
     }
 }
 
-async fn host_execute<C: SolCall, P: Provider<AnyNetwork> + Clone>(
+async fn host_execute<C: SolCall, P: Provider<AnyNetwork> + Clone, PT: Primitives>(
     caller_address: Address,
     contract_address: Address,
-    sketch: &EvmSketch<P>,
+    sketch: &EvmSketch<P, PT>,
     calldata: C,
     stage: StaticCallStage,
 ) -> Result<(), Error> {
