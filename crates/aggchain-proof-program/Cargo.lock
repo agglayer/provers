@@ -3896,7 +3896,7 @@ dependencies = [
 [[package]]
 name = "rsp-client-executor"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/rsp?rev=8308457c8a4ebf384b6e428d904c68ba6d8ff731#8308457c8a4ebf384b6e428d904c68ba6d8ff731"
+source = "git+https://github.com/succinctlabs/rsp?rev=57fd82b40de3fe816db309f29bca8ecc0d8821f1#57fd82b40de3fe816db309f29bca8ecc0d8821f1"
 dependencies = [
  "alloy-consensus",
  "alloy-evm",
@@ -3927,7 +3927,7 @@ dependencies = [
 [[package]]
 name = "rsp-mpt"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/rsp?rev=8308457c8a4ebf384b6e428d904c68ba6d8ff731#8308457c8a4ebf384b6e428d904c68ba6d8ff731"
+source = "git+https://github.com/succinctlabs/rsp?rev=57fd82b40de3fe816db309f29bca8ecc0d8821f1#57fd82b40de3fe816db309f29bca8ecc0d8821f1"
 dependencies = [
  "alloy-primitives",
  "alloy-rlp",
@@ -3941,11 +3941,10 @@ dependencies = [
 [[package]]
 name = "rsp-primitives"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/rsp?rev=8308457c8a4ebf384b6e428d904c68ba6d8ff731#8308457c8a4ebf384b6e428d904c68ba6d8ff731"
+source = "git+https://github.com/succinctlabs/rsp?rev=57fd82b40de3fe816db309f29bca8ecc0d8821f1#57fd82b40de3fe816db309f29bca8ecc0d8821f1"
 dependencies = [
  "alloy-genesis",
  "alloy-rpc-types",
- "eyre",
  "reth-chainspec",
  "reth-optimism-chainspec",
  "reth-optimism-forks",
@@ -3953,12 +3952,13 @@ dependencies = [
  "reth-trie",
  "serde",
  "serde_json",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
 name = "rsp-witness-db"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/rsp?rev=8308457c8a4ebf384b6e428d904c68ba6d8ff731#8308457c8a4ebf384b6e428d904c68ba6d8ff731"
+source = "git+https://github.com/succinctlabs/rsp?rev=57fd82b40de3fe816db309f29bca8ecc0d8821f1#57fd82b40de3fe816db309f29bca8ecc0d8821f1"
 dependencies = [
  "alloy-primitives",
  "reth-storage-errors",
@@ -4313,7 +4313,7 @@ dependencies = [
 [[package]]
 name = "sp1-cc-client-executor"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/sp1-contract-call/?rev=3f1992f929a351d346a5cc36cc632c3bb33da588#3f1992f929a351d346a5cc36cc632c3bb33da588"
+source = "git+https://github.com/succinctlabs/sp1-contract-call/?rev=4e3c67e54bc67b643b49b5aca37a3501c19f0baa#4e3c67e54bc67b643b49b5aca37a3501c19f0baa"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
