@@ -27,10 +27,10 @@ use jsonrpsee::{core::client::ClientT, http_client::HttpClient, rpc_params};
 use prover_alloy::{build_alloy_fill_provider, AlloyFillProvider};
 use sp1_cc_client_executor::{
     io::{EvmSketchInput, Primitives},
-    Genesis,
+    ContractInput, Genesis,
 };
 use sp1_cc_host_executor::EvmSketch;
-use tracing::info;
+use tracing::{debug, info};
 use url::Url;
 
 pub use crate::error::Error;
@@ -309,10 +309,16 @@ async fn host_execute<C: SolCall, P: Provider<AnyNetwork> + Clone, PT: Primitive
     calldata: C,
     stage: StaticCallStage,
 ) -> Result<(), Error> {
-    let _ = sketch
-        .call(contract_address, caller_address, calldata)
+    let output_bytes = sketch
+        .call_raw(&ContractInput::new_call(
+            contract_address,
+            caller_address,
+            calldata,
+        ))
         .await
         .map_err(|source| Error::InvalidHostStaticCall { source, stage })?;
+
+    debug!("output bytes for static call at stage {stage:?}: {output_bytes:?}");
 
     Ok(())
 }
