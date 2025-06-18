@@ -2,7 +2,7 @@
 resolver = "2"
 default-members = ["crates/agglayer-prover", "crates/aggkit-prover"]
 members = ["crates/*"]
-exclude = ["crates/prover-dummy-program", "crates/aggchain-proof-program"]
+exclude = ["crates/prover-dummy-program", "crates/aggchain-proof-program", "crates/aggchain-proof-core/test/bridge-constraints-sp1-program", "crates/aggchain-proof-core/test/bridge-constraints-sp1-script"]
 
 [workspace.package]
 version = "0.1.0"

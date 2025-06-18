@@ -1,0 +1,15 @@
+[package]
+name = "bridge-constraints-sp1-program"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[profile.release]
+overflow-checks = true
+
+[dependencies]
+sp1-zkvm = "=5.0.0"
+aggchain-proof-core = { path = "../..", default-features = false }
+
+[build-dependencies]
+sp1-cli = "=5.0.0" 
