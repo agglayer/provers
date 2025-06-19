@@ -67,10 +67,10 @@ sp1-sdk = "=5.0.3"
 sp1-prover = "=5.0.1"
 sp1-zkvm = "=5.0.0"
 
-sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "f09d03e73bb717f88ab078e3dfc98b0fe6a8af53", features = [
+sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "9173159e6671c602610fe5df44c695de906e4ee3", features = [
     "optimism",
 ] }
-sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "f09d03e73bb717f88ab078e3dfc98b0fe6a8af53", features = [
+sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "9173159e6671c602610fe5df44c695de906e4ee3", features = [
     "optimism",
 ] }
 
