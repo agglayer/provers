@@ -275,7 +275,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .iter()
             .filter(|ib| new_blocks_range.contains(&ib.block_number))
             .map(|ib| GlobalIndexWithLeafHash {
-                global_index: ib.global_index.into(),
+                global_index: ib.global_index,
                 bridge_exit_hash: ib.bridge_exit_hash.0,
             })
             .collect();
