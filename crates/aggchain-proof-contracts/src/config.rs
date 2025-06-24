@@ -117,11 +117,11 @@ pub(crate) fn parse_evm_sketch_genesis(evm_sketch_genesis: &str) -> Result<Genes
             .map_err(|e| crate::Error::InvalidEvmSketchGenesisInput(e.to_string()))?;
 
         // Validate the JSON string.
-        let genesis_check = serde_json::from_str::<alloy::genesis::Genesis>(&genesis_json_str)
+        let parsed_genesis = serde_json::from_str::<alloy::genesis::Genesis>(&genesis_json_str)
             .map_err(|e| {
                 crate::Error::InvalidEvmSketchGenesisInput(format!("could not parse json str: {e}"))
             })?;
-        info!("Using evm sketch genesis: {genesis_check:?}");
-        Ok(Genesis::Custom(genesis_json_str))
+        info!("Using evm sketch genesis: {parsed_genesis:?}");
+        Ok(Genesis::Custom(parsed_genesis.config))
     }
 }
