@@ -30,7 +30,7 @@ checksum = "512761e0bb2578dd7380c6baaa0f4ce03e84f95e960231d1dec8bf4d7d6e2627"
 
 [[package]]
 name = "aggchain-proof-builder"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "aggchain-proof-contracts",
  "aggchain-proof-core",
@@ -59,7 +59,7 @@ dependencies = [
 
 [[package]]
 name = "aggchain-proof-contracts"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "aggchain-proof-core",
  "aggchain-proof-types",
@@ -123,7 +123,7 @@ dependencies = [
 
 [[package]]
 name = "aggchain-proof-service"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "aggchain-proof-builder",
  "aggchain-proof-contracts",
@@ -149,7 +149,7 @@ dependencies = [
 
 [[package]]
 name = "aggchain-proof-types"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "aggchain-proof-core",
  "agglayer-interop",
@@ -162,7 +162,7 @@ dependencies = [
 
 [[package]]
 name = "aggkit-prover"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "aggchain-proof-service",
  "aggchain-proof-types",
@@ -200,7 +200,7 @@ dependencies = [
 
 [[package]]
 name = "aggkit-prover-config"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "aggchain-proof-service",
  "insta",
@@ -215,7 +215,7 @@ dependencies = [
 
 [[package]]
 name = "aggkit-prover-types"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "aggchain-proof-types",
  "agglayer-interop",
@@ -314,17 +314,17 @@ dependencies = [
 
 [[package]]
 name = "agglayer-prover"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "agglayer-prover-config",
  "agglayer-prover-types",
- "agglayer-telemetry",
  "anyhow",
  "buildstructor",
  "prost",
  "prover-engine",
  "prover-executor",
  "prover-logger",
+ "prover-telemetry",
  "sp1-sdk",
  "tokio",
  "tokio-util",
@@ -337,7 +337,7 @@ dependencies = [
 
 [[package]]
 name = "agglayer-prover-config"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "insta",
  "pretty_assertions",
@@ -351,7 +351,7 @@ dependencies = [
 
 [[package]]
 name = "agglayer-prover-types"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "agglayer-interop",
  "pbjson",
@@ -362,25 +362,6 @@ dependencies = [
  "thiserror 2.0.12",
  "tonic 0.12.3",
  "tonic-build",
-]
-
-[[package]]
-name = "agglayer-telemetry"
-version = "0.2.1"
-source = "git+https://github.com/agglayer/agglayer.git?branch=release%2F0.2.1#581768e9a82b1cf20fac6536d86d1cfbd37641fb"
-dependencies = [
- "axum 0.7.9",
- "buildstructor",
- "futures",
- "lazy_static",
- "opentelemetry",
- "opentelemetry-prometheus",
- "opentelemetry_sdk",
- "prometheus",
- "thiserror 2.0.12",
- "tokio",
- "tokio-util",
- "tracing",
 ]
 
 [[package]]
@@ -6058,7 +6039,7 @@ dependencies = [
 
 [[package]]
 name = "proposer-client"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "agglayer-interop-types",
  "alloy-primitives 1.1.2",
@@ -6091,7 +6072,7 @@ dependencies = [
 
 [[package]]
 name = "proposer-elfs"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "aggkit-prover-types",
  "alloy-primitives 1.1.2",
@@ -6104,7 +6085,7 @@ dependencies = [
 
 [[package]]
 name = "proposer-service"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "aggchain-proof-core",
  "aggkit-prover-types",
@@ -6212,7 +6193,7 @@ checksum = "106dd99e98437432fed6519dedecfade6a06a73bb7b2a1e019fdd2bee5778d94"
 
 [[package]]
 name = "prover-alloy"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "agglayer-evm-client",
  "alloy",
@@ -6228,7 +6209,7 @@ dependencies = [
 
 [[package]]
 name = "prover-config"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "insta",
  "pretty_assertions",
@@ -6243,7 +6224,7 @@ dependencies = [
 
 [[package]]
 name = "prover-elf-utils"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "agglayer-interop-types",
  "sp1-prover",
@@ -6251,13 +6232,13 @@ dependencies = [
 
 [[package]]
 name = "prover-engine"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
- "agglayer-telemetry",
  "anyhow",
  "axum 0.8.4",
  "http",
  "http-body-util",
+ "prover-telemetry",
  "tokio",
  "tokio-util",
  "tonic 0.12.3",
@@ -6269,7 +6250,7 @@ dependencies = [
 
 [[package]]
 name = "prover-executor"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "buildstructor",
@@ -6294,7 +6275,7 @@ dependencies = [
 
 [[package]]
 name = "prover-logger"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "serde",
  "tracing",
@@ -6303,8 +6284,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "prover-telemetry"
+version = "1.0.0"
+dependencies = [
+ "axum 0.7.9",
+ "buildstructor",
+ "futures",
+ "lazy_static",
+ "opentelemetry",
+ "opentelemetry-prometheus",
+ "opentelemetry_sdk",
+ "prometheus",
+ "thiserror 2.0.12",
+ "tokio",
+ "tokio-util",
+ "tracing",
+]
+
+[[package]]
 name = "prover-utils"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "humantime-serde",
  "serde",
