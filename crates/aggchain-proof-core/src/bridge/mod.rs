@@ -1,8 +1,7 @@
 //! A program that verifies the bridge integrity
 use std::{collections::HashMap, hash::Hash};
 
-use agglayer_primitives::{address, Address, U256};
-use agglayer_primitives::{keccak::keccak256_combine, Digest};
+use agglayer_primitives::{address, keccak::keccak256_combine, Address, Digest, U256};
 use alloy_sol_macro::sol;
 use alloy_sol_types::SolCall;
 use inserted_ger::InsertedGER;

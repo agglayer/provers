@@ -1,5 +1,4 @@
-use agglayer_primitives::Digest;
-use agglayer_primitives::Address;
+use agglayer_primitives::{Address, Digest};
 
 use crate::bridge::BridgeConstraintsError;
 
