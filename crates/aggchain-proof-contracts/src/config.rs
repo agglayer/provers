@@ -109,8 +109,7 @@ pub(crate) fn parse_evm_sketch_genesis(evm_sketch_genesis: &str) -> Result<Genes
     // from a file. We parse it to a string.
     if !std::path::Path::new(evm_sketch_genesis).exists() {
         Err(crate::Error::InvalidEvmSketchGenesisInput(format!(
-            "custom genesis json file does not exist: {}",
-            evm_sketch_genesis
+            "custom genesis json file does not exist: {evm_sketch_genesis}",
         )))
     } else {
         let genesis_json_str = std::fs::read_to_string(evm_sketch_genesis)
