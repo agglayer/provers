@@ -2,9 +2,10 @@ mod aggchain_contracts_rpc_client {
     use std::str::FromStr;
 
     use agglayer_interop::types::Digest;
+    use agglayer_primitives::{address, Address};
     use alloy::{
         hex::{self, FromHex},
-        primitives::{address, B256},
+        primitives::B256,
         sol_types::{SolCall, SolValue},
     };
     use mockito::ServerGuard;
@@ -25,7 +26,7 @@ mod aggchain_contracts_rpc_client {
         Url::parse("http://0.0.0.0:0").unwrap()
     }
 
-    fn dummy_address() -> alloy::primitives::Address {
+    fn dummy_address() -> Address {
         address!("0x0000000000000000000000000000000000000000")
     }
 
