@@ -44,6 +44,7 @@ postprocessors = [
 # output = "test.md"
 
 [git]
+skip_tags = 'rc'
 # parse the commits based on https://www.conventionalcommits.org
 conventional_commits = true
 # filter out the commits that are not conventional
