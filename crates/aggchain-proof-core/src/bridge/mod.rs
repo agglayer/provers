@@ -1,8 +1,8 @@
 //! A program that verifies the bridge integrity
 use std::{collections::HashMap, hash::Hash};
 
+use agglayer_primitives::{address, Address, U256};
 use agglayer_primitives::{keccak::keccak256_combine, Digest};
-use alloy_primitives::{address, Address, U256};
 use alloy_sol_macro::sol;
 use alloy_sol_types::SolCall;
 use inserted_ger::InsertedGER;
@@ -155,6 +155,8 @@ impl BridgeConstraintsInput {
         address: Address,
         calldata: C,
     ) -> Result<(C::Return, C::Return), BridgeConstraintsError> {
+        let address = alloy_primitives::Address::from(address);
+
         // Get the state of the hash chain of the previous block on L2
         let prev_hash_chain = StaticCallWithContext {
             address,
@@ -162,7 +164,7 @@ impl BridgeConstraintsInput {
             block_hash: self.prev_l2_block_hash,
         }
         .execute(
-            self.bridge_witness.caller_address,
+            self.bridge_witness.caller_address.into(),
             &self.bridge_witness.prev_l2_block_sketch,
             calldata.clone(),
         )?;
@@ -174,7 +176,7 @@ impl BridgeConstraintsInput {
             block_hash: self.new_l2_block_hash,
         }
         .execute(
-            self.bridge_witness.caller_address,
+            self.bridge_witness.caller_address.into(),
             &self.bridge_witness.new_l2_block_sketch,
             calldata,
         )?;
@@ -284,12 +286,12 @@ impl BridgeConstraintsInput {
     fn verify_new_ler(&self, bridge_address: Address) -> Result<(), BridgeConstraintsError> {
         // Get the new local exit root
         let new_ler: Digest = StaticCallWithContext {
-            address: bridge_address,
+            address: bridge_address.into(),
             stage: StaticCallStage::NewLer,
             block_hash: self.new_l2_block_hash,
         }
         .execute(
-            self.bridge_witness.caller_address,
+            self.bridge_witness.caller_address.into(),
             &self.bridge_witness.new_l2_block_sketch,
             BridgeL2SovereignChain::getRootCall {},
         )?
@@ -313,18 +315,18 @@ impl BridgeConstraintsInput {
         // Since the bridge address is not constant but the l2 ger address is
         // We can retrieve the bridge address saving some public inputs and possible
         // errors
-        let bridge_address: Address = StaticCallWithContext {
-            address: self.ger_addr,
+        let bridge_address = StaticCallWithContext {
+            address: self.ger_addr.into(),
             stage: StaticCallStage::BridgeAddress,
             block_hash: self.new_l2_block_hash,
         }
         .execute(
-            self.bridge_witness.caller_address,
+            self.bridge_witness.caller_address.into(),
             &self.bridge_witness.new_l2_block_sketch,
             GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
         )?;
 
-        Ok(bridge_address)
+        Ok(bridge_address.into())
     }
 
     /// Verify that the claimed global indexes minus the unset global indexes
@@ -508,7 +510,8 @@ mod tests {
         let initial_block_number = json_data["initialBlockNumber"].as_u64().unwrap();
         let final_block_number = json_data["finalBlockNumber"].as_u64().unwrap();
         let ger_address =
-            Address::from_str(json_data["gerSovereignAddress"].as_str().unwrap()).unwrap();
+            alloy_primitives::Address::from_str(json_data["gerSovereignAddress"].as_str().unwrap())
+                .unwrap();
         let global_exit_roots = &json_data["globalExitRoots"];
         let local_exit_root = json_data["localExitRoot"].as_str().unwrap();
         let l1_info_root = json_data["l1InfoRoot"].as_str().unwrap();
@@ -698,7 +701,8 @@ mod tests {
             (prev, new)
         };
 
-        let caller_address = address!("0x39027D57969aD59161365e0bbd53D2F63eE5AAA6");
+        let caller_address =
+            alloy_primitives::address!("0x39027D57969aD59161365e0bbd53D2F63eE5AAA6");
         // 1. Get the prev inserted GER hash chain (previous block on L2)
         println!("Step 1: Fetching previous inserted GER hash chain...");
         let hash_chain = prev_l2_block_executor
@@ -880,7 +884,7 @@ mod tests {
 
         // Commit the bridge proof.
         let bridge_data_input = BridgeConstraintsInput {
-            ger_addr: ger_address,
+            ger_addr: ger_address.into(),
             prev_l2_block_hash: prev_l2_block_sketch.anchor.header().hash_slow().0.into(),
             new_l2_block_hash: new_l2_block_sketch.anchor.header().hash_slow().0.into(),
             new_local_exit_root: expected_new_ler,

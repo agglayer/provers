@@ -1,5 +1,5 @@
 use agglayer_primitives::Digest;
-use alloy_primitives::Address;
+use agglayer_primitives::Address;
 
 use crate::bridge::BridgeConstraintsError;
 

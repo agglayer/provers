@@ -1,8 +1,8 @@
 use agglayer_primitives::{
     keccak::{keccak256, keccak256_combine},
-    Digest,
+    Address, Digest,
 };
-use alloy_primitives::{Address, FixedBytes, B256, U256};
+use alloy_primitives::{FixedBytes, B256, U256};
 use alloy_sol_types::{sol, SolValue};
 use p3_baby_bear::BabyBear;
 use p3_bn254_fr::Bn254Fr;
@@ -129,7 +129,7 @@ impl From<&FepInputs> for AggregationProofPublicValues {
             l2BlockNumber: inputs.claim_block_num.into(),
             rollupConfigHash: inputs.rollup_config_hash.0.into(),
             multiBlockVKey: inputs.range_vkey_commitment.into(),
-            proverAddress: inputs.trusted_sequencer,
+            proverAddress: inputs.trusted_sequencer.into(),
         }
     }
 }
@@ -156,7 +156,7 @@ impl From<&FepInputs> for AggchainParamsValues {
             claimBlockNum: U256::from(inputs.claim_block_num),
             rollupConfigHash: inputs.rollup_config_hash.0.into(),
             optimisticMode: inputs.optimistic_mode() == OptimisticMode::Ecdsa,
-            trustedSequencer: inputs.trusted_sequencer,
+            trustedSequencer: inputs.trusted_sequencer.into(),
             range_vkey_commitment: inputs.range_vkey_commitment.into(),
             aggregation_vkey_hash: inputs.aggregation_vkey_hash.to_hash_bn254().into(),
         }

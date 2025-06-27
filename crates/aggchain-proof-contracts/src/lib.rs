@@ -12,11 +12,9 @@ use aggchain_proof_core::bridge::{
     BridgeL2SovereignChain,
 };
 use agglayer_interop::types::Digest;
+use agglayer_primitives::Address;
 use alloy::{
-    eips::BlockNumberOrTag,
-    network::AnyNetwork,
-    primitives::{Address, B256},
-    providers::Provider,
+    eips::BlockNumberOrTag, network::AnyNetwork, primitives::B256, providers::Provider,
     sol_types::SolCall,
 };
 use contracts::{
@@ -304,15 +302,15 @@ where
 
 async fn host_execute<C: SolCall, P: Provider<AnyNetwork> + Clone, PT: Primitives>(
     caller_address: Address,
-    contract_address: Address,
+    contract_address: alloy::primitives::Address,
     sketch: &EvmSketch<P, PT>,
     calldata: C,
     stage: StaticCallStage,
 ) -> Result<(), Error> {
     let output_bytes = sketch
         .call_raw(&ContractInput::new_call(
-            contract_address,
-            caller_address,
+            contract_address.into(),
+            caller_address.into(),
             calldata,
         ))
         .await
@@ -378,7 +376,7 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
 
         // Create client for global exit root manager smart contract.
         let global_exit_root_manager_l2 = GlobalExitRootManagerL2SovereignChain::new(
-            config.global_exit_root_manager_v2_sovereign_chain,
+            config.global_exit_root_manager_v2_sovereign_chain.into(),
             l2_el_client.clone(),
         );
 
@@ -395,8 +393,10 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             PolygonZkevmBridgeV2::new(polygon_zkevm_bridge_address, l2_el_client.clone());
 
         // Create client for Polygon rollup manager contract.
-        let polygon_rollup_manager =
-            PolygonRollupManagerRpcClient::new(config.polygon_rollup_manager, l1_client.clone());
+        let polygon_rollup_manager = PolygonRollupManagerRpcClient::new(
+            config.polygon_rollup_manager.into(),
+            l1_client.clone(),
+        );
 
         // Retrieve AggchainFep address from the Polygon rollup manager contract.
         let aggchain_fep_address = polygon_rollup_manager
@@ -413,7 +413,8 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             .trustedSequencer()
             .call()
             .await
-            .map_err(Error::UnableToRetrieveTrustedSequencerAddress)?;
+            .map_err(Error::UnableToRetrieveTrustedSequencerAddress)?
+            .into();
 
         info!(global_exit_root_manager_l2=%config.global_exit_root_manager_v2_sovereign_chain,
             polygon_zkevm_bridge_v2=%polygon_zkevm_bridge_v2.address(),
