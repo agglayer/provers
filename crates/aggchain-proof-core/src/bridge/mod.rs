@@ -549,7 +549,7 @@ mod tests {
             .map(|s| {
                 let s_str = s.as_str().unwrap();
                 // Pad left with zeros to 64 hex characters if needed
-                let padded = format!("{:0>64}", s_str);
+                let padded = format!("{s_str:0>64}");
                 U256::from_be_slice(hex::decode(padded).unwrap().as_slice())
             })
             .collect();
@@ -560,7 +560,7 @@ mod tests {
             .iter()
             .map(|s| {
                 let s_str = s.as_str().unwrap();
-                let padded = format!("{:0>64}", s_str);
+                let padded = format!("{s_str:0>64}");
                 U256::from_be_slice(hex::decode(padded).unwrap().as_slice())
             })
             .collect();
@@ -708,10 +708,7 @@ mod tests {
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
             )
             .await?;
-        println!(
-            "Step 1: Received prev inserted GER hash chain: {:?}",
-            hash_chain
-        );
+        println!("Step 1: Received prev inserted GER hash chain: {hash_chain:?}");
 
         // 2. Get the new inserted GER hash chain (new block on L2)
         println!("Step 2: Fetching new inserted GER hash chain...");
@@ -722,10 +719,7 @@ mod tests {
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
             )
             .await?;
-        println!(
-            "Step 2: Received new inserted GER hash chain: {:?}",
-            new_hash_chain
-        );
+        println!("Step 2: Received new inserted GER hash chain: {new_hash_chain:?}");
 
         // 3. Get the bridge address.
         println!("Step 3: Fetching bridge address...");
@@ -748,10 +742,7 @@ mod tests {
                 BridgeL2SovereignChain::getRootCall {},
             )
             .await?;
-        println!(
-            "Step 4: Received new local exit root result: {:?}",
-            new_ler_bytes
-        );
+        println!("Step 4: Received new local exit root result: {new_ler_bytes:?}");
         let new_ler: Digest = new_ler_bytes.0.into();
         let expected_new_ler: Digest = {
             let bytes = hex::decode(local_exit_root.trim_start_matches("0x")).unwrap();
@@ -769,10 +760,7 @@ mod tests {
                 GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
             )
             .await?;
-        println!(
-            "Step 5: Received previous removed GER hash chain: {:?}",
-            prev_removed
-        );
+        println!("Step 5: Received previous removed GER hash chain: {prev_removed:?}");
 
         // 6. Get the removed GER hash chain for the new block.
         println!("Step 6: Fetching new removed GER hash chain...");
@@ -783,10 +771,7 @@ mod tests {
                 GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
             )
             .await?;
-        println!(
-            "Step 6: Received new removed GER hash chain: {:?}",
-            new_removed
-        );
+        println!("Step 6: Received new removed GER hash chain: {new_removed:?}");
 
         // 7. Get the claimed global index hash chain for the previous block.
         println!("Step 7: Fetching previous claimed global index hash chain...");
@@ -797,10 +782,7 @@ mod tests {
                 BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
             )
             .await?;
-        println!(
-            "Step 7: Received previous claimed global index hash chain: {:?}",
-            prev_claimed
-        );
+        println!("Step 7: Received previous claimed global index hash chain: {prev_claimed:?}");
 
         // 8. Get the claimed global index hash chain for the new block.
         println!("Step 8: Fetching new claimed global index hash chain...");
@@ -811,10 +793,7 @@ mod tests {
                 BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
             )
             .await?;
-        println!(
-            "Step 8: Received new claimed global index hash chain: {:?}",
-            new_claimed
-        );
+        println!("Step 8: Received new claimed global index hash chain: {new_claimed:?}");
 
         // 9. Get the unset global index hash chain for the previous block.
         println!("Step 9: Fetching previous unset global index hash chain...");
@@ -825,10 +804,7 @@ mod tests {
                 BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
             )
             .await?;
-        println!(
-            "Step 9: Received previous unset global index hash chain: {:?}",
-            prev_unset
-        );
+        println!("Step 9: Received previous unset global index hash chain: {prev_unset:?}");
 
         // 10. Get the unset global index hash chain for the new block.
         println!("Step 10: Fetching new unset global index hash chain...");
@@ -839,10 +815,7 @@ mod tests {
                 BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
             )
             .await?;
-        println!(
-            "Step 10: Received new unset global index hash chain: {:?}",
-            new_unset
-        );
+        println!("Step 10: Received new unset global index hash chain: {new_unset:?}");
 
         let bridge_exits_claimed: Vec<GlobalIndexWithLeafHash> = claimed_global_indexes
             .iter()
