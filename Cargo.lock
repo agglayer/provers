@@ -45,6 +45,7 @@ dependencies = [
  "proposer-elfs",
  "prover-config",
  "prover-executor",
+ "prover-utils",
  "serde",
  "serde_json",
  "sp1-core-executor",
