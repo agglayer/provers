@@ -1,4 +1,4 @@
-use alloy::primitives::{address, Address};
+use agglayer_primitives::{address, Address};
 use prover_alloy::L1RpcEndpoint;
 use prover_utils::from_env_or_default;
 use serde::{Deserialize, Serialize};

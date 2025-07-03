@@ -43,12 +43,12 @@ prover-utils = { path = "crates/prover-utils" }
 agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
 
 # Interop dependencies
-agglayer-evm-client = { git = "https://github.com/agglayer/interop.git", tag = "v0.7.1" }
-agglayer-interop = { git = "https://github.com/agglayer/interop.git", tag = "v0.7.1" }
-agglayer-interop-types = { git = "https://github.com/agglayer/interop.git", tag = "v0.7.1" }
-agglayer-primitives = { git = "https://github.com/agglayer/interop.git", tag = "v0.7.1" }
-agglayer-tries = { git = "https://github.com/agglayer/interop.git", tag = "v0.7.1" }
-unified-bridge = { git = "https://github.com/agglayer/interop.git", tag = "v0.7.1" }
+agglayer-evm-client = "0.8.0"
+agglayer-interop = "0.8.0"
+agglayer-interop-types = "0.8.0"
+agglayer-primitives = "0.8.0"
+agglayer-tries = "0.8.0"
+unified-bridge = "0.8.0"
 
 # Ecosystem dependencies
 op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v2.3.1-agglayer" }
@@ -79,7 +79,7 @@ alloy = { version = '0.14.0', features = ["full"] }
 alloy-rlp = "0.3.10"
 alloy-sol-macro = "1.1"
 alloy-sol-types = "1.1"
-alloy-primitives = { version = "1.1", features = ["serde", "k256"] }
+alloy-primitives = { version = "1.2", features = ["serde", "k256"] }
 anyhow = "1.0"
 arc-swap = "1.7"
 async-trait = "0.1.82"
