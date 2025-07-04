@@ -4,10 +4,10 @@ use agglayer_prover_types::{
     },
     ErrorWrapper,
 };
-use agglayer_telemetry::prover::{
+use prover_executor::{ProofType, Request, Response};
+use prover_telemetry::prover::{
     PROVING_REQUEST_FAILED, PROVING_REQUEST_RECV, PROVING_REQUEST_SUCCEEDED,
 };
-use prover_executor::{ProofType, Request, Response};
 use sp1_sdk::SP1Stdin;
 use tonic::Status;
 use tower::{buffer::Buffer, util::BoxService, Service, ServiceExt};
