@@ -43,6 +43,7 @@ prover-utils = { path = "crates/prover-utils" }
 agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
 
 # Interop dependencies
+agglayer-elf-build = "0.8.0"
 agglayer-evm-client = "0.8.0"
 agglayer-interop = "0.8.0"
 agglayer-interop-types = "0.8.0"

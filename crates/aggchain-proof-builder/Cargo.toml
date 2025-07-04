@@ -21,6 +21,7 @@ tracing.workspace = true
 aggchain-proof-contracts.workspace = true
 aggchain-proof-core.workspace = true
 aggchain-proof-types.workspace = true
+agglayer-elf-build.workspace = true
 agglayer-interop.workspace = true
 agglayer-primitives.workspace = true
 aggkit-prover-types = { workspace = true, features = ["sp1"] }
@@ -33,6 +34,9 @@ unified-bridge.workspace = true
 
 [dev-dependencies]
 tokio.workspace = true
+
+[build-dependencies]
+agglayer-elf-build.workspace = true
 
 [lints]
 workspace = true
