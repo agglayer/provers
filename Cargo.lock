@@ -97,6 +97,7 @@ dependencies = [
  "alloy-rlp",
  "alloy-sol-macro",
  "alloy-sol-types",
+ "alloy-trie 0.9.0",
  "dotenvy",
  "eyre",
  "hex",
@@ -475,7 +476,7 @@ dependencies = [
  "alloy-primitives 1.2.1",
  "alloy-rlp",
  "alloy-serde",
- "alloy-trie",
+ "alloy-trie 0.8.1",
  "auto_impl",
  "c-kzg",
  "derive_more 2.0.1",
@@ -639,7 +640,7 @@ dependencies = [
  "alloy-eips",
  "alloy-primitives 1.2.1",
  "alloy-serde",
- "alloy-trie",
+ "alloy-trie 0.8.1",
  "serde",
 ]
 
@@ -1226,7 +1227,23 @@ dependencies = [
  "alloy-rlp",
  "arrayvec",
  "derive_more 2.0.1",
- "nybbles",
+ "nybbles 0.3.4",
+ "serde",
+ "smallvec",
+ "tracing",
+]
+
+[[package]]
+name = "alloy-trie"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bada1fc392a33665de0dc50d401a3701b62583c655e3522a323490a5da016962"
+dependencies = [
+ "alloy-primitives 1.2.1",
+ "alloy-rlp",
+ "arrayvec",
+ "derive_more 2.0.1",
+ "nybbles 0.4.1",
  "serde",
  "smallvec",
  "tracing",
@@ -5086,6 +5103,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "nybbles"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "675b3a54e5b12af997abc8b6638b0aee51a28caedab70d4967e0d5db3a3f1d06"
+dependencies = [
+ "alloy-rlp",
+ "cfg-if",
+ "proptest",
+ "ruint",
+ "serde",
+ "smallvec",
+]
+
+[[package]]
 name = "object"
 version = "0.36.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6662,7 +6693,7 @@ dependencies = [
  "alloy-evm",
  "alloy-genesis",
  "alloy-primitives 1.2.1",
- "alloy-trie",
+ "alloy-trie 0.8.1",
  "auto_impl",
  "derive_more 2.0.1",
  "reth-ethereum-forks",
@@ -6680,7 +6711,7 @@ dependencies = [
  "alloy-eips",
  "alloy-genesis",
  "alloy-primitives 1.2.1",
- "alloy-trie",
+ "alloy-trie 0.8.1",
  "bytes",
  "modular-bitfield",
  "op-alloy-consensus",
@@ -6850,7 +6881,7 @@ dependencies = [
  "alloy-evm",
  "alloy-primitives 1.2.1",
  "alloy-rlp",
- "nybbles",
+ "nybbles 0.3.4",
  "reth-storage-errors",
  "thiserror 2.0.12",
 ]
@@ -6935,7 +6966,7 @@ dependencies = [
  "alloy-consensus",
  "alloy-eips",
  "alloy-primitives 1.2.1",
- "alloy-trie",
+ "alloy-trie 0.8.1",
  "op-alloy-consensus",
  "reth-chainspec",
  "reth-consensus",
@@ -7035,7 +7066,7 @@ dependencies = [
  "alloy-genesis",
  "alloy-primitives 1.2.1",
  "alloy-rlp",
- "alloy-trie",
+ "alloy-trie 0.8.1",
  "auto_impl",
  "bytes",
  "derive_more 2.0.1",
@@ -7147,7 +7178,7 @@ dependencies = [
  "alloy-eips",
  "alloy-primitives 1.2.1",
  "alloy-rlp",
- "alloy-trie",
+ "alloy-trie 0.8.1",
  "auto_impl",
  "itertools 0.14.0",
  "reth-execution-errors",
@@ -7170,11 +7201,11 @@ dependencies = [
  "alloy-rlp",
  "alloy-rpc-types-eth",
  "alloy-serde",
- "alloy-trie",
+ "alloy-trie 0.8.1",
  "bytes",
  "derive_more 2.0.1",
  "itertools 0.14.0",
- "nybbles",
+ "nybbles 0.3.4",
  "rayon",
  "reth-primitives-traits",
  "revm-database",
@@ -8330,7 +8361,7 @@ dependencies = [
  "alloy-rpc-types-eth",
  "alloy-serde",
  "alloy-sol-types",
- "alloy-trie",
+ "alloy-trie 0.8.1",
  "eyre",
  "op-revm",
  "reth-chainspec",

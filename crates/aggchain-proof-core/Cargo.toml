@@ -31,7 +31,8 @@ thiserror.workspace = true
 tiny-keccak.workspace = true
 
 [dev-dependencies]
-alloy = { workspace = true, features = ["sol-types", "genesis"] }
+alloy = { workspace = true, features = ["full", "genesis"] }
+alloy-trie = "0.9.0"
 dotenvy.workspace = true
 mockall.workspace = true
 serde_json.workspace = true

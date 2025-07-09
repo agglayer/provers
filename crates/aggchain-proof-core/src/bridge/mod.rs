@@ -477,8 +477,14 @@ fn filter_values<K: Eq + Hash + Copy, V: Copy>(
 mod tests {
     use std::{collections::HashMap, fs::File, io::BufReader, str::FromStr};
 
-    use alloy::rpc::types::BlockNumberOrTag;
-    use alloy_primitives::hex;
+    use alloy::{
+        consensus::Account,
+        rpc::{
+            client::ClientBuilder,
+            types::{Block, BlockNumberOrTag, EIP1186AccountProofResponse},
+        },
+    };
+    use alloy_primitives::{hex, keccak256, FixedBytes, B256};
     use serde_json::Value;
     use sp1_cc_client_executor::Genesis;
     use sp1_cc_host_executor::EvmSketch;
@@ -951,5 +957,241 @@ mod tests {
         // 3. The file should then be ready for committing
 
         assert_bridge_data(bridge_data_input);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_storage_proofs() {
+        // Load the custom genesis JSON
+        pub const CUSTOM_JSON: &str = include_str!("../test_input/genesis.json");
+        // Read and parse the JSON file
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("src/test_input/bridge_constraints_input.json");
+        let file = File::open(path).unwrap();
+        let reader = BufReader::new(file);
+        let bridge_data_input: BridgeConstraintsInput = serde_json::from_reader(reader).unwrap();
+
+        // Read and parse the JSON file
+        let json_data: Value = {
+            let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("src/test_input/bridge_input_e2e_sepolia.json");
+            let file = File::open(path).unwrap();
+            let reader = BufReader::new(file);
+            serde_json::from_reader(reader).unwrap()
+        };
+
+        // Extract values from JSON
+        let initial_block_number = json_data["initialBlockNumber"].as_u64().unwrap();
+        let final_block_number = json_data["finalBlockNumber"].as_u64().unwrap();
+        let ger_address =
+            alloy_primitives::Address::from_str(json_data["gerSovereignAddress"].as_str().unwrap())
+                .unwrap();
+
+        let chain_id_l2: u64 = json_data["chainId"].as_u64().unwrap();
+        let rpc_url_l2 = std::env::var(format!("RPC_{chain_id_l2}"))
+            .expect("RPC URL must be defined")
+            .parse::<Url>()
+            .expect("Invalid URL format");
+
+        let client = ClientBuilder::default().http(rpc_url_l2.clone());
+        let final_block: Block = client
+            .request(
+                "eth_getBlockByNumber",
+                vec![
+                    serde_json::json!(format!("0x{:x}", final_block_number)),
+                    serde_json::json!(false),
+                ],
+            )
+            .await
+            .unwrap();
+
+        println!("final block: {final_block:?}");
+
+        let account: Address = ger_address.clone().into(); // account to read
+                                                           // inserted GER is slot 55
+        let sk = |storage_key: &str| {
+            B256::from_slice(&hex::decode(&storage_key[2..]).unwrap().as_slice())
+        };
+
+        let sk_iger = sk("0x0000000000000000000000000000000000000000000000000000000000000037");
+        let sk_bridge_address =
+            sk("0x00000000000000000000000000000000000000000000000000000000000000a3");
+
+        let mk_args = |account: Address, storage_key: FixedBytes<32>, block_number: u64| {
+            vec![
+                serde_json::json!(account),
+                serde_json::json!(vec![storage_key]),
+                serde_json::json!(format!("0x{:x}", block_number)),
+            ]
+        };
+
+        let get_value = |proof: EIP1186AccountProofResponse| -> Digest {
+            proof
+                .storage_proof
+                .get(0)
+                .unwrap()
+                .value
+                .to_be_bytes()
+                .into()
+        };
+
+        //
+        // Inserted GERs hash chain
+        //
+        let (iger_initial, iger_final): (EIP1186AccountProofResponse, EIP1186AccountProofResponse) = {
+            let init = client
+                .request(
+                    "eth_getProof",
+                    mk_args(account, sk_iger, initial_block_number),
+                )
+                .await
+                .unwrap();
+
+            let end = client
+                .request(
+                    "eth_getProof",
+                    mk_args(account, sk_iger, final_block_number),
+                )
+                .await
+                .unwrap();
+
+            (init, end)
+        };
+
+        // Verify the validity of the value
+        let iger_prev_hash_chain: Digest = get_value(iger_initial.clone());
+        let iger_new_hash_chain: Digest = get_value(iger_final.clone());
+
+        println!("iger initial: {:x}", iger_prev_hash_chain);
+        println!("iger final: {:x}", iger_new_hash_chain);
+
+        let rebuilt_iger_hash_chain = bridge_data_input
+            .bridge_witness
+            .raw_inserted_gers
+            .iter()
+            .fold(iger_prev_hash_chain, |acc, &hash| {
+                keccak256_combine([acc, hash])
+            });
+
+        println!("rebuilt iger: {}", rebuilt_iger_hash_chain);
+        assert_eq!(rebuilt_iger_hash_chain, iger_new_hash_chain);
+
+        // We have a single storage proof given that we asked for only 1 storage slot
+        assert_eq!(iger_final.storage_proof.len(), 1);
+
+        // NOTE: The verification is twofold:
+        //   1. Verify the merkle proof from the value to the storage hash
+        //   2. Verify the merkle proof from the storage hash to the state root
+
+        // 1. From value to storage hash
+        iger_final
+            .storage_proof
+            .first()
+            .map(|storage_proof| {
+                alloy_trie::proof::verify_proof(
+                    iger_final.storage_hash,
+                    alloy_trie::Nibbles::unpack(keccak256(storage_proof.key.as_b256())),
+                    Some(alloy_rlp::encode(storage_proof.value).to_vec()),
+                    &storage_proof.proof,
+                )
+            })
+            .unwrap().unwrap();
+
+        // 2. From storage hash to the state root
+        let ger_address_account = Account {
+            nonce: iger_final.nonce,
+            balance: iger_final.balance,
+            storage_root: iger_final.storage_hash,
+            code_hash: iger_final.code_hash,
+        };
+
+        alloy_trie::proof::verify_proof(
+            final_block.header.state_root,
+            alloy_trie::Nibbles::unpack(keccak256(iger_final.address)),
+            Some(alloy_rlp::encode(&ger_address_account)),
+            &iger_final.account_proof,
+        )
+        .unwrap();
+
+        //
+        // Bridge address
+        //
+        let real_bridge_address = {
+            let caller_address: alloy_primitives::Address =
+                address!("0x39027D57969aD59161365e0bbd53D2F63eE5AAA6").into();
+            // Instantiate the EvmSketch for the prev and new L2 blocks
+            let (_prev_l2_block_executor, new_l2_block_executor) = {
+                let evm_sketch = |block_number: u64| {
+                    // Remove comment lines from the JSON string before parsing
+                    let json_clean: String = CUSTOM_JSON
+                        .lines()
+                        .filter(|line| !line.trim_start().starts_with("//"))
+                        .collect::<Vec<_>>()
+                        .join("\n");
+
+                    // Parse the JSON into alloy_genesis::Genesis first, then extract the config
+                    let genesis_parsed: alloy::genesis::Genesis =
+                        serde_json::from_str(&json_clean).expect("Failed to parse genesis JSON");
+
+                    EvmSketch::builder()
+                        .optimism()
+                        .at_block(BlockNumberOrTag::Number(block_number))
+                        .with_genesis(Genesis::Custom(genesis_parsed.config))
+                        .el_rpc_url(rpc_url_l2.clone())
+                };
+
+                let prev = evm_sketch(initial_block_number).build().await.unwrap();
+                let new = evm_sketch(final_block_number).build().await.unwrap();
+
+                (prev, new)
+            };
+
+            let bridge_address = new_l2_block_executor
+                .call(
+                    ger_address,
+                    caller_address,
+                    GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
+                )
+                .await
+                .unwrap();
+
+            bridge_address
+        };
+
+        println!("bridge address from static call: {:?}", real_bridge_address);
+        let bridge_address_raw: EIP1186AccountProofResponse = client
+            .request(
+                "eth_getProof",
+                mk_args(account, sk_bridge_address, initial_block_number),
+            )
+            .await
+            .unwrap();
+
+        {
+            let storage_keys: Vec<B256> =
+                (29u64..170u64).map(|i| B256::from(U256::from(i))).collect();
+
+            for storage_key in storage_keys {
+                let value: U256 = client
+                    .request(
+                        "eth_getStorageAt",
+                        vec![
+                            serde_json::json!(account),
+                            serde_json::json!(storage_key),
+                            serde_json::json!(format!("0x{:x}", final_block_number)),
+                        ],
+                    )
+                    .await
+                    .unwrap();
+
+                if value != U256::ZERO {
+                    println!("Slot {:#x} => {:#x}", storage_key, value);
+                }
+            }
+
+            // Retrievable: hash chain for removed and inserted GER
+            // Un-retrievable(?):
+            //  - bridge address (only retrievable from call)
+            //  - claim/unset hash chain (requires bridge address)
+        }
     }
 }
