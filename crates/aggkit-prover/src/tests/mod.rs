@@ -21,8 +21,9 @@ use alloy::sol_types::SolValue;
 use http::Uri;
 use hyper_util::rt::TokioIo;
 use mockall::predicate::{always, eq};
-use proposer_client::rpc::AggregationProofProposerResponse;
-use proposer_client::{MockAggregationProofProposer, MockAggregationProver, RequestId};
+use proposer_client::{rpc::AggregationProofProposerResponse, RequestId};
+#[cfg(feature = "testutils")]
+use proposer_client::{MockAggregationProofProposer, MockAggregationProver};
 use prover_config::{MockProverConfig, ProverType};
 use rsp_mpt::EthereumState;
 use sp1_cc_client_executor::io::EVMStateSketch;
@@ -33,6 +34,7 @@ use tower::{service_fn, Service};
 
 use crate::rpc::GrpcService;
 
+#[cfg(feature = "testutils")]
 #[tokio::test]
 async fn service_can_be_called() {
     let proving_key = Arc::new(OnceLock::new());

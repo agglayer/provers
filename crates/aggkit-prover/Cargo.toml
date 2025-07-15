@@ -15,12 +15,12 @@ testutils = []
 vergen-git2 = { workspace = true, features = ["build"] }
 
 [dependencies]
-aggchain-proof-service.workspace = true
+aggchain-proof-service = { workspace = true, features = ["testutils"] }
 aggchain-proof-types.workspace = true
 aggkit-prover-config.workspace = true
 aggkit-prover-types.workspace = true
 agglayer-interop = { workspace = true, features = ["grpc-compat"] }
-proposer-client.workspace = true
+proposer-client = { workspace = true, features = ["testutils"] }
 proposer-service.workspace = true
 prover-config.workspace = true
 prover-engine.workspace = true
