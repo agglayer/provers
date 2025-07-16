@@ -124,6 +124,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "aggchain-proof-multisig-core"
+version = "0.1.0"
+dependencies = [
+ "agglayer-primitives",
+ "alloy-primitives 1.2.1",
+ "serde",
+ "unified-bridge",
+]
+
+[[package]]
 name = "aggchain-proof-service"
 version = "0.1.0"
 dependencies = [
@@ -146,6 +156,19 @@ dependencies = [
  "tokio",
  "tower 0.4.13",
  "tracing",
+ "unified-bridge",
+]
+
+[[package]]
+name = "aggchain-proof-test-suite"
+version = "0.1.0"
+dependencies = [
+ "aggchain-proof-multisig-core",
+ "agglayer-primitives",
+ "alloy",
+ "alloy-primitives 1.2.1",
+ "rand 0.8.5",
+ "sp1-sdk",
  "unified-bridge",
 ]
 

@@ -1,0 +1,22 @@
+[package]
+name = "aggchain-proof-test-suite"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "benchmark-multisig"
+path = "src/bin/benchmark_multisig.rs"
+
+[dependencies]
+agglayer-primitives.workspace = true
+aggchain-proof-multisig-core.workspace = true
+unified-bridge.workspace = true
+
+alloy.workspace = true
+alloy-primitives.workspace = true
+rand.workspace = true
+sp1-sdk.workspace = true
+
+[lints]
+workspace = true

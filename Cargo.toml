@@ -2,7 +2,11 @@
 resolver = "2"
 default-members = ["crates/agglayer-prover", "crates/aggkit-prover"]
 members = ["crates/*"]
-exclude = ["crates/prover-dummy-program", "crates/aggchain-proof-program"]
+exclude = [
+    "crates/prover-dummy-program",
+    "crates/aggchain-proof-program",
+    "crates/aggchain-proof-multisig-program",
+]
 
 [workspace.package]
 version = "0.1.0"
@@ -20,7 +24,9 @@ aggchain-customchaindata-builder = { path = "crates/aggchain-customchaindata-bui
 aggchain-proof-builder = { path = "crates/aggchain-proof-builder" }
 aggchain-proof-contracts = { path = "crates/aggchain-proof-contracts" }
 aggchain-proof-core = { path = "crates/aggchain-proof-core" }
+aggchain-proof-multisig-core = { path = "crates/aggchain-proof-multisig-core" }
 aggchain-proof-service = { path = "crates/aggchain-proof-service" }
+aggchain-proof-test-suite = { path = "crates/aggchain-proof-test-suite" }
 aggchain-proof-types = { path = "crates/aggchain-proof-types" }
 aggkit-prover = { path = "crates/aggkit-prover" }
 aggkit-prover-config = { path = "crates/aggkit-prover-config" }
