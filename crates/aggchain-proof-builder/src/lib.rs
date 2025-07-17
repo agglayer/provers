@@ -121,7 +121,6 @@ pub struct AggchainProofBuilderResponse {
 
 /// This service is responsible for building an Aggchain proof.
 #[derive(Clone)]
-#[allow(unused)]
 pub struct AggchainProofBuilder<ContractsClient> {
     /// Client for interacting with the smart contracts relevant for the
     /// aggchain prover.

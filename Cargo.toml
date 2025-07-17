@@ -62,6 +62,7 @@ op-succinct-grpc = { git = "https://github.com/agglayer/op-succinct-grpc.git", t
 p3-baby-bear = "=0.2.3-succinct"
 p3-bn254-fr = "=0.2.3-succinct"
 p3-field = "=0.2.3-succinct"
+rsp-mpt = { git = "https://github.com/succinctlabs/rsp", rev = "881ba190e758e01e72399df462ac99864930ddb0" }
 sp1-core-executor = "=5.0.0"
 sp1-core-machine = "=5.0.0"
 sp1-sdk = "=5.0.3"
@@ -99,7 +100,9 @@ fail = { version = "0.5.1", default-features = false }
 ff = { version = "0.13", features = ["derive"] }
 futures = "0.3.31"
 hex = "0.4.3"
+http = "1.2"
 hyper = "1.5"
+hyper-util = "0.1.10"
 # Temporary until https://github.com/mitsuhiko/insta/pull/672 or similar lands
 insta = { git = "https://github.com/freyskeyd/insta", branch = "chore/updating-deps-to-avoid-serialize-error", features = [
     "toml",
@@ -135,3 +138,4 @@ tracing = "0.1.41"
 tracing-appender = "0.2.3"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 url = { version = "2.5", features = ["serde"] }
+vergen-git2 = "1.0"

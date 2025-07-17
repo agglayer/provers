@@ -6,6 +6,7 @@ use sp1_sdk::{SP1ProofWithPublicValues, SP1ProvingKey, SP1VerificationError, SP1
 /// This prover waits for the SP1 cluster generated
 /// AggregationProof based on the proof id.
 #[tonic::async_trait]
+#[cfg_attr(feature = "testutils", mockall::automock)]
 pub trait AggregationProver {
     fn compute_pkey_vkey(&self, program: &[u8]) -> (SP1ProvingKey, SP1VerifyingKey);
 

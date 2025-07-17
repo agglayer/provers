@@ -19,6 +19,11 @@ pub mod rpc;
 #[cfg(test)]
 mod tests;
 
+#[cfg(feature = "testutils")]
+pub use aggregation_prover::MockAggregationProver;
+#[cfg(feature = "testutils")]
+pub use rpc::MockAggregationProofProposer;
+
 #[async_trait::async_trait]
 #[cfg_attr(feature = "testutils", mockall::automock)]
 pub trait ProposerClient {

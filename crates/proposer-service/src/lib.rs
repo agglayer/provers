@@ -13,7 +13,7 @@ use proposer_client::{
     aggregation_prover::AggregationProver,
     mock_grpc_prover::MockGrpcProver,
     network_prover::new_network_prover,
-    rpc::{AggregationProofProposerRequest, ProposerRpcClient},
+    rpc::{AggregationProofProposer, AggregationProofProposerRequest, ProposerRpcClient},
     FepProposerRequest,
 };
 use sp1_prover::SP1VerifyingKey;
@@ -69,12 +69,28 @@ where
             .await?,
         );
 
+        Self::with_aggregation_proof_proposer(prover, config, proposer_rpc_client, l1_rpc)
+    }
+}
+
+impl<L1Rpc, AggregProofProposer, Prover>
+    ProposerService<L1Rpc, proposer_client::client::Client<AggregProofProposer, Prover>>
+where
+    AggregProofProposer: AggregationProofProposer,
+    Prover: AggregationProver,
+{
+    pub fn with_aggregation_proof_proposer(
+        prover: Prover,
+        config: &ProposerServiceConfig,
+        aggregation_proof_proposer: Arc<AggregProofProposer>,
+        l1_rpc: Arc<L1Rpc>,
+    ) -> Result<Self, Error> {
         let aggregation_vkey = Self::extract_aggregation_vkey(&prover, AGGREGATION_ELF);
 
         Ok(Self {
             l1_rpc,
             client: Arc::new(proposer_client::client::Client::new(
-                proposer_rpc_client,
+                aggregation_proof_proposer,
                 prover,
                 Some(config.client.proving_timeout),
             )?),

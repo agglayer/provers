@@ -4,39 +4,37 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
-[dependencies]
-alloy = { workspace = true, features = ["genesis"] }
-anyhow.workspace = true
-async-trait.workspace = true
-eyre.workspace = true
-jsonrpsee.workspace = true
-serde.workspace = true
-serde_json.workspace = true
-thiserror.workspace = true
-tokio.workspace = true
-tracing.workspace = true
-url.workspace = true
-
-agglayer-primitives.workspace = true
-agglayer-interop.workspace = true
-aggchain-proof-types.workspace = true
-aggchain-proof-core.workspace = true
-prover-alloy.workspace = true
-prover-utils.workspace = true
-mockall = { workspace = true, optional = true }
-
-# SP1 dependencies
-sp1-cc-client-executor.workspace = true
-sp1-cc-host-executor.workspace = true
-
-[dev-dependencies]
-alloy = { workspace = true, features = ["sol-types", "genesis"] }
-mockito.workspace = true
-test-log.workspace = true
-
 [lints]
 workspace = true
 
 [features]
 default = []
 testutils = ["mockall"]
+
+[dependencies]
+agglayer-primitives.workspace = true
+agglayer-interop.workspace = true
+aggchain-proof-types.workspace = true
+aggchain-proof-core.workspace = true
+prover-alloy.workspace = true
+prover-utils.workspace = true
+
+alloy = { workspace = true, features = ["genesis"] }
+anyhow.workspace = true
+async-trait.workspace = true
+eyre.workspace = true
+jsonrpsee.workspace = true
+mockall = { workspace = true, optional = true }
+serde.workspace = true
+serde_json.workspace = true
+sp1-cc-client-executor.workspace = true
+sp1-cc-host-executor.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+url.workspace = true
+
+[dev-dependencies]
+alloy = { workspace = true, features = ["sol-types", "genesis"] }
+mockito.workspace = true
+test-log.workspace = true

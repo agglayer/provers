@@ -7,6 +7,9 @@ license.workspace = true
 [lints]
 workspace = true
 
+[features]
+testutils = ["dep:mockall"]
+
 [dependencies]
 alloy-primitives.workspace = true
 anyhow.workspace = true
@@ -15,6 +18,8 @@ base64.workspace = true
 educe.workspace = true
 hex.workspace = true
 jsonrpsee.workspace = true
+mockall = { workspace = true, optional = true }
+prover-utils.workspace = true
 prost.workspace = true
 serde.workspace = true
 serde_with = { workspace = true, features = ["hex"] }
@@ -29,15 +34,10 @@ url.workspace = true
 agglayer-interop-types.workspace = true
 op-succinct-grpc.workspace = true
 
-# Local dependencies
-prover-utils.workspace = true
-
-# Optional dependencies
-mockall = { workspace = true, optional = true }
-
 [dev-dependencies]
 insta.workspace = true
-proposer-client = { path = ".", features = ["testutils"] }
+proposer-client = { workspace = true, features = ["testutils"] }
+
 mockito.workspace = true
 serde_json.workspace = true
 test-log.workspace = true
@@ -49,6 +49,3 @@ tonic-build = { version = "0.12", default-features = false, features = [
     "prost",
     "transport",
 ] }
-
-[features]
-testutils = ["dep:mockall"]

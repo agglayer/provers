@@ -7,7 +7,11 @@ license.workspace = true
 [lints]
 workspace = true
 
+[features]
+testutils = ["dep:agglayer-evm-client", "aggchain-proof-contracts/testutils"]
+
 [dependencies]
+agglayer-evm-client = { workspace = true, optional = true }
 agglayer-interop.workspace = true
 aggchain-proof-builder.workspace = true
 aggchain-proof-contracts.workspace = true
@@ -30,6 +34,6 @@ tower = { workspace = true, features = ["timeout"] }
 tracing.workspace = true
 
 [dev-dependencies]
-aggchain-proof-contracts = { workspace = true, features = ["testutils"] }
+aggchain-proof-service = { workspace = true, features = ["testutils"] }
 
 serde_json.workspace = true

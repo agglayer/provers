@@ -7,13 +7,32 @@ license.workspace = true
 [lints]
 workspace = true
 
+[features]
+default = []
+testutils = []
+
+[build-dependencies]
+vergen-git2 = { workspace = true, features = ["build"] }
+
 [dependencies]
+aggchain-proof-service = { workspace = true, features = ["testutils"] }
+aggchain-proof-types.workspace = true
+aggkit-prover-config.workspace = true
+aggkit-prover-types.workspace = true
+agglayer-interop = { workspace = true, features = ["grpc-compat"] }
+proposer-client = { workspace = true, features = ["testutils"] }
+proposer-service.workspace = true
+prover-config.workspace = true
+prover-engine.workspace = true
+prover-executor.workspace = true
+prover-logger.workspace = true
+
 anyhow.workspace = true
 clap = { workspace = true, features = ["derive", "env", "string"] }
 dotenvy.workspace = true
 futures.workspace = true
 hex.workspace = true
-http = "1.2.0"
+http.workspace = true
 jsonrpsee.workspace = true
 prost.workspace = true
 sp1-sdk.workspace = true
@@ -26,26 +45,15 @@ tonic-types = { workspace = true }
 tower = { workspace = true, features = ["timeout"] }
 tracing.workspace = true
 
-aggchain-proof-service.workspace = true
-aggchain-proof-types.workspace = true
-aggkit-prover-config.workspace = true
-aggkit-prover-types.workspace = true
-agglayer-interop = { workspace = true, features = ["grpc-compat"] }
-proposer-client.workspace = true
-proposer-service.workspace = true
-prover-config.workspace = true
-prover-engine.workspace = true
-prover-executor.workspace = true
-prover-logger.workspace = true
-
 [dev-dependencies]
-hyper-util = "0.1.10"
+aggchain-proof-contracts = { workspace = true, features = ["testutils"] }
+aggchain-proof-core.workspace = true
+agglayer-evm-client = { workspace = true, features = ["testutils"] }
+agglayer-primitives.workspace = true
+
+alloy.workspace = true
+hyper-util.workspace = true
 mockall.workspace = true
+rsp-mpt.workspace = true
+sp1-cc-client-executor.workspace = true
 tokio-stream = { workspace = true, features = ["sync"] }
-
-[build-dependencies]
-vergen-git2 = { version = "1.0.0", features = ["build"] }
-
-[features]
-default = []
-testutils = []
