@@ -39,14 +39,16 @@ pub fn main(cfg: PathBuf, version: &str, program: &'static [u8]) -> anyhow::Resu
     let pp_service =
         prover_runtime.block_on(async { crate::prover::Prover::create_service(&config, program) });
 
-    _ = ProverEngine::builder()
-        .add_rpc_service(pp_service)
-        .set_rpc_runtime(prover_runtime)
-        .set_metrics_runtime(metrics_runtime)
-        .set_cancellation_token(global_cancellation_token)
-        .set_rpc_socket_addr(config.grpc_endpoint)
-        .set_metric_socket_addr(config.telemetry.addr)
-        .start();
+    _ = ProverEngine::new(
+        config.grpc_endpoint,
+        config.telemetry.addr,
+        config.shutdown.runtime_timeout,
+    )
+    .add_rpc_service(pp_service)
+    .set_rpc_runtime(prover_runtime)
+    .set_metrics_runtime(metrics_runtime)
+    .set_cancellation_token(global_cancellation_token)
+    .start();
 
     Ok(())
 }

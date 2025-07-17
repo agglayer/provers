@@ -5,38 +5,42 @@ mod error;
 #[cfg(test)]
 mod tests;
 
-use std::str::FromStr;
-use std::sync::Arc;
+use std::{str::FromStr, sync::Arc};
 
-use aggchain_proof_core::bridge::static_call::{HashChainType, StaticCallStage};
-use aggchain_proof_core::bridge::BridgeL2SovereignChain;
+use aggchain_proof_core::bridge::{
+    static_call::{HashChainType, StaticCallStage},
+    BridgeL2SovereignChain,
+};
 use agglayer_interop::types::Digest;
-use alloy::eips::BlockNumberOrTag;
-use alloy::network::AnyNetwork;
-use alloy::primitives::{Address, B256};
-use alloy::providers::{Provider, RootProvider};
-use alloy::sol_types::SolCall;
+use agglayer_primitives::Address;
+use alloy::{
+    eips::BlockNumberOrTag, network::AnyNetwork, primitives::B256, providers::Provider,
+    sol_types::SolCall,
+};
 use async_trait::async_trait;
 use contracts::{
     GetTrustedSequencerAddress, GlobalExitRootManagerL2SovereignChainRpcClient,
     L2EvmStateSketchFetcher,
 };
-use jsonrpsee::core::client::ClientT;
-use jsonrpsee::http_client::HttpClient;
-use jsonrpsee::rpc_params;
+use jsonrpsee::{core::client::ClientT, http_client::HttpClient, rpc_params};
 use prover_alloy::{build_alloy_fill_provider, AlloyFillProvider};
-use sp1_cc_client_executor::io::EVMStateSketch;
-use sp1_cc_client_executor::ContractInput;
-use sp1_cc_host_executor::HostExecutor;
-use tracing::info;
-
-use crate::config::AggchainProofContractsConfig;
-use crate::contracts::{
-    AggchainFep, AggchainFepRpcClient, GlobalExitRootManagerL2SovereignChain,
-    L1RollupConfigHashFetcher, L2LocalExitRootFetcher, L2OutputAtBlock, L2OutputAtBlockFetcher,
-    PolygonRollupManagerRpcClient, PolygonZkevmBridgeV2, ZkevmBridgeRpcClient,
+use sp1_cc_client_executor::{
+    io::{EvmSketchInput, Primitives},
+    ContractInput, Genesis,
 };
+use sp1_cc_host_executor::EvmSketch;
+use tracing::{debug, info};
+use url::Url;
+
 pub use crate::error::Error;
+use crate::{
+    config::AggchainProofContractsConfig,
+    contracts::{
+        AggchainFep, AggchainFepRpcClient, GlobalExitRootManagerL2SovereignChain,
+        L1RollupConfigHashFetcher, L2LocalExitRootFetcher, L2OutputAtBlock, L2OutputAtBlockFetcher,
+        PolygonRollupManagerRpcClient, PolygonZkevmBridgeV2, ZkevmBridgeRpcClient,
+    },
+};
 
 /// `AggchainContractsClient` is a trait for interacting with the smart
 /// contracts relevant for the aggchain prover.
@@ -52,8 +56,8 @@ pub trait AggchainContractsClient:
 /// smart contracts relevant for the aggchain prover.
 #[derive(Clone)]
 pub struct AggchainContractsRpcClient<RpcProvider> {
-    /// L2 rpc execution layer client.
-    l2_root_provider: RootProvider<AnyNetwork>,
+    /// Url for the evm state sketch builder.
+    l2_root_provider_endpoint: Url,
 
     /// L2 rpc consensus layer client (rollup node).
     l2_cl_client: Arc<HttpClient>,
@@ -69,6 +73,12 @@ pub struct AggchainContractsRpcClient<RpcProvider> {
 
     /// Trusted sequencer address.
     trusted_sequencer_addr: agglayer_primitives::Address,
+
+    /// Caller address.
+    static_call_caller_address: agglayer_primitives::Address,
+
+    /// Evm sketch genesis configuration.
+    evm_sketch_genesis: Genesis,
 }
 
 impl<T: alloy::providers::Provider> AggchainContractsClient for AggchainContractsRpcClient<T> {}
@@ -87,7 +97,7 @@ where
             .await
             .map_err(Error::LocalExitRootError)?;
 
-        Ok((*response._0).into())
+        Ok((response.0).into())
     }
 }
 
@@ -121,7 +131,7 @@ where
             .await
             .map_err(Error::RollupConfigHashError)?;
 
-        Ok((*response._0).into())
+        Ok((response.0).into())
     }
 }
 
@@ -143,44 +153,53 @@ where
     async fn get_prev_l2_block_sketch(
         &self,
         prev_l2_block: BlockNumberOrTag,
-    ) -> Result<EVMStateSketch, Error> {
-        let mut executor: HostExecutor<RootProvider<AnyNetwork>> =
-            HostExecutor::new(self.l2_root_provider.clone(), prev_l2_block)
-                .await
-                .map_err(Error::HostExecutorPreBlockInitialization)?;
+    ) -> Result<EvmSketchInput, Error> {
+        let sketch = EvmSketch::builder()
+            .optimism()
+            .at_block(prev_l2_block)
+            .with_genesis(self.evm_sketch_genesis.clone())
+            .el_rpc_url(self.l2_root_provider_endpoint.clone())
+            .build()
+            .await
+            .map_err(Error::HostExecutorPreBlockInitialization)?;
 
+        let caller_address = self.static_call_caller_address;
         let ger_address = *self.global_exit_root_manager_l2.address();
         let bridge_address = *self.polygon_zkevm_bridge_v2.address();
 
         // Static calls on the hash chains
         {
             host_execute(
+                caller_address,
                 ger_address,
-                &mut executor,
+                &sketch,
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
                 StaticCallStage::PrevHashChain(HashChainType::InsertedGER),
             )
             .await?;
 
             host_execute(
+                caller_address,
                 ger_address,
-                &mut executor,
+                &sketch,
                 GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
                 StaticCallStage::PrevHashChain(HashChainType::RemovedGER),
             )
             .await?;
 
             host_execute(
+                caller_address,
                 bridge_address,
-                &mut executor,
+                &sketch,
                 BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
                 StaticCallStage::PrevHashChain(HashChainType::ClaimedGlobalIndex),
             )
             .await?;
 
             host_execute(
+                caller_address,
                 bridge_address,
-                &mut executor,
+                &sketch,
                 BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
                 StaticCallStage::PrevHashChain(HashChainType::UnsetGlobalIndex),
             )
@@ -188,7 +207,7 @@ where
         }
 
         // Finalize to retrieve the EVMStateSketch
-        let prev_l2_block_sketch = executor
+        let prev_l2_block_sketch = sketch
             .finalize()
             .await
             .map_err(Error::InvalidPreBlockSketchFinalization)?;
@@ -199,19 +218,25 @@ where
     async fn get_new_l2_block_sketch(
         &self,
         new_l2_block: BlockNumberOrTag,
-    ) -> Result<EVMStateSketch, Error> {
-        let mut executor: HostExecutor<RootProvider<AnyNetwork>> =
-            HostExecutor::new(self.l2_root_provider.clone(), new_l2_block)
-                .await
-                .map_err(Error::HostExecutorNewBlockInitialization)?;
+    ) -> Result<EvmSketchInput, Error> {
+        let sketch = EvmSketch::builder()
+            .optimism()
+            .at_block(new_l2_block)
+            .with_genesis(self.evm_sketch_genesis.clone())
+            .el_rpc_url(self.l2_root_provider_endpoint.clone())
+            .build()
+            .await
+            .map_err(Error::HostExecutorNewBlockInitialization)?;
 
+        let caller_address = self.static_call_caller_address;
         let ger_address = *self.global_exit_root_manager_l2.address();
         let bridge_address = *self.polygon_zkevm_bridge_v2.address();
 
         // Static call on the bridge address
         host_execute(
+            caller_address,
             ger_address,
-            &mut executor,
+            &sketch,
             GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
             StaticCallStage::BridgeAddress,
         )
@@ -219,42 +244,47 @@ where
 
         // Static call on the new LER
         host_execute(
+            caller_address,
             bridge_address,
-            &mut executor,
+            &sketch,
             BridgeL2SovereignChain::getRootCall {},
-            StaticCallStage::NewHashChain(HashChainType::InsertedGER),
+            StaticCallStage::NewLer,
         )
         .await?;
 
         // Static calls on the hash chains
         {
             host_execute(
+                caller_address,
                 ger_address,
-                &mut executor,
+                &sketch,
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
                 StaticCallStage::NewHashChain(HashChainType::InsertedGER),
             )
             .await?;
 
             host_execute(
+                caller_address,
                 ger_address,
-                &mut executor,
+                &sketch,
                 GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
                 StaticCallStage::NewHashChain(HashChainType::RemovedGER),
             )
             .await?;
 
             host_execute(
+                caller_address,
                 bridge_address,
-                &mut executor,
+                &sketch,
                 BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
                 StaticCallStage::NewHashChain(HashChainType::ClaimedGlobalIndex),
             )
             .await?;
 
             host_execute(
+                caller_address,
                 bridge_address,
-                &mut executor,
+                &sketch,
                 BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
                 StaticCallStage::NewHashChain(HashChainType::UnsetGlobalIndex),
             )
@@ -262,7 +292,7 @@ where
         }
 
         // Finalize to retrieve the EVMStateSketch
-        let new_l2_block_sketch = executor
+        let new_l2_block_sketch = sketch
             .finalize()
             .await
             .map_err(Error::InvalidNewBlockSketchFinalization)?;
@@ -271,22 +301,23 @@ where
     }
 }
 
-async fn host_execute<C: SolCall, P: Provider<AnyNetwork> + Clone>(
-    contract_address: Address,
-    host_executor: &mut HostExecutor<P>,
+async fn host_execute<C: SolCall, P: Provider<AnyNetwork> + Clone, PT: Primitives>(
+    caller_address: Address,
+    contract_address: alloy::primitives::Address,
+    sketch: &EvmSketch<P, PT>,
     calldata: C,
     stage: StaticCallStage,
 ) -> Result<(), Error> {
-    let caller_address = Address::default(); // irrelevant caller address
-
-    let _ = host_executor
-        .execute(ContractInput::new_call(
+    let output_bytes = sketch
+        .call_raw(&ContractInput::new_call(
             contract_address,
-            caller_address,
+            caller_address.into(),
             calldata,
         ))
         .await
         .map_err(|source| Error::InvalidHostStaticCall { source, stage })?;
+
+    debug!("output bytes for static call at stage {stage:?}: {output_bytes:?}");
 
     Ok(())
 }
@@ -346,7 +377,7 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
 
         // Create client for global exit root manager smart contract.
         let global_exit_root_manager_l2 = GlobalExitRootManagerL2SovereignChain::new(
-            config.global_exit_root_manager_v2_sovereign_chain,
+            config.global_exit_root_manager_v2_sovereign_chain.into(),
             l2_el_client.clone(),
         );
 
@@ -360,11 +391,13 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
 
         // Create client for Polygon zkevm bridge v2 smart contract.
         let polygon_zkevm_bridge_v2 =
-            PolygonZkevmBridgeV2::new(polygon_zkevm_bridge_address._0, l2_el_client.clone());
+            PolygonZkevmBridgeV2::new(polygon_zkevm_bridge_address, l2_el_client.clone());
 
         // Create client for Polygon rollup manager contract.
-        let polygon_rollup_manager =
-            PolygonRollupManagerRpcClient::new(config.polygon_rollup_manager, l1_client.clone());
+        let polygon_rollup_manager = PolygonRollupManagerRpcClient::new(
+            config.polygon_rollup_manager.into(),
+            l1_client.clone(),
+        );
 
         // Retrieve AggchainFep address from the Polygon rollup manager contract.
         let aggchain_fep_address = polygon_rollup_manager
@@ -372,7 +405,6 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             .call()
             .await
             .map_err(Error::AggchainFepAddressError)?
-            .rollupData
             .rollupContract;
 
         // Create client for AggchainFep smart contract.
@@ -383,9 +415,7 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             .call()
             .await
             .map_err(Error::UnableToRetrieveTrustedSequencerAddress)?
-            ._0;
-        let l2_root_provider =
-            RootProvider::<AnyNetwork>::new_http(config.l2_execution_layer_rpc_endpoint.clone());
+            .into();
 
         info!(global_exit_root_manager_l2=%config.global_exit_root_manager_v2_sovereign_chain,
             polygon_zkevm_bridge_v2=%polygon_zkevm_bridge_v2.address(),
@@ -397,9 +427,11 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             l2_cl_client,
             polygon_zkevm_bridge_v2,
             aggchain_fep,
-            l2_root_provider,
+            l2_root_provider_endpoint: config.l2_execution_layer_rpc_endpoint.clone(),
             global_exit_root_manager_l2,
             trusted_sequencer_addr,
+            static_call_caller_address: config.static_call_caller_address,
+            evm_sketch_genesis: config::parse_evm_sketch_genesis(&config.evm_sketch_genesis)?,
         })
     }
 }
@@ -416,34 +448,34 @@ mockall::mock! {
     impl L2LocalExitRootFetcher for ContractsClient {
         async fn get_l2_local_exit_root(&self, block_number: u64) -> Result<Digest, Error>;
     }
-    
+
     #[async_trait]
     impl L2OutputAtBlockFetcher for ContractsClient {
         async fn get_l2_output_at_block(&self, block_number: u64) -> Result<L2OutputAtBlock, Error>;
     }
-    
+
     #[async_trait]
     impl L1RollupConfigHashFetcher for ContractsClient {
         async fn get_rollup_config_hash(&self) -> Result<Digest, Error>;
     }
-    
+
     #[async_trait]
     impl GetTrustedSequencerAddress for ContractsClient {
         async fn get_trusted_sequencer_address(&self) -> Result<Address, Error>;
     }
-    
+
     #[async_trait]
     impl L2EvmStateSketchFetcher for ContractsClient {
         async fn get_prev_l2_block_sketch(
             &self,
             prev_l2_block: BlockNumberOrTag,
-        ) -> Result<EVMStateSketch, Error>;
-    
+        ) -> Result<EvmSketchInput, Error>;
+
         async fn get_new_l2_block_sketch(
             &self,
             new_l2_block: BlockNumberOrTag,
-        ) -> Result<EVMStateSketch, Error>;
-    }    
+        ) -> Result<EvmSketchInput, Error>;
+    }
 
     impl AggchainContractsClient for ContractsClient {}
 }

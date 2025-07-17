@@ -2,8 +2,7 @@ use aggchain_proof_types::imported_bridge_exit::{
     BridgeExitHash, ImportedBridgeExitWithBlockNumber,
 };
 
-use crate::error::AggchainProofRequestError as Error;
-use crate::v1;
+use crate::{error::AggchainProofRequestError as Error, v1};
 
 impl TryFrom<v1::ImportedBridgeExitWithBlockNumber> for ImportedBridgeExitWithBlockNumber {
     type Error = Error;

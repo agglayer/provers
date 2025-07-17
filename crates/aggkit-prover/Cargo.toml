@@ -28,9 +28,9 @@ prover-executor.workspace = true
 prover-logger.workspace = true
 
 anyhow.workspace = true
-bincode.workspace = true
 clap = { workspace = true, features = ["derive", "env", "string"] }
 dotenvy.workspace = true
+futures.workspace = true
 hex.workspace = true
 http.workspace = true
 jsonrpsee.workspace = true
@@ -49,6 +49,7 @@ tracing.workspace = true
 aggchain-proof-contracts = { workspace = true, features = ["testutils"] }
 aggchain-proof-core.workspace = true
 agglayer-evm-client = { workspace = true, features = ["testutils"] }
+agglayer-primitives.workspace = true
 
 alloy.workspace = true
 hyper-util.workspace = true

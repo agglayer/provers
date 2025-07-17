@@ -11,6 +11,10 @@ pub enum Error {
     ProofVerificationFailed(#[from] ProofVerificationError),
     #[error("Prover executor failed")]
     ExecutorFailed(Vec<u8>),
+    #[error("Unable to initialize the primary prover")]
+    UnableToInitializePrimaryProver,
+    #[error("Unable to initialize the fallback prover")]
+    UnableToInitializeFallbackProver,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, thiserror::Error, PartialEq, Eq)]
@@ -27,6 +31,8 @@ pub enum ProofVerificationError {
     Groth16(String),
     #[error("Invalid public values")]
     InvalidPublicValues,
+    #[error("Other verification error: {0}")]
+    Other(String),
 }
 
 impl From<SP1VerificationError> for ProofVerificationError {
@@ -46,6 +52,7 @@ impl From<SP1VerificationError> for ProofVerificationError {
             SP1VerificationError::InvalidPublicValues => {
                 ProofVerificationError::InvalidPublicValues
             }
+            SP1VerificationError::Other(error) => ProofVerificationError::Core(error.to_string()),
         }
     }
 }

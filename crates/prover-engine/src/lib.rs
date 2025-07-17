@@ -1,4 +1,4 @@
-use std::{convert::Infallible, future::IntoFuture, net::SocketAddr};
+use std::{convert::Infallible, future::IntoFuture, net::SocketAddr, time::Duration};
 
 use agglayer_telemetry::ServerBuilder as MetricsBuilder;
 use http::{Request, Response};
@@ -20,12 +20,17 @@ pub struct ProverEngine {
     reflection: Vec<&'static [u8]>,
     healthy_service: Vec<&'static str>,
     cancellation_token: Option<CancellationToken>,
-    metric_socket_addr: Option<SocketAddr>,
-    rpc_socket_addr: Option<SocketAddr>,
+    metric_socket_addr: SocketAddr,
+    rpc_socket_addr: SocketAddr,
+    runtime_shutdown_timeout: Duration,
 }
 
 impl ProverEngine {
-    pub fn builder() -> Self {
+    pub fn new(
+        rpc_socket_addr: SocketAddr,
+        metric_socket_addr: SocketAddr,
+        runtime_shutdown_timeout: Duration,
+    ) -> Self {
         Self {
             rpc_server: axum::Router::new(),
             reflection: vec![tonic_health::pb::FILE_DESCRIPTOR_SET],
@@ -33,8 +38,9 @@ impl ProverEngine {
             rpc_runtime: None,
             metrics_runtime: None,
             cancellation_token: None,
-            metric_socket_addr: None,
-            rpc_socket_addr: None,
+            metric_socket_addr,
+            rpc_socket_addr,
+            runtime_shutdown_timeout,
         }
     }
 
@@ -50,18 +56,6 @@ impl ProverEngine {
         self
     }
 
-    pub fn set_metric_socket_addr(mut self, metric_socket_addr: SocketAddr) -> Self {
-        self.metric_socket_addr = Some(metric_socket_addr);
-
-        self
-    }
-
-    pub fn set_rpc_socket_addr(mut self, rpc_socket_addr: SocketAddr) -> Self {
-        self.rpc_socket_addr = Some(rpc_socket_addr);
-
-        self
-    }
-
     pub fn set_cancellation_token(mut self, cancellation_token: CancellationToken) -> Self {
         self.cancellation_token = Some(cancellation_token);
         self
@@ -72,6 +66,7 @@ impl ProverEngine {
 
         self
     }
+
     pub fn add_rpc_service<S>(mut self, rpc_service: S) -> Self
     where
         S: Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
@@ -98,6 +93,7 @@ impl ProverEngine {
     pub fn start(mut self) -> anyhow::Result<()> {
         info!("Starting the prover engine");
         let cancellation_token = self.cancellation_token.take().unwrap_or_default();
+        let _cancel_on_panic = cancellation_token.clone().drop_guard();
 
         let metrics_runtime = self
             .metrics_runtime
@@ -118,22 +114,11 @@ impl ProverEngine {
                 .build()
         })?;
 
-        let addr = self.rpc_socket_addr.take().unwrap_or_else(|| {
-            "[::1]:10000"
-                .parse()
-                .expect("Unable to parse the RPC socket address")
-        });
-        let telemetry_addr = self.metric_socket_addr.take().unwrap_or_else(|| {
-            "[::1]:10001"
-                .parse()
-                .expect("Unable to parse the telemetry socket address")
-        });
-
         debug!("Starting the metrics server..");
         // Create the metrics server.
         let metric_server = metrics_runtime.block_on(
             MetricsBuilder::builder()
-                .addr(telemetry_addr)
+                .addr(self.metric_socket_addr)
                 .cancellation_token(cancellation_token.clone())
                 .build(),
         )?;
@@ -148,7 +133,7 @@ impl ProverEngine {
             // Spawn the metrics server
             metrics_runtime.spawn(metric_server.into_future())
         };
-        let tcp_listener = prover_runtime.block_on(TcpListener::bind(addr))?;
+        let tcp_listener = prover_runtime.block_on(TcpListener::bind(self.rpc_socket_addr))?;
 
         let (mut health_reporter, health_service) = tonic_health::server::health_reporter();
 
@@ -165,18 +150,12 @@ impl ProverEngine {
             },
         );
 
-        let (reflection_v1, reflection_v1alpha) = self.reflection.iter().fold(
-            (reflection_v1, reflection_v1alpha),
-            |(reflection_v1, reflection_v1alpha), descriptor| {
-                (
-                    reflection_v1.register_encoded_file_descriptor_set(descriptor),
-                    reflection_v1alpha.register_encoded_file_descriptor_set(descriptor),
-                )
-            },
-        );
-
-        let reflection_v1 = reflection_v1.build_v1().unwrap();
-        let reflection_v1alpha = reflection_v1alpha.build_v1alpha().unwrap();
+        let reflection_v1 = reflection_v1.build_v1().map_err(|error| {
+            anyhow::Error::new(error).context("Unable to build the reflection_v1")
+        })?;
+        let reflection_v1alpha = reflection_v1alpha.build_v1alpha().map_err(|error| {
+            anyhow::Error::new(error).context("Unable to build the reflection_v1alpha")
+        })?;
 
         debug!("Setting the health status of the services to healthy");
         prover_runtime.block_on(async {
@@ -200,8 +179,8 @@ impl ProverEngine {
                 .into_future(),
         );
 
-        info!("Metrics server started on {}", telemetry_addr);
-        info!("RPC server started on {}", addr);
+        info!("Metrics server started on {}", self.metric_socket_addr);
+        info!("RPC server started on {}", self.rpc_socket_addr);
         let terminate_signal = async {
             tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
                 .expect("Fail to setup SIGTERM signal")
@@ -235,8 +214,8 @@ impl ProverEngine {
                 }
             });
 
-        // prover_runtime.shutdown_timeout(config.shutdown.runtime_timeout);
-        // metrics_runtime.shutdown_timeout(config.shutdown.runtime_timeout);
+        prover_runtime.shutdown_timeout(self.runtime_shutdown_timeout);
+        metrics_runtime.shutdown_timeout(self.runtime_shutdown_timeout);
 
         Ok(())
     }

@@ -4,20 +4,28 @@ use std::sync::{Arc, OnceLock};
 use aggchain_proof_contracts::contracts::L2OutputAtBlock;
 use aggchain_proof_contracts::MockContractsClient;
 use aggchain_proof_core::full_execution_proof::AggregationProofPublicValues;
-use aggchain_proof_service::config::AggchainProofServiceConfig;
-use aggchain_proof_service::service::{AggchainProofService, AggchainProofServiceRequest};
-use aggchain_proof_types::AggchainProofInputs;
-use aggkit_prover_types::v1::{
-    aggchain_proof_service_client::AggchainProofServiceClient,
-    aggchain_proof_service_server::AggchainProofServiceServer, GenerateAggchainProofRequest,
+use aggchain_proof_service::{
+    config::AggchainProofServiceConfig,
+    service::{AggchainProofService, AggchainProofServiceRequest},
 };
-use aggkit_prover_types::Digest;
+use aggchain_proof_types::AggchainProofInputs;
+use aggkit_prover_types::{
+    v1::{
+        aggchain_proof_service_client::AggchainProofServiceClient,
+        aggchain_proof_service_server::AggchainProofServiceServer, GenerateAggchainProofRequest,
+    },
+    Digest,
+};
 use agglayer_evm_client::MockRpc;
 use agglayer_interop::types::{L1InfoTreeLeaf, L1InfoTreeLeafInner, MerkleProof};
-use alloy::eips::BlockNumberOrTag;
-use alloy::hex;
-use alloy::primitives::{Address, FixedBytes};
-use alloy::sol_types::SolValue;
+use agglayer_primitives::Address as AgglayerAddress;
+use alloy::{
+    consensus::Header,
+    eips::BlockNumberOrTag,
+    hex,
+    primitives::{Address, FixedBytes},
+    sol_types::SolValue,
+};
 use http::Uri;
 use hyper_util::rt::TokioIo;
 use mockall::predicate::{always, eq};
@@ -26,7 +34,7 @@ use proposer_client::{rpc::AggregationProofProposerResponse, RequestId};
 use proposer_client::{MockAggregationProofProposer, MockAggregationProver};
 use prover_config::{MockProverConfig, ProverType};
 use rsp_mpt::EthereumState;
-use sp1_cc_client_executor::io::EVMStateSketch;
+use sp1_cc_client_executor::{io::EvmSketchInput, Anchor, Genesis};
 use sp1_sdk::{CpuProver, Prover as _, SP1ProofMode, SP1PublicValues, SP1_CIRCUIT_VERSION};
 use tonic::transport::{Endpoint, Server};
 use tonic_types::StatusExt;
@@ -97,6 +105,7 @@ async fn service_can_be_called() {
                             l2BlockNumber: 100,
                             rollupConfigHash: Default::default(),
                             multiBlockVKey: vkey,
+                            proverAddress: Address::ZERO,
                         }
                         .abi_encode(),
                     ),
@@ -154,8 +163,9 @@ async fn service_can_be_called() {
         .once()
         .with(eq(BlockNumberOrTag::Number(0)))
         .return_once(|_| {
-            Ok(EVMStateSketch {
-                header: Default::default(),
+            Ok(EvmSketchInput {
+                anchor: Anchor::from(Header::default()),
+                genesis: Genesis::Mainnet,
                 ancestor_headers: Default::default(),
                 state: EthereumState {
                     state_trie: Default::default(),
@@ -163,6 +173,7 @@ async fn service_can_be_called() {
                 },
                 state_requests: Default::default(),
                 bytecodes: Default::default(),
+                receipts: None,
             })
         });
     contracts_rpc
@@ -170,8 +181,9 @@ async fn service_can_be_called() {
         .once()
         .with(eq(BlockNumberOrTag::Number(100)))
         .return_once(|_| {
-            Ok(EVMStateSketch {
-                header: Default::default(),
+            Ok(EvmSketchInput {
+                anchor: Anchor::from(Header::default()),
+                genesis: Genesis::Mainnet,
                 ancestor_headers: Default::default(),
                 state: EthereumState {
                     state_trie: Default::default(),
@@ -179,17 +191,18 @@ async fn service_can_be_called() {
                 },
                 state_requests: Default::default(),
                 bytecodes: Default::default(),
+                receipts: None,
             })
         });
     contracts_rpc
         .expect_get_trusted_sequencer_address()
         .once()
-        .return_once(|| Ok(Address::ZERO));
+        .return_once(|| Ok(AgglayerAddress::ZERO));
     let mut service = AggchainProofService::mocked(
         &service_config,
         Arc::new(proposer_l1_rpc),
         aggregation_prover,
-        aggregation_proof_proposer,
+        Arc::new(aggregation_proof_proposer),
         Arc::new(contracts_rpc),
     )
     .await
@@ -201,26 +214,24 @@ async fn service_can_be_called() {
     let resulting_l1_root = Digest::from(hex!(
         "7ce16c3d770b018d0e6d387ff74132c3c7cf00e3b3d4eedf87a90052b5ae9099"
     ));
-    let request = AggchainProofServiceRequest {
-        aggchain_proof_inputs: AggchainProofInputs {
-            last_proven_block: 0,
-            requested_end_block: 100,
-            l1_info_tree_root_hash: resulting_l1_root,
-            l1_info_tree_leaf: L1InfoTreeLeaf {
-                l1_info_tree_index: 1,
-                rer: Default::default(),
-                mer: Default::default(),
-                inner: L1InfoTreeLeafInner {
-                    global_exit_root: Default::default(),
-                    block_hash: Digest([1; 32]),
-                    timestamp: 0u64,
-                },
+    let request = AggchainProofServiceRequest::Normal(AggchainProofInputs {
+        last_proven_block: 0,
+        requested_end_block: 100,
+        l1_info_tree_root_hash: resulting_l1_root,
+        l1_info_tree_leaf: L1InfoTreeLeaf {
+            l1_info_tree_index: 1,
+            rer: Default::default(),
+            mer: Default::default(),
+            inner: L1InfoTreeLeafInner {
+                global_exit_root: Default::default(),
+                block_hash: Digest([1; 32]),
+                timestamp: 0u64,
             },
-            l1_info_tree_merkle_proof: MerkleProof::new(resulting_l1_root, [Digest::default(); 32]),
-            ger_leaves: Default::default(),
-            imported_bridge_exits: Default::default(),
         },
-    };
+        l1_info_tree_merkle_proof: MerkleProof::new(resulting_l1_root, [Digest::default(); 32]),
+        ger_leaves: Default::default(),
+        imported_bridge_exits: Default::default(),
+    });
     service.call(request).await.unwrap();
 }
 

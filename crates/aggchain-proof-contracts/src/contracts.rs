@@ -1,10 +1,8 @@
 use agglayer_interop::types::Digest;
 use agglayer_primitives::Address;
-use alloy::eips::BlockNumberOrTag;
-use alloy::network::Ethereum;
-use alloy::sol;
+use alloy::{eips::BlockNumberOrTag, network::Ethereum, sol};
 use async_trait::async_trait;
-use sp1_cc_client_executor::io::EVMStateSketch;
+use sp1_cc_client_executor::io::EvmSketchInput;
 
 use crate::Error;
 
@@ -41,17 +39,16 @@ sol!(
 );
 
 pub(crate) type ZkevmBridgeRpcClient<RpcProvider> =
-    PolygonZkevmBridgeV2::PolygonZkevmBridgeV2Instance<(), RpcProvider, Ethereum>;
+    PolygonZkevmBridgeV2::PolygonZkevmBridgeV2Instance<RpcProvider, Ethereum>;
 
 pub(crate) type PolygonRollupManagerRpcClient<RpcProvider> =
-    PolygonRollupManager::PolygonRollupManagerInstance<(), RpcProvider, Ethereum>;
+    PolygonRollupManager::PolygonRollupManagerInstance<RpcProvider, Ethereum>;
 
 pub(crate) type AggchainFepRpcClient<RpcProvider> =
-    AggchainFep::AggchainFepInstance<(), RpcProvider, Ethereum>;
+    AggchainFep::AggchainFepInstance<RpcProvider, Ethereum>;
 
 pub(crate) type GlobalExitRootManagerL2SovereignChainRpcClient<RpcProvider> =
     GlobalExitRootManagerL2SovereignChain::GlobalExitRootManagerL2SovereignChainInstance<
-        (),
         RpcProvider,
         Ethereum,
     >;
@@ -81,12 +78,12 @@ pub trait L2EvmStateSketchFetcher {
     async fn get_prev_l2_block_sketch(
         &self,
         prev_l2_block: BlockNumberOrTag,
-    ) -> Result<EVMStateSketch, Error>;
+    ) -> Result<EvmSketchInput, Error>;
 
     async fn get_new_l2_block_sketch(
         &self,
         new_l2_block: BlockNumberOrTag,
-    ) -> Result<EVMStateSketch, Error>;
+    ) -> Result<EvmSketchInput, Error>;
 }
 
 /// L2 output at block data structure.

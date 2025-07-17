@@ -1,5 +1,6 @@
 use std::{fs::File, path::PathBuf};
 
+use agglayer_interop::types::Digest;
 use serde::{Deserialize, Deserializer};
 
 use super::*;
@@ -56,11 +57,11 @@ fn aggchain_pattern() {
 
 #[tokio::test]
 async fn test_custom_chain_data_builder_service() {
-    let response = compute_custom_chain_data(Digest([1u8; 32]), 10u64);
+    let response = compute_custom_chain_data(ClaimRoot(Digest([1u8; 32])), 10u64);
 
     let mut expected = [0u8; 96];
     // program selector
-    expected[0..4].copy_from_slice(&[0, 0, 0, 1]);
+    expected[0..4].copy_from_slice(&[0, 5, 0, 1]);
 
     // output root
     expected[32..64].copy_from_slice(&[1u8; 32]);

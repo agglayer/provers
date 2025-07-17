@@ -1,5 +1,7 @@
-use std::sync::Arc;
-use std::task::{Context, Poll};
+use std::{
+    sync::Arc,
+    task::{Context, Poll},
+};
 
 use aggchain_proof_core::full_execution_proof::AggregationProofPublicValues;
 use agglayer_evm_client::GetBlockNumber;
@@ -7,16 +9,16 @@ use alloy_sol_types::SolType;
 use educe::Educe;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
-use proposer_client::aggregation_prover::AggregationProver;
-use proposer_client::mock_prover::MockProver;
-use proposer_client::network_prover::new_network_prover;
-use proposer_client::rpc::{
-    AggregationProofProposer, AggregationProofProposerRequest, ProposerRpcClient,
+use proposer_client::{
+    aggregation_prover::AggregationProver,
+    mock_grpc_prover::MockGrpcProver,
+    network_prover::new_network_prover,
+    rpc::{AggregationProofProposer, AggregationProofProposerRequest, ProposerRpcClient},
+    FepProposerRequest,
 };
-use proposer_client::FepProposerRequest;
 use sp1_prover::SP1VerifyingKey;
 use sp1_sdk::NetworkProver;
-use tracing::info;
+use tracing::{debug, info};
 
 use crate::config::ProposerServiceConfig;
 
@@ -54,15 +56,18 @@ impl<L1Rpc, Prover>
 where
     Prover: AggregationProver,
 {
-    pub fn new(
+    pub async fn new(
         prover: Prover,
         config: &ProposerServiceConfig,
         l1_rpc: Arc<L1Rpc>,
     ) -> Result<Self, Error> {
-        let proposer_rpc_client = ProposerRpcClient::new(
-            config.client.proposer_endpoint.as_str(),
-            config.client.request_timeout,
-        )?;
+        let proposer_rpc_client = Arc::new(
+            ProposerRpcClient::new(
+                config.client.proposer_endpoint.clone(),
+                config.client.request_timeout,
+            )
+            .await?,
+        );
 
         Self::with_aggregation_proof_proposer(prover, config, proposer_rpc_client, l1_rpc)
     }
@@ -77,7 +82,7 @@ where
     pub fn with_aggregation_proof_proposer(
         prover: Prover,
         config: &ProposerServiceConfig,
-        aggregation_proof_proposer: AggregProofProposer,
+        aggregation_proof_proposer: Arc<AggregProofProposer>,
         l1_rpc: Arc<L1Rpc>,
     ) -> Result<Self, Error> {
         let aggregation_vkey = Self::extract_aggregation_vkey(&prover, AGGREGATION_ELF);
@@ -102,32 +107,47 @@ where
 impl<L1Rpc>
     ProposerService<L1Rpc, proposer_client::client::Client<ProposerRpcClient, NetworkProver>>
 {
-    pub fn new_network(config: &ProposerServiceConfig, l1_rpc: Arc<L1Rpc>) -> Result<Self, Error> {
+    pub async fn new_network(
+        config: &ProposerServiceConfig,
+        l1_rpc: Arc<L1Rpc>,
+    ) -> Result<Self, Error> {
         assert!(
             !config.mock,
             "Building a network proposer service with a mock config"
         );
         Self::new(
-            new_network_prover(config.client.sp1_cluster_endpoint.as_str())
+            new_network_prover(&config.client.sp1_cluster_endpoint)
                 .map_err(Error::UnableToCreateProver)?,
             config,
             l1_rpc,
         )
+        .await
     }
 }
 
-impl<L1Rpc> ProposerService<L1Rpc, proposer_client::client::Client<ProposerRpcClient, MockProver>> {
-    pub fn new_mock(config: &ProposerServiceConfig, l1_rpc: Arc<L1Rpc>) -> Result<Self, Error> {
+impl<L1Rpc>
+    ProposerService<
+        L1Rpc,
+        proposer_client::client::Client<ProposerRpcClient, MockGrpcProver<ProposerRpcClient>>,
+    >
+{
+    pub async fn new_mock(
+        config: &ProposerServiceConfig,
+        l1_rpc: Arc<L1Rpc>,
+    ) -> Result<Self, Error> {
         assert!(
             config.mock,
             "Building a mock proposer service with a non-mock config"
         );
-        Self::new(
-            MockProver::new(config.client.proposer_endpoint.clone())
-                .map_err(Error::UnableToCreateProver)?,
-            config,
-            l1_rpc,
-        )
+        let proposer_rpc_client = Arc::new(
+            ProposerRpcClient::new(
+                config.client.proposer_endpoint.clone(),
+                config.client.request_timeout,
+            )
+            .await?,
+        );
+
+        Self::new(MockGrpcProver::new(proposer_rpc_client), config, l1_rpc).await
     }
 }
 
@@ -160,6 +180,7 @@ where
         let aggregation_vkey = self.aggregation_vkey.clone();
 
         async move {
+            info!(%last_proven_block, %requested_end_block, "Requesting fep aggregation proof");
             let l1_block_number = l1_rpc
                 .get_block_number(l1_block_hash.into())
                 .await
@@ -180,19 +201,23 @@ where
                 })
                 .await?;
             let request_id = response.request_id;
-            info!("Aggregation proof request submitted: {}", request_id);
+            let end_block = response.end_block;
+            let last_proven_block = response.last_proven_block;
+            debug!(%last_proven_block, %end_block, %request_id, "Aggregation proof request submitted");
 
             // Wait for the prover to finish aggregating span proofs
             let proof_with_pv = client.wait_for_proof(request_id.clone()).await?;
 
-            let public_values = AggregationProofPublicValues::abi_decode(
-                proof_with_pv.public_values.as_slice(),
-                false,
-            )
-            .map_err(Error::FepPublicValuesDeserializeFailure)?;
+            let public_values =
+                AggregationProofPublicValues::abi_decode(proof_with_pv.public_values.as_slice())
+                    .map_err(Error::FepPublicValuesDeserializeFailure)?;
+
+            debug!(%last_proven_block, %end_block, %request_id, "Aggregation proof received from the proposer");
 
             // Verify received proof
-            client.verify_agg_proof(request_id, &proof_with_pv, &aggregation_vkey)?;
+            client.verify_agg_proof(request_id.clone(), &proof_with_pv, &aggregation_vkey)?;
+
+            debug!(%last_proven_block, %end_block, %request_id, "Aggregation proof verified successfully");
 
             let proof_mode: sp1_sdk::SP1ProofMode = (&proof_with_pv.proof).into();
             let aggregation_proof = proof_with_pv
@@ -200,6 +225,8 @@ where
                 .clone()
                 .try_as_compressed()
                 .ok_or_else(|| Error::UnsupportedAggregationProofMode(proof_mode))?;
+
+            info!(%last_proven_block, %end_block, %request_id, "Aggregation proof successfully acquired");
 
             Ok(ProposerResponse {
                 aggregation_proof,

@@ -1,13 +1,10 @@
-use std::str::FromStr;
-use std::sync::Arc;
+use std::{str::FromStr, sync::Arc};
 
 use alloy_primitives::B256;
 use anyhow::anyhow;
 use clap::Parser;
-use proposer_client::config::ProposerClientConfig;
-use proposer_client::FepProposerRequest;
-use proposer_service::config::ProposerServiceConfig;
-use proposer_service::ProposerService;
+use proposer_client::{config::ProposerClientConfig, FepProposerRequest, GrpcUri};
+use proposer_service::{config::ProposerServiceConfig, ProposerService};
 use prover_alloy::L1RpcEndpoint;
 use prover_logger::log::Log;
 use tower::{Service, ServiceExt};
@@ -34,9 +31,9 @@ struct Cli {
     #[arg(short, long)]
     pub l1_rpc_endpoint: L1RpcEndpoint,
 
-    /// Proposer JSON rpc endpoint.
+    /// Proposer gRPC endpoint.
     #[arg(short, long)]
-    pub proposer_endpoint: Url,
+    pub proposer_endpoint: GrpcUri,
 
     /// Sp1 cluster endpoint
     #[arg(short, long)]
@@ -79,17 +76,11 @@ pub async fn main() -> anyhow::Result<()> {
     };
     let mut proposer_service = if cli.mock {
         tower::ServiceBuilder::new()
-            .service(ProposerService::new_mock(
-                &propser_service_config,
-                l1_rpc_client,
-            )?)
+            .service(ProposerService::new_mock(&propser_service_config, l1_rpc_client).await?)
             .boxed_clone()
     } else {
         tower::ServiceBuilder::new()
-            .service(ProposerService::new_network(
-                &propser_service_config,
-                l1_rpc_client,
-            )?)
+            .service(ProposerService::new_network(&propser_service_config, l1_rpc_client).await?)
             .boxed_clone()
     };
     info!("ProposerService initialized");
@@ -102,11 +93,11 @@ pub async fn main() -> anyhow::Result<()> {
     };
     match proposer_service.call(request).await {
         Ok(response) => {
-            println!("Proposer response: {:?}", response);
+            println!("Proposer response: {response:?}");
             Ok(())
         }
         Err(e) => {
-            eprintln!("Error: {:?}", e);
+            eprintln!("Error: {e:?}");
             Err(anyhow!(e.to_string()))
         }
     }

@@ -1,22 +1,27 @@
-use std::collections::HashMap;
-
-use aggchain_proof_service::config::AggchainProofServiceConfig;
-use aggchain_proof_service::service::{AggchainProofService, AggchainProofServiceRequest};
-use aggchain_proof_types::AggchainProofInputs;
-use aggkit_prover_types::error::AggchainProofRequestError;
-use aggkit_prover_types::v1::{
-    aggchain_proof_service_server::AggchainProofService as AggchainProofGrpcService,
-    GenerateAggchainProofRequest, GenerateAggchainProofResponse,
+use aggchain_proof_service::{
+    config::AggchainProofServiceConfig,
+    service::{AggchainProofService, AggchainProofServiceRequest},
 };
-use agglayer_interop::grpc::v1::{AggchainProof, Sp1StarkProof};
-use agglayer_interop::types::U256;
+use aggchain_proof_types::{AggchainProofInputs, OptimisticAggchainProofInputs};
+use aggkit_prover_types::{
+    conversion::v1::context::Contextualize as _,
+    error::AggchainProofRequestError,
+    v1::{
+        aggchain_proof_service_server::AggchainProofService as AggchainProofGrpcService,
+        GenerateAggchainProofRequest, GenerateAggchainProofResponse,
+        GenerateOptimisticAggchainProofRequest, GenerateOptimisticAggchainProofResponse,
+    },
+};
+use agglayer_interop::{
+    grpc::v1::{AggchainProof, Sp1StarkProof},
+    types::bincode,
+};
 use prost::bytes::Bytes;
 use sp1_sdk::SP1_CIRCUIT_VERSION;
 use tonic::{Request, Response, Status};
 use tonic_types::{ErrorDetails, StatusExt};
-use tower::buffer::Buffer;
-use tower::{Service, ServiceExt};
-use tracing::instrument;
+use tower::{buffer::Buffer, Service, ServiceExt};
+use tracing::{error, info, instrument};
 
 const MAX_CONCURRENT_REQUESTS: usize = 100;
 
@@ -45,6 +50,22 @@ impl AggchainProofGrpcService for GrpcService {
         request: Request<GenerateAggchainProofRequest>,
     ) -> Result<Response<GenerateAggchainProofResponse>, Status> {
         let request = request.into_inner();
+
+        let last_proven_block = request.last_proven_block;
+        let requested_end_block = request.requested_end_block;
+
+        info!(
+            %last_proven_block,
+            %requested_end_block,
+            l1_info_tree_root_hash=%hex::encode(
+                request
+                    .l1_info_tree_root_hash
+                    .as_ref()
+                    .map_or(&Bytes::default(), |v| &v.value)
+            ),
+            "Received GenerateAggchainProof request"
+        );
+
         if request.requested_end_block <= request.last_proven_block {
             let mut error = ErrorDetails::new();
             error.add_bad_request_violation(
@@ -52,9 +73,12 @@ impl AggchainProofGrpcService for GrpcService {
                 "requested_end_block must be greater than last_proven_block",
             );
 
+            error!(%last_proven_block, %requested_end_block, ?error,
+                "Invalid GenerateAggchainProof request argument(s)");
+
             return Err(Status::with_error_details(
                 tonic::Code::InvalidArgument,
-                "Invalid request argument(s)",
+                "Invalid GenerateAggchainProof request argument(s)",
                 error,
             ));
         }
@@ -63,94 +87,40 @@ impl AggchainProofGrpcService for GrpcService {
             request
                 .try_into()
                 .map_err(|error: AggchainProofRequestError| {
+                    error!(%last_proven_block, %requested_end_block, ?error, "Invalid GenerateAggchainProof request data");
                     let field = error.field_path();
                     let mut error_details = ErrorDetails::new();
                     error_details.add_bad_request_violation(field, error.to_string());
                     Status::with_error_details(
                         tonic::Code::InvalidArgument,
-                        "Invalid aggchain proof request data",
+                        "Invalid GenerateAggchainProof request data",
                         error_details,
                     )
                 })?;
 
-        let mut context = HashMap::new();
-        macro_rules! context_field {
-            ($name:ident: $($data:tt)*) => {
-                context.insert(stringify!($name).to_owned(), Bytes::from(aggchain_proof_inputs.$($data)*.to_vec()));
-            };
-        }
-        context_field!(last_proven_block: last_proven_block.to_be_bytes());
-        context_field!(requested_end_block: requested_end_block.to_be_bytes());
-        context_field!(l1_info_tree_root_hash: l1_info_tree_root_hash.as_bytes());
-        context_field!(l1_info_tree_index: l1_info_tree_leaf.l1_info_tree_index.to_be_bytes());
-        context_field!(l1_info_tree_rer: l1_info_tree_leaf.rer.as_bytes());
-        context_field!(l1_info_tree_mer: l1_info_tree_leaf.mer.as_bytes());
-        context_field!(l1_info_tree_ger: l1_info_tree_leaf.inner.global_exit_root.as_bytes());
-        context_field!(l1_info_tree_block_hash: l1_info_tree_leaf.inner.block_hash.as_bytes());
-        context_field!(l1_info_tree_timestamp: l1_info_tree_leaf.inner.timestamp.to_be_bytes());
-        macro_rules! int_to_bytes {
-            ($val:expr) => {
-                Bytes::from($val.to_be_bytes().to_vec())
-            };
-        }
-        for (name, ger) in aggchain_proof_inputs.ger_leaves.iter() {
-            context.insert(
-                format!("ger/{name}/block_number"),
-                int_to_bytes!(ger.block_number),
-            );
-            context.insert(
-                format!("ger/{name}/block_index"),
-                int_to_bytes!(ger.block_index),
-            );
-            context.insert(
-                format!("ger/{name}/l1_leaf_index"),
-                int_to_bytes!(ger.inserted_ger.l1_leaf.l1_info_tree_index),
-            );
-        }
-        for (i, ibe) in aggchain_proof_inputs
-            .imported_bridge_exits
-            .iter()
-            .enumerate()
-        {
-            context.insert(
-                format!("ibe/{i}/block_number"),
-                int_to_bytes!(ibe.block_number),
-            );
-            context.insert(
-                format!("ibe/{i}/bridge_exit_hash"),
-                Bytes::from(ibe.bridge_exit_hash.0.as_bytes().to_vec()),
-            );
-            let global_index: U256 = ibe.global_index.into();
-            context.insert(
-                format!("ibe/{i}/global_index"),
-                Bytes::from(
-                    global_index
-                        .as_le_bytes()
-                        .iter()
-                        .rev()
-                        .copied()
-                        .collect::<Vec<_>>(),
-                ),
-            );
-        }
+        let mut context = aggchain_proof_inputs.context();
 
-        let proof_request = AggchainProofServiceRequest {
-            aggchain_proof_inputs,
-        };
+        let proof_request = AggchainProofServiceRequest::Normal(aggchain_proof_inputs);
 
         let mut service = self.service.clone();
 
         let service = service
             .ready()
             .await
-            .map_err(|_| Status::internal("Unable to get the service"))?;
+            .inspect_err(|e| error!(%last_proven_block, %requested_end_block, "Unable to use the aggchain proof service: {e:?} "))
+            .map_err(|_| Status::internal("Unable to use the aggchain proof service"))?;
 
         match service.call(proof_request).await {
             Ok(response) => {
+                info!(?response.custom_chain_data,
+                    "customchaindata: {}",
+                    hex::encode(&response.custom_chain_data)
+                );
                 context.insert(
                     "public_values".to_owned(),
                     Bytes::from(
-                        bincode::serialize(&response.public_values)
+                        bincode::sp1v4()
+                            .serialize(&response.public_values)
                             .unwrap_or_else(|_| b"bincode serialization failed".to_vec()),
                     ),
                 );
@@ -162,9 +132,14 @@ impl AggchainProofGrpcService for GrpcService {
                     "end_block".to_owned(),
                     Bytes::from(response.end_block.to_be_bytes().to_vec()),
                 );
+                info!(last_proven_block = %response.last_proven_block,
+                    end_block = %response.end_block,
+                    "GenerateAggchainProof request executed successfully");
                 Ok(Response::new(GenerateAggchainProofResponse {
                     aggchain_proof: Some(AggchainProof {
                         aggchain_params: Some(response.aggchain_params.into()),
+                        // Signature is handled by the initiator
+                        signature: None,
                         context,
                         proof: Some(agglayer_interop::grpc::v1::aggchain_proof::Proof::Sp1Stark(
                             Sp1StarkProof {
@@ -180,23 +155,134 @@ impl AggchainProofGrpcService for GrpcService {
                     custom_chain_data: response.custom_chain_data.into(),
                 }))
             }
-            Err(e) => {
-                let e = match e.downcast::<aggchain_proof_service::Error>() {
-                    Ok(e) => e,
-                    Err(e) => return Err(Status::internal(e.to_string())),
-                };
-                match *e {
-                    aggchain_proof_service::Error::ProposerServiceError(
-                        proposer_service::Error::Client(
-                            proposer_client::Error::AggProofRequestFailed(
-                                jsonrpsee::core::client::error::Error::Call(e),
-                            ),
-                        ),
-                    ) if e.code() == -2000 => Err(Status::unavailable(
-                        "Proposer service has not built any proof yet",
-                    )),
-                    e => Err(Status::internal(e.to_string())),
-                }
+            // TODO: Return a different error when the proof is not yet ready.
+            // The gRPC API currently does not expose the status.
+            Err(error) => {
+                error!(%last_proven_block, %requested_end_block, ?error, "Unable to execute GenerateAggchainProof request");
+                Err(Status::internal(error.to_string()))
+            }
+        }
+    }
+
+    #[instrument(skip(self, request))]
+    async fn generate_optimistic_aggchain_proof(
+        &self,
+        request: Request<GenerateOptimisticAggchainProofRequest>,
+    ) -> Result<Response<GenerateOptimisticAggchainProofResponse>, Status> {
+        let request = request.into_inner();
+
+        let aggchain_proof_inputs: OptimisticAggchainProofInputs =
+            request
+                .try_into()
+                .map_err(|error: AggchainProofRequestError| {
+                    let field = error.field_path();
+                    let mut error_details = ErrorDetails::new();
+                    error_details.add_bad_request_violation(field, error.to_string());
+                    error!(
+                        "Invalid GenerateOptimisticAggchainProof request data: {error_details:?}"
+                    );
+                    Status::with_error_details(
+                        tonic::Code::InvalidArgument,
+                        "Invalid GenerateOptimisticAggchainProof request data",
+                        error_details,
+                    )
+                })?;
+
+        let last_proven_block = aggchain_proof_inputs
+            .aggchain_proof_inputs
+            .last_proven_block;
+        let requested_end_block = aggchain_proof_inputs
+            .aggchain_proof_inputs
+            .requested_end_block;
+
+        info!(
+            %last_proven_block, %requested_end_block,
+            l1_info_tree_root_hash=%hex::encode(
+                aggchain_proof_inputs
+                    .aggchain_proof_inputs
+                    .l1_info_tree_root_hash
+            ),
+            "Received GenerateOptimisticAggchainProof request");
+
+        if aggchain_proof_inputs
+            .aggchain_proof_inputs
+            .requested_end_block
+            <= aggchain_proof_inputs
+                .aggchain_proof_inputs
+                .last_proven_block
+        {
+            let mut error = ErrorDetails::new();
+            error.add_bad_request_violation(
+                "requested_end_block",
+                "requested_end_block must be greater than last_proven_block",
+            );
+
+            error!(%last_proven_block, %requested_end_block,
+                "Invalid GenerateOptimisticAggchainProof request argument(s): {error:?}");
+
+            return Err(Status::with_error_details(
+                tonic::Code::InvalidArgument,
+                "Invalid GenerateOptimisticAggchainProof request argument(s)",
+                error,
+            ));
+        }
+
+        let mut context = aggchain_proof_inputs.context();
+
+        let proof_request = AggchainProofServiceRequest::Optimistic(aggchain_proof_inputs);
+
+        let mut service = self.service.clone();
+
+        let service = service
+            .ready()
+            .await
+            .inspect_err(|e| error!(%last_proven_block, %requested_end_block, "Unable to use the aggchain proof service: {e:?} "))
+            .map_err(|_| Status::internal("Unable to use the aggchain proof service"))?;
+
+        match service.call(proof_request).await {
+            Ok(response) => {
+                context.insert(
+                    "public_values".to_owned(),
+                    Bytes::from(
+                        bincode::sp1v4()
+                            .serialize(&response.public_values)
+                            .unwrap_or_else(|_| b"bincode serialization failed".to_vec()),
+                    ),
+                );
+                context.insert(
+                    "local_exit_root_hash".to_owned(),
+                    Bytes::from(response.local_exit_root_hash.as_bytes().to_vec()),
+                );
+                context.insert(
+                    "end_block".to_owned(),
+                    Bytes::from(response.end_block.to_be_bytes().to_vec()),
+                );
+                info!(last_proven_block = %response.last_proven_block,
+                    end_block = %response.end_block,
+                    "Generate optimistic aggchain proof request executed successfully");
+                Ok(Response::new(GenerateOptimisticAggchainProofResponse {
+                    aggchain_proof: Some(AggchainProof {
+                        aggchain_params: Some(response.aggchain_params.into()),
+                        // Signature is handled by the initiator
+                        signature: None,
+                        context,
+                        proof: Some(agglayer_interop::grpc::v1::aggchain_proof::Proof::Sp1Stark(
+                            Sp1StarkProof {
+                                version: SP1_CIRCUIT_VERSION.to_string(),
+                                proof: response.proof.into(),
+                                vkey: response.vkey.into(),
+                            },
+                        )),
+                    }),
+                    local_exit_root_hash: Some(response.local_exit_root_hash.into()),
+                    custom_chain_data: response.custom_chain_data.into(),
+                }))
+            }
+            // TODO: Return a different error when the proof is not yet ready.
+            // The gRPC API currently does not expose the status.
+            Err(error) => {
+                error!(%last_proven_block, %requested_end_block, ?error, "Unable to execute GenerateOptimisticAggchainProof request");
+                Err(Status::internal(error.to_string()))
             }
         }
     }

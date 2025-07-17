@@ -1,5 +1,7 @@
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::path::Path;
+use std::{
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    path::Path,
+};
 
 use aggchain_proof_service::config::AggchainProofServiceConfig;
 use prover_config::{NetworkProverConfig, ProverType};

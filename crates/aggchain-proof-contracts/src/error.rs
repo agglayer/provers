@@ -1,4 +1,5 @@
 use aggchain_proof_core::bridge::static_call::StaticCallStage;
+use sp1_cc_host_executor::HostError;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -54,17 +55,20 @@ pub enum Error {
     },
 
     #[error("Invalid sketch finalization for the pre L2 block.")]
-    InvalidPreBlockSketchFinalization(#[source] eyre::Report),
+    InvalidPreBlockSketchFinalization(#[source] HostError),
 
     #[error("Invalid sketch finalization for the new L2 block.")]
-    InvalidNewBlockSketchFinalization(#[source] eyre::Report),
+    InvalidNewBlockSketchFinalization(#[source] HostError),
 
     #[error("Failure on the initialization of the HostExecutor for pre L2 block.")]
-    HostExecutorPreBlockInitialization(#[source] eyre::Report),
+    HostExecutorPreBlockInitialization(#[source] HostError),
 
     #[error("Failure on the initialization of the HostExecutor for new L2 block.")]
-    HostExecutorNewBlockInitialization(#[source] eyre::Report),
+    HostExecutorNewBlockInitialization(#[source] HostError),
 
     #[error("Unable to retrieve trusted sequencer address")]
     UnableToRetrieveTrustedSequencerAddress(#[source] alloy::contract::Error),
+
+    #[error("Invalid evm sketch genesis input: {0}")]
+    InvalidEvmSketchGenesisInput(String),
 }

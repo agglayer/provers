@@ -2,26 +2,31 @@ mod aggchain_contracts_rpc_client {
     use std::str::FromStr;
 
     use agglayer_interop::types::Digest;
-    use alloy::hex::{self, FromHex};
-    use alloy::primitives::{address, B256};
-    use alloy::sol_types::{SolCall, SolValue};
+    use agglayer_primitives::{address, Address};
+    use alloy::{
+        hex::{self, FromHex},
+        primitives::B256,
+        sol_types::{SolCall, SolValue},
+    };
     use mockito::ServerGuard;
     use prover_alloy::{AlloyFillProvider, L1RpcEndpoint};
     use serde_json::json;
     use url::Url;
 
-    use crate::config::AggchainProofContractsConfig;
-    use crate::contracts::AggchainFep::trustedSequencerCall;
-    use crate::contracts::{
-        L1RollupConfigHashFetcher, L2LocalExitRootFetcher, L2OutputAtBlockFetcher,
+    use crate::{
+        config::AggchainProofContractsConfig,
+        contracts::{
+            AggchainFep::trustedSequencerCall, L1RollupConfigHashFetcher, L2LocalExitRootFetcher,
+            L2OutputAtBlockFetcher,
+        },
+        AggchainContractsRpcClient,
     };
-    use crate::AggchainContractsRpcClient;
 
     fn dummy_url() -> Url {
         Url::parse("http://0.0.0.0:0").unwrap()
     }
 
-    fn dummy_address() -> alloy::primitives::Address {
+    fn dummy_address() -> Address {
         address!("0x0000000000000000000000000000000000000000")
     }
 
@@ -107,6 +112,8 @@ mod aggchain_contracts_rpc_client {
             global_exit_root_manager_v2_sovereign_chain: address!(
                 "0x610178dA211FEF7D417bC0e6FeD39F05609AD788"
             ),
+            static_call_caller_address: address!("0x39027D57969aD59161365e0bbd53D2F63eE5AAA6"),
+            evm_sketch_genesis: "mainnet".to_string(),
         };
 
         let result = AggchainContractsRpcClient::new(1, &config).await;
@@ -254,6 +261,8 @@ mod aggchain_contracts_rpc_client {
             l2_consensus_layer_rpc_endpoint: dummy_url(),
             polygon_rollup_manager: dummy_address(),
             global_exit_root_manager_v2_sovereign_chain: dummy_address(),
+            static_call_caller_address: address!("0x39027D57969aD59161365e0bbd53D2F63eE5AAA6"),
+            evm_sketch_genesis: "mainnet".to_string(),
         };
 
         let result = AggchainContractsRpcClient::new(1, &config).await;
@@ -261,7 +270,7 @@ mod aggchain_contracts_rpc_client {
         mock_l2.assert_async().await;
         match result {
             Err(crate::Error::BridgeAddressError(_)) => Ok(()),
-            Err(e) => panic!("Expected BridgeAddressError, got {:?}", e),
+            Err(e) => panic!("Expected BridgeAddressError, got {e:?}"),
             Ok(_) => panic!("Expected BridgeAddressError, got valid client"),
         }
     }
@@ -355,12 +364,9 @@ mod aggchain_contracts_rpc_client {
                 Ok(())
             }
             Err(crate::Error::LocalExitRootError(error)) => {
-                panic!(
-                    "Expected alloy transport deserialization error, got {:?}",
-                    error
-                );
+                panic!("Expected alloy transport deserialization error, got {error:?}");
             }
-            Err(e) => panic!("Expected LocalExitRootError, got {:?}", e),
+            Err(e) => panic!("Expected LocalExitRootError, got {e:?}"),
             Ok(_) => panic!("Expected LocalExitRootError, got valid Digest"),
         }
     }

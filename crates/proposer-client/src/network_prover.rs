@@ -32,10 +32,10 @@ impl AggregationProver for NetworkProver {
     }
 }
 
-pub fn new_network_prover(endpoint: &str) -> anyhow::Result<NetworkProver> {
+pub fn new_network_prover<T: AsRef<str>>(endpoint: T) -> anyhow::Result<NetworkProver> {
     Ok(sp1_sdk::ProverClient::builder()
         .network()
-        .rpc_url(endpoint)
+        .rpc_url(endpoint.as_ref())
         .private_key(&std::env::var("NETWORK_PRIVATE_KEY").context(
             "Failed to get NETWORK_PRIVATE_KEY, when building NetworkProver for proposer-client",
         )?)

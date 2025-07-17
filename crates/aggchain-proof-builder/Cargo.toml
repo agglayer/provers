@@ -8,8 +8,6 @@ license.workspace = true
 anyhow.workspace = true
 alloy.workspace = true
 alloy-primitives.workspace = true
-bincode.workspace = true
-proposer-vkeys-raw.workspace = true
 
 futures.workspace = true
 thiserror.workspace = true
@@ -23,17 +21,22 @@ tracing.workspace = true
 aggchain-proof-contracts.workspace = true
 aggchain-proof-core.workspace = true
 aggchain-proof-types.workspace = true
+agglayer-elf-build.workspace = true
 agglayer-interop.workspace = true
 agglayer-primitives.workspace = true
 aggkit-prover-types = { workspace = true, features = ["sp1"] }
 prover-config.workspace = true
 prover-executor.workspace = true
+prover-utils.workspace = true
 proposer-elfs.workspace = true
 serde_json.workspace = true
 unified-bridge.workspace = true
 
 [dev-dependencies]
 tokio.workspace = true
+
+[build-dependencies]
+agglayer-elf-build.workspace = true
 
 [lints]
 workspace = true

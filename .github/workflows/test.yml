@@ -65,7 +65,7 @@ jobs:
 
   check_elf:
     runs-on: ubuntu-latest-16-cores
-    if: ${{ contains('["merge_group", "workflow_dispatch"]', github.event_name) }}
+    if: ${{ contains('["merge_group", "push", "workflow_dispatch"]', github.event_name) }}
     name: ELF Checking
     steps:
       - name: Checkout sources
@@ -73,7 +73,7 @@ jobs:
 
       - name: Define source checksum
         run: |
-          echo CHECKSUM="$(sha256sum crates/aggchain-proof-program/elf/riscv32im-succinct-zkvm-elf | awk '{ print $1 }')" >> "$GITHUB_ENV"
+          echo CHECKSUM="$(sha256sum crates/aggchain-proof-builder/elf/riscv32im-succinct-zkvm-elf | awk '{ print $1 }')" >> "$GITHUB_ENV"
 
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -96,14 +96,8 @@ jobs:
       - name: Install cargo-make
         run: cargo install --debug --locked cargo-make
 
-      - name: Install sp1 toolchain
-        run: |
-          curl -L https://sp1up.succinct.xyz | bash
-          /home/runner/.sp1/bin/sp1up
-          PATH="/home/runner/.sp1/bin:$PATH" cargo prove --version
-
       - name: Build the AP elf
         run: PATH="/home/runner/.sp1/bin:$PATH" cargo make ap-elf
 
       - name: ELF is up to date
-        run: diff <(sha256sum crates/aggchain-proof-program/elf/riscv32im-succinct-zkvm-elf | awk '{ print $1 }') <( echo $CHECKSUM )
+        run: diff <(sha256sum crates/aggchain-proof-builder/elf/riscv32im-succinct-zkvm-elf | awk '{ print $1 }') <( echo $CHECKSUM )

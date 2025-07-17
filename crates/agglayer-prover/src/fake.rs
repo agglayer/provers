@@ -1,18 +1,18 @@
-use std::net::SocketAddr;
-use std::sync::Arc;
+use std::{net::SocketAddr, sync::Arc};
 
-use agglayer_prover_types::v1::pessimistic_proof_service_server::{
-    PessimisticProofService, PessimisticProofServiceServer,
+use agglayer_prover_types::{
+    bincode,
+    v1::{
+        generate_proof_request::Stdin,
+        pessimistic_proof_service_server::{
+            PessimisticProofService, PessimisticProofServiceServer,
+        },
+    },
+    Error,
 };
-use agglayer_prover_types::{v1::generate_proof_request::Stdin, Error};
-use bincode::Options;
-use sp1_sdk::SP1Stdin;
-use sp1_sdk::{CpuProver, Prover as _, ProverClient};
-use tonic::codec::CompressionEncoding;
-use tonic::transport::Server;
-use tracing::info;
-use tracing::warn;
-use tracing::{debug, error};
+use sp1_sdk::{CpuProver, Prover as _, ProverClient, SP1Stdin};
+use tonic::{codec::CompressionEncoding, transport::Server};
+use tracing::{debug, error, info, warn};
 
 pub struct FakeProver {
     prover: Arc<CpuProver>,
@@ -86,7 +86,7 @@ impl PessimisticProofService for FakeProver {
         debug!("Received proof generation request");
         let request_inner = request.into_inner();
         let stdin: SP1Stdin = match request_inner.stdin {
-            Some(Stdin::Sp1Stdin(stdin)) => agglayer_prover_types::default_bincode_options()
+            Some(Stdin::Sp1Stdin(stdin)) => bincode::default()
                 .deserialize(&stdin)
                 .map_err(|_| tonic::Status::invalid_argument("Unable to deserialize stdin"))?,
             None => {
@@ -102,7 +102,7 @@ impl PessimisticProofService for FakeProver {
             .map_err(|error| Error::ProverFailed(error.to_string()));
         match result {
             Ok(proof) => {
-                let proof = agglayer_prover_types::default_bincode_options()
+                let proof = bincode::default()
                     .serialize(&agglayer_prover_types::Proof::SP1(proof))
                     .unwrap();
                 debug!("Proof generated successfully, size: {}B", proof.len());

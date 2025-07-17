@@ -1,6 +1,7 @@
 ---
 source: crates/aggkit-prover-config/tests/validate_deserialize.rs
 expression: config
+snapshot_kind: text
 ---
 grpc-endpoint = "127.0.0.1:8081"
 
@@ -16,18 +17,15 @@ format = "pretty"
 prometheus-addr = "0.0.0.0:3001"
 
 [shutdown]
-runtime-timeout = "5s"
+runtime-timeout = "30s"
 
 [aggchain-proof-service.aggchain-proof-builder]
 network-id = 0
+proving-timeout = "1h"
 
 [aggchain-proof-service.aggchain-proof-builder.primary-prover.network-prover]
 proving-timeout = "5m"
 sp1-cluster-endpoint = "https://rpc.production.succinct.xyz/"
-
-[aggchain-proof-service.aggchain-proof-builder.proving-timeout]
-secs = 3600
-nanos = 0
 
 [aggchain-proof-service.aggchain-proof-builder.contracts]
 l1-rpc-endpoint = "http://anvil-mock-l1-rpc:8545/"
@@ -35,6 +33,8 @@ l2-execution-layer-rpc-endpoint = "http://anvil-mock-l2-rpc:8545/"
 l2-consensus-layer-rpc-endpoint = "http://rollup-node-mock-l2-rpc:8545/"
 polygon-rollup-manager = "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e"
 global-exit-root-manager-v2-sovereign-chain = "0xa40d5f56745a118d0906a34e69aec8c0db1cb8fa"
+static-call-caller-address = "0x39027d57969ad59161365e0bbd53d2f63ee5aaa6"
+evm-sketch-genesis = "mainnet"
 
 [aggchain-proof-service.proposer-service]
 mock = false
