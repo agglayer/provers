@@ -236,8 +236,7 @@ dependencies = [
 [[package]]
 name = "agglayer-bincode"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0dd1af7229272f576224975c78bb834d97f28362aa1fc72dffe0c23dcbf02497"
+source = "git+https://github.com/agglayer/interop.git?branch=kyeung%2Fremove-hasher-trait#b6b8559f85343f5d76d482a6298c0ae0dc70476d"
 dependencies = [
  "bincode",
  "serde",
@@ -246,8 +245,7 @@ dependencies = [
 [[package]]
 name = "agglayer-elf-build"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d49335c01eefe69e0e1f1d98a7b932028eb68a26bf972cdfdf2ae65cbc2c62b"
+source = "git+https://github.com/agglayer/interop.git?branch=kyeung%2Fremove-hasher-trait#b6b8559f85343f5d76d482a6298c0ae0dc70476d"
 dependencies = [
  "anyhow",
  "cargo_metadata",
@@ -258,8 +256,7 @@ dependencies = [
 [[package]]
 name = "agglayer-evm-client"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e650eb3292f1f07a4248992b9423e61e377ecdebb7ad8e3da029d9aa8606fb1"
+source = "git+https://github.com/agglayer/interop.git?branch=kyeung%2Fremove-hasher-trait#b6b8559f85343f5d76d482a6298c0ae0dc70476d"
 dependencies = [
  "agglayer-primitives",
  "alloy",
@@ -272,8 +269,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f31abd3dc5dcc5bda9b66cef7b8903c3543755f2a5e1a8072998768a0ce382b"
+source = "git+https://github.com/agglayer/interop.git?branch=kyeung%2Fremove-hasher-trait#b6b8559f85343f5d76d482a6298c0ae0dc70476d"
 dependencies = [
  "agglayer-interop-grpc-types",
  "agglayer-interop-types",
@@ -282,8 +278,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop-grpc-types"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44015a4da76263d336c4788609439126d82bbacbc7e62a46f19f70ca8b3cef51"
+source = "git+https://github.com/agglayer/interop.git?branch=kyeung%2Fremove-hasher-trait#b6b8559f85343f5d76d482a6298c0ae0dc70476d"
 dependencies = [
  "agglayer-interop-types",
  "bincode",
@@ -297,8 +292,7 @@ dependencies = [
 [[package]]
 name = "agglayer-interop-types"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "caafb5ee824e595910508e630a1b6ff94cd8166d71b4322f3a145b404b7e98e8"
+source = "git+https://github.com/agglayer/interop.git?branch=kyeung%2Fremove-hasher-trait#b6b8559f85343f5d76d482a6298c0ae0dc70476d"
 dependencies = [
  "agglayer-bincode",
  "agglayer-primitives",
@@ -317,8 +311,7 @@ dependencies = [
 [[package]]
 name = "agglayer-primitives"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9bbd87e8535969dada7b4ec4f3afe9e8bdb1a68931e01e3cadb95538a05fb7dd"
+source = "git+https://github.com/agglayer/interop.git?branch=kyeung%2Fremove-hasher-trait#b6b8559f85343f5d76d482a6298c0ae0dc70476d"
 dependencies = [
  "alloy-primitives 1.2.1",
  "byteorder",
@@ -403,8 +396,7 @@ dependencies = [
 [[package]]
 name = "agglayer-tries"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d48f0e60c8bba7e0d39cfb45ca179bd110ac5f9debf137e1269192ff34c117b"
+source = "git+https://github.com/agglayer/interop.git?branch=kyeung%2Fremove-hasher-trait#b6b8559f85343f5d76d482a6298c0ae0dc70476d"
 dependencies = [
  "agglayer-primitives",
  "hex",
@@ -6551,6 +6543,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "ref-cast"
+version = "1.0.24"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4a0ae411dbe946a674d89546582cea4ba2bb8defac896622d6496f14c23ba5cf"
+dependencies = [
+ "ref-cast-impl",
+]
+
+[[package]]
+name = "ref-cast-impl"
+version = "1.0.24"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1165225c21bff1f3bbce98f5a1f889949bc902d3575308cc7b0de30b4f6d27c7"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.101",
+]
+
+[[package]]
 name = "regex"
 version = "1.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7859,6 +7871,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "schemars"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4cd191f9397d57d581cddd31014772520aa448f65ef991055d7f61582c65165f"
+dependencies = [
+ "dyn-clone",
+ "ref-cast",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "schemars"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "82d20c4491bc164fa2f6c5d44565947a52ad80b9505d8e36f8d54c27c739fcd0"
+dependencies = [
+ "dyn-clone",
+ "ref-cast",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8070,15 +8106,17 @@ dependencies = [
 
 [[package]]
 name = "serde_with"
-version = "3.12.0"
+version = "3.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6b6f7f2fcb69f747921f79f3926bd1e203fce4fef62c268dd3abfb6d86029aa"
+checksum = "f2c45cd61fefa9db6f254525d46e392b852e0e61d9a1fd36e5bd183450a556d5"
 dependencies = [
  "base64 0.22.1",
  "chrono",
  "hex",
  "indexmap 1.9.3",
  "indexmap 2.9.0",
+ "schemars 0.9.0",
+ "schemars 1.0.4",
  "serde",
  "serde_derive",
  "serde_json",
@@ -8088,9 +8126,9 @@ dependencies = [
 
 [[package]]
 name = "serde_with_macros"
-version = "3.12.0"
+version = "3.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d00caa5193a3c8362ac2b73be6b9e768aa5a4b2f721d8f4b339600c3cb51f8e"
+checksum = "de90945e6565ce0d9a25098082ed4ee4002e047cb59892c318d66821e14bb30f"
 dependencies = [
  "darling",
  "proc-macro2",
@@ -9889,8 +9927,7 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 [[package]]
 name = "unified-bridge"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "230b307d57eef18b0d271d2c0283882b7d4ed3e7dccf4e5bfa645745b2fc8b30"
+source = "git+https://github.com/agglayer/interop.git?branch=kyeung%2Fremove-hasher-trait#b6b8559f85343f5d76d482a6298c0ae0dc70476d"
 dependencies = [
  "agglayer-primitives",
  "agglayer-tries",
