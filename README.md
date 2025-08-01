@@ -38,7 +38,7 @@ The <b>Agglayer</b> (<i>Aggregation layer</i>) provides a common language for se
   - [Software Requirements](#software-requirements)
   - [Hardware Requirements](#hardware-recommendations)
 - [Installation](#installation)
-- [Running the Pessimistic Proof Test Suite](#running-the-pessimistic-proof-test-suite)
+- [Modifying and building the Aggchain Proof](#modifying-and-building-the-aggchain-proof)
 - [Development](#development)
 - [Support](#support)
 - [Resources](#resources)
@@ -55,29 +55,12 @@ To find out more about Agglayer, please visit [the more detailed documentation.]
 
 > [!WARNING]
 >    - Some of the content in this section discusses technology in development and not ready for release. As such, all APIs and configuration are subject to change. The code is still being audited, so please contact the Polygon team if you would like to use it in production.
+
 ## Repository Structure
 
 The crates and their functions within the Agglayer repo are as follows:
 
-| Crate                                                                          | Description                                                                                                                                                                                                                                                                                                                                                        |
-| ---                                                                            | ---                                                                                                                                                                                                                                                                                                                                                                |
-| [agglayer-aggregator-notifier](/crates/agglayer-aggregator-notifier)           | Contains implementations for [Certifier](crates/agglayer-certificate-orchestrator/src/certifier.rs#L29) which applies new [Certificate](crates/agglayer-types/src/lib.rs#245) on top of an existing state and computes the proof, as well as [EpochPacker](crates/agglayer-certificate-orchestrator/src/epoch_packer.rs#14), which handles the packing of an epoch |
-| [agglayer-certificate-orchestrator](/crates/agglayer-certificate-orchestrator) | Manages the orchestration and handling of certificates; also handles `current_epoch`, which allows non-orchestrators to push a proven certificate                                                                                                                                                                                                                  |
-| [agglayer-clock](/crates/agglayer-clock)                                       | Defines the pace of the Agglayer in terms of epoch with support for two clocks: time (for testing) and block (for listening for L1 blocks)                                                                                                                                                                                                                         |
-| [agglayer-config](/crates/agglayer-config)                                     | Manages configuration settings and parameters for Agglayer components                                                                                                                                                                                                                                                                                              |
-| [agglayer-contracts](/crates/agglayer-contracts)                               | Contains smart contracts and related logic                                                                                                                                                                                                                                                                                                                         |
-| [agglayer-gcp-kms](/crates/agglayer-gcp-kms)                                   | Provides integration with GCP's Key Management Service for secure key handling                                                                                                                                                                                                                                                                                     |
-| [agglayer-node](/crates/agglayer-node)                                         | Responsible for spawning and running the different components of the node                                                                                                                                                                                                                                                                                          |
-| [agglayer-prover-types](/crates/agglayer-prover-types)                         | Defines data structures and types used by the prover                                                                                                                                                                                                                                                                                                               |
-| [agglayer-prover](/crates/agglayer-prover)                                     | Responsible for running everything related to the prover                                                                                                                                                                                                                                                                                                           |
-| [agglayer-signer](/crates/agglayer-signer)                                     | Manages signing operations                                                                                                                                                                                                                                                                                                                                         |
-| [agglayer-storage](/crates/agglayer-storage)                                   | Contains two layers: a physical layer for abstracting RocksDB and a logic layer for exposing the interface to other crates so that they may interact with the storage                                                                                                                                                                                              |
-| [agglayer-telemetry](/crates/agglayer-telemetry)                               | Handles telemetry and monitoring functionalities                                                                                                                                                                                                                                                                                                                   |
-| [agglayer-types](/crates/agglayer-types)                                       | Defines common data types and structures                                                                                                                                                                                                                                                                                                                           |
-| [agglayer](/crates/agglayer)                                                   | The CLI for interacting with the Agglayer                                                                                                                                                                                                                                                                                                                          |
-| [pessimistic-proof-program](/crates/pessimistic-proof-program)                 | Implements the pessimistic proof program                                                                                                                                                                                                                                                                                                                           |
-| [pessimistic-proof-test-suite](/crates/pessimistic-proof-test-suite)           | Provides a suite of tests for validating the functionality of the pessimistic proof program                                                                                                                                                                                                                                                                        |
-| [pessimistic-proof](/crates/pessimistic-proof)                                 | Contains the core logic and implementation of the pessimistic proof mechanism                                                                                                                                                                                                                                                                                      |
+TODO
 
 ## Prerequisites
 
@@ -105,36 +88,65 @@ However, if you’d like to run a prover locally (not recommended), you’ll nee
 
 ## Installation
 
-To install the Agglayer repository, please run the following:
+To install the Agglayer provers repository, please run the following:
 
 ```bash
-git clone https://github.com/agglayer/agglayer
-cd agglayer
+git clone https://github.com/agglayer/provers
+cd provers
 ```
 
-To build Agglayer locally, please run:
+To build Agglayer provers locally, please run:
 ```bash
 cargo build
 ```
 
-## Running the Pessimistic Proof Test Suite
-To run the Pessimistic Proof Test Suite with test inputs in Native Rust Execution, please run the following:
+## Running the Test Suite
+
+To execute the test suite, please run the following:
 
 ```bash
-cargo test --package pessimistic-proof-test-suite
+cargo nextest run --workspace
 ```
 
-You can find the test inputs here: [`./agglayer/crates/pessimistic-proof-test-suite`](./crates/pessimistic-proof-test-suite/data/)
+## Modifying and building the Aggchain Proof
 
-## Running SP1 Proof Generation Locally (Not Recommended)
+By default, the committed pre-compiled ELF binary is used.
+Modifications in proof code will not be automatically reflected in the binary.
+We use docker-based deterministic build to compile the proof.
+Therefore, `docker` has to be present on the system for the build to work if rebuild is enabled.
 
-The [Succinct Prover Network](#succinct-prover-network) is the best way to generate Pessimistic Proofs for Agglayer. 
+### Building Aggchain Proof one-off
 
-For those with the hardware and know-how, however, you can run the Pessimistic Proof program in a local SP1 Prover with the following commands:
+The following command rebuilds the Aggchain proof and.
+It requires `cargo-make` to be installed:
 
-```bash
-cargo run --package pessimistic-proof-test-suite --bin ppgen
+```sh
+cargo make ap-elf
 ```
+
+### Turning on automatic proof rebuild
+
+This option makes the standard commands like `cargo build`, `cargo run` etc. rebuild the proof automatically any time it changes as if it were a normal part of the build.
+It is enabled by setting the `AGGLAYER_ELF_BUILD` environment variable to `update`.
+
+```sh
+export AGGLAYER_ELF_BUILD=update
+```
+
+Note: Rust suppresses the output of build scripts by default.
+As a result, the build may appear stuck on the `aggchain-proof-builder` crate while the proof is being rebuilt.
+
+In the `update` mode, the proof will be rebuilt and the cached ELF will be updated.
+There is also the `build` mode which leaves the cached ELF intact.
+It is mostly useful for debugging, the `update` is more suitable for regular development.
+
+To get automatic rebuilds by default, set the variable in the shell init script.
+
+### Proof versioning policy
+
+The proof binary to use is uniquely identified by a vkey selector on the L1.
+The selector is derived from the major version of the `aggchain-proof-program` package.
+This version must be bumped between releases / deployments.
 
 ## Development
 
