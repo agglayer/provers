@@ -30,11 +30,12 @@ pub type AlloyFillProvider = FillProvider<
     Ethereum,
 >;
 
-pub fn build_alloy_fill_provider(
+/// Creates a client builder with common configuration for HTTP RPC clients
+fn create_client_builder(
     rpc_url: &url::Url,
     backoff: u64,
     max_retries: u32,
-) -> Result<AlloyFillProvider, anyhow::Error> {
+) -> Result<ClientBuilder, anyhow::Error> {
     let retry_policy = RetryBackoffLayer::new(max_retries, backoff, 5);
     let reqwest_client = reqwest::ClientBuilder::new()
         .pool_max_idle_per_host(HTTP_CLIENT_MAX_IDLE_CONNECTIONS_PER_HOST)
@@ -45,10 +46,17 @@ pub fn build_alloy_fill_provider(
 
     let http = alloy::transports::http::Http::with_client(reqwest_client, rpc_url.clone());
     let is_local = http.guess_local();
-    let client = ClientBuilder::default()
+    Ok(ClientBuilder::default()
         .layer(retry_policy)
-        .transport(http, is_local);
+        .transport(http, is_local))
+}
 
+pub fn build_alloy_fill_provider(
+    rpc_url: &url::Url,
+    backoff: u64,
+    max_retries: u32,
+) -> Result<AlloyFillProvider, anyhow::Error> {
+    let client = create_client_builder(rpc_url, backoff, max_retries)?;
     Ok(ProviderBuilder::new().on_client(client))
 }
 
@@ -65,20 +73,7 @@ impl AlloyProvider {
         backoff: u64,
         max_retries: u32,
     ) -> Result<AlloyProvider, anyhow::Error> {
-        let retry_policy = RetryBackoffLayer::new(max_retries, backoff, 5);
-        let reqwest_client = reqwest::ClientBuilder::new()
-            .pool_max_idle_per_host(HTTP_CLIENT_MAX_IDLE_CONNECTIONS_PER_HOST)
-            .pool_idle_timeout(Duration::from_secs(
-                HTTP_CLIENT_CONNECTION_POOL_IDLE_TIMEOUT,
-            ))
-            .build()?;
-
-        let http = alloy::transports::http::Http::with_client(reqwest_client, rpc_url.clone());
-        let is_local = http.guess_local();
-        let client = ClientBuilder::default()
-            .layer(retry_policy)
-            .transport(http, is_local);
-
+        let client = create_client_builder(rpc_url, backoff, max_retries)?;
         Ok(AlloyProvider {
             client: ProviderBuilder::new().on_client(client),
         })
