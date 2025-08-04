@@ -951,6 +951,9 @@ mod tests {
         //    --exact --show-output --include-ignored` (Or you can limit to `--package
         //    aggchain-proof-core --lib` if your cargo folder is not filled yet)
         // 4. The file should then be ready for committing
+        // Note that it is possible the RPC no longer has the required blocks available for proof getting.
+        // In this case, you can use the script here to regenerate the tests:
+        //   https://github.com/agglayer/agglayer-contracts/blob/4e1e07dd83f822b9a05d1cf45bc15d0341e3a2b3/tools/deploySovereignTest/deploySovereign.ts
 
         assert_bridge_data(bridge_data_input);
     }
