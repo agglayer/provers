@@ -12,7 +12,7 @@ pub mod rpc;
 #[cfg(test)]
 mod tests;
 
-pub fn runtime(cfg: PathBuf, version: &str) -> anyhow::Result<()> {
+pub fn runtime(cfg: PathBuf, version: &str) -> eyre::Result<()> {
     let config = Arc::new(aggkit_prover_config::ProverConfig::try_load(&cfg)?);
 
     // Initialize the logger

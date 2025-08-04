@@ -1,5 +1,6 @@
 use std::{path::PathBuf, sync::Arc};
 
+use eyre::Context as _;
 use prover_engine::ProverEngine;
 
 #[cfg(feature = "testutils")]
@@ -15,7 +16,7 @@ mod rpc;
 ///
 /// This function returns on fatal error or after graceful shutdown has
 /// completed.
-pub fn main(cfg: PathBuf, version: &str, program: &'static [u8]) -> anyhow::Result<()> {
+pub fn main(cfg: PathBuf, version: &str, program: &'static [u8]) -> eyre::Result<()> {
     let config = Arc::new(agglayer_prover_config::ProverConfig::try_load(&cfg)?);
 
     // Initialize the logger
@@ -36,8 +37,9 @@ pub fn main(cfg: PathBuf, version: &str, program: &'static [u8]) -> anyhow::Resu
         .enable_all()
         .build()?;
 
-    let pp_service =
-        prover_runtime.block_on(async { crate::prover::Prover::create_service(&config, program) });
+    let pp_service = prover_runtime
+        .block_on(crate::prover::Prover::create_service(&config, program))
+        .context("Failed to create PP service")?;
 
     _ = ProverEngine::new(
         config.grpc_endpoint,
@@ -53,9 +55,11 @@ pub fn main(cfg: PathBuf, version: &str, program: &'static [u8]) -> anyhow::Resu
     Ok(())
 }
 
-pub fn compute_program_vkey(program: &'static [u8]) -> String {
-    let vkey = prover_executor::Executor::compute_program_vkey(program);
-    vkey.bytes32()
+pub async fn compute_program_vkey(program: &'static [u8]) -> eyre::Result<String> {
+    let vkey = prover_executor::Executor::compute_program_vkey(program)
+        .await
+        .context("Failed to compute program vkey")?;
+    Ok(vkey.bytes32())
 }
 
 #[cfg(feature = "testutils")]

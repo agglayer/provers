@@ -31,6 +31,7 @@ use agglayer_interop::types::{
 use agglayer_primitives::{Address, Digest};
 use alloy::eips::BlockNumberOrTag;
 pub use error::Error;
+use eyre::Context as _;
 use futures::{future::BoxFuture, FutureExt};
 use prover_executor::{Executor, ProofType};
 use serde::{Deserialize, Serialize};
@@ -153,12 +154,14 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     pub async fn new(
         config: &AggchainProofBuilderConfig,
         contracts_client: Arc<ContractsClient>,
-    ) -> Result<Self, Error> {
+    ) -> eyre::Result<Self> {
         let executor = Executor::new(
-            &config.primary_prover,
-            &config.fallback_prover,
+            config.primary_prover.clone(),
+            config.fallback_prover.clone(),
             AGGCHAIN_PROOF_ELF,
-        );
+        )
+        .await
+        .context("Failed creating executor for AggchainProofBuilder")?;
 
         let aggchain_vkey = executor.get_vkey().clone();
         let executor = tower::ServiceBuilder::new().service(executor).boxed();
@@ -174,10 +177,10 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             let expected = AGGREGATION_VKEY_HASH;
 
             if retrieved != expected {
-                return Err(Error::MismatchAggregationVkeyHash {
+                return Err(eyre::Report::from(Error::MismatchAggregationVkeyHash {
                     got: retrieved,
                     expected,
-                });
+                }));
             }
         }
 
