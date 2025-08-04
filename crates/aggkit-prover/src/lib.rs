@@ -40,7 +40,7 @@ pub fn runtime(cfg: PathBuf, version: &str) -> anyhow::Result<()> {
         )
     })?;
 
-    _ = ProverEngine::new(
+    ProverEngine::new(
         config.grpc_endpoint,
         config.telemetry.addr,
         config.shutdown.runtime_timeout,
@@ -50,9 +50,7 @@ pub fn runtime(cfg: PathBuf, version: &str) -> anyhow::Result<()> {
     .set_rpc_runtime(prover_runtime)
     .set_metrics_runtime(metrics_runtime)
     .set_cancellation_token(global_cancellation_token)
-    .start();
-
-    Ok(())
+    .start()
 }
 
 /// Common version information about the executed agglayer binary.
