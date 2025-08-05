@@ -10,6 +10,7 @@ use agglayer_prover_types::{
     },
     Error,
 };
+use prover_executor::{sp1_blocking, sp1_fast};
 use sp1_sdk::{CpuProver, Prover as _, ProverClient, SP1Stdin};
 use tonic::{codec::CompressionEncoding, transport::Server};
 use tracing::{debug, error, info, warn};
@@ -20,14 +21,16 @@ pub struct FakeProver {
 }
 
 impl FakeProver {
-    pub fn new(elf: &[u8]) -> Self {
-        let prover = ProverClient::builder().mock().build();
-        let (proving_key, _verifying_key) = prover.setup(elf);
-
-        Self {
-            proving_key,
-            prover: Arc::new(prover),
-        }
+    pub async fn new(elf: &'static [u8]) -> eyre::Result<Self> {
+        sp1_blocking(|| {
+            let prover = ProverClient::builder().mock().build();
+            let (proving_key, _verifying_key) = prover.setup(elf);
+            Self {
+                proving_key,
+                prover: Arc::new(prover),
+            }
+        })
+        .await
     }
 }
 
@@ -86,25 +89,24 @@ impl PessimisticProofService for FakeProver {
         debug!("Received proof generation request");
         let request_inner = request.into_inner();
         let stdin: SP1Stdin = match request_inner.stdin {
-            Some(Stdin::Sp1Stdin(stdin)) => bincode::default()
-                .deserialize(&stdin)
+            Some(Stdin::Sp1Stdin(stdin)) => sp1_fast(|| bincode::default().deserialize(&stdin))
+                .map_err(|_| tonic::Status::invalid_argument("Unable to deserialize stdin"))?
                 .map_err(|_| tonic::Status::invalid_argument("Unable to deserialize stdin"))?,
             None => {
                 return Err(tonic::Status::invalid_argument("stdin is required"));
             }
         };
 
-        let result = self
-            .prover
-            .prove(&self.proving_key, &stdin)
-            .plonk()
-            .run()
-            .map_err(|error| Error::ProverFailed(error.to_string()));
+        let result = sp1_fast(|| self.prover.prove(&self.proving_key, &stdin).plonk().run())
+            .map_err(|error| Error::ProverFailed(error.to_string()))
+            .and_then(|res| res.map_err(|error| Error::ProverFailed(error.to_string())));
         match result {
             Ok(proof) => {
-                let proof = bincode::default()
-                    .serialize(&agglayer_prover_types::Proof::SP1(proof))
-                    .unwrap();
+                let proof = sp1_fast(|| {
+                    bincode::default().serialize(&agglayer_prover_types::Proof::SP1(proof))
+                })
+                .unwrap()
+                .unwrap();
                 debug!("Proof generated successfully, size: {}B", proof.len());
                 Ok(tonic::Response::new(
                     agglayer_prover_types::v1::GenerateProofResponse {

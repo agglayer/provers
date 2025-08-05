@@ -416,6 +416,14 @@ pub fn sp1_fast<R>(f: impl UnwindSafe + FnOnce() -> R) -> eyre::Result<R> {
     })
 }
 
+pub fn sp1_block_in_place<F, R>(f: F) -> eyre::Result<R>
+where
+    F: UnwindSafe + FnOnce() -> R,
+{
+    tokio::task::block_in_place(|| sp1_fast(f))
+        .context("Failed running blocking task in place for SP1 call")
+}
+
 pub async fn sp1_blocking<F, R>(f: F) -> eyre::Result<R>
 where
     F: 'static + Send + UnwindSafe + FnOnce() -> R,

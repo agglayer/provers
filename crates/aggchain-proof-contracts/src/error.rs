@@ -71,4 +71,7 @@ pub enum Error {
 
     #[error("Invalid evm sketch genesis input: {0}")]
     InvalidEvmSketchGenesisInput(String),
+
+    #[error(transparent)]
+    Other(eyre::Report),
 }
