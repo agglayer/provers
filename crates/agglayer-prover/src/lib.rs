@@ -39,7 +39,7 @@ pub fn main(cfg: PathBuf, version: &str, program: &'static [u8]) -> anyhow::Resu
     let pp_service =
         prover_runtime.block_on(async { crate::prover::Prover::create_service(&config, program) });
 
-    _ = ProverEngine::new(
+    ProverEngine::new(
         config.grpc_endpoint,
         config.telemetry.addr,
         config.shutdown.runtime_timeout,
@@ -48,9 +48,7 @@ pub fn main(cfg: PathBuf, version: &str, program: &'static [u8]) -> anyhow::Resu
     .set_rpc_runtime(prover_runtime)
     .set_metrics_runtime(metrics_runtime)
     .set_cancellation_token(global_cancellation_token)
-    .start();
-
-    Ok(())
+    .start()
 }
 
 pub fn compute_program_vkey(program: &'static [u8]) -> String {
