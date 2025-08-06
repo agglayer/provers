@@ -6283,6 +6283,7 @@ dependencies = [
  "agglayer-telemetry",
  "anyhow",
  "axum 0.8.4",
+ "eyre",
  "http",
  "http-body-util",
  "tokio",

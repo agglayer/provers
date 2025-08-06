@@ -41,7 +41,7 @@ pub fn main(cfg: PathBuf, version: &str, program: &'static [u8]) -> eyre::Result
         .block_on(crate::prover::Prover::create_service(&config, program))
         .context("Failed to create PP service")?;
 
-    _ = ProverEngine::new(
+    ProverEngine::new(
         config.grpc_endpoint,
         config.telemetry.addr,
         config.shutdown.runtime_timeout,
@@ -50,9 +50,7 @@ pub fn main(cfg: PathBuf, version: &str, program: &'static [u8]) -> eyre::Result
     .set_rpc_runtime(prover_runtime)
     .set_metrics_runtime(metrics_runtime)
     .set_cancellation_token(global_cancellation_token)
-    .start();
-
-    Ok(())
+    .start()
 }
 
 pub async fn compute_program_vkey(program: &'static [u8]) -> eyre::Result<String> {
