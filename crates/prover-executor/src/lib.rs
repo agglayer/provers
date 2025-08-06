@@ -434,6 +434,11 @@ where
         .context("Failed running blocking task for SP1 call")?
 }
 
+/// Run a slow sp1 function call, catching panics.
+///
+/// This will run `f` on this thread and move the tasks to another async thread,
+/// to avoid blocking the async runtime. If you have the required `Send +
+/// 'static` bounds, consider using `sp1_blocking` instead.
 pub fn sp1_block_in_place<F, R>(f: F) -> eyre::Result<R>
 where
     F: UnwindSafe + FnOnce() -> R,
