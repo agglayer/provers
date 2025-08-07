@@ -1,11 +1,11 @@
 use aggchain_proof_service::AGGCHAIN_VKEY_SELECTOR;
 use aggkit_prover::version;
-use anyhow::Context as _;
 use clap::Parser as _;
+use eyre::Context as _;
 use prover_config::{CpuProverConfig, ProverType};
 use sp1_sdk::HashableKey as _;
 
-fn main() -> anyhow::Result<()> {
+fn main() -> eyre::Result<()> {
     dotenvy::dotenv().ok();
 
     let cli = aggkit_prover::cli::Cli::parse();
@@ -32,14 +32,21 @@ fn main() -> anyhow::Result<()> {
             }
         }
         aggkit_prover::cli::Commands::Vkey => {
-            let executor = prover_executor::Executor::new(
-                &ProverType::CpuProver(CpuProverConfig::default()),
-                &None,
-                aggchain_proof_service::AGGCHAIN_PROOF_ELF,
-            );
-            let vkey = executor.get_vkey();
-            let vkey_hex = hex::encode(vkey.hash_bytes());
-            println!("0x{vkey_hex}");
+            tokio::runtime::Builder::new_multi_thread()
+                .enable_all()
+                .build()?
+                .block_on(async move {
+                    let executor = prover_executor::Executor::new(
+                        ProverType::CpuProver(CpuProverConfig::default()),
+                        None,
+                        aggchain_proof_service::AGGCHAIN_PROOF_ELF,
+                    )
+                    .await?;
+                    let vkey = executor.get_vkey();
+                    let vkey_hex = hex::encode(vkey.hash_bytes());
+                    println!("0x{vkey_hex}");
+                    Ok::<(), eyre::Report>(())
+                })?;
         }
 
         aggkit_prover::cli::Commands::VkeySelector => {

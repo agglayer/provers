@@ -1,6 +1,7 @@
 use std::{convert::Infallible, future::IntoFuture, net::SocketAddr, time::Duration};
 
 use agglayer_telemetry::ServerBuilder as MetricsBuilder;
+use eyre::Context as _;
 use http::{Request, Response};
 use tokio::{net::TcpListener, runtime::Runtime};
 use tokio_util::sync::CancellationToken;
@@ -90,7 +91,7 @@ impl ProverEngine {
         self
     }
 
-    pub fn start(mut self) -> anyhow::Result<()> {
+    pub fn start(mut self) -> eyre::Result<()> {
         info!("Starting the prover engine");
         let cancellation_token = self.cancellation_token.take().unwrap_or_default();
         let _cancel_on_panic = cancellation_token.clone().drop_guard();
@@ -150,12 +151,12 @@ impl ProverEngine {
             },
         );
 
-        let reflection_v1 = reflection_v1.build_v1().map_err(|error| {
-            anyhow::Error::new(error).context("Unable to build the reflection_v1")
-        })?;
-        let reflection_v1alpha = reflection_v1alpha.build_v1alpha().map_err(|error| {
-            anyhow::Error::new(error).context("Unable to build the reflection_v1alpha")
-        })?;
+        let reflection_v1 = reflection_v1
+            .build_v1()
+            .context("Unable to build the reflection_v1")?;
+        let reflection_v1alpha = reflection_v1alpha
+            .build_v1alpha()
+            .context("Unable to build the reflection_v1alpha")?;
 
         debug!("Setting the health status of the services to healthy");
         prover_runtime.block_on(async {

@@ -265,7 +265,7 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
 
         self.aggchain_proof_builder
             .poll_ready(cx)
-            .map_err(Error::AggchainProofBuilderInitFailed)
+            .map_err(Error::AggchainProofBuilderPollReadyFailed)
     }
 
     fn call(&mut self, req: AggchainProofServiceRequest) -> Self::Future {

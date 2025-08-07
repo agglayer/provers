@@ -9,6 +9,7 @@ serde.workspace = true
 
 anyhow.workspace = true
 buildstructor.workspace = true
+eyre.workspace = true
 futures.workspace = true
 thiserror.workspace = true
 tokio = { workspace = true, features = ["full"] }

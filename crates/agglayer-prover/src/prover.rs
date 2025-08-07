@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use agglayer_prover_config::ProverConfig;
 use agglayer_prover_types::v1::pessimistic_proof_service_server::PessimisticProofServiceServer;
-use anyhow::Result;
+use eyre::{Context as _, Result};
 use prover_executor::Executor;
 use tokio::join;
 use tokio_util::sync::CancellationToken;
@@ -18,18 +18,21 @@ pub struct Prover {
 
 #[buildstructor::buildstructor]
 impl Prover {
-    pub fn create_service(
+    pub async fn create_service(
         config: &ProverConfig,
-        program: &[u8],
-    ) -> PessimisticProofServiceServer<ProverRPC> {
+        program: &'static [u8],
+    ) -> eyre::Result<PessimisticProofServiceServer<ProverRPC>> {
+        let executor_service = Executor::new(
+            config.primary_prover.clone(),
+            config.fallback_prover.clone(),
+            program,
+        )
+        .await
+        .context("Failed to create executor service for Agglayer Prover")?;
         let executor = tower::ServiceBuilder::new()
             .timeout(config.max_request_duration)
             .layer(ConcurrencyLimitLayer::new(config.max_concurrency_limit))
-            .service(Executor::new(
-                &config.primary_prover,
-                &config.fallback_prover,
-                program,
-            ))
+            .service(executor_service)
             .into_inner()
             .boxed();
 
@@ -37,11 +40,11 @@ impl Prover {
 
         let rpc = ProverRPC::new(executor);
 
-        PessimisticProofServiceServer::new(rpc)
+        Ok(PessimisticProofServiceServer::new(rpc)
             .max_decoding_message_size(config.grpc.max_decoding_message_size)
             .max_encoding_message_size(config.grpc.max_encoding_message_size)
             .send_compressed(CompressionEncoding::Zstd)
-            .accept_compressed(CompressionEncoding::Zstd)
+            .accept_compressed(CompressionEncoding::Zstd))
     }
 
     /// Function that setups and starts the Agglayer Prover.
@@ -62,7 +65,9 @@ impl Prover {
         cancellation_token: CancellationToken,
         program: &'static [u8],
     ) -> Result<Self> {
-        let svc = Self::create_service(&config, program);
+        let svc = Self::create_service(&config, program)
+            .await
+            .context("Failed creating PessimisticProofServiceServer")?;
         let (mut health_reporter, health_service) = tonic_health::server::health_reporter();
 
         health_reporter
