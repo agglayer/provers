@@ -38,4 +38,5 @@ serde_json.workspace = true
 sp1-cc-host-executor.workspace = true
 sp1-sdk.workspace = true
 tokio.workspace = true
+tracing-subscriber.workspace = true
 url.workspace = true

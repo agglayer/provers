@@ -119,6 +119,7 @@ dependencies = [
  "tiny-keccak",
  "tokio",
  "toml 0.8.22",
+ "tracing-subscriber 0.3.19",
  "unified-bridge",
  "url",
 ]
