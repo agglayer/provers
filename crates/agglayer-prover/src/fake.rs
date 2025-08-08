@@ -105,8 +105,12 @@ impl PessimisticProofService for FakeProver {
                 let proof = sp1_fast(|| {
                     bincode::default().serialize(&agglayer_prover_types::Proof::SP1(proof))
                 })
-                .unwrap()
-                .unwrap();
+                .map_err(|error| Error::ProverFailed(error.to_string()))
+                .and_then(|res| res.map_err(|error| Error::ProverFailed(error.to_string())))
+                .map_err(|error| {
+                    warn!("FakeProver deserialization error: {}", error);
+                    tonic::Status::invalid_argument(error.to_string())
+                })?;
                 debug!("Proof generated successfully, size: {}B", proof.len());
                 Ok(tonic::Response::new(
                     agglayer_prover_types::v1::GenerateProofResponse {

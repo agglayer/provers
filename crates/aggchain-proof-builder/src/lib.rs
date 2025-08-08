@@ -415,7 +415,7 @@ where
         let aggchain_vkey = self.aggchain_vkey.clone();
         let static_call_caller_address = self.static_call_caller_address;
 
-        // TODO: figure out a way to stop only this service upon an sp1 panic, and not
+        // TODO: figure out a way to stop only this service upon an sp1 panic, and not
         // the entire system. For now, just ignore the panic, even though some
         // internal mutability inside sp1 might end up unhappy.
         sp1_async(AssertUnwindSafe(async move {
