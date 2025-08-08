@@ -8,7 +8,7 @@ pub enum Error {
     #[error("Proof verification error")]
     Verification {
         request_id: RequestId,
-        source: sp1_sdk::prover::SP1VerificationError,
+        source: eyre::Report,
     },
 
     #[error("Error requesting proof")]
