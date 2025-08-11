@@ -28,6 +28,12 @@ impl serde::Serialize for GenerateAggchainProofRequest {
         if !self.imported_bridge_exits.is_empty() {
             len += 1;
         }
+        if !self.removed_gers.is_empty() {
+            len += 1;
+        }
+        if !self.unclaims.is_empty() {
+            len += 1;
+        }
         let mut struct_ser = serializer.serialize_struct("aggkit.prover.v1.GenerateAggchainProofRequest", len)?;
         if self.last_proven_block != 0 {
             #[allow(clippy::needless_borrow)]
@@ -54,6 +60,12 @@ impl serde::Serialize for GenerateAggchainProofRequest {
         if !self.imported_bridge_exits.is_empty() {
             struct_ser.serialize_field("importedBridgeExits", &self.imported_bridge_exits)?;
         }
+        if !self.removed_gers.is_empty() {
+            struct_ser.serialize_field("removedGers", &self.removed_gers)?;
+        }
+        if !self.unclaims.is_empty() {
+            struct_ser.serialize_field("unclaims", &self.unclaims)?;
+        }
         struct_ser.end()
     }
 }
@@ -78,6 +90,9 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
             "gerLeaves",
             "imported_bridge_exits",
             "importedBridgeExits",
+            "removed_gers",
+            "removedGers",
+            "unclaims",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -89,6 +104,8 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
             L1InfoTreeMerkleProof,
             GerLeaves,
             ImportedBridgeExits,
+            RemovedGers,
+            Unclaims,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -117,6 +134,8 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
                             "l1InfoTreeMerkleProof" | "l1_info_tree_merkle_proof" => Ok(GeneratedField::L1InfoTreeMerkleProof),
                             "gerLeaves" | "ger_leaves" => Ok(GeneratedField::GerLeaves),
                             "importedBridgeExits" | "imported_bridge_exits" => Ok(GeneratedField::ImportedBridgeExits),
+                            "removedGers" | "removed_gers" => Ok(GeneratedField::RemovedGers),
+                            "unclaims" => Ok(GeneratedField::Unclaims),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -143,6 +162,8 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
                 let mut l1_info_tree_merkle_proof__ = None;
                 let mut ger_leaves__ = None;
                 let mut imported_bridge_exits__ = None;
+                let mut removed_gers__ = None;
+                let mut unclaims__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::LastProvenBlock => {
@@ -193,6 +214,18 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
                             }
                             imported_bridge_exits__ = Some(map_.next_value()?);
                         }
+                        GeneratedField::RemovedGers => {
+                            if removed_gers__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("removedGers"));
+                            }
+                            removed_gers__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::Unclaims => {
+                            if unclaims__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("unclaims"));
+                            }
+                            unclaims__ = Some(map_.next_value()?);
+                        }
                     }
                 }
                 Ok(GenerateAggchainProofRequest {
@@ -203,6 +236,8 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
                     l1_info_tree_merkle_proof: l1_info_tree_merkle_proof__,
                     ger_leaves: ger_leaves__.unwrap_or_default(),
                     imported_bridge_exits: imported_bridge_exits__.unwrap_or_default(),
+                    removed_gers: removed_gers__.unwrap_or_default(),
+                    unclaims: unclaims__.unwrap_or_default(),
                 })
             }
         }
@@ -1003,5 +1038,277 @@ impl<'de> serde::Deserialize<'de> for ProvenInsertedGerWithBlockNumber {
             }
         }
         deserializer.deserialize_struct("aggkit.prover.v1.ProvenInsertedGERWithBlockNumber", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for RemovedGer {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.global_exit_root.is_empty() {
+            len += 1;
+        }
+        if self.block_number != 0 {
+            len += 1;
+        }
+        if self.block_index != 0 {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("aggkit.prover.v1.RemovedGER", len)?;
+        if !self.global_exit_root.is_empty() {
+            struct_ser.serialize_field("globalExitRoot", &self.global_exit_root)?;
+        }
+        if self.block_number != 0 {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("blockNumber", ToString::to_string(&self.block_number).as_str())?;
+        }
+        if self.block_index != 0 {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("blockIndex", ToString::to_string(&self.block_index).as_str())?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for RemovedGer {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "global_exit_root",
+            "globalExitRoot",
+            "block_number",
+            "blockNumber",
+            "block_index",
+            "blockIndex",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            GlobalExitRoot,
+            BlockNumber,
+            BlockIndex,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "globalExitRoot" | "global_exit_root" => Ok(GeneratedField::GlobalExitRoot),
+                            "blockNumber" | "block_number" => Ok(GeneratedField::BlockNumber),
+                            "blockIndex" | "block_index" => Ok(GeneratedField::BlockIndex),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = RemovedGer;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct aggkit.prover.v1.RemovedGER")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<RemovedGer, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut global_exit_root__ = None;
+                let mut block_number__ = None;
+                let mut block_index__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::GlobalExitRoot => {
+                            if global_exit_root__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("globalExitRoot"));
+                            }
+                            global_exit_root__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::BlockNumber => {
+                            if block_number__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("blockNumber"));
+                            }
+                            block_number__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::BlockIndex => {
+                            if block_index__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("blockIndex"));
+                            }
+                            block_index__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                    }
+                }
+                Ok(RemovedGer {
+                    global_exit_root: global_exit_root__.unwrap_or_default(),
+                    block_number: block_number__.unwrap_or_default(),
+                    block_index: block_index__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("aggkit.prover.v1.RemovedGER", FIELDS, GeneratedVisitor)
+    }
+}
+impl serde::Serialize for Unclaim {
+    #[allow(deprecated)]
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut len = 0;
+        if !self.unclaim_hash.is_empty() {
+            len += 1;
+        }
+        if self.block_number != 0 {
+            len += 1;
+        }
+        if self.block_index != 0 {
+            len += 1;
+        }
+        let mut struct_ser = serializer.serialize_struct("aggkit.prover.v1.Unclaim", len)?;
+        if !self.unclaim_hash.is_empty() {
+            struct_ser.serialize_field("unclaimHash", &self.unclaim_hash)?;
+        }
+        if self.block_number != 0 {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("blockNumber", ToString::to_string(&self.block_number).as_str())?;
+        }
+        if self.block_index != 0 {
+            #[allow(clippy::needless_borrow)]
+            #[allow(clippy::needless_borrows_for_generic_args)]
+            struct_ser.serialize_field("blockIndex", ToString::to_string(&self.block_index).as_str())?;
+        }
+        struct_ser.end()
+    }
+}
+impl<'de> serde::Deserialize<'de> for Unclaim {
+    #[allow(deprecated)]
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &[
+            "unclaim_hash",
+            "unclaimHash",
+            "block_number",
+            "blockNumber",
+            "block_index",
+            "blockIndex",
+        ];
+
+        #[allow(clippy::enum_variant_names)]
+        enum GeneratedField {
+            UnclaimHash,
+            BlockNumber,
+            BlockIndex,
+        }
+        impl<'de> serde::Deserialize<'de> for GeneratedField {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct GeneratedVisitor;
+
+                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+                    type Value = GeneratedField;
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(formatter, "expected one of: {:?}", &FIELDS)
+                    }
+
+                    #[allow(unused_variables)]
+                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
+                    where
+                        E: serde::de::Error,
+                    {
+                        match value {
+                            "unclaimHash" | "unclaim_hash" => Ok(GeneratedField::UnclaimHash),
+                            "blockNumber" | "block_number" => Ok(GeneratedField::BlockNumber),
+                            "blockIndex" | "block_index" => Ok(GeneratedField::BlockIndex),
+                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+                deserializer.deserialize_identifier(GeneratedVisitor)
+            }
+        }
+        struct GeneratedVisitor;
+        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
+            type Value = Unclaim;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                formatter.write_str("struct aggkit.prover.v1.Unclaim")
+            }
+
+            fn visit_map<V>(self, mut map_: V) -> std::result::Result<Unclaim, V::Error>
+                where
+                    V: serde::de::MapAccess<'de>,
+            {
+                let mut unclaim_hash__ = None;
+                let mut block_number__ = None;
+                let mut block_index__ = None;
+                while let Some(k) = map_.next_key()? {
+                    match k {
+                        GeneratedField::UnclaimHash => {
+                            if unclaim_hash__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("unclaimHash"));
+                            }
+                            unclaim_hash__ = Some(map_.next_value()?);
+                        }
+                        GeneratedField::BlockNumber => {
+                            if block_number__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("blockNumber"));
+                            }
+                            block_number__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                        GeneratedField::BlockIndex => {
+                            if block_index__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("blockIndex"));
+                            }
+                            block_index__ = 
+                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
+                            ;
+                        }
+                    }
+                }
+                Ok(Unclaim {
+                    unclaim_hash: unclaim_hash__.unwrap_or_default(),
+                    block_number: block_number__.unwrap_or_default(),
+                    block_index: block_index__.unwrap_or_default(),
+                })
+            }
+        }
+        deserializer.deserialize_struct("aggkit.prover.v1.Unclaim", FIELDS, GeneratedVisitor)
     }
 }
