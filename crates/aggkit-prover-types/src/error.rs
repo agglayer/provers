@@ -80,6 +80,18 @@ pub enum AggchainProofRequestError {
     },
     #[error("Missing aggchain-proof request")]
     MissingAggchainProofRequest { field_path: String },
+
+    #[error("Invalid removed global exit root")]
+    InvalidRemovedGer {
+        field_path: String,
+        source: anyhow::Error,
+    },
+
+    #[error("Invalid unclaim")]
+    InvalidUnclaim {
+        field_path: String,
+        source: anyhow::Error,
+    },
 }
 
 impl AggchainProofRequestError {
@@ -107,9 +119,9 @@ impl AggchainProofRequestError {
             | AggchainProofRequestError::MissingAggchainProofRequest { field_path }
             | AggchainProofRequestError::InvalidAggchainProofRequest { field_path, .. }
             | AggchainProofRequestError::MissingOptimisticModeSignature { field_path }
-            | AggchainProofRequestError::InvalidOptimisticModeSignature { field_path, .. } => {
-                field_path
-            }
+            | AggchainProofRequestError::InvalidOptimisticModeSignature { field_path, .. }
+            | AggchainProofRequestError::InvalidRemovedGer { field_path, .. }
+            | AggchainProofRequestError::InvalidUnclaim { field_path, .. } => field_path,
         }
     }
 }

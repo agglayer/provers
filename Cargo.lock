@@ -224,6 +224,7 @@ dependencies = [
  "agglayer-interop",
  "alloy-primitives 1.2.1",
  "anyhow",
+ "base64 0.22.1",
  "pbjson",
  "prost",
  "prover-elf-utils",
