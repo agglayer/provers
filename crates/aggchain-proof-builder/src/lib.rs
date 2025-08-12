@@ -32,6 +32,7 @@ use agglayer_primitives::{Address, Digest};
 use alloy::eips::BlockNumberOrTag;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
+use itertools::Itertools;
 use prover_executor::{Executor, ProofType};
 use serde::{Deserialize, Serialize};
 use sp1_sdk::{HashableKey, SP1Stdin, SP1VerifyingKey};
@@ -279,6 +280,28 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             })
             .collect();
 
+        let removed_gers: Vec<Digest> = request
+            .aggchain_proof_inputs
+            .removed_gers
+            .into_iter()
+            .filter(|removed_ger| new_blocks_range.contains(&removed_ger.block_number))
+            .collect::<Vec<_>>()
+            .into_iter()
+            .sorted()
+            .map(|removed_ger| removed_ger.global_exit_root)
+            .collect();
+
+        let unset_claims: Vec<Digest> = request
+            .aggchain_proof_inputs
+            .unclaims
+            .into_iter()
+            .filter(|unclaim| new_blocks_range.contains(&unclaim.block_number))
+            .collect::<Vec<_>>()
+            .into_iter()
+            .sorted()
+            .map(|unclaim| unclaim.unclaim_hash)
+            .collect();
+
         let l1_info_tree_leaf = request.aggchain_proof_inputs.l1_info_tree_leaf;
         let mut fep_inputs = FepInputs {
             l1_head: l1_info_tree_leaf.inner.block_hash,
@@ -343,9 +366,9 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                 bridge_witness: BridgeWitness {
                     inserted_gers,
                     bridge_exits_claimed,
-                    global_indices_unset: vec![], // NOTE: no unset yet.
+                    unset_claims,
                     raw_inserted_gers: inserted_gers_hash_chain,
-                    removed_gers: vec![], // NOTE: no removed GERs yet.
+                    removed_gers,
                     prev_l2_block_sketch,
                     new_l2_block_sketch,
                     caller_address: static_call_caller_address,

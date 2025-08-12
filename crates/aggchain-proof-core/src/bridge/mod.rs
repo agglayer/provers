@@ -1,7 +1,7 @@
 //! A program that verifies the bridge integrity
 use std::{collections::HashMap, hash::Hash};
 
-use agglayer_primitives::{address, keccak::keccak256_combine, Address, Digest, U256};
+use agglayer_primitives::{address, keccak::keccak256_combine, Address, Digest};
 use alloy_sol_macro::sol;
 use alloy_sol_types::SolCall;
 use inserted_ger::InsertedGER;
@@ -125,8 +125,8 @@ pub struct BridgeWitness {
     /// List of the each imported bridge exit containing the global index and
     /// the leaf hash.
     pub bridge_exits_claimed: Vec<GlobalIndexWithLeafHash>,
-    /// List of the global index of each unset bridge exit.
-    pub global_indices_unset: Vec<U256>,
+    /// List of the hashes of each unclaimed bridge exit.
+    pub unset_claims: Vec<Digest>,
     /// State sketch for the prev L2 block.
     pub prev_l2_block_sketch: EvmSketchInput,
     /// State sketch for the new L2 block.
@@ -263,15 +263,8 @@ impl BridgeConstraintsInput {
                 )
                 .map(|(prev, new)| (prev.0.into(), new.0.into()))?;
 
-            let unset_claims: Vec<Digest> = self
-                .bridge_witness
-                .global_indices_unset
-                .iter()
-                .map(|idx| idx.to_be_bytes().into())
-                .collect();
-
             self.validate_hash_chain(
-                &unset_claims,
+                &self.bridge_witness.unset_claims,
                 prev_hash_chain,
                 new_hash_chain,
                 hash_chain_type,
@@ -335,9 +328,9 @@ impl BridgeConstraintsInput {
         // global indices.
         let constrained_claims = ImportedBridgeExitCommitmentValues {
             claims: filter_values(
-                &self.bridge_witness.global_indices_unset,
+                &self.bridge_witness.unset_claims,
                 &self.bridge_witness.bridge_exits_claimed,
-                |exit: &GlobalIndexWithLeafHash| -> U256 { exit.global_index },
+                |exit: &GlobalIndexWithLeafHash| -> Digest { exit.bridge_exit_hash },
             )?,
         };
 
@@ -477,6 +470,7 @@ fn filter_values<K: Eq + Hash + Copy, V: Copy>(
 mod tests {
     use std::{collections::HashMap, fs::File, io::BufReader, str::FromStr};
 
+    use agglayer_primitives::U256;
     use alloy::rpc::types::BlockNumberOrTag;
     use alloy_primitives::hex;
     use serde_json::Value;
@@ -557,14 +551,14 @@ mod tests {
             })
             .collect();
 
-        let unclaimed_global_indexes: Vec<U256> = json_data["unclaimedGlobalIndexes"]
+        let unclaimed_global_indexes: Vec<Digest> = json_data["unclaimedGlobalIndexes"]
             .as_array()
             .unwrap()
             .iter()
             .map(|s| {
                 let s_str = s.as_str().unwrap();
                 let padded = format!("{s_str:0>64}");
-                U256::from_be_slice(hex::decode(padded).unwrap().as_slice())
+                Digest::try_from(hex::decode(padded).unwrap().as_slice()).unwrap()
             })
             .collect();
 
@@ -830,7 +824,7 @@ mod tests {
             })
             .collect();
 
-        let mut removal_map: HashMap<U256, usize> = HashMap::new();
+        let mut removal_map: HashMap<Digest, usize> = HashMap::new();
         for idx in &unclaimed_global_indexes {
             *removal_map.entry(*idx).or_insert(0) += 1;
         }
@@ -838,7 +832,7 @@ mod tests {
             .clone()
             .into_iter()
             .filter(|v| {
-                if let Some(count) = removal_map.get_mut(&v.global_index) {
+                if let Some(count) = removal_map.get_mut(&v.bridge_exit_hash) {
                     if *count > 0 {
                         *count -= 1;
                         false
@@ -871,7 +865,7 @@ mod tests {
                 raw_inserted_gers,
                 removed_gers,
                 bridge_exits_claimed,
-                global_indices_unset: unclaimed_global_indexes,
+                unset_claims: unclaimed_global_indexes,
                 prev_l2_block_sketch,
                 new_l2_block_sketch,
                 caller_address: address!("0x39027D57969aD59161365e0bbd53D2F63eE5AAA6"),
