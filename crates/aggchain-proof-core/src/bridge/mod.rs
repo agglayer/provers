@@ -956,7 +956,7 @@ mod tests {
 
     #[test]
     fn test_verify_constrained_global_indices_filters_by_hash_success() {
-        // Load a valid base input from file to avoid constructing sketches.
+        // Load a valid base input from test file.
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("src/test_input/bridge_constraints_input.json");
         let file = File::open(path).unwrap();
@@ -987,6 +987,9 @@ mod tests {
             |exit: &GlobalIndexWithLeafHash| -> Digest { exit.bridge_exit_hash },
         )
         .unwrap();
+
+        assert_ne!(claims.len(), expected_filtered.len());
+
         let expected_commitment = ImportedBridgeExitCommitmentValues {
             claims: expected_filtered,
         }
@@ -1008,7 +1011,7 @@ mod tests {
 
     #[test]
     fn test_verify_constrained_global_indices_filters_by_hash_mismatch() {
-        // Load a valid base input from file to avoid constructing sketches.
+        // Load a valid base input from test file.
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("src/test_input/bridge_constraints_input.json");
         let file = File::open(path).unwrap();

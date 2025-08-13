@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct UnclaimWithBlockNumber {
-    /// Unclaim hash value.
+    /// Bridge exit claim that got unclaimed hash value.
     pub unclaim_hash: Digest,
     /// The block number of an unclaim.
     pub block_number: u64,

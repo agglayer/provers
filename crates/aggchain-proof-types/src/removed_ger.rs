@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
 pub struct RemovedGerWithBlockNumber {
-    /// Global exit root digest value.
+    /// Global exit root hash value.
     pub global_exit_root: Digest,
     /// The block number of the removed GER.
     pub block_number: u64,
