@@ -552,7 +552,7 @@ mod tests {
             })
             .collect();
 
-        let unclaimed_hashes: Vec<Digest> = json_data["unclaimedHashes"]
+        let unset_claims: Vec<Digest> = json_data["unsetClaims"]
             .as_array()
             .unwrap()
             .iter()
@@ -826,7 +826,7 @@ mod tests {
             .collect();
 
         let mut removal_map: HashMap<Digest, usize> = HashMap::new();
-        for idx in &unclaimed_hashes {
+        for idx in &unset_claims {
             *removal_map.entry(*idx).or_insert(0) += 1;
         }
         let bridge_exits_claimed_filtered: Vec<GlobalIndexWithLeafHash> = bridge_exits_claimed
@@ -866,7 +866,7 @@ mod tests {
                 raw_inserted_gers,
                 removed_gers,
                 bridge_exits_claimed,
-                unset_claims: unclaimed_hashes,
+                unset_claims,
                 prev_l2_block_sketch,
                 new_l2_block_sketch,
                 caller_address: address!("0x39027D57969aD59161365e0bbd53D2F63eE5AAA6"),
@@ -978,11 +978,11 @@ mod tests {
             })
             .collect();
         // Unset claims contain hashes (same type/content as bridge_exit_hash)
-        let unclaims: Vec<Digest> = vec![d(20), d(30)];
+        let unset_claims: Vec<Digest> = vec![d(20), d(30)];
 
         // Expected constrained claims after removing by hash once per occurrence.
         let expected_filtered: Vec<GlobalIndexWithLeafHash> = filter_values(
-            &unclaims,
+            &unset_claims,
             &claims,
             |exit: &GlobalIndexWithLeafHash| -> Digest { exit.bridge_exit_hash },
         )
@@ -996,7 +996,7 @@ mod tests {
             commit_imported_bridge_exits: expected_commitment,
             bridge_witness: BridgeWitness {
                 bridge_exits_claimed: claims,
-                unset_claims: unclaims,
+                unset_claims,
                 ..base_input.bridge_witness
             },
             ..base_input
@@ -1028,14 +1028,14 @@ mod tests {
                 bridge_exit_hash: hash_choices[i],
             })
             .collect();
-        let unclaims: Vec<Digest> = vec![d(20), d(30)];
+        let unset_claims: Vec<Digest> = vec![d(20), d(30)];
 
         let input = BridgeConstraintsInput {
             // Intentionally wrong commitment to trigger mismatch
             commit_imported_bridge_exits: d(0),
             bridge_witness: BridgeWitness {
                 bridge_exits_claimed: claims,
-                unset_claims: unclaims,
+                unset_claims,
                 ..base_input.bridge_witness
             },
             ..base_input
