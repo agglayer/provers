@@ -11,3 +11,31 @@ args = [
     "-vv",
     "-paggchain-proof-builder",
 ]
+
+[tasks.install-sindri-cli]
+description = "Install Sindri CLI"
+command = "cargo"
+args = [
+    "install",
+    "sindri-cli@0.3.1",
+    "--force",
+    "--locked",
+]
+
+[tasks.ap-elf-sindri-upload]
+description = "Upload ELF file to Sindri"
+dependencies = [
+    "ap-elf",
+    "install-sindri-cli"
+]
+cwd = "crates/aggchain-proof-builder"
+command = "cargo"
+args = [
+    "sindri",
+    "deploy",
+    ".",
+    "--api-key",
+    "${SINDRI_API_KEY}",
+    #"--tags",
+    #"${SINDRI_PROJECT_TAG}",
+]
