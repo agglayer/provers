@@ -8,6 +8,7 @@ use std::{
 pub use error::Error;
 use futures::{Future, TryFutureExt};
 use prover_config::{CpuProverConfig, ProverType};
+use sindri::{client::SindriClient, integrations::sp1_v5::SP1ProofInfo, JobStatus, ProofInput};
 use sp1_sdk::{
     network::{prover::NetworkProver, FulfillmentStrategy},
     CpuProver, Prover, ProverClient, SP1ProofWithPublicValues, SP1ProvingKey, SP1Stdin,
@@ -19,6 +20,8 @@ use tower::{
     ServiceBuilder, ServiceExt,
 };
 use tracing::{debug, error, info};
+
+use crate::error::ProofVerificationError;
 
 #[cfg(test)]
 mod tests;
@@ -149,6 +152,25 @@ impl Executor {
                             is_mock: true,
                             proving_key,
                             verification_key,
+                        },
+                    ),
+                )
+            }
+            ProverType::SindriProver(sindri_prover_config) => {
+                debug!("Creating Sindri prover executor...");
+                let mut sindri_client = SindriClient::default();
+                sindri_client.polling_options.timeout = Some(sindri_prover_config.proving_timeout);
+                let verification_key = Self::compute_program_vkey(program);
+                (
+                    verification_key.clone(),
+                    Self::build_network_service(
+                        sindri_prover_config.get_proving_request_timeout(),
+                        SindriExecutor {
+                            prover: Arc::new(sindri_client),
+                            verification_key,
+                            timeout: sindri_prover_config.proving_timeout,
+                            project_name: sindri_prover_config.project_name.clone(),
+                            project_tag: sindri_prover_config.project_tag.clone(),
                         },
                     ),
                 )
@@ -349,6 +371,85 @@ impl Service<Request> for NetworkExecutor {
             prover
                 .verify(&proof, &verification_key)
                 .map_err(|error| Error::ProofVerificationFailed(error.into()))?;
+
+            debug!("Proof verification completed successfully");
+            Ok(Response { proof })
+        };
+
+        Box::pin(fut)
+    }
+}
+
+#[derive(Clone)]
+struct SindriExecutor {
+    prover: Arc<SindriClient>,
+    verification_key: SP1VerifyingKey,
+    timeout: Duration,
+    project_name: String,
+    project_tag: String,
+}
+
+impl Service<Request> for SindriExecutor {
+    type Response = Response;
+
+    type Error = Error;
+
+    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
+
+    fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+
+    fn call(&mut self, req: Request) -> Self::Future {
+        let prover = self.prover.clone();
+        let stdin = req.stdin;
+        let verification_key = self.verification_key.clone();
+        let timeout = self.timeout;
+        let project_name = self.project_name.clone();
+        let project_tag = self.project_tag.clone();
+
+        debug!("Proving with Sindri prover with timeout: {:?}", timeout);
+        let fut = async move {
+            debug!("Starting the proving of the requested MultiBatchHeader");
+
+            // Convert Sp1Stdin type to the Sindri client's ProofInput type
+            let proof_input = ProofInput::try_from(stdin)
+                .map_err(|error| Error::ProverFailed(error.to_string()))?;
+
+            // Submit the proof request, and poll until the job is completed or a
+            // timeout occurs. The Sindri client was passed the timeout parameter
+            // upon creation
+            let proof_response = prover
+                .prove_circuit(
+                    &format!("{project_name}:{project_tag}"),
+                    proof_input,
+                    None,
+                    None,
+                    None,
+                )
+                .await
+                .map_err(|error| Error::ProverFailed(error.to_string()))?;
+
+            // If the Sindri job completed with an error, retrieve the error message
+            if proof_response.status == JobStatus::Failed {
+                return Err(Error::ProverFailed(
+                    proof_response.error.flatten().unwrap_or(
+                        "Sindri job was marked as failed. No error message was provided."
+                            .to_string(),
+                    ),
+                ));
+            }
+            // Convert the proof response to a SP1 proof with public values
+            let proof = proof_response
+                .to_sp1_proof_with_public()
+                .map_err(|error| Error::ProverFailed(error.to_string()))?;
+
+            debug!("Proving completed. Verifying the proof...");
+            proof_response
+                .verify_sp1_proof_locally(&verification_key)
+                .map_err(|error| {
+                    Error::ProofVerificationFailed(ProofVerificationError::Plonk(error.to_string()))
+                })?;
 
             debug!("Proof verification completed successfully");
             Ok(Response { proof })

@@ -25,6 +25,7 @@ prover-engine.workspace = true
 prover-logger.workspace = true
 prover-config.workspace = true
 
+sindri = { version = "0.3.1", features = ["sp1-v5"]}
 sp1-sdk = { workspace = true, features = ["native-gnark"] }
 sp1-prover = { workspace = true, features = ["native-gnark"] }
 
