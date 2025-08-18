@@ -43,7 +43,6 @@ dependencies = [
  "alloy-primitives 1.2.1",
  "anyhow",
  "futures",
- "itertools 0.14.0",
  "proposer-elfs",
  "prover-config",
  "prover-executor",

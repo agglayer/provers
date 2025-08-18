@@ -32,7 +32,6 @@ use agglayer_primitives::{Address, Digest};
 use alloy::eips::BlockNumberOrTag;
 pub use error::Error;
 use futures::{future::BoxFuture, FutureExt};
-use itertools::Itertools;
 use prover_executor::{Executor, ProofType};
 use serde::{Deserialize, Serialize};
 use sp1_sdk::{HashableKey, SP1Stdin, SP1VerifyingKey};
@@ -280,25 +279,34 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             })
             .collect();
 
-        let removed_gers: Vec<Digest> = request
+        // Filter removed GERS by the new blocks range of interest.
+        let mut removed_gers = request
             .aggchain_proof_inputs
             .removed_gers
             .into_iter()
             .filter(|removed_ger| new_blocks_range.contains(&removed_ger.block_number))
-            .collect::<Vec<_>>()
+            .collect::<Vec<_>>();
+        // Sort removed GERS by their block number and block index.
+        removed_gers.sort();
+
+        // Prepare removed GERS for the proof.
+        let removed_gers: Vec<Digest> = removed_gers
             .into_iter()
-            .sorted()
             .map(|removed_ger| removed_ger.global_exit_root)
             .collect();
 
-        let unset_claims: Vec<Digest> = request
+        // Filter inserted GERS by the new blocks range of interest.
+        let mut unset_claims = request
             .aggchain_proof_inputs
             .unclaims
             .into_iter()
             .filter(|unclaim| new_blocks_range.contains(&unclaim.block_number))
-            .collect::<Vec<_>>()
+            .collect::<Vec<_>>();
+        // Sort unclaims by their block number and block index.
+        unset_claims.sort();
+        // Prepare unset claims for the proof.
+        let unset_claims: Vec<Digest> = unset_claims
             .into_iter()
-            .sorted()
             .map(|unclaim| unclaim.unclaim_hash)
             .collect();
 
@@ -366,9 +374,9 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                 bridge_witness: BridgeWitness {
                     inserted_gers,
                     bridge_exits_claimed,
-                    unset_claims,
-                    raw_inserted_gers: inserted_gers_hash_chain,
                     removed_gers,
+                    raw_inserted_gers: inserted_gers_hash_chain,
+                    unset_claims,
                     prev_l2_block_sketch,
                     new_l2_block_sketch,
                     caller_address: static_call_caller_address,

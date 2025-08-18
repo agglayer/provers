@@ -127,7 +127,7 @@ pub struct Unclaim {
     /// Base64 encoded string of an unclaim hash.
     #[prost(string, tag="1")]
     pub unclaim_hash: ::prost::alloc::string::String,
-    /// The block number of an unclaim.
+    /// The block number of this unclaim.
     #[prost(uint64, tag="2")]
     pub block_number: u64,
     /// Index within that block in which a claim got unclaimed.

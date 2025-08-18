@@ -9,7 +9,6 @@ anyhow.workspace = true
 alloy.workspace = true
 alloy-primitives.workspace = true
 futures.workspace = true
-itertools.workspace = true
 thiserror.workspace = true
 tower = { workspace = true, features = ["timeout"] }
 serde = { workspace = true, features = ["derive"] }
