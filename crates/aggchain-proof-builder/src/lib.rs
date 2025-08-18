@@ -295,7 +295,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .map(|removed_ger| removed_ger.global_exit_root)
             .collect();
 
-        // Filter inserted GERS by the new blocks range of interest.
+        // Filter unclaims by the new blocks range of interest.
         let mut unset_claims = request
             .aggchain_proof_inputs
             .unclaims
