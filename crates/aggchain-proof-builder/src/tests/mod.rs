@@ -26,7 +26,7 @@ pub fn load_aggchain_prover_inputs_json(
 mod aggchain_proof_builder {
     use std::time::Duration;
 
-    use prover_config::{NetworkProverConfig, ProverType};
+    use prover_config::{NetworkProverConfig, ProverType, SindriProverConfig};
     use prover_executor::Executor;
     use tower::{buffer::Buffer, Service, ServiceExt};
 
@@ -40,6 +40,22 @@ mod aggchain_proof_builder {
                 proving_timeout: Duration::from_secs(3600),
                 proving_request_timeout: Some(Duration::from_secs(600)),
                 sp1_cluster_endpoint: "https://rpc.production.succinct.xyz/".parse()?,
+            }),
+            &None,
+            crate::AGGCHAIN_PROOF_ELF,
+        );
+        let executor = tower::ServiceBuilder::new().service(executor).boxed();
+        let prover = Buffer::new(executor, 10);
+        Ok(prover)
+    }
+
+    fn init_sindri_prover() -> Result<ProverService, anyhow::Error> {
+        let executor = Executor::new(
+            &ProverType::SindriProver(SindriProverConfig {
+                proving_timeout: Duration::from_secs(3600),
+                proving_request_timeout: Some(Duration::from_secs(600)),
+                project_name: "pessimistic-proof".to_string(),
+                project_tag: "latest".to_string(),
             }),
             &None,
             crate::AGGCHAIN_PROOF_ELF,
@@ -70,6 +86,31 @@ mod aggchain_proof_builder {
             .map_err(|error| Error::ProverFailedToExecute(anyhow::Error::from_boxed(error)))?;
 
         println!("Prover executor successfully returned response: {proof:?}");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    #[ignore = "requires Sindri API key, run manually"]
+    async fn execute_aggchain_program_sindri_test() -> Result<(), Box<dyn std::error::Error>> {
+        let mut prover = init_sindri_prover()?;
+
+        let aggchain_prover_inputs: AggchainProverInputs = load_aggchain_prover_inputs_json(
+            "src/tests/data/aggchain_prover_inputs_001_lpb_1_eb_4.json",
+        )?;
+
+        let prover_executor::Response { proof } = prover
+            .ready()
+            .await
+            .map_err(Error::ProverServiceReadyError)?
+            .call(prover_executor::Request {
+                stdin: aggchain_prover_inputs.stdin,
+                proof_type: prover_executor::ProofType::Plonk,
+            })
+            .await
+            .map_err(|error| Error::ProverFailedToExecute(anyhow::Error::from_boxed(error)))?;
+
+        println!("Sindri prover executor successfully returned response: {proof:?}");
 
         Ok(())
     }
