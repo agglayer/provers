@@ -1,5 +1,5 @@
 use std::{
-    panic::{AssertUnwindSafe, UnwindSafe},
+    panic::AssertUnwindSafe,
     pin::Pin,
     sync::Arc,
     task::{Context, Poll},
@@ -8,7 +8,7 @@ use std::{
 
 pub use error::Error;
 use eyre::Context as _;
-use futures::{Future, FutureExt, TryFutureExt};
+use futures::{Future, TryFutureExt};
 use prover_config::{CpuProverConfig, ProverType};
 use sp1_sdk::{
     network::{prover::NetworkProver, FulfillmentStrategy},
@@ -25,6 +25,9 @@ use tracing::{debug, error, info};
 mod tests;
 
 mod error;
+mod utils;
+
+pub use utils::*;
 
 #[derive(Clone)]
 pub struct Executor {
@@ -387,61 +390,4 @@ impl Service<Request> for NetworkExecutor {
 
         Box::pin(fut)
     }
-}
-
-#[derive(Debug, thiserror::Error)]
-#[error("Panic occurred during SP1 call: {message}")]
-pub struct Sp1PanicError {
-    message: String,
-}
-
-impl From<Box<dyn std::any::Any + Send>> for Sp1PanicError {
-    fn from(original_error: Box<dyn std::any::Any + Send>) -> Self {
-        let message = match original_error.downcast::<String>() {
-            Ok(message) => *message,
-            Err(error) => match error.downcast::<&str>() {
-                Ok(message) => message.to_string(),
-                Err(_) => "<unknown message type>".to_string(),
-            },
-        };
-        Sp1PanicError { message }
-    }
-}
-
-/// Run a fast sp1 function call, catching panics.
-///
-/// If `f` is slow, then it will block the async runtime.
-/// In that case, consider using `sp1_blocking` or `sp1_block_in_place` instead.
-pub fn sp1_fast<R>(f: impl UnwindSafe + FnOnce() -> R) -> eyre::Result<R> {
-    std::panic::catch_unwind(f).map_err(|error| {
-        let error = eyre::Report::from(Sp1PanicError::from(error));
-        tracing::error!(?error, "SP1 call panicked");
-        error
-    })
-}
-
-/// Run a slow sp1 function call, catching panics.
-///
-/// This will run `f` on the blocking thread pool, to avoid blocking the async
-/// runtime. If `f` is fast, consider using `sp1_fast` instead.
-pub async fn sp1_blocking<F, R>(f: F) -> eyre::Result<R>
-where
-    F: 'static + Send + UnwindSafe + FnOnce() -> R,
-    R: 'static + Send,
-{
-    tokio::task::spawn_blocking(|| sp1_fast(f))
-        .await
-        .context("Failed running blocking task for SP1 call")?
-}
-
-/// Run an async sp1 function call, catching panics.
-pub async fn sp1_async<F, R>(f: F) -> eyre::Result<R>
-where
-    F: UnwindSafe + Future<Output = R>,
-{
-    f.catch_unwind().await.map_err(|error| {
-        let error = eyre::Report::from(Sp1PanicError::from(error));
-        tracing::error!(?error, "SP1 call panicked");
-        error
-    })
 }
