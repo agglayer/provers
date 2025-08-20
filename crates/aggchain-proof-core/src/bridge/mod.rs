@@ -955,6 +955,15 @@ mod tests {
         assert_bridge_data(bridge_data_input);
     }
 
+    // Helper function to compute commitment: keccak(global_index #
+    // bridge_exit_hash)
+    fn compute_commitment(claim: &GlobalIndexWithLeafHash) -> Digest {
+        use agglayer_primitives::U256;
+        let global_index_u256: U256 = claim.global_index.into();
+        let global_index_bytes = global_index_u256.to_be_bytes::<32>();
+        keccak256_combine([Digest(global_index_bytes), claim.bridge_exit_hash])
+    }
+
     #[test]
     fn test_verify_constrained_global_indices_filters_by_hash_success() {
         // Load a valid base input from test file.
@@ -978,14 +987,21 @@ mod tests {
                 bridge_exit_hash: hash_choices[i],
             })
             .collect();
-        // Unset claims contain hashes (same type/content as bridge_exit_hash)
-        let unset_claims: Vec<Digest> = vec![d(20), d(30)];
 
-        // Expected constrained claims after removing by hash once per occurrence.
+        // Compute proper unset claims using commitment (keccak(global_index #
+        // bridge_exit_hash)). We want to unset the claims with bridge_exit_hash
+        // d(20) and d(30).
+        let unset_claims: Vec<Digest> = claims
+            .iter()
+            .filter(|claim| claim.bridge_exit_hash == d(20) || claim.bridge_exit_hash == d(30))
+            .map(|claim| compute_commitment(claim))
+            .collect();
+
+        // Expected constrained claims after removing by commitment once per occurrence.
         let expected_filtered: Vec<GlobalIndexWithLeafHash> = filter_values(
             &unset_claims,
             &claims,
-            |exit: &GlobalIndexWithLeafHash| -> Digest { exit.bridge_exit_hash },
+            |exit: &GlobalIndexWithLeafHash| -> Digest { compute_commitment(exit) },
         )
         .unwrap();
 
@@ -1006,7 +1022,7 @@ mod tests {
             ..base_input
         };
 
-        // Should pass when filtering by bridge_exit_hash matches unset_claims.
+        // Should pass when filtering by commitment matches unset_claims.
         input.verify_constrained_global_indices().unwrap();
     }
 
@@ -1032,7 +1048,15 @@ mod tests {
                 bridge_exit_hash: hash_choices[i],
             })
             .collect();
-        let unset_claims: Vec<Digest> = vec![d(20), d(30)];
+
+        // Compute proper unset claims using commitment (keccak(global_index #
+        // bridge_exit_hash)). We want to unset the claims with bridge_exit_hash
+        // d(20) and d(30).
+        let unset_claims: Vec<Digest> = claims
+            .iter()
+            .filter(|claim| claim.bridge_exit_hash == d(20) || claim.bridge_exit_hash == d(30))
+            .map(|claim| compute_commitment(claim))
+            .collect();
 
         let input = BridgeConstraintsInput {
             // Intentionally wrong commitment to trigger mismatch
