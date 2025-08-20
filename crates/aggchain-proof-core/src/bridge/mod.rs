@@ -958,9 +958,7 @@ mod tests {
     // Helper function to compute commitment: keccak(global_index #
     // bridge_exit_hash)
     fn compute_commitment(claim: &GlobalIndexWithLeafHash) -> Digest {
-        use agglayer_primitives::U256;
-        let global_index_u256: U256 = claim.global_index.into();
-        let global_index_bytes = global_index_u256.to_be_bytes::<32>();
+        let global_index_bytes = claim.global_index.to_be_bytes::<32>();
         keccak256_combine([Digest(global_index_bytes), claim.bridge_exit_hash])
     }
 
@@ -994,7 +992,7 @@ mod tests {
         let unset_claims: Vec<Digest> = claims
             .iter()
             .filter(|claim| claim.bridge_exit_hash == d(20) || claim.bridge_exit_hash == d(30))
-            .map(|claim| compute_commitment(claim))
+            .map(compute_commitment)
             .collect();
 
         // Expected constrained claims after removing by commitment once per occurrence.
@@ -1055,7 +1053,7 @@ mod tests {
         let unset_claims: Vec<Digest> = claims
             .iter()
             .filter(|claim| claim.bridge_exit_hash == d(20) || claim.bridge_exit_hash == d(30))
-            .map(|claim| compute_commitment(claim))
+            .map(compute_commitment)
             .collect();
 
         let input = BridgeConstraintsInput {
