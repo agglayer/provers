@@ -330,7 +330,8 @@ impl BridgeConstraintsInput {
                 &self.bridge_witness.unset_claims, // Vec<Digest> of unclaimed hashes
                 &self.bridge_witness.bridge_exits_claimed, // Vec<GlobalIndexWithLeafHash>
                 |exit: &GlobalIndexWithLeafHash| -> Digest {
-                    exit.bridge_exit_hash // compare by hash
+                    // compare by claim commitment (keccak(global_index # bridge_exit_hash))
+                    exit.commitment()
                 },
             )?,
         };
