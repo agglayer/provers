@@ -267,48 +267,55 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .map(|inserted_ger| inserted_ger.ger())
             .collect();
 
-        // NOTE: Corresponds to all of them because we do not have unset claims yet.
-        let bridge_exits_claimed: Vec<GlobalIndexWithLeafHash> = request
-            .aggchain_proof_inputs
-            .imported_bridge_exits
-            .iter()
-            .filter(|ib| new_blocks_range.contains(&ib.block_number))
-            .map(|ib| GlobalIndexWithLeafHash {
+        // Helper function to filter, sort, and convert a vector of items to the desired
+        // output type. It filters items based on a range of blocks, sorts them
+        // using type Ord implementation, and maps them to a new type using the
+        // provided mapping function.
+        fn filter_sort_map<T, F, U>(
+            items: Vec<T>,
+            range: &std::ops::RangeInclusive<u64>,
+            block_number_fn: fn(&T) -> u64,
+            map_fn: F,
+        ) -> Vec<U>
+        where
+            F: Fn(T) -> U,
+            T: Ord,
+        {
+            let mut filtered_items: Vec<_> = items
+                .into_iter()
+                .filter(|item| range.contains(&block_number_fn(item)))
+                .collect();
+            filtered_items.sort();
+            filtered_items.into_iter().map(map_fn).collect()
+        }
+
+        // NOTE: Corresponds to all the bridge exits claimed because we do not have
+        // unset claims yet.
+        let bridge_exits_claimed: Vec<GlobalIndexWithLeafHash> = filter_sort_map(
+            request.aggchain_proof_inputs.imported_bridge_exits,
+            &new_blocks_range,
+            |ib| ib.block_number,
+            |ib| GlobalIndexWithLeafHash {
                 global_index: ib.global_index.into(),
                 bridge_exit_hash: ib.bridge_exit_hash.0,
-            })
-            .collect();
-
-        // Filter removed GERS by the new blocks range of interest.
-        let mut removed_gers = request
-            .aggchain_proof_inputs
-            .removed_gers
-            .into_iter()
-            .filter(|removed_ger| new_blocks_range.contains(&removed_ger.block_number))
-            .collect::<Vec<_>>();
-        // Sort removed GERS by their block number and block index.
-        removed_gers.sort();
+            },
+        );
 
         // Prepare removed GERS for the proof.
-        let removed_gers: Vec<Digest> = removed_gers
-            .into_iter()
-            .map(|removed_ger| removed_ger.global_exit_root)
-            .collect();
+        let removed_gers: Vec<Digest> = filter_sort_map(
+            request.aggchain_proof_inputs.removed_gers,
+            &new_blocks_range,
+            |removed_ger| removed_ger.block_number,
+            |removed_ger| removed_ger.global_exit_root,
+        );
 
-        // Filter unclaims by the new blocks range of interest.
-        let mut unset_claims = request
-            .aggchain_proof_inputs
-            .unclaims
-            .into_iter()
-            .filter(|unclaim| new_blocks_range.contains(&unclaim.block_number))
-            .collect::<Vec<_>>();
-        // Sort unclaims by their block number and block index.
-        unset_claims.sort();
         // Prepare unset claims for the proof.
-        let unset_claims: Vec<Digest> = unset_claims
-            .into_iter()
-            .map(|unclaim| unclaim.unclaim_hash)
-            .collect();
+        let unset_claims: Vec<Digest> = filter_sort_map(
+            request.aggchain_proof_inputs.unclaims,
+            &new_blocks_range,
+            |unclaim| unclaim.block_number,
+            |unclaim| unclaim.unclaim_hash,
+        );
 
         let l1_info_tree_leaf = request.aggchain_proof_inputs.l1_info_tree_leaf;
         let mut fep_inputs = FepInputs {
