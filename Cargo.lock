@@ -102,6 +102,7 @@ dependencies = [
  "eyre",
  "hex",
  "k256 0.13.4",
+ "log",
  "mockall",
  "p3-baby-bear",
  "p3-bn254-fr",

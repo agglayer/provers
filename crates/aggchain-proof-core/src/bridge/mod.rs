@@ -324,7 +324,8 @@ impl BridgeConstraintsInput {
     /// Verify that the claims (defined by the global index and bridge exit
     /// hash) filtered with the leaf hashes of the claims that got unclaimed
     /// are equal to commited imported bridge exits.
-    fn verify_constrained_global_indices(&self) -> Result<(), BridgeConstraintsError> {
+    pub fn verify_constrained_global_indices(&self) -> Result<(), BridgeConstraintsError> {
+        println!(">>>>>>>>>>>>>> CHECKPOINT 21");
         let constrained_claims = ImportedBridgeExitCommitmentValues {
             claims: filter_values(
                 &self.bridge_witness.unset_claims, // Vec<Digest> of unclaimed hashes
@@ -336,8 +337,11 @@ impl BridgeConstraintsInput {
             )?,
         };
 
+        println!(">>>>>>>>>>>>>> CHECKPOINT 22");
         let computed_commitment =
             constrained_claims.commitment(IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION);
+
+        println!(">>>>>>>>>>>>>> CHECKPOINT 23");
 
         if computed_commitment != self.commit_imported_bridge_exits {
             return Err(BridgeConstraintsError::MismatchConstrainedBridgeExits {
@@ -350,7 +354,8 @@ impl BridgeConstraintsInput {
     }
 
     /// Verify the inclusion proofs of the inserted GERs up to the L1InfoRoot.
-    fn verify_inserted_gers(&self) -> Result<(), BridgeConstraintsError> {
+    pub fn verify_inserted_gers(&self) -> Result<(), BridgeConstraintsError> {
+        println!(">>>>>>>>>>>>>>>>>>>> CHECKPOINT 2");
         // Iterate over claimed indices and remove (skip) one occurrence for each value
         // in removal_map.
         let filtered_hash_chain_gers = filter_values(
@@ -359,6 +364,8 @@ impl BridgeConstraintsInput {
             |&x| x,
         )?;
 
+        println!(">>>>>>>>>>>>>>>>>>>> CHECKPOINT 3");
+
         // Check that the filtered_hash_chain_gers are equal to the inserted
         let inserted_gers_compare: Vec<Digest> = self
             .bridge_witness
@@ -366,13 +373,22 @@ impl BridgeConstraintsInput {
             .iter()
             .map(|inserted_ger| inserted_ger.ger())
             .collect();
+        println!(">>>>>>>>>>>>>>>>>>>> CHECKPOINT 4");
+
+        println!(
+            ">>>>>>>>>>>>>>>>>>>>>>>>>>> verify_inserted_gers - filtered_hash_chain_gers: {filtered_hash_chain_gers:?} \n \
+             inserted_gers_compare: {inserted_gers_compare:?}",
+        );
 
         if filtered_hash_chain_gers != inserted_gers_compare {
+            println!(">>>>>>>>>>>>>>>>>>>> CHECKPOINT 5");
             return Err(BridgeConstraintsError::MismatchConstrainedInsertedGers {
                 computed: filtered_hash_chain_gers,
                 input: inserted_gers_compare,
             });
         }
+
+        println!(">>>>>>>>>>>>>>>>>>>> CHECKPOINT 6");
 
         // Check that the inserted gers are correctly inserted in the L1InfoRoot.
         let maybe_wrong_inserted_ger = self

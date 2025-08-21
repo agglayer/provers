@@ -38,7 +38,7 @@ use sp1_sdk::{HashableKey, SP1Stdin, SP1VerifyingKey};
 use tower::{buffer::Buffer, util::BoxService, ServiceExt as _};
 use tracing::{debug, error, info};
 use unified_bridge::AggchainProofPublicValues;
-
+use aggchain_proof_core::bridge::BridgeConstraintsInput;
 use crate::config::AggchainProofBuilderConfig;
 
 const MAX_CONCURRENT_REQUESTS: usize = 100;
@@ -317,6 +317,12 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             |unclaim| unclaim.unclaim_hash,
         );
 
+        info!(
+            ">>>>>>>>>>>>>>>>>>>>>>>>>>> Preparing aggchain proof inputs - inserted_gers: {inserted_gers:?} \n \
+             removed_gers: {removed_gers:?} \n unset_claims: {unset_claims:?} \
+             inserted_gers_hash_chain: {inserted_gers_hash_chain:?}\n"
+        );
+
         let l1_info_tree_leaf = request.aggchain_proof_inputs.l1_info_tree_leaf;
         let mut fep_inputs = FepInputs {
             l1_head: l1_info_tree_leaf.inner.block_hash,
@@ -390,6 +396,8 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                 },
             };
 
+            let test_aggchain_proof_witness = prover_witness.clone();
+
             let output_root = prover_witness.fep.compute_claim_root();
 
             let sp1_stdin = {
@@ -409,6 +417,20 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                 end_block=%request.end_block,
                 "Chain data for aggchain proof generation successfully retrieved");
 
+            let input = BridgeConstraintsInput {
+                commit_imported_bridge_exits: test_aggchain_proof_witness.commit_imported_bridge_exits,
+                bridge_witness: test_aggchain_proof_witness.bridge_witness,
+                l1_info_root: test_aggchain_proof_witness.l1_info_root,
+                ger_addr: prover_witness.bridge_witness.caller_address,
+                prev_l2_block_hash: test_aggchain_proof_witness.fep.prev_block_hash,
+                new_l2_block_hash: test_aggchain_proof_witness.fep.new_block_hash,
+                new_local_exit_root: test_aggchain_proof_witness.new_local_exit_root
+            };
+            // Should pass when filtering by commitment matches unset_claims.
+            info!(">>>>>>>>>>>>>> CHECKPOINT 1 bridge_witness: {:?}", input.bridge_witness);
+            input.verify_inserted_gers().unwrap_or_default();
+            info!(">>>>>>>>>>>>>> CHECKPOINT 10");
+
             Ok(AggchainProverInputs {
                 output_root,
                 stdin: sp1_stdin,
@@ -416,6 +438,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         }
     }
 }
+
 
 impl<ContractsClient> tower::Service<AggchainProofBuilderRequest>
     for AggchainProofBuilder<ContractsClient>
@@ -460,6 +483,8 @@ where
                 static_call_caller_address,
             )
             .await?;
+
+
 
             let output_root = aggchain_prover_inputs.output_root;
             let prover_executor::Response { proof } = prover

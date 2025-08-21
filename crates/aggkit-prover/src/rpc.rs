@@ -98,6 +98,10 @@ impl AggchainProofGrpcService for GrpcService {
                     )
                 })?;
 
+        info!(
+            ">>>>>>>>>>>>>>>>>>>>>>>>>>> Received aggchain_proof_inputs: {aggchain_proof_inputs:?}"
+        );
+
         let mut context = aggchain_proof_inputs.context();
 
         let proof_request = AggchainProofServiceRequest::Normal(aggchain_proof_inputs);
