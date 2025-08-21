@@ -18,6 +18,7 @@ axum = { version = "0.8", features = [
     "ws",
 ] }
 anyhow.workspace = true
+eyre.workspace = true
 http = "1.2.0"
 tonic.workspace = true
 tonic-health = "0.12.3"

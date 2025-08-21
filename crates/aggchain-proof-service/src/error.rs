@@ -13,7 +13,10 @@ pub enum Error {
     ProposerServiceRequestFailed(#[source] proposer_service::Error),
 
     #[error("Unable to setup aggchain proof builder")]
-    AggchainProofBuilderInitFailed(#[source] aggchain_proof_builder::Error),
+    AggchainProofBuilderInitFailed(#[source] eyre::Error),
+
+    #[error("Unable to poll for aggchain proof builder readiness")]
+    AggchainProofBuilderPollReadyFailed(#[source] aggchain_proof_builder::Error),
 
     #[error("Aggchain proof builder service request failed")]
     AggchainProofBuilderRequestFailed(#[source] aggchain_proof_builder::Error),

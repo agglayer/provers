@@ -5,6 +5,7 @@ mod error;
 mod tests;
 
 use std::{
+    panic::AssertUnwindSafe,
     sync::Arc,
     task::{Context, Poll},
 };
@@ -31,8 +32,9 @@ use agglayer_interop::types::{
 use agglayer_primitives::{Address, Digest};
 use alloy::eips::BlockNumberOrTag;
 pub use error::Error;
-use futures::{future::BoxFuture, FutureExt};
-use prover_executor::{Executor, ProofType};
+use eyre::Context as _;
+use futures::{future::BoxFuture, FutureExt, TryFutureExt as _};
+use prover_executor::{sp1_async, sp1_fast, Executor, ProofType};
 use serde::{Deserialize, Serialize};
 use sp1_sdk::{HashableKey, SP1Stdin, SP1VerifyingKey};
 use tower::{buffer::Buffer, util::BoxService, ServiceExt as _};
@@ -153,12 +155,14 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     pub async fn new(
         config: &AggchainProofBuilderConfig,
         contracts_client: Arc<ContractsClient>,
-    ) -> Result<Self, Error> {
+    ) -> eyre::Result<Self> {
         let executor = Executor::new(
-            &config.primary_prover,
-            &config.fallback_prover,
+            config.primary_prover.clone(),
+            config.fallback_prover.clone(),
             AGGCHAIN_PROOF_ELF,
-        );
+        )
+        .await
+        .context("Failed creating executor for AggchainProofBuilder")?;
 
         let aggchain_vkey = executor.get_vkey().clone();
         let executor = tower::ServiceBuilder::new().service(executor).boxed();
@@ -170,14 +174,15 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
 
         // Check mismatch on aggregation vkey
         {
-            let retrieved = VKeyHash::from_vkey(&aggregation_vkey);
+            let retrieved = sp1_fast(|| VKeyHash::from_vkey(&aggregation_vkey))
+                .context("Computing VKey hash")?;
             let expected = AGGREGATION_VKEY_HASH;
 
             if retrieved != expected {
-                return Err(Error::MismatchAggregationVkeyHash {
+                return Err(eyre::Report::from(Error::MismatchAggregationVkeyHash {
                     got: retrieved,
                     expected,
-                });
+                }));
             }
         }
 
@@ -354,7 +359,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
 
             let output_root = prover_witness.fep.compute_claim_root();
 
-            let sp1_stdin = {
+            let sp1_stdin = sp1_fast(|| {
                 let mut stdin = SP1Stdin::new();
                 stdin.write(&prover_witness);
 
@@ -365,7 +370,9 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                     stdin.write_proof(*aggregation_proof, aggregation_vkey.vk.clone());
                 }
                 stdin
-            };
+            })
+            .context("Failed to build SP1 stdin")
+            .map_err(Error::Other)?;
 
             info!(last_proven_block=%request.aggchain_proof_inputs.last_proven_block,
                 end_block=%request.end_block,
@@ -408,7 +415,10 @@ where
         let aggchain_vkey = self.aggchain_vkey.clone();
         let static_call_caller_address = self.static_call_caller_address;
 
-        async move {
+        // TODO: figure out a way to stop only this service upon an sp1 panic, and not
+        // the entire system. For now, just ignore the panic, even though some
+        // internal mutability inside sp1 might end up unhappy.
+        sp1_async(AssertUnwindSafe(async move {
             let last_proven_block = req.aggchain_proof_inputs.last_proven_block;
             let end_block = req.end_block;
             info!(%last_proven_block, %end_block, "Starting generation of the aggchain proof");
@@ -472,7 +482,9 @@ where
                 new_local_exit_root: public_input.new_local_exit_root,
                 public_values: public_input,
             })
-        }
+        }))
+        .map_err(Error::Other)
+        .and_then(|res| async { res })
         .boxed()
     }
 }
