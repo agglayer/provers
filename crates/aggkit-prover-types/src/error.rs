@@ -92,6 +92,12 @@ pub enum AggchainProofRequestError {
         field_path: String,
         source: anyhow::Error,
     },
+
+    #[error("Missing removed global exit root")]
+    MissingRemovedGer { field_path: String },
+
+    #[error("Missing unclaim hash")]
+    MissingUnclaimHash { field_path: String },
 }
 
 impl AggchainProofRequestError {
@@ -121,7 +127,9 @@ impl AggchainProofRequestError {
             | AggchainProofRequestError::MissingOptimisticModeSignature { field_path }
             | AggchainProofRequestError::InvalidOptimisticModeSignature { field_path, .. }
             | AggchainProofRequestError::InvalidRemovedGer { field_path, .. }
-            | AggchainProofRequestError::InvalidUnclaim { field_path, .. } => field_path,
+            | AggchainProofRequestError::InvalidUnclaim { field_path, .. }
+            | AggchainProofRequestError::MissingRemovedGer { field_path, .. }
+            | AggchainProofRequestError::MissingUnclaimHash { field_path, .. } => field_path,
         }
     }
 }

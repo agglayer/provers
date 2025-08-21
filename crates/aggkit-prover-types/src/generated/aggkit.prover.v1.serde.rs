@@ -1048,7 +1048,7 @@ impl serde::Serialize for RemovedGer {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.global_exit_root.is_empty() {
+        if self.global_exit_root.is_some() {
             len += 1;
         }
         if self.block_number != 0 {
@@ -1058,8 +1058,8 @@ impl serde::Serialize for RemovedGer {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("aggkit.prover.v1.RemovedGER", len)?;
-        if !self.global_exit_root.is_empty() {
-            struct_ser.serialize_field("globalExitRoot", &self.global_exit_root)?;
+        if let Some(v) = self.global_exit_root.as_ref() {
+            struct_ser.serialize_field("globalExitRoot", v)?;
         }
         if self.block_number != 0 {
             #[allow(clippy::needless_borrow)]
@@ -1146,7 +1146,7 @@ impl<'de> serde::Deserialize<'de> for RemovedGer {
                             if global_exit_root__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("globalExitRoot"));
                             }
-                            global_exit_root__ = Some(map_.next_value()?);
+                            global_exit_root__ = map_.next_value()?;
                         }
                         GeneratedField::BlockNumber => {
                             if block_number__.is_some() {
@@ -1167,7 +1167,7 @@ impl<'de> serde::Deserialize<'de> for RemovedGer {
                     }
                 }
                 Ok(RemovedGer {
-                    global_exit_root: global_exit_root__.unwrap_or_default(),
+                    global_exit_root: global_exit_root__,
                     block_number: block_number__.unwrap_or_default(),
                     block_index: block_index__.unwrap_or_default(),
                 })
@@ -1184,7 +1184,7 @@ impl serde::Serialize for Unclaim {
     {
         use serde::ser::SerializeStruct;
         let mut len = 0;
-        if !self.unclaim_hash.is_empty() {
+        if self.unclaim_hash.is_some() {
             len += 1;
         }
         if self.block_number != 0 {
@@ -1194,8 +1194,8 @@ impl serde::Serialize for Unclaim {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("aggkit.prover.v1.Unclaim", len)?;
-        if !self.unclaim_hash.is_empty() {
-            struct_ser.serialize_field("unclaimHash", &self.unclaim_hash)?;
+        if let Some(v) = self.unclaim_hash.as_ref() {
+            struct_ser.serialize_field("unclaimHash", v)?;
         }
         if self.block_number != 0 {
             #[allow(clippy::needless_borrow)]
@@ -1282,7 +1282,7 @@ impl<'de> serde::Deserialize<'de> for Unclaim {
                             if unclaim_hash__.is_some() {
                                 return Err(serde::de::Error::duplicate_field("unclaimHash"));
                             }
-                            unclaim_hash__ = Some(map_.next_value()?);
+                            unclaim_hash__ = map_.next_value()?;
                         }
                         GeneratedField::BlockNumber => {
                             if block_number__.is_some() {
@@ -1303,7 +1303,7 @@ impl<'de> serde::Deserialize<'de> for Unclaim {
                     }
                 }
                 Ok(Unclaim {
-                    unclaim_hash: unclaim_hash__.unwrap_or_default(),
+                    unclaim_hash: unclaim_hash__,
                     block_number: block_number__.unwrap_or_default(),
                     block_index: block_index__.unwrap_or_default(),
                 })

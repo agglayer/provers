@@ -118,8 +118,8 @@ message ProvenInsertedGER {
 
 // Represents one removed Global Exit Root (GER).
 message RemovedGER {
-    // Base64 encoded string of the GER digest.
-    string global_exit_root = 1;
+    // The global exit root.
+    agglayer.interop.types.v1.FixedBytes32 global_exit_root = 1;
     // The block number of the removed GER.
     uint64 block_number = 2;
     // Index within the block where the GER got removed.
@@ -128,8 +128,9 @@ message RemovedGER {
 
 // Represents one claim that got unclaimed.
 message Unclaim {
-    // Base64 encoded string of an unclaim hash.
-    string unclaim_hash = 1;
+    // Unclaim hash represents the hash of the claim that got unclaimed.
+    // Calculated with keccak(global_index # bridge_exit_hash).
+    agglayer.interop.types.v1.FixedBytes32 unclaim_hash = 1;
     // The block number of an unclaim.
     uint64 block_number = 2;
     // Index within that block in which a claim got unclaimed.
