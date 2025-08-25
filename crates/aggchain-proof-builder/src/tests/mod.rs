@@ -15,9 +15,7 @@ pub fn dump_aggchain_prover_inputs_json(
     Ok(())
 }
 
-pub fn load_aggchain_prover_inputs_json(
-    file_name: &str,
-) -> Result<AggchainProverInputs, anyhow::Error> {
+pub fn load_aggchain_prover_inputs_json(file_name: &str) -> eyre::Result<AggchainProverInputs> {
     let data: String = std::fs::read_to_string(file_name)?;
     let aggchain_prover_inputs: AggchainProverInputs = serde_json::from_str(&data)?;
     Ok(aggchain_prover_inputs)
@@ -26,6 +24,7 @@ pub fn load_aggchain_prover_inputs_json(
 mod aggchain_proof_builder {
     use std::time::Duration;
 
+    use eyre::Context as _;
     use prover_config::{NetworkProverConfig, ProverType};
     use prover_executor::Executor;
     use tower::{buffer::Buffer, Service, ServiceExt};
@@ -34,16 +33,18 @@ mod aggchain_proof_builder {
         tests::load_aggchain_prover_inputs_json, AggchainProverInputs, Error, ProverService,
     };
 
-    fn init_network_prover() -> Result<ProverService, anyhow::Error> {
+    async fn init_network_prover() -> eyre::Result<ProverService> {
         let executor = Executor::new(
-            &ProverType::NetworkProver(NetworkProverConfig {
+            ProverType::NetworkProver(NetworkProverConfig {
                 proving_timeout: Duration::from_secs(3600),
                 proving_request_timeout: Some(Duration::from_secs(600)),
                 sp1_cluster_endpoint: "https://rpc.production.succinct.xyz/".parse()?,
             }),
-            &None,
+            None,
             crate::AGGCHAIN_PROOF_ELF,
-        );
+        )
+        .await
+        .context("Failed initializing network prover for AggchainProofBuilder")?;
         let executor = tower::ServiceBuilder::new().service(executor).boxed();
         let prover = Buffer::new(executor, 10);
         Ok(prover)
@@ -51,8 +52,8 @@ mod aggchain_proof_builder {
 
     #[tokio::test]
     #[ignore = "requires network key, run manually"]
-    async fn execute_aggchain_program_test() -> Result<(), Box<dyn std::error::Error>> {
-        let mut prover = init_network_prover()?;
+    async fn execute_aggchain_program_test() -> eyre::Result<()> {
+        let mut prover = init_network_prover().await?;
 
         let aggchain_prover_inputs: AggchainProverInputs = load_aggchain_prover_inputs_json(
             "src/tests/data/aggchain_prover_inputs_001_lpb_1_eb_4.json",

@@ -13,6 +13,7 @@ aggchain-proof-builder.workspace = true
 aggchain-proof-contracts.workspace = true
 aggchain-proof-core.workspace = true
 aggchain-proof-types.workspace = true
+eyre.workspace = true
 proposer-client.workspace = true
 proposer-service.workspace = true
 prover-alloy.workspace = true
