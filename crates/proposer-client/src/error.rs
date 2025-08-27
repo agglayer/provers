@@ -34,5 +34,5 @@ pub enum ProofRequestError {
 #[error("Conversion of `{field}` failed")]
 pub struct GrpcConversionError {
     pub field: &'static str,
-    pub source: anyhow::Error,
+    pub source: eyre::Error,
 }

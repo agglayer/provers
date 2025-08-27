@@ -6,7 +6,6 @@ license.workspace = true
 
 [dependencies]
 alloy = { workspace = true, features = ["genesis"] }
-anyhow.workspace = true
 async-trait.workspace = true
 eyre.workspace = true
 jsonrpsee.workspace = true

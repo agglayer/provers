@@ -4,7 +4,7 @@ use super::{
     MockProofProposerRequest, MockProofProposerResponse,
 };
 
-fn convert_field<T, U: TryFrom<T, Error = E>, E: Into<anyhow::Error>>(
+fn convert_field<T, U: TryFrom<T, Error = E>, E: Into<eyre::Error>>(
     field: &'static str,
     value: T,
 ) -> Result<U, GrpcConversionError> {

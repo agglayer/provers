@@ -1,4 +1,5 @@
 fn main() {
+    color_eyre::install().unwrap();
     prover_elf_utils::ElfInfo::writing_to("vkeys_raw.rs")
         // Verification keys for aggregation proof
         .module("aggregation", op_succinct_elfs::AGGREGATION_ELF)

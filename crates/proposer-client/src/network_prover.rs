@@ -1,8 +1,7 @@
 use std::{panic::AssertUnwindSafe, time::Duration};
 
 use alloy_primitives::B256;
-use anyhow::Context;
-use eyre::eyre;
+use eyre::{eyre, Context};
 use prover_executor::{sp1_async, sp1_block_in_place, sp1_fast};
 use sp1_sdk::{NetworkProver, Prover, SP1ProofWithPublicValues, SP1ProvingKey, SP1VerifyingKey};
 
@@ -28,7 +27,8 @@ impl AggregationProver for NetworkProver {
         // again with a fresh Prover
         sp1_async(AssertUnwindSafe(self.wait_proof(request_id, timeout)))
             .await?
-            .map_err(|e| eyre!(e.into_boxed_dyn_error()))
+            .map_err(|e| eyre!(e))
+            .context("Failed waiting for proof")
     }
 
     fn verify_aggregated_proof(
@@ -48,14 +48,10 @@ pub fn new_network_prover<T: AsRef<str>>(endpoint: T) -> eyre::Result<NetworkPro
         Ok(sp1_sdk::ProverClient::builder()
             .network()
             .rpc_url(endpoint)
-            .private_key(
-                &std::env::var("NETWORK_PRIVATE_KEY")
-                    .context(
-                        "Failed to get NETWORK_PRIVATE_KEY, when building NetworkProver for \
-                         proposer-client",
-                    )
-                    .map_err(|e| eyre!(e.into_boxed_dyn_error()))?,
-            )
+            .private_key(&std::env::var("NETWORK_PRIVATE_KEY").context(
+                "Failed to get NETWORK_PRIVATE_KEY, when building NetworkProver for \
+                 proposer-client",
+            )?)
             .build())
     })?
 }

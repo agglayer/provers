@@ -108,7 +108,7 @@ async fn unable_to_fetch_block_hash() {
     l1_rpc
         .expect_get_block_number()
         .once()
-        .returning(|_| anyhow::bail!("Failed to fetch block number"));
+        .returning(|_| eyre::bail!("Failed to fetch block number"));
 
     let client = MockProposerClient::new();
 

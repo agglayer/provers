@@ -443,7 +443,7 @@ where
                     proof_type: ProofType::Stark,
                 })
                 .await
-                .map_err(|error| Error::ProverFailedToExecute(anyhow::Error::from_boxed(error)))?;
+                .map_err(Error::ProverFailedToExecute)?;
 
             let public_input: AggchainProofPublicValues = bincode::sp1v4()
                 .deserialize(proof.public_values.as_slice())
