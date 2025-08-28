@@ -4,7 +4,7 @@ use sp1_cc_host_executor::HostError;
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("Unable to create alloy node provider")]
-    ProviderInitializationError(#[source] anyhow::Error),
+    ProviderInitializationError(#[source] eyre::Error),
 
     #[error("Error processing contract ABI file")]
     ContractAbiFileError(#[source] std::io::Error),

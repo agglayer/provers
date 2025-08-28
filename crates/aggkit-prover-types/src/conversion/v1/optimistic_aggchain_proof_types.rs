@@ -17,7 +17,7 @@ impl TryFrom<v1::GenerateOptimisticAggchainProofRequest> for OptimisticAggchainP
                 .try_into()
                 .map_err(|error| Error::InvalidOptimisticModeSignature {
                     field_path: "optimistic_mode_signature".to_string(),
-                    source: anyhow::Error::from(error),
+                    source: eyre::Error::from(error),
                 })?,
             aggchain_proof_inputs: value
                 .aggchain_proof_request
@@ -27,7 +27,7 @@ impl TryFrom<v1::GenerateOptimisticAggchainProofRequest> for OptimisticAggchainP
                 .try_into()
                 .map_err(|error| Error::InvalidAggchainProofRequest {
                     field_path: "aggchain_proof_request".to_string(),
-                    source: anyhow::Error::from(error),
+                    source: eyre::Error::from(error),
                 })?,
         })
     }

@@ -1,7 +1,7 @@
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("Unable to create alloy provider")]
-    AlloyProviderInitializationFailed(#[source] anyhow::Error),
+    AlloyProviderInitializationFailed(#[source] eyre::Error),
 
     #[error("Unable to setup proposer service")]
     ProposerServiceInitFailed(#[source] proposer_service::Error),

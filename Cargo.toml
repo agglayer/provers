@@ -43,13 +43,13 @@ prover-utils = { path = "crates/prover-utils" }
 agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
 
 # Interop dependencies
-agglayer-elf-build = "0.9.0"
-agglayer-evm-client = "0.9.0"
-agglayer-interop = "0.9.0"
-agglayer-interop-types = "0.9.0"
-agglayer-primitives = "0.9.0"
-agglayer-tries = "0.9.0"
-unified-bridge = "0.9.0"
+agglayer-elf-build = "0.10.0"
+agglayer-evm-client = "0.10.0"
+agglayer-interop = "0.10.0"
+agglayer-interop-types = "0.10.0"
+agglayer-primitives = "0.10.0"
+agglayer-tries = "0.10.0"
+unified-bridge = "0.10.0"
 
 # Ecosystem dependencies
 op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v2.3.1-agglayer" }
@@ -87,6 +87,7 @@ async-trait = "0.1.82"
 base64 = "0.22.0"
 buildstructor = "0.5.4"
 clap = { version = "4.5", features = ["derive", "env"] }
+color-eyre = "0.6.5"
 derive_more = "2.0"
 dirs = "5.0"
 dotenvy = "0.15.7"

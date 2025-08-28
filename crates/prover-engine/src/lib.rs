@@ -12,8 +12,6 @@ use tonic::{
 use tower::{Service, ServiceExt};
 use tracing::{debug, info};
 
-pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
-
 pub struct ProverEngine {
     rpc_server: axum::Router,
     rpc_runtime: Option<Runtime>,
@@ -77,7 +75,7 @@ impl ProverEngine {
             + Send
             + 'static,
         S::Future: Send + 'static,
-        S::Error: Into<BoxError> + Send,
+        S::Error: Into<eyre::Report> + Send,
     {
         self.rpc_server = add_rpc_service(self.rpc_server, rpc_service);
         self.healthy_service.push(S::NAME);
@@ -231,7 +229,7 @@ where
         + Send
         + 'static,
     S::Future: Send + 'static,
-    S::Error: Into<BoxError> + Send,
+    S::Error: Into<eyre::Report> + Send,
 {
     rpc_server.route_service(
         &format!("/{}/{{*rest}}", S::NAME),

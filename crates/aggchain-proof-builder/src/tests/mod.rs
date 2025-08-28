@@ -5,7 +5,7 @@ pub fn dump_aggchain_prover_inputs_json(
     aggchain_prover_inputs: &AggchainProverInputs,
     last_proven_block: u64,
     end_block: u64,
-) -> Result<(), anyhow::Error> {
+) -> eyre::Result<()> {
     use std::io::Write;
     let file_name =
         format!("aggchain_prover_inputs_001_lpb_{last_proven_block}_eb_{end_block}.json",);
@@ -68,7 +68,7 @@ mod aggchain_proof_builder {
                 proof_type: prover_executor::ProofType::Stark,
             })
             .await
-            .map_err(|error| Error::ProverFailedToExecute(anyhow::Error::from_boxed(error)))?;
+            .map_err(Error::ProverFailedToExecute)?;
 
         println!("Prover executor successfully returned response: {proof:?}");
 

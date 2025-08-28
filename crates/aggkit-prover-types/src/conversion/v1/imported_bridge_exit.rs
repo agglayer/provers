@@ -18,7 +18,7 @@ impl TryFrom<v1::ImportedBridgeExitWithBlockNumber> for ImportedBridgeExitWithBl
                 .try_into()
                 .map_err(|error| Error::InvalidDigest {
                     field_path: "global_index".to_string(),
-                    source: anyhow::Error::from(error),
+                    source: eyre::Error::from(error),
                 })?,
             bridge_exit_hash: BridgeExitHash(
                 value
@@ -29,7 +29,7 @@ impl TryFrom<v1::ImportedBridgeExitWithBlockNumber> for ImportedBridgeExitWithBl
                     .try_into()
                     .map_err(|error| Error::InvalidDigest {
                         field_path: "global_index".to_string(),
-                        source: anyhow::Error::from(error),
+                        source: eyre::Error::from(error),
                     })?,
             ),
         })
