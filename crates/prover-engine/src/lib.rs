@@ -96,14 +96,15 @@ impl ProverEngine {
     ///
     /// Starts the prover engine and blocks until shutdown.
     ///
-    /// This function initializes and runs the prover engine's servers (metrics and RPC),
-    /// then blocks the calling thread indefinitely until a shutdown signal is received or the
-    /// prover shutdown gracefully.
+    /// This function initializes and runs the prover engine's servers (metrics
+    /// and RPC), then blocks the calling thread indefinitely until a
+    /// shutdown signal is received or the prover shutdown gracefully.
     ///
     /// # Blocking Behavior
     ///
-    /// **This function blocks the current thread and will not return under normal operation.**
-    /// It only returns when one of the following shutdown conditions occurrs:
+    /// **This function blocks the current thread and will not return under
+    /// normal operation.** It only returns when one of the following
+    /// shutdown conditions occurrs:
     ///
     /// - `SIGTERM` signal is received.
     /// - `SIGINT` signal is received (e.g., Ctrl-C).
