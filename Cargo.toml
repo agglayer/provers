@@ -43,13 +43,13 @@ prover-utils = { path = "crates/prover-utils" }
 agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
 
 # Interop dependencies
-agglayer-elf-build = { git = "https://github.com/agglayer/interop.git", rev = "99f2f2d12f839c77e67b3b3a3c4f94bd8ab82249" }
-agglayer-evm-client = { git = "https://github.com/agglayer/interop.git", rev = "99f2f2d12f839c77e67b3b3a3c4f94bd8ab82249" }
-agglayer-interop = { git = "https://github.com/agglayer/interop.git", rev = "99f2f2d12f839c77e67b3b3a3c4f94bd8ab82249" }
-agglayer-interop-types = { git = "https://github.com/agglayer/interop.git", rev = "99f2f2d12f839c77e67b3b3a3c4f94bd8ab82249" }
-agglayer-primitives = { git = "https://github.com/agglayer/interop.git", rev = "99f2f2d12f839c77e67b3b3a3c4f94bd8ab82249" }
-agglayer-tries = { git = "https://github.com/agglayer/interop.git", rev = "99f2f2d12f839c77e67b3b3a3c4f94bd8ab82249" }
-unified-bridge = { git = "https://github.com/agglayer/interop.git", rev = "99f2f2d12f839c77e67b3b3a3c4f94bd8ab82249" }
+agglayer-elf-build = "0.10.0"
+agglayer-evm-client = "0.10.0"
+agglayer-interop = "0.10.0"
+agglayer-interop-types = "0.10.0"
+agglayer-primitives = "0.10.0"
+agglayer-tries = "0.10.0"
+unified-bridge = "0.10.0"
 
 # Ecosystem dependencies
 op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v2.3.1-agglayer" }
