@@ -19,7 +19,7 @@ pub enum Error {
     ProverServiceError(String),
 
     #[error("Prover failed to prove the transaction")]
-    ProverFailedToExecute(#[source] anyhow::Error),
+    ProverFailedToExecute(#[source] tower::BoxError),
 
     #[error("Generated proof is not Compressed one (STARK)")]
     GeneratedProofIsNotCompressed,

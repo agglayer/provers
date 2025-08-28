@@ -20,7 +20,7 @@ pub enum AggchainProofRequestError {
     #[error("Invalid l1 info tree leaf")]
     InvalidL1InfoTreeLeaf {
         field_path: String,
-        source: anyhow::Error,
+        source: eyre::Error,
     },
 
     #[error("Missing l1 info tree root hash")]
@@ -31,14 +31,14 @@ pub enum AggchainProofRequestError {
 
     #[error("Invalid l1 info tree merkle proof")]
     InvalidL1InfoTreeMerkleProof {
-        source: anyhow::Error,
+        source: eyre::Error,
         field_path: String,
     },
 
     #[error("Invalid inserted GER with block number conversion")]
     InvalidInsertedGerWithBlockNumberConversion {
         field_path: String,
-        source: anyhow::Error,
+        source: eyre::Error,
     },
 
     #[error("Missing inclusion proof")]
@@ -47,13 +47,13 @@ pub enum AggchainProofRequestError {
     #[error("Invalid digest")]
     InvalidDigest {
         field_path: String,
-        source: anyhow::Error,
+        source: eyre::Error,
     },
 
     #[error("Invalid imported bridge exit")]
     InvalidImportedBridgeExit {
         field_path: String,
-        source: anyhow::Error,
+        source: eyre::Error,
     },
 
     #[error("Missing imported bridge exit")]
@@ -63,12 +63,12 @@ pub enum AggchainProofRequestError {
     #[error("Invalid inserted ger")]
     InvalidInsertedGer {
         field_path: String,
-        source: anyhow::Error,
+        source: eyre::Error,
     },
     #[error("Invalid optimistic mode signature")]
     InvalidOptimisticModeSignature {
         field_path: String,
-        source: anyhow::Error,
+        source: eyre::Error,
     },
     #[error("Missing optimistic mode signature")]
     MissingOptimisticModeSignature { field_path: String },
@@ -76,7 +76,7 @@ pub enum AggchainProofRequestError {
     #[error("Invalid aggchain-proof request")]
     InvalidAggchainProofRequest {
         field_path: String,
-        source: anyhow::Error,
+        source: eyre::Error,
     },
     #[error("Missing aggchain-proof request")]
     MissingAggchainProofRequest { field_path: String },

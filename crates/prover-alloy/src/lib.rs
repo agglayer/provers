@@ -34,7 +34,7 @@ pub fn build_alloy_fill_provider(
     rpc_url: &url::Url,
     backoff: u64,
     max_retries: u32,
-) -> Result<AlloyFillProvider, anyhow::Error> {
+) -> eyre::Result<AlloyFillProvider> {
     let retry_policy = RetryBackoffLayer::new(max_retries, backoff, 5);
     let reqwest_client = reqwest::ClientBuilder::new()
         .pool_max_idle_per_host(HTTP_CLIENT_MAX_IDLE_CONNECTIONS_PER_HOST)
@@ -60,11 +60,7 @@ pub struct AlloyProvider {
 }
 
 impl AlloyProvider {
-    pub fn new(
-        rpc_url: &url::Url,
-        backoff: u64,
-        max_retries: u32,
-    ) -> Result<AlloyProvider, anyhow::Error> {
+    pub fn new(rpc_url: &url::Url, backoff: u64, max_retries: u32) -> eyre::Result<AlloyProvider> {
         let retry_policy = RetryBackoffLayer::new(max_retries, backoff, 5);
         let reqwest_client = reqwest::ClientBuilder::new()
             .pool_max_idle_per_host(HTTP_CLIENT_MAX_IDLE_CONNECTIONS_PER_HOST)

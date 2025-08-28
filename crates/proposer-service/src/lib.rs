@@ -145,7 +145,7 @@ impl<L1Rpc>
 impl<L1Rpc, ProposerClient> tower::Service<FepProposerRequest>
     for ProposerService<L1Rpc, ProposerClient>
 where
-    L1Rpc: GetBlockNumber<Error: Into<anyhow::Error>> + Send + Sync + 'static,
+    L1Rpc: GetBlockNumber<Error: Into<eyre::Error>> + Send + Sync + 'static,
     ProposerClient: proposer_client::ProposerClient + Send + Sync + 'static,
 {
     type Response = ProposerResponse;
@@ -178,7 +178,7 @@ where
                 .map_err(|e| {
                     Error::AlloyProviderError(
                         e.into()
-                            .context(format!("Getting the block number for hash {l1_block_hash}")),
+                            .wrap_err(format!("Getting the block number for hash {l1_block_hash}")),
                     )
                 })?;
 
