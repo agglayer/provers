@@ -97,8 +97,20 @@ impl ProverEngine {
 
     /// Starts the prover engine.
     ///
-    /// NOTE: This function can only be called synchronously and will block the
-    /// calling thread.
+    /// Starts the prover engine and blocks until shutdown.
+    ///
+    /// This function initializes and runs the prover engine's servers (metrics and RPC),
+    /// then blocks the calling thread indefinitely until a shutdown signal is received or the
+    /// prover shutdown gracefully.
+    ///
+    /// # Blocking Behavior
+    ///
+    /// **This function blocks the current thread and will not return under normal operation.**
+    /// It only returns when one of the following shutdown conditions occurrs:
+    ///
+    /// - `SIGTERM` signal is received.
+    /// - `SIGINT` signal is received (e.g., Ctrl-C).
+    /// - The cancellation token is triggered externally
     pub fn start(mut self) -> eyre::Result<()> {
         info!("Starting the prover engine");
         let cancellation_token = self.cancellation_token.take().unwrap_or_default();

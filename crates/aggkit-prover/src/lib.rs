@@ -40,7 +40,6 @@ pub fn runtime(cfg: PathBuf, version: &str) -> eyre::Result<()> {
         )
     })?;
 
-    // NOTE: ProverEngine::start() is synchronous only and blocks the calling thread
     ProverEngine::new(
         config.grpc_endpoint,
         config.telemetry.addr,

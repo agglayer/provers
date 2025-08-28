@@ -41,7 +41,6 @@ pub fn main(cfg: PathBuf, version: &str, program: &'static [u8]) -> eyre::Result
         .block_on(crate::prover::Prover::create_service(&config, program))
         .context("Failed to create PP service")?;
 
-    // NOTE: ProverEngine::start() is synchronous only and blocks the calling thread
     ProverEngine::new(
         config.grpc_endpoint,
         config.telemetry.addr,
