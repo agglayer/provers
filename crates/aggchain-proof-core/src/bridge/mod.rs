@@ -1,8 +1,7 @@
 //! A program that verifies the bridge integrity
 use std::{collections::HashMap, hash::Hash};
 
-use agglayer_primitives::{keccak::keccak256_combine, Digest};
-use alloy_primitives::{address, Address, U256};
+use agglayer_primitives::{address, keccak::keccak256_combine, Address, Digest, U256};
 use alloy_sol_macro::sol;
 use alloy_sol_types::SolCall;
 use inserted_ger::InsertedGER;
@@ -132,6 +131,8 @@ pub struct BridgeWitness {
     pub prev_l2_block_sketch: EvmSketchInput,
     /// State sketch for the new L2 block.
     pub new_l2_block_sketch: EvmSketchInput,
+    /// Caller address for the static call.
+    pub caller_address: Address,
 }
 
 /// Bridge data required to verify the bridge smart contract integrity.
@@ -153,13 +154,19 @@ impl BridgeConstraintsInput {
         address: Address,
         calldata: C,
     ) -> Result<(C::Return, C::Return), BridgeConstraintsError> {
+        let address = alloy_primitives::Address::from(address);
+
         // Get the state of the hash chain of the previous block on L2
         let prev_hash_chain = StaticCallWithContext {
             address,
             stage: StaticCallStage::PrevHashChain(hash_chain),
             block_hash: self.prev_l2_block_hash,
         }
-        .execute(&self.bridge_witness.prev_l2_block_sketch, calldata.clone())?;
+        .execute(
+            self.bridge_witness.caller_address.into(),
+            &self.bridge_witness.prev_l2_block_sketch,
+            calldata.clone(),
+        )?;
 
         // Get the state of the hash chain of the new block on L2
         let new_hash_chain = StaticCallWithContext {
@@ -167,7 +174,11 @@ impl BridgeConstraintsInput {
             stage: StaticCallStage::NewHashChain(hash_chain),
             block_hash: self.new_l2_block_hash,
         }
-        .execute(&self.bridge_witness.new_l2_block_sketch, calldata)?;
+        .execute(
+            self.bridge_witness.caller_address.into(),
+            &self.bridge_witness.new_l2_block_sketch,
+            calldata,
+        )?;
 
         Ok((prev_hash_chain, new_hash_chain))
     }
@@ -274,11 +285,12 @@ impl BridgeConstraintsInput {
     fn verify_new_ler(&self, bridge_address: Address) -> Result<(), BridgeConstraintsError> {
         // Get the new local exit root
         let new_ler: Digest = StaticCallWithContext {
-            address: bridge_address,
+            address: bridge_address.into(),
             stage: StaticCallStage::NewLer,
             block_hash: self.new_l2_block_hash,
         }
         .execute(
+            self.bridge_witness.caller_address.into(),
             &self.bridge_witness.new_l2_block_sketch,
             BridgeL2SovereignChain::getRootCall {},
         )?
@@ -302,17 +314,18 @@ impl BridgeConstraintsInput {
         // Since the bridge address is not constant but the l2 ger address is
         // We can retrieve the bridge address saving some public inputs and possible
         // errors
-        let bridge_address: Address = StaticCallWithContext {
-            address: self.ger_addr,
+        let bridge_address = StaticCallWithContext {
+            address: self.ger_addr.into(),
             stage: StaticCallStage::BridgeAddress,
             block_hash: self.new_l2_block_hash,
         }
         .execute(
+            self.bridge_witness.caller_address.into(),
             &self.bridge_witness.new_l2_block_sketch,
             GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
         )?;
 
-        Ok(bridge_address)
+        Ok(bridge_address.into())
     }
 
     /// Verify that the claimed global indexes minus the unset global indexes
@@ -476,11 +489,16 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     #[ignore = "e2e test, sepolia provider needed"]
-    async fn test_bridge_contraints() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_bridge_constraints() -> Result<(), Box<dyn std::error::Error>> {
         // Initialize the environment variables.
         dotenvy::dotenv().ok();
+        tracing_subscriber::fmt().with_test_writer().init();
 
         println!("Starting bridge constraints test...");
+
+        // Load the custom genesis JSON
+        pub const CUSTOM_JSON: &str = include_str!("../test_input/genesis.json");
+
         // Read and parse the JSON file
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("src/test_input/bridge_input_e2e_sepolia.json");
@@ -492,7 +510,8 @@ mod tests {
         let initial_block_number = json_data["initialBlockNumber"].as_u64().unwrap();
         let final_block_number = json_data["finalBlockNumber"].as_u64().unwrap();
         let ger_address =
-            Address::from_str(json_data["gerSovereignAddress"].as_str().unwrap()).unwrap();
+            alloy_primitives::Address::from_str(json_data["gerSovereignAddress"].as_str().unwrap())
+                .unwrap();
         let global_exit_roots = &json_data["globalExitRoots"];
         let local_exit_root = json_data["localExitRoot"].as_str().unwrap();
         let l1_info_root = json_data["l1InfoRoot"].as_str().unwrap();
@@ -533,7 +552,7 @@ mod tests {
             .map(|s| {
                 let s_str = s.as_str().unwrap();
                 // Pad left with zeros to 64 hex characters if needed
-                let padded = format!("{:0>64}", s_str);
+                let padded = format!("{s_str:0>64}");
                 U256::from_be_slice(hex::decode(padded).unwrap().as_slice())
             })
             .collect();
@@ -544,7 +563,7 @@ mod tests {
             .iter()
             .map(|s| {
                 let s_str = s.as_str().unwrap();
-                let padded = format!("{:0>64}", s_str);
+                let padded = format!("{s_str:0>64}");
                 U256::from_be_slice(hex::decode(padded).unwrap().as_slice())
             })
             .collect();
@@ -658,9 +677,21 @@ mod tests {
                 .expect("Invalid URL format");
 
             let evm_sketch = |block_number: u64| {
+                // Remove comment lines from the JSON string before parsing
+                let json_clean: String = CUSTOM_JSON
+                    .lines()
+                    .filter(|line| !line.trim_start().starts_with("//"))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+
+                // Parse the JSON into alloy_genesis::Genesis first, then extract the config
+                let genesis_parsed: alloy::genesis::Genesis =
+                    serde_json::from_str(&json_clean).expect("Failed to parse genesis JSON");
+
                 EvmSketch::builder()
+                    .optimism()
                     .at_block(BlockNumberOrTag::Number(block_number))
-                    .with_genesis(Genesis::Sepolia)
+                    .with_genesis(Genesis::Custom(genesis_parsed.config))
                     .el_rpc_url(rpc_url_l2.clone())
             };
 
@@ -670,40 +701,36 @@ mod tests {
             (prev, new)
         };
 
+        let caller_address =
+            alloy_primitives::address!("0x39027D57969aD59161365e0bbd53D2F63eE5AAA6");
         // 1. Get the prev inserted GER hash chain (previous block on L2)
         println!("Step 1: Fetching previous inserted GER hash chain...");
         let hash_chain = prev_l2_block_executor
             .call(
                 ger_address,
-                Address::default(),
+                caller_address,
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
             )
             .await?;
-        println!(
-            "Step 1: Received prev inserted GER hash chain: {:?}",
-            hash_chain
-        );
+        println!("Step 1: Received prev inserted GER hash chain: {hash_chain:?}");
 
         // 2. Get the new inserted GER hash chain (new block on L2)
         println!("Step 2: Fetching new inserted GER hash chain...");
         let new_hash_chain = new_l2_block_executor
             .call(
                 ger_address,
-                Address::default(),
+                caller_address,
                 GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
             )
             .await?;
-        println!(
-            "Step 2: Received new inserted GER hash chain: {:?}",
-            new_hash_chain
-        );
+        println!("Step 2: Received new inserted GER hash chain: {new_hash_chain:?}");
 
         // 3. Get the bridge address.
         println!("Step 3: Fetching bridge address...");
         let bridge_address = new_l2_block_executor
             .call(
                 ger_address,
-                Address::default(),
+                caller_address,
                 GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
             )
             .await?;
@@ -715,14 +742,11 @@ mod tests {
         let new_ler_bytes = new_l2_block_executor
             .call(
                 bridge_address,
-                Address::default(),
+                caller_address,
                 BridgeL2SovereignChain::getRootCall {},
             )
             .await?;
-        println!(
-            "Step 4: Received new local exit root result: {:?}",
-            new_ler_bytes
-        );
+        println!("Step 4: Received new local exit root result: {new_ler_bytes:?}");
         let new_ler: Digest = new_ler_bytes.0.into();
         let expected_new_ler: Digest = {
             let bytes = hex::decode(local_exit_root.trim_start_matches("0x")).unwrap();
@@ -736,84 +760,66 @@ mod tests {
         let prev_removed = prev_l2_block_executor
             .call(
                 ger_address,
-                Address::default(),
+                caller_address,
                 GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
             )
             .await?;
-        println!(
-            "Step 5: Received previous removed GER hash chain: {:?}",
-            prev_removed
-        );
+        println!("Step 5: Received previous removed GER hash chain: {prev_removed:?}");
 
         // 6. Get the removed GER hash chain for the new block.
         println!("Step 6: Fetching new removed GER hash chain...");
         let new_removed = new_l2_block_executor
             .call(
                 ger_address,
-                Address::default(),
+                caller_address,
                 GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
             )
             .await?;
-        println!(
-            "Step 6: Received new removed GER hash chain: {:?}",
-            new_removed
-        );
+        println!("Step 6: Received new removed GER hash chain: {new_removed:?}");
 
         // 7. Get the claimed global index hash chain for the previous block.
         println!("Step 7: Fetching previous claimed global index hash chain...");
         let prev_claimed = prev_l2_block_executor
             .call(
                 bridge_address,
-                Address::default(),
+                caller_address,
                 BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
             )
             .await?;
-        println!(
-            "Step 7: Received previous claimed global index hash chain: {:?}",
-            prev_claimed
-        );
+        println!("Step 7: Received previous claimed global index hash chain: {prev_claimed:?}");
 
         // 8. Get the claimed global index hash chain for the new block.
         println!("Step 8: Fetching new claimed global index hash chain...");
         let new_claimed = new_l2_block_executor
             .call(
                 bridge_address,
-                Address::default(),
+                caller_address,
                 BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
             )
             .await?;
-        println!(
-            "Step 8: Received new claimed global index hash chain: {:?}",
-            new_claimed
-        );
+        println!("Step 8: Received new claimed global index hash chain: {new_claimed:?}");
 
         // 9. Get the unset global index hash chain for the previous block.
         println!("Step 9: Fetching previous unset global index hash chain...");
         let prev_unset = prev_l2_block_executor
             .call(
                 bridge_address,
-                Address::default(),
+                caller_address,
                 BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
             )
             .await?;
-        println!(
-            "Step 9: Received previous unset global index hash chain: {:?}",
-            prev_unset
-        );
+        println!("Step 9: Received previous unset global index hash chain: {prev_unset:?}");
 
         // 10. Get the unset global index hash chain for the new block.
         println!("Step 10: Fetching new unset global index hash chain...");
         let new_unset = new_l2_block_executor
             .call(
                 bridge_address,
-                Address::default(),
+                caller_address,
                 BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
             )
             .await?;
-        println!(
-            "Step 10: Received new unset global index hash chain: {:?}",
-            new_unset
-        );
+        println!("Step 10: Received new unset global index hash chain: {new_unset:?}");
 
         let bridge_exits_claimed: Vec<GlobalIndexWithLeafHash> = claimed_global_indexes
             .iter()
@@ -851,7 +857,7 @@ mod tests {
 
         // Commit the bridge proof.
         let bridge_data_input = BridgeConstraintsInput {
-            ger_addr: ger_address,
+            ger_addr: ger_address.into(),
             prev_l2_block_hash: prev_l2_block_sketch.anchor.header().hash_slow().0.into(),
             new_l2_block_hash: new_l2_block_sketch.anchor.header().hash_slow().0.into(),
             new_local_exit_root: expected_new_ler,
@@ -868,6 +874,7 @@ mod tests {
                 global_indices_unset: unclaimed_global_indexes,
                 prev_l2_block_sketch,
                 new_l2_block_sketch,
+                caller_address: address!("0x39027D57969aD59161365e0bbd53D2F63eE5AAA6"),
             },
         };
 
@@ -938,11 +945,16 @@ mod tests {
         // correctly, and thus this test failing.
         // In that case, you should update the file.
         // The process is to:
-        // 1. Obtain a Sepolia RPC key, and run `export RPC_11155111=https://eth-sepolia.g.alchemy.com/v2/[censored]`
-        // 2. Run `cargo test --workspace -- bridge::tests::test_bridge_contraints
+        // 1. Ask someone from Agglayer team to give you the required Quiknode RPC URL
+        // 2. Put it into an environment variable: `export RPC_11155420=https://dawn-maximum-dream.optimism-sepolia.quiknode.pro/[censored]`
+        // 3. Run `cargo test --workspace -- bridge::tests::test_bridge_constraints
         //    --exact --show-output --include-ignored` (Or you can limit to `--package
         //    aggchain-proof-core --lib` if your cargo folder is not filled yet)
-        // 3. The file should then be ready for committing
+        // 4. The file should then be ready for committing
+        // Note that it is possible the RPC no longer has the required blocks available
+        // for proof getting.
+        // In this case, you can use the script here to regenerate the tests:
+        // https://github.com/agglayer/agglayer-contracts/blob/4e1e07dd83f822b9a05d1cf45bc15d0341e3a2b3/tools/deploySovereignTest/deploySovereign.ts
 
         assert_bridge_data(bridge_data_input);
     }

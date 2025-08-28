@@ -5,6 +5,7 @@ mod error;
 mod tests;
 
 use std::{
+    panic::AssertUnwindSafe,
     sync::Arc,
     task::{Context, Poll},
 };
@@ -28,11 +29,12 @@ use aggkit_prover_types::vkey_hash::VKeyHash;
 use agglayer_interop::types::{
     bincode, GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues,
 };
-use agglayer_primitives::Digest;
+use agglayer_primitives::{Address, Digest};
 use alloy::eips::BlockNumberOrTag;
 pub use error::Error;
-use futures::{future::BoxFuture, FutureExt};
-use prover_executor::{Executor, ProofType};
+use eyre::Context as _;
+use futures::{future::BoxFuture, FutureExt, TryFutureExt as _};
+use prover_executor::{sp1_async, sp1_fast, Executor, ProofType};
 use serde::{Deserialize, Serialize};
 use sp1_sdk::{HashableKey, SP1Stdin, SP1VerifyingKey};
 use tower::{buffer::Buffer, util::BoxService, ServiceExt as _};
@@ -43,8 +45,7 @@ use crate::config::AggchainProofBuilderConfig;
 
 const MAX_CONCURRENT_REQUESTS: usize = 100;
 
-pub const AGGCHAIN_PROOF_ELF: &[u8] =
-    include_bytes!("../../../crates/aggchain-proof-program/elf/riscv32im-succinct-zkvm-elf");
+pub const AGGCHAIN_PROOF_ELF: &[u8] = agglayer_elf_build::elf_bytes!();
 
 /// Hardcoded hash of the "aggregation vkey".
 /// NOTE: Format being `hash_u32()` of the `SP1StarkVerifyingKey`.
@@ -139,6 +140,9 @@ pub struct AggchainProofBuilder<ContractsClient> {
 
     /// Verification key for the aggchain proof.
     aggchain_vkey: Arc<SP1VerifyingKey>,
+
+    /// Static call caller address.
+    static_call_caller_address: Address,
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
@@ -151,12 +155,14 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     pub async fn new(
         config: &AggchainProofBuilderConfig,
         contracts_client: Arc<ContractsClient>,
-    ) -> Result<Self, Error> {
+    ) -> eyre::Result<Self> {
         let executor = Executor::new(
-            &config.primary_prover,
-            &config.fallback_prover,
+            config.primary_prover.clone(),
+            config.fallback_prover.clone(),
             AGGCHAIN_PROOF_ELF,
-        );
+        )
+        .await
+        .context("Failed creating executor for AggchainProofBuilder")?;
 
         let aggchain_vkey = executor.get_vkey().clone();
         let executor = tower::ServiceBuilder::new().service(executor).boxed();
@@ -168,14 +174,15 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
 
         // Check mismatch on aggregation vkey
         {
-            let retrieved = VKeyHash::from_vkey(&aggregation_vkey);
+            let retrieved = sp1_fast(|| VKeyHash::from_vkey(&aggregation_vkey))
+                .context("Computing VKey hash")?;
             let expected = AGGREGATION_VKEY_HASH;
 
             if retrieved != expected {
-                return Err(Error::MismatchAggregationVkeyHash {
+                return Err(eyre::Report::from(Error::MismatchAggregationVkeyHash {
                     got: retrieved,
                     expected,
-                });
+                }));
             }
         }
 
@@ -185,6 +192,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             prover,
             network_id: config.network_id,
             aggregation_vkey: Arc::new(aggregation_vkey),
+            static_call_caller_address: config.contracts.static_call_caller_address,
         })
     }
 
@@ -195,6 +203,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         request: AggchainProofBuilderRequest,
         network_id: u32,
         aggregation_vkey: Arc<SP1VerifyingKey>,
+        static_call_caller_address: Address,
     ) -> Result<AggchainProverInputs, Error>
     where
         ContractsClient: L2LocalExitRootFetcher
@@ -344,12 +353,13 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                     removed_gers: vec![], // NOTE: no removed GERs yet.
                     prev_l2_block_sketch,
                     new_l2_block_sketch,
+                    caller_address: static_call_caller_address,
                 },
             };
 
             let output_root = prover_witness.fep.compute_claim_root();
 
-            let sp1_stdin = {
+            let sp1_stdin = sp1_fast(|| {
                 let mut stdin = SP1Stdin::new();
                 stdin.write(&prover_witness);
 
@@ -360,7 +370,9 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                     stdin.write_proof(*aggregation_proof, aggregation_vkey.vk.clone());
                 }
                 stdin
-            };
+            })
+            .context("Failed to build SP1 stdin")
+            .map_err(Error::Other)?;
 
             info!(last_proven_block=%request.aggchain_proof_inputs.last_proven_block,
                 end_block=%request.end_block,
@@ -401,16 +413,25 @@ where
         let network_id = self.network_id;
         let aggregation_vkey = self.aggregation_vkey.clone();
         let aggchain_vkey = self.aggchain_vkey.clone();
+        let static_call_caller_address = self.static_call_caller_address;
 
-        async move {
+        // TODO: figure out a way to stop only this service upon an sp1 panic, and not
+        // the entire system. For now, just ignore the panic, even though some
+        // internal mutability inside sp1 might end up unhappy.
+        sp1_async(AssertUnwindSafe(async move {
             let last_proven_block = req.aggchain_proof_inputs.last_proven_block;
             let end_block = req.end_block;
             info!(%last_proven_block, %end_block, "Starting generation of the aggchain proof");
             // Retrieve all the necessary public inputs. Combine with
             // the data provided by the agg-sender in the request.
-            let aggchain_prover_inputs =
-                Self::retrieve_chain_data(contracts_client, req, network_id, aggregation_vkey)
-                    .await?;
+            let aggchain_prover_inputs = Self::retrieve_chain_data(
+                contracts_client,
+                req,
+                network_id,
+                aggregation_vkey,
+                static_call_caller_address,
+            )
+            .await?;
 
             let output_root = aggchain_prover_inputs.output_root;
             let prover_executor::Response { proof } = prover
@@ -461,7 +482,9 @@ where
                 new_local_exit_root: public_input.new_local_exit_root,
                 public_values: public_input,
             })
-        }
+        }))
+        .map_err(Error::Other)
+        .and_then(|res| async { res })
         .boxed()
     }
 }

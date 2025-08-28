@@ -43,15 +43,16 @@ prover-utils = { path = "crates/prover-utils" }
 agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
 
 # Interop dependencies
-agglayer-evm-client = { git = "https://github.com/agglayer/interop.git", tag = "v0.7.1" }
-agglayer-interop = { git = "https://github.com/agglayer/interop.git", tag = "v0.7.1" }
-agglayer-interop-types = { git = "https://github.com/agglayer/interop.git", tag = "v0.7.1" }
-agglayer-primitives = { git = "https://github.com/agglayer/interop.git", tag = "v0.7.1" }
-agglayer-tries = { git = "https://github.com/agglayer/interop.git", tag = "v0.7.1" }
-unified-bridge = { git = "https://github.com/agglayer/interop.git", tag = "v0.7.1" }
+agglayer-elf-build = "0.9.0"
+agglayer-evm-client = "0.9.0"
+agglayer-interop = "0.9.0"
+agglayer-interop-types = "0.9.0"
+agglayer-primitives = "0.9.0"
+agglayer-tries = "0.9.0"
+unified-bridge = "0.9.0"
 
 # Ecosystem dependencies
-op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v2.3.0-agglayer" }
+op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v2.3.1-agglayer" }
 op-succinct-grpc = { git = "https://github.com/agglayer/op-succinct-grpc.git", tag = "v0.1.0" }
 
 # SP1 dependencies
@@ -67,15 +68,19 @@ sp1-sdk = "=5.0.3"
 sp1-prover = "=5.0.1"
 sp1-zkvm = "=5.0.0"
 
-sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "8e1c03f360d791fb2a5b9b9a836a33cc3cfba9b7" }
-sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "8e1c03f360d791fb2a5b9b9a836a33cc3cfba9b7" }
+sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "9173159e6671c602610fe5df44c695de906e4ee3", features = [
+    "optimism",
+] }
+sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "9173159e6671c602610fe5df44c695de906e4ee3", features = [
+    "optimism",
+] }
 
 # Core dependencies
 alloy = { version = '0.14.0', features = ["full"] }
 alloy-rlp = "0.3.10"
 alloy-sol-macro = "1.1"
 alloy-sol-types = "1.1"
-alloy-primitives = { version = "1.1", features = ["serde", "k256"] }
+alloy-primitives = { version = "1.2", features = ["serde", "k256"] }
 anyhow = "1.0"
 arc-swap = "1.7"
 async-trait = "0.1.82"
@@ -114,7 +119,7 @@ reqwest = "0.12"
 semver = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-serde_with = "3.11"
+serde_with = "3.14"
 sha2 = "0.10.8"
 test-log = "0.2.16"
 thiserror = "2.0"

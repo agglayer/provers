@@ -51,4 +51,7 @@ pub enum Error {
     },
     #[error("Unable to fetch trusted sequencer address")]
     UnableToFetchTrustedSequencerAddress(#[source] aggchain_proof_contracts::Error),
+
+    #[error(transparent)]
+    Other(eyre::Report),
 }

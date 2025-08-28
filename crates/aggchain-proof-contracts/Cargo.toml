@@ -5,7 +5,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-alloy.workspace = true
+alloy = { workspace = true, features = ["genesis"] }
 anyhow.workspace = true
 async-trait.workspace = true
 eyre.workspace = true
@@ -22,6 +22,7 @@ agglayer-interop.workspace = true
 aggchain-proof-types.workspace = true
 aggchain-proof-core.workspace = true
 prover-alloy.workspace = true
+prover-executor.workspace = true
 prover-utils.workspace = true
 mockall = { workspace = true, optional = true }
 
@@ -30,7 +31,7 @@ sp1-cc-client-executor.workspace = true
 sp1-cc-host-executor.workspace = true
 
 [dev-dependencies]
-alloy = { workspace = true, features = ["sol-types"] }
+alloy = { workspace = true, features = ["sol-types", "genesis"] }
 mockito.workspace = true
 test-log.workspace = true
 

@@ -31,11 +31,12 @@ thiserror.workspace = true
 tiny-keccak.workspace = true
 
 [dev-dependencies]
-alloy.workspace = true
+alloy = { workspace = true, features = ["sol-types", "genesis"] }
 dotenvy.workspace = true
 mockall.workspace = true
 serde_json.workspace = true
 sp1-cc-host-executor.workspace = true
 sp1-sdk.workspace = true
 tokio.workspace = true
+tracing-subscriber.workspace = true
 url.workspace = true

@@ -68,4 +68,10 @@ pub enum Error {
 
     #[error("Unable to retrieve trusted sequencer address")]
     UnableToRetrieveTrustedSequencerAddress(#[source] alloy::contract::Error),
+
+    #[error("Invalid evm sketch genesis input: {0}")]
+    InvalidEvmSketchGenesisInput(String),
+
+    #[error(transparent)]
+    Other(eyre::Report),
 }
