@@ -51,7 +51,7 @@ agglayer-tries = { git = "https://github.com/agglayer/interop.git", tag = "v0.7.
 unified-bridge = { git = "https://github.com/agglayer/interop.git", tag = "v0.7.1" }
 
 # Ecosystem dependencies
-op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v2.3.1-agglayer" }
+op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v2.3.4-agglayer" }
 op-succinct-grpc = { git = "https://github.com/agglayer/op-succinct-grpc.git", tag = "v0.1.0" }
 
 # SP1 dependencies
