@@ -9,7 +9,7 @@ sp1 = ["dep:sp1-sdk", "dep:prover-elf-utils"]
 
 [dependencies]
 alloy-primitives.workspace = true
-anyhow.workspace = true
+eyre.workspace = true
 prost.workspace = true
 serde.workspace = true
 thiserror.workspace = true

@@ -489,9 +489,10 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     #[ignore = "e2e test, sepolia provider needed"]
-    async fn test_bridge_contraints() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_bridge_constraints() -> Result<(), Box<dyn std::error::Error>> {
         // Initialize the environment variables.
         dotenvy::dotenv().ok();
+        tracing_subscriber::fmt().with_test_writer().init();
 
         println!("Starting bridge constraints test...");
 
@@ -944,11 +945,16 @@ mod tests {
         // correctly, and thus this test failing.
         // In that case, you should update the file.
         // The process is to:
-        // 1. Obtain a Sepolia RPC key, and run `export RPC_11155111=https://eth-sepolia.g.alchemy.com/v2/[censored]`
-        // 2. Run `cargo test --workspace -- bridge::tests::test_bridge_contraints
+        // 1. Ask someone from Agglayer team to give you the required Quiknode RPC URL
+        // 2. Put it into an environment variable: `export RPC_11155420=https://dawn-maximum-dream.optimism-sepolia.quiknode.pro/[censored]`
+        // 3. Run `cargo test --workspace -- bridge::tests::test_bridge_constraints
         //    --exact --show-output --include-ignored` (Or you can limit to `--package
         //    aggchain-proof-core --lib` if your cargo folder is not filled yet)
-        // 3. The file should then be ready for committing
+        // 4. The file should then be ready for committing
+        // Note that it is possible the RPC no longer has the required blocks available
+        // for proof getting.
+        // In this case, you can use the script here to regenerate the tests:
+        // https://github.com/agglayer/agglayer-contracts/blob/4e1e07dd83f822b9a05d1cf45bc15d0341e3a2b3/tools/deploySovereignTest/deploySovereign.ts
 
         assert_bridge_data(bridge_data_input);
     }

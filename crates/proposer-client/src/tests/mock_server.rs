@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use eyre::{eyre, Context};
 use op_succinct_grpc::proofs::{GetMockProofRequest, GetMockProofResponse};
 pub use tonic::transport::Error as TransportError;
 use tonic::{transport::server::TcpIncoming, Request, Response, Status};
@@ -28,7 +29,7 @@ mockall::mock! {
 
 impl MockProofsService {
     /// Run a mock server.
-    pub async fn run(self) -> Result<Handle, anyhow::Error> {
+    pub async fn run(self) -> Result<Handle, eyre::Error> {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
         let local_addr = listener.local_addr()?;
 
@@ -40,7 +41,8 @@ impl MockProofsService {
             let cancellation_token = cancellation_token.clone();
             let incoming =
                 TcpIncoming::from_listener(listener, false, Some(Duration::from_secs(5)))
-                    .map_err(anyhow::Error::from_boxed)?;
+                    .map_err(|e| eyre!(e))
+                    .context("Failed to create TcpIncoming from listener")?;
 
             async move {
                 tonic::transport::Server::builder()

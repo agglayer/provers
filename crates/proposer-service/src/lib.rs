@@ -8,6 +8,7 @@ use agglayer_evm_client::GetBlockNumber;
 use alloy_sol_types::SolType;
 use educe::Educe;
 pub use error::Error;
+use eyre::Context as _;
 use futures::{future::BoxFuture, FutureExt};
 use proposer_client::{
     aggregation_prover::AggregationProver,
@@ -16,6 +17,7 @@ use proposer_client::{
     rpc::{AggregationProofProposerRequest, ProposerRpcClient},
     FepProposerRequest,
 };
+use prover_executor::sp1_fast;
 use sp1_prover::SP1VerifyingKey;
 use sp1_sdk::NetworkProver;
 use tracing::{debug, info};
@@ -69,7 +71,10 @@ where
             .await?,
         );
 
-        let aggregation_vkey = Self::extract_aggregation_vkey(&prover, AGGREGATION_ELF);
+        let aggregation_vkey = Self::extract_aggregation_vkey(&prover, AGGREGATION_ELF)
+            .await
+            .context("Retrieving aggregation vkey")
+            .map_err(Error::Other)?;
 
         Ok(Self {
             l1_rpc,
@@ -82,9 +87,12 @@ where
         })
     }
 
-    fn extract_aggregation_vkey(prover: &Prover, elf: &[u8]) -> SP1VerifyingKey {
-        let (_pkey, vkey) = prover.compute_pkey_vkey(elf);
-        vkey
+    async fn extract_aggregation_vkey(
+        prover: &Prover,
+        elf: &[u8],
+    ) -> eyre::Result<SP1VerifyingKey> {
+        let (_pkey, vkey) = prover.compute_pkey_vkey(elf).await?;
+        Ok(vkey)
     }
 }
 
@@ -100,8 +108,7 @@ impl<L1Rpc>
             "Building a network proposer service with a mock config"
         );
         Self::new(
-            new_network_prover(&config.client.sp1_cluster_endpoint)
-                .map_err(Error::UnableToCreateProver)?,
+            new_network_prover(&config.client.sp1_cluster_endpoint).map_err(Error::Other)?,
             config,
             l1_rpc,
         )
@@ -138,7 +145,7 @@ impl<L1Rpc>
 impl<L1Rpc, ProposerClient> tower::Service<FepProposerRequest>
     for ProposerService<L1Rpc, ProposerClient>
 where
-    L1Rpc: GetBlockNumber<Error: Into<anyhow::Error>> + Send + Sync + 'static,
+    L1Rpc: GetBlockNumber<Error: Into<eyre::Error>> + Send + Sync + 'static,
     ProposerClient: proposer_client::ProposerClient + Send + Sync + 'static,
 {
     type Response = ProposerResponse;
@@ -171,7 +178,7 @@ where
                 .map_err(|e| {
                     Error::AlloyProviderError(
                         e.into()
-                            .context(format!("Getting the block number for hash {l1_block_hash}")),
+                            .wrap_err(format!("Getting the block number for hash {l1_block_hash}")),
                     )
                 })?;
 
@@ -203,11 +210,9 @@ where
 
             debug!(%last_proven_block, %end_block, %request_id, "Aggregation proof verified successfully");
 
-            let proof_mode: sp1_sdk::SP1ProofMode = (&proof_with_pv.proof).into();
-            let aggregation_proof = proof_with_pv
-                .proof
-                .clone()
-                .try_as_compressed()
+            let proof_mode: sp1_sdk::SP1ProofMode = sp1_fast(|| (&proof_with_pv.proof).into()).map_err(Error::Other)?;
+            let aggregation_proof = sp1_fast(|| proof_with_pv.proof.clone().try_as_compressed())
+                .map_err(Error::Other)?
                 .ok_or_else(|| Error::UnsupportedAggregationProofMode(proof_mode))?;
 
             info!(%last_proven_block, %end_block, %request_id, "Aggregation proof successfully acquired");

@@ -7,7 +7,7 @@ use agglayer_prover_types::{
 use agglayer_telemetry::prover::{
     PROVING_REQUEST_FAILED, PROVING_REQUEST_RECV, PROVING_REQUEST_SUCCEEDED,
 };
-use prover_executor::{ProofType, Request, Response};
+use prover_executor::{sp1_fast, ProofType, Request, Response};
 use sp1_sdk::SP1Stdin;
 use tonic::Status;
 use tower::{buffer::Buffer, util::BoxService, Service, ServiceExt};
@@ -38,9 +38,11 @@ impl PessimisticProofService for ProverRPC {
 
         let request_inner = request.into_inner();
         let stdin: SP1Stdin = match request_inner.stdin {
-            Some(Stdin::Sp1Stdin(stdin)) => agglayer_prover_types::bincode::default()
-                .deserialize(&stdin)
-                .map_err(|_| tonic::Status::invalid_argument("Unable to deserialize stdin"))?,
+            Some(Stdin::Sp1Stdin(stdin)) => {
+                sp1_fast(|| agglayer_prover_types::bincode::default().deserialize(&stdin))
+                    .map_err(|_| tonic::Status::invalid_argument("Unable to deserialize stdin"))?
+                    .map_err(|_| tonic::Status::invalid_argument("Unable to deserialize stdin"))?
+            }
             None => {
                 return Err(tonic::Status::invalid_argument("stdin is required"));
             }
@@ -60,12 +62,13 @@ impl PessimisticProofService for ProverRPC {
         match executor.call(request).await {
             Ok(result) => {
                 let response = agglayer_prover_types::v1::GenerateProofResponse {
-                    proof: agglayer_prover_types::bincode::default()
-                        .serialize(&agglayer_prover_types::Proof::SP1(result.proof))
-                        .map_err(|_| {
-                            tonic::Status::internal("Unable to serialize generated proof")
-                        })?
-                        .into(),
+                    proof: sp1_fast(|| {
+                        agglayer_prover_types::bincode::default()
+                            .serialize(&agglayer_prover_types::Proof::SP1(result.proof))
+                    })
+                    .map_err(|_| tonic::Status::internal("Unable to serialize generated proof"))?
+                    .map_err(|_| tonic::Status::internal("Unable to serialize generated proof"))?
+                    .into(),
                 };
 
                 PROVING_REQUEST_SUCCEEDED.add(1, metrics_attrs);
