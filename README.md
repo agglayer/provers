@@ -19,6 +19,7 @@ The <b>Agglayer</b> (<i>Aggregation layer</i>) provides a common language for se
 
 <div align="center">
 
+[![Release](https://img.shields.io/github/v/release/agglayer/provers)](https://github.com/agglayer/provers/releases)
 [![Test workflow](https://github.com/agglayer/agglayer/actions/workflows/test.yml/badge.svg)](https://github.com/agglayer/agglayer/actions/workflows/test.yml)
 [![Quality workflow](https://github.com/agglayer/agglayer/actions/workflows/quality.yml/badge.svg)](https://github.com/agglayer/agglayer/actions/workflows/quality.yml)
 [![codecov](https://codecov.io/gh/agglayer/agglayer/graph/badge.svg?token=5TOBZRZ7Q8)](https://codecov.io/gh/agglayer/agglayer)
