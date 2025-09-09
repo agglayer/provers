@@ -198,8 +198,8 @@ dependencies = [
  "tokio-stream",
  "tokio-util",
  "toml 0.8.22",
- "tonic 0.12.3",
- "tonic-types 0.12.3",
+ "tonic 0.13.1",
+ "tonic-types",
  "tower 0.4.13",
  "tracing",
  "vergen-git2",
@@ -234,8 +234,8 @@ dependencies = [
  "serde",
  "sp1-sdk",
  "thiserror 2.0.12",
- "tonic 0.12.3",
- "tonic-build",
+ "tonic 0.13.1",
+ "tonic-build 0.13.1",
 ]
 
 [[package]]
@@ -296,7 +296,7 @@ dependencies = [
  "prost",
  "serde",
  "thiserror 2.0.12",
- "tonic-types 0.13.1",
+ "tonic-types",
 ]
 
 [[package]]
@@ -351,7 +351,7 @@ dependencies = [
  "sp1-sdk",
  "tokio",
  "tokio-util",
- "tonic 0.12.3",
+ "tonic 0.13.1",
  "tonic-health",
  "tonic-reflection",
  "tower 0.4.13",
@@ -383,8 +383,8 @@ dependencies = [
  "serde",
  "sp1-sdk",
  "thiserror 2.0.12",
- "tonic 0.12.3",
- "tonic-build",
+ "tonic 0.13.1",
+ "tonic-build 0.13.1",
 ]
 
 [[package]]
@@ -5220,7 +5220,7 @@ dependencies = [
  "prost",
  "serde",
  "tonic 0.12.3",
- "tonic-build",
+ "tonic-build 0.12.3",
  "tracing",
 ]
 
@@ -6142,8 +6142,8 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tokio-util",
- "tonic 0.12.3",
- "tonic-build",
+ "tonic 0.13.1",
+ "tonic-build 0.13.1",
  "tracing",
  "url",
 ]
@@ -6319,12 +6319,13 @@ dependencies = [
  "agglayer-telemetry",
  "anyhow",
  "axum 0.8.4",
+ "bytes",
  "eyre",
  "http",
  "http-body-util",
  "tokio",
  "tokio-util",
- "tonic 0.12.3",
+ "tonic 0.13.1",
  "tonic-health",
  "tonic-reflection",
  "tower 0.4.13",
@@ -6349,7 +6350,7 @@ dependencies = [
  "tokio",
  "tokio-util",
  "toml 0.8.22",
- "tonic 0.12.3",
+ "tonic 0.13.1",
  "tonic-health",
  "tonic-reflection",
  "tower 0.4.13",
@@ -9561,7 +9562,6 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
- "zstd",
 ]
 
 [[package]]
@@ -9570,17 +9570,27 @@ version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7e581ba15a835f4d9ea06c55ab1bd4dce26fc53752c69a04aac00703bfb49ba9"
 dependencies = [
+ "async-trait",
  "base64 0.22.1",
  "bytes",
+ "h2",
  "http",
  "http-body",
  "http-body-util",
+ "hyper",
+ "hyper-timeout",
+ "hyper-util",
  "percent-encoding",
  "pin-project",
+ "prost",
+ "socket2",
+ "tokio",
  "tokio-stream",
+ "tower 0.5.2",
  "tower-layer",
  "tower-service",
  "tracing",
+ "zstd",
 ]
 
 [[package]]
@@ -9598,40 +9608,42 @@ dependencies = [
 ]
 
 [[package]]
-name = "tonic-health"
-version = "0.12.3"
+name = "tonic-build"
+version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1eaf34ddb812120f5c601162d5429933c9b527d901ab0e7f930d3147e33a09b2"
+checksum = "eac6f67be712d12f0b41328db3137e0d0757645d8904b4cb7d51cd9c2279e847"
 dependencies = [
- "async-stream",
+ "prettyplease",
+ "proc-macro2",
+ "prost-build",
+ "prost-types",
+ "quote",
+ "syn 2.0.101",
+]
+
+[[package]]
+name = "tonic-health"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb87334d340313fefa513b6e60794d44a86d5f039b523229c99c323e4e19ca4b"
+dependencies = [
  "prost",
  "tokio",
  "tokio-stream",
- "tonic 0.12.3",
+ "tonic 0.13.1",
 ]
 
 [[package]]
 name = "tonic-reflection"
-version = "0.12.3"
+version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "878d81f52e7fcfd80026b7fdb6a9b578b3c3653ba987f87f0dce4b64043cba27"
+checksum = "f9687bd5bfeafebdded2356950f278bba8226f0b32109537c4253406e09aafe1"
 dependencies = [
  "prost",
  "prost-types",
  "tokio",
  "tokio-stream",
- "tonic 0.12.3",
-]
-
-[[package]]
-name = "tonic-types"
-version = "0.12.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0081d8ee0847d01271392a5aebe960a4600f5d4da6c67648a6382a0940f8b367"
-dependencies = [
- "prost",
- "prost-types",
- "tonic 0.12.3",
+ "tonic 0.13.1",
 ]
 
 [[package]]
@@ -9673,9 +9685,12 @@ checksum = "d039ad9159c98b70ecfd540b2573b97f7f52c3e8d9f8ad57a24b916a536975f9"
 dependencies = [
  "futures-core",
  "futures-util",
+ "indexmap 2.9.0",
  "pin-project-lite",
+ "slab",
  "sync_wrapper",
  "tokio",
+ "tokio-util",
  "tower-layer",
  "tower-service",
  "tracing",

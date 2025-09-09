@@ -20,9 +20,10 @@ axum = { version = "0.8", features = [
 anyhow.workspace = true
 eyre.workspace = true
 http = "1.2.0"
+bytes = "1.9.0"
 tonic.workspace = true
-tonic-health = "0.12.3"
-tonic-reflection = "0.12.3"
+tonic-health = "0.13.1"
+tonic-reflection = "0.13.1"
 
 tracing.workspace = true
 tower = { workspace = true, features = ["util"] }

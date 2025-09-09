@@ -19,8 +19,8 @@ tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
 tracing.workspace = true
 tower = { workspace = true, features = ["timeout"] }
 tonic = { workspace = true, features = ["zstd"] }
-tonic-health = "0.12.3"
-tonic-reflection = "0.12.3"
+tonic-health = "0.13.1"
+tonic-reflection = "0.13.1"
 
 prover-engine.workspace = true
 prover-logger.workspace = true
