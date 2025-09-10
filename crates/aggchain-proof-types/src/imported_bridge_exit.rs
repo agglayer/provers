@@ -27,7 +27,7 @@ impl Ord for ImportedBridgeExitWithBlockNumber {
             let ordering = self.global_index.cmp(&other.global_index);
             // Debug assert that if block_number and global_index are equal,
             // then bridge_exit_hash should also be equal to maintain Ord guarantees.
-            debug_assert!(
+            assert!(
                 ordering != Ordering::Equal || self.bridge_exit_hash == other.bridge_exit_hash,
                 "Items with same block_number and global_index must have the same bridge_exit_hash"
             );

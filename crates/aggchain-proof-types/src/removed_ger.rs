@@ -29,7 +29,7 @@ impl Ord for RemovedGerWithBlockNumber {
                 let ordering = self.block_index.cmp(&other.block_index);
                 // Debug assert that if block_number and block_index are equal,
                 // then global_exit_root should also be equal to maintain Ord guarantees.
-                debug_assert!(
+                assert!(
                     ordering != Ordering::Equal || self.global_exit_root == other.global_exit_root,
                     "Items with same block_number and block_index must have same global_exit_root"
                 );

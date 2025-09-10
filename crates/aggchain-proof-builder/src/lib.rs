@@ -29,7 +29,7 @@ use aggkit_prover_types::vkey_hash::VKeyHash;
 use agglayer_interop::types::{
     bincode, GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues,
 };
-use agglayer_primitives::{Address, Digest};
+use agglayer_primitives::{Address, Digest, U256};
 use alloy::eips::BlockNumberOrTag;
 pub use error::Error;
 use eyre::Context as _;
@@ -315,11 +315,11 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         );
 
         // Prepare unset claims for the proof.
-        let unset_claims: Vec<Digest> = filter_sort_map(
+        let unset_claims: Vec<U256> = filter_sort_map(
             request.aggchain_proof_inputs.unclaims,
             &new_blocks_range,
             |unclaim| unclaim.block_number,
-            |unclaim| unclaim.unclaim_hash,
+            |unclaim| unclaim.global_index,
         );
 
         let l1_info_tree_leaf = request.aggchain_proof_inputs.l1_info_tree_leaf;

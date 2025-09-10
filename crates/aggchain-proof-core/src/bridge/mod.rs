@@ -1,7 +1,7 @@
 //! A program that verifies the bridge integrity
 use std::{collections::HashMap, hash::Hash};
 
-use agglayer_primitives::{address, keccak::keccak256_combine, Address, Digest};
+use agglayer_primitives::{address, keccak::keccak256_combine, Address, Digest, U256};
 use alloy_sol_macro::sol;
 use alloy_sol_types::SolCall;
 use inserted_ger::InsertedGER;
@@ -125,8 +125,8 @@ pub struct BridgeWitness {
     /// List of the each imported bridge exit containing the global index and
     /// the leaf hash.
     pub bridge_exits_claimed: Vec<GlobalIndexWithLeafHash>,
-    /// List of the hashes of each unclaimed bridge exit.
-    pub unset_claims: Vec<Digest>,
+    /// List of the global indexes that got unclaimed.
+    pub unset_claims: Vec<U256>,
     /// State sketch for the prev L2 block.
     pub prev_l2_block_sketch: EvmSketchInput,
     /// State sketch for the new L2 block.
@@ -263,8 +263,20 @@ impl BridgeConstraintsInput {
                 )
                 .map(|(prev, new)| (prev.0.into(), new.0.into()))?;
 
+            let unset_claims: Vec<Digest> = self
+                .bridge_witness
+                .bridge_exits_claimed
+                .iter()
+                .filter(|claim| {
+                    self.bridge_witness
+                        .unset_claims
+                        .contains(&claim.global_index)
+                })
+                .map(|&idx| idx.commitment())
+                .collect();
+
             self.validate_hash_chain(
-                &self.bridge_witness.unset_claims,
+                &unset_claims,
                 prev_hash_chain,
                 new_hash_chain,
                 hash_chain_type,
@@ -322,17 +334,14 @@ impl BridgeConstraintsInput {
     }
 
     /// Verify that the claims (defined by the global index and bridge exit
-    /// hash) filtered with the leaf hashes of the claims that got unclaimed
-    /// are equal to commited imported bridge exits.
+    /// hash) filtered with the global indexes that got unclaimed are equal
+    /// to commited imported bridge exits.
     fn verify_constrained_global_indices(&self) -> Result<(), BridgeConstraintsError> {
         let constrained_claims = ImportedBridgeExitCommitmentValues {
             claims: filter_values(
-                &self.bridge_witness.unset_claims, // Vec<Digest> of unclaimed hashes
+                &self.bridge_witness.unset_claims, // Vec<U256> of unclaimed global indexes
                 &self.bridge_witness.bridge_exits_claimed, // Vec<GlobalIndexWithLeafHash>
-                |exit: &GlobalIndexWithLeafHash| -> Digest {
-                    // compare by claim commitment (keccak(global_index # bridge_exit_hash))
-                    exit.commitment()
-                },
+                |exit: &GlobalIndexWithLeafHash| -> U256 { exit.global_index },
             )?,
         };
 
@@ -412,7 +421,9 @@ impl BridgeConstraintsInput {
     ) -> Result<(), BridgeConstraintsError> {
         let rebuilt_hash_chain = hashes
             .iter()
-            .fold(prev_hash_chain, |acc, &hash| keccak256_combine([acc, hash]));
+            .fold(prev_hash_chain, |acc, &hash| {
+                keccak256_combine([acc, hash])
+            });
 
         if rebuilt_hash_chain != new_hash_chain {
             eprintln!(
@@ -553,14 +564,14 @@ mod tests {
             })
             .collect();
 
-        let unset_claims: Vec<Digest> = json_data["unsetClaims"]
+        let unset_claims: Vec<U256> = json_data["unsetClaims"]
             .as_array()
             .unwrap()
             .iter()
             .map(|s| {
                 let s_str = s.as_str().unwrap();
                 let padded = format!("{s_str:0>64}");
-                Digest::try_from(hex::decode(padded).unwrap().as_slice()).unwrap()
+                U256::from_be_slice(hex::decode(padded).unwrap().as_slice())
             })
             .collect();
 
@@ -826,7 +837,7 @@ mod tests {
             })
             .collect();
 
-        let mut removal_map: HashMap<Digest, usize> = HashMap::new();
+        let mut removal_map: HashMap<U256, usize> = HashMap::new();
         for idx in &unset_claims {
             *removal_map.entry(*idx).or_insert(0) += 1;
         }
@@ -834,7 +845,7 @@ mod tests {
             .clone()
             .into_iter()
             .filter(|v| {
-                if let Some(count) = removal_map.get_mut(&v.bridge_exit_hash) {
+                if let Some(count) = removal_map.get_mut(&v.global_index) {
                     if *count > 0 {
                         *count -= 1;
                         false
@@ -955,13 +966,6 @@ mod tests {
         assert_bridge_data(bridge_data_input);
     }
 
-    // Helper function to compute commitment: keccak(global_index #
-    // bridge_exit_hash)
-    fn compute_commitment(claim: &GlobalIndexWithLeafHash) -> Digest {
-        let global_index_bytes = claim.global_index.to_be_bytes::<32>();
-        keccak256_combine([Digest(global_index_bytes), claim.bridge_exit_hash])
-    }
-
     #[test]
     fn test_verify_constrained_global_indices_filters_by_hash_success() {
         // Load a valid base input from test file.
@@ -986,20 +990,19 @@ mod tests {
             })
             .collect();
 
-        // Compute proper unset claims using commitment (keccak(global_index #
-        // bridge_exit_hash)). We want to unset the claims with bridge_exit_hash
-        // d(20) and d(30).
-        let unset_claims: Vec<Digest> = claims
+        // Compute proper unset claims. We want to unset the claims with bridge exit
+        // hash d(20) and d(30).
+        let unset_claims: Vec<U256> = claims
             .iter()
             .filter(|claim| claim.bridge_exit_hash == d(20) || claim.bridge_exit_hash == d(30))
-            .map(compute_commitment)
+            .map(|claim| claim.global_index)
             .collect();
 
         // Expected constrained claims after removing by commitment once per occurrence.
         let expected_filtered: Vec<GlobalIndexWithLeafHash> = filter_values(
             &unset_claims,
             &claims,
-            |exit: &GlobalIndexWithLeafHash| -> Digest { compute_commitment(exit) },
+            |exit: &GlobalIndexWithLeafHash| -> U256 { exit.global_index },
         )
         .unwrap();
 
@@ -1048,12 +1051,12 @@ mod tests {
             .collect();
 
         // Compute proper unset claims using commitment (keccak(global_index #
-        // bridge_exit_hash)). We want to unset the claims with bridge_exit_hash
-        // d(20) and d(30).
-        let unset_claims: Vec<Digest> = claims
+        // bridge_exit_hash)). Just for fun we want to unset the claims with
+        // bridge_exit_hash d(20) and d(30).
+        let unset_claims: Vec<U256> = claims
             .iter()
             .filter(|claim| claim.bridge_exit_hash == d(20) || claim.bridge_exit_hash == d(30))
-            .map(compute_commitment)
+            .map(|claim| claim.global_index)
             .collect();
 
         let input = BridgeConstraintsInput {

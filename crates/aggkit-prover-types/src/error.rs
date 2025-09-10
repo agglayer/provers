@@ -96,8 +96,8 @@ pub enum AggchainProofRequestError {
     #[error("Missing removed global exit root")]
     MissingRemovedGer { field_path: String },
 
-    #[error("Missing unclaim hash")]
-    MissingUnclaimHash { field_path: String },
+    #[error("Missing unclaim global index")]
+    MissingUnclaimGlobalIndex { field_path: String },
 }
 
 impl AggchainProofRequestError {
@@ -129,7 +129,7 @@ impl AggchainProofRequestError {
             | AggchainProofRequestError::InvalidRemovedGer { field_path, .. }
             | AggchainProofRequestError::InvalidUnclaim { field_path, .. }
             | AggchainProofRequestError::MissingRemovedGer { field_path, .. }
-            | AggchainProofRequestError::MissingUnclaimHash { field_path, .. } => field_path,
+            | AggchainProofRequestError::MissingUnclaimGlobalIndex { field_path, .. } => field_path,
         }
     }
 }

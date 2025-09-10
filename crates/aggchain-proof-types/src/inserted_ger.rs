@@ -25,7 +25,7 @@ impl Ord for InsertedGerWithBlockNumber {
             let ordering = self.block_index.cmp(&other.block_index);
             // Debug assert that if block_number and block_index are equal,
             // then inserted_ger should also be equal to maintain Ord guarantees.
-            debug_assert!(
+            assert!(
                 ordering != Ordering::Equal || self.inserted_ger == other.inserted_ger,
                 "Items with same block_number and block_index must have same inserted_ger"
             );
