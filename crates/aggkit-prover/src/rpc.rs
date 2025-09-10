@@ -17,6 +17,7 @@ use agglayer_interop::{
     types::bincode,
 };
 use prost::bytes::Bytes;
+use prover_executor::sp1_fast;
 use sp1_sdk::SP1_CIRCUIT_VERSION;
 use tonic::{Request, Response, Status};
 use tonic_types::{ErrorDetails, StatusExt};
@@ -242,8 +243,8 @@ impl AggchainProofGrpcService for GrpcService {
                 context.insert(
                     "public_values".to_owned(),
                     Bytes::from(
-                        bincode::sp1v4()
-                            .serialize(&response.public_values)
+                        sp1_fast(|| bincode::sp1v4().serialize(&response.public_values))
+                            .unwrap_or_else(|_| Ok(b"bincode serialization failed".to_vec()))
                             .unwrap_or_else(|_| b"bincode serialization failed".to_vec()),
                     ),
                 );

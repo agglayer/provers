@@ -14,7 +14,7 @@ impl TryFrom<v1::RemovedGer> for RemovedGerWithBlockNumber {
             .try_into()
             .map_err(|error| Error::InvalidDigest {
                 field_path: "global_exit_root".to_string(),
-                source: anyhow::Error::from(error),
+                source: eyre::Error::from(error),
             })?;
 
         Ok(Self {

@@ -5,6 +5,7 @@ edition.workspace = true
 license.workspace = true
 
 [build-dependencies]
+color-eyre.workspace = true
 op-succinct-elfs.workspace = true
 prover-elf-utils.workspace = true
 

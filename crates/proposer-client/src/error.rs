@@ -8,7 +8,7 @@ pub enum Error {
     #[error("Proof verification error")]
     Verification {
         request_id: RequestId,
-        source: sp1_sdk::prover::SP1VerificationError,
+        source: eyre::Report,
     },
 
     #[error("Error requesting proof")]
@@ -34,5 +34,5 @@ pub enum ProofRequestError {
 #[error("Conversion of `{field}` failed")]
 pub struct GrpcConversionError {
     pub field: &'static str,
-    pub source: anyhow::Error,
+    pub source: eyre::Error,
 }

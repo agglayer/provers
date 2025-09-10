@@ -4,6 +4,8 @@ use semver::Version;
 use toml::Value;
 
 fn main() {
+    color_eyre::install().unwrap();
+
     println!("cargo:rerun-if-changed=Cargo.toml");
     let cargo_toml_path = Path::new("../aggchain-proof-program/Cargo.toml");
     println!("cargo:rerun-if-changed={}", cargo_toml_path.display());

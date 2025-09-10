@@ -24,7 +24,7 @@ fn create_agg_proof_request() -> AggregationProofProposerRequest {
 async fn create_mock_grpc_proposer<F>(
     request: AggProofRequest,
     response_handler: F,
-) -> anyhow::Result<mock_server::Handle>
+) -> eyre::Result<mock_server::Handle>
 where
     F: Fn(
             tonic::Request<AggProofRequest>,

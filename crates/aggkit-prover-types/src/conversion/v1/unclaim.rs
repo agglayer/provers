@@ -14,7 +14,7 @@ impl TryFrom<v1::Unclaim> for UnclaimWithBlockNumber {
             .try_into()
             .map_err(|error| Error::InvalidDigest {
                 field_path: "unclaim_hash".to_string(),
-                source: anyhow::Error::from(error),
+                source: eyre::Error::from(error),
             })?;
 
         Ok(Self {
