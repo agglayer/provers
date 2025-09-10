@@ -265,14 +265,9 @@ impl BridgeConstraintsInput {
 
             let unset_claims: Vec<Digest> = self
                 .bridge_witness
-                .bridge_exits_claimed
+                .unset_claims
                 .iter()
-                .filter(|claim| {
-                    self.bridge_witness
-                        .unset_claims
-                        .contains(&claim.global_index)
-                })
-                .map(|&idx| idx.commitment())
+                .map(|value| value.to_be_bytes().into())
                 .collect();
 
             self.validate_hash_chain(
@@ -421,9 +416,7 @@ impl BridgeConstraintsInput {
     ) -> Result<(), BridgeConstraintsError> {
         let rebuilt_hash_chain = hashes
             .iter()
-            .fold(prev_hash_chain, |acc, &hash| {
-                keccak256_combine([acc, hash])
-            });
+            .fold(prev_hash_chain, |acc, &hash| keccak256_combine([acc, hash]));
 
         if rebuilt_hash_chain != new_hash_chain {
             eprintln!(
