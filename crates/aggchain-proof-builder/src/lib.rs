@@ -29,7 +29,7 @@ use aggkit_prover_types::vkey_hash::VKeyHash;
 use agglayer_interop::types::{
     bincode, GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues,
 };
-use agglayer_primitives::{Address, Digest};
+use agglayer_primitives::{Address, Digest, U256};
 use alloy::eips::BlockNumberOrTag;
 pub use error::Error;
 use eyre::Context as _;
@@ -261,28 +261,75 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .await
             .map_err(Error::UnableToFetchTrustedSequencerAddress)?;
 
-        // From the request
-        let inserted_gers: Vec<InsertedGER> = request
+        // Helper function to filter, sort, and convert a vector of items to the desired
+        // output type. It filters items based on a range of blocks, sorts them
+        // using type Ord implementation, and maps them to a new type using the
+        // provided mapping function.
+        fn filter_sort_map<T, F, U>(
+            items: Vec<T>,
+            range: &std::ops::RangeInclusive<u64>,
+            block_number_fn: fn(&T) -> u64,
+            map_fn: F,
+        ) -> Vec<U>
+        where
+            F: Fn(T) -> U,
+            T: Ord,
+        {
+            let mut filtered_items: Vec<_> = items
+                .into_iter()
+                .filter(|item| range.contains(&block_number_fn(item)))
+                .collect();
+            filtered_items.sort();
+            filtered_items.into_iter().map(map_fn).collect()
+        }
+
+        // Retrieve all the raw GERs from the aggsender input.
+        // Removed GERs from this list have invalid merkle proofs.
+        let raw_inserted_gers: Vec<InsertedGER> = request
             .aggchain_proof_inputs
             .sorted_inserted_gers(&new_blocks_range);
 
-        // NOTE: Corresponds to all of them because we do not have removed GERs yet.
-        let inserted_gers_hash_chain = inserted_gers
+        // NOTE: Corresponds to all the bridge exits claimed because we do not have
+        // unset claims yet.
+        let bridge_exits_claimed: Vec<GlobalIndexWithLeafHash> = filter_sort_map(
+            request.aggchain_proof_inputs.imported_bridge_exits,
+            &new_blocks_range,
+            |ib| ib.block_number,
+            |ib| GlobalIndexWithLeafHash {
+                global_index: ib.global_index.into(),
+                bridge_exit_hash: ib.bridge_exit_hash.0,
+            },
+        );
+
+        // Prepare removed GERS for the proof.
+        let removed_gers: Vec<Digest> = filter_sort_map(
+            request.aggchain_proof_inputs.removed_gers,
+            &new_blocks_range,
+            |removed_ger| removed_ger.block_number,
+            |removed_ger| removed_ger.global_exit_root,
+        );
+
+        // Prepare inserted GERS for the proof, filtering out the removed ones.
+        let inserted_gers: Vec<InsertedGER> = raw_inserted_gers
             .iter()
+            .filter(|value| !removed_gers.contains(&value.ger()))
+            .cloned()
+            .collect();
+
+        // Prepare the hash chain of the all the GERs (inserted and removed) for the
+        // proof.
+        let raw_inserted_gers = raw_inserted_gers
+            .into_iter()
             .map(|inserted_ger| inserted_ger.ger())
             .collect();
 
-        // NOTE: Corresponds to all of them because we do not have unset claims yet.
-        let bridge_exits_claimed: Vec<GlobalIndexWithLeafHash> = request
-            .aggchain_proof_inputs
-            .imported_bridge_exits
-            .iter()
-            .filter(|ib| new_blocks_range.contains(&ib.block_number))
-            .map(|ib| GlobalIndexWithLeafHash {
-                global_index: ib.global_index.into(),
-                bridge_exit_hash: ib.bridge_exit_hash.0,
-            })
-            .collect();
+        // Prepare unset claims for the proof.
+        let unset_claims: Vec<U256> = filter_sort_map(
+            request.aggchain_proof_inputs.unclaims,
+            &new_blocks_range,
+            |unclaim| unclaim.block_number,
+            |unclaim| unclaim.global_index,
+        );
 
         let l1_info_tree_leaf = request.aggchain_proof_inputs.l1_info_tree_leaf;
         let mut fep_inputs = FepInputs {
@@ -348,9 +395,9 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                 bridge_witness: BridgeWitness {
                     inserted_gers,
                     bridge_exits_claimed,
-                    global_indices_unset: vec![], // NOTE: no unset yet.
-                    raw_inserted_gers: inserted_gers_hash_chain,
-                    removed_gers: vec![], // NOTE: no removed GERs yet.
+                    removed_gers,
+                    raw_inserted_gers,
+                    unset_claims,
                     prev_l2_block_sketch,
                     new_l2_block_sketch,
                     caller_address: static_call_caller_address,
