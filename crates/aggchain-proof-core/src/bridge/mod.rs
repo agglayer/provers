@@ -237,7 +237,7 @@ impl BridgeConstraintsInput {
     }
 
     /// Verify the previous and new hash chains and their reconstructions.
-    fn verify_claims_hash_chains(
+    pub fn verify_claims_hash_chains(
         &self,
         bridge_address: Address,
     ) -> Result<(), BridgeConstraintsError> {
@@ -331,7 +331,7 @@ impl BridgeConstraintsInput {
     }
 
     /// Fetch the bridge address through a static call.
-    fn fetch_bridge_address(&self) -> Result<Address, BridgeConstraintsError> {
+    pub fn fetch_bridge_address(&self) -> Result<Address, BridgeConstraintsError> {
         // Get the bridge address from the GER smart contract.
         // Since the bridge address is not constant but the l2 ger address is
         // We can retrieve the bridge address saving some public inputs and possible
@@ -352,7 +352,7 @@ impl BridgeConstraintsInput {
 
     /// Verify that the claims filtered with the global indexes that got unclaimed are equal
     /// to commited imported bridge exits.
-    fn verify_constrained_claims(&self) -> Result<(), BridgeConstraintsError> {
+    pub fn verify_constrained_claims(&self) -> Result<(), BridgeConstraintsError> {
         let constrained_claims = ImportedBridgeExitCommitmentValues {
             claims: filter_values(
                 &self.bridge_witness.unset_claims, // Vec<U256> of unclaimed global indexes

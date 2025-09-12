@@ -447,10 +447,21 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                 new_local_exit_root: test_aggchain_proof_witness.new_local_exit_root
             };
             info!(">>>>>>>>>>>>>> CHECKPOINT 2");
-            _ = input.verify().inspect_err(|error| {
-                error!(">>>>>>>>>>>>>>>>>>>>> Bridge constraints verification failed: {error:?}");
-            });
+            // _ = input.verify().inspect_err(|error| {
+            //     error!(">>>>>>>>>>>>>>>>>>>>> Bridge constraints verification failed: {error:?}");
+            // });
+            let bridge_address = input.fetch_bridge_address().inspect_err(|error| {;
+                error!(">>>>>>>>>>>>>>>>>>>>> fetch_bridge_address failed: {error:?}");
+            }).unwrap();
             info!(">>>>>>>>>>>>>> CHECKPOINT 3");
+            _ = input.verify_claims_hash_chains(bridge_address).inspect_err(|error| {
+                error!(">>>>>>>>>>>>>>>>>>>>> verify_claims_hash_chains failed: {error:?}");
+            });
+            info!(">>>>>>>>>>>>>> CHECKPOINT 4");
+            _ = input.verify_constrained_claims().inspect_err(|error| {
+                error!(">>>>>>>>>>>>>>>>>>>>> verify_constrained_claims failed: {error:?}");
+            });
+            info!(">>>>>>>>>>>>>> CHECKPOINT 5");
 
             Ok(AggchainProverInputs {
                 output_root,
