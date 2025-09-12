@@ -435,32 +435,39 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                 end_block=%request.end_block,
                 "Chain data for aggchain proof generation successfully retrieved");
 
+            info!(">>>>>>>>>>>>>> CHECKPOINT 2");
 
             // Should pass when filtering by commitment matches unset_claims
-            let input = aggchain_proof_core::bridge::BridgeConstraintsInput {
-                commit_imported_bridge_exits: test_aggchain_proof_witness.commit_imported_bridge_exits,
-                bridge_witness: test_aggchain_proof_witness.bridge_witness,
-                l1_info_root: test_aggchain_proof_witness.l1_info_root,
-                ger_addr: prover_witness.bridge_witness.caller_address,
-                prev_l2_block_hash: test_aggchain_proof_witness.fep.prev_block_hash,
-                new_l2_block_hash: test_aggchain_proof_witness.fep.new_block_hash,
-                new_local_exit_root: test_aggchain_proof_witness.new_local_exit_root
-            };
-            info!(">>>>>>>>>>>>>> CHECKPOINT 2");
+            // let input = aggchain_proof_core::bridge::BridgeConstraintsInput {
+            //     commit_imported_bridge_exits: test_aggchain_proof_witness.commit_imported_bridge_exits,
+            //     bridge_witness: test_aggchain_proof_witness.bridge_witness,
+            //     l1_info_root: test_aggchain_proof_witness.l1_info_root,
+            //     ger_addr: prover_witness.bridge_witness.caller_address,
+            //     prev_l2_block_hash: test_aggchain_proof_witness.fep.prev_block_hash,
+            //     new_l2_block_hash: test_aggchain_proof_witness.fep.new_block_hash,
+            //     new_local_exit_root: test_aggchain_proof_witness.new_local_exit_root
+            // };
             // _ = input.verify().inspect_err(|error| {
             //     error!(">>>>>>>>>>>>>>>>>>>>> Bridge constraints verification failed: {error:?}");
             // });
-            let bridge_address = input.fetch_bridge_address().inspect_err(|error| {;
-                error!(">>>>>>>>>>>>>>>>>>>>> fetch_bridge_address failed: {error:?}");
-            }).unwrap();
-            info!(">>>>>>>>>>>>>> CHECKPOINT 3");
-            _ = input.verify_claims_hash_chains(bridge_address).inspect_err(|error| {
-                error!(">>>>>>>>>>>>>>>>>>>>> verify_claims_hash_chains failed: {error:?}");
-            });
-            info!(">>>>>>>>>>>>>> CHECKPOINT 4");
-            _ = input.verify_constrained_claims().inspect_err(|error| {
-                error!(">>>>>>>>>>>>>>>>>>>>> verify_constrained_claims failed: {error:?}");
-            });
+            // let bridge_address = input.fetch_bridge_address().inspect_err(|error| {;
+            //     error!(">>>>>>>>>>>>>>>>>>>>> fetch_bridge_address failed: {error:?}");
+            // }).unwrap();
+            // info!(">>>>>>>>>>>>>> CHECKPOINT 3");
+            // _ = input.verify_claims_hash_chains(bridge_address).inspect_err(|error| {
+            //     error!(">>>>>>>>>>>>>>>>>>>>> verify_claims_hash_chains failed: {error:?}");
+            // });
+            // info!(">>>>>>>>>>>>>> CHECKPOINT 4");
+            // _ = input.verify_constrained_claims().inspect_err(|error| {
+            //     error!(">>>>>>>>>>>>>>>>>>>>> verify_constrained_claims failed: {error:?}");
+            // });
+            let _aggchain_proof_public_values = test_aggchain_proof_witness.verify_aggchain_inputs_debug()
+                .inspect_err(|error| {
+                    error!(">>>>>>>>>>>>>>>>>>>>> Aggchain proof public values verification failed: {error:?}");
+                })
+                .inspect(|_public_values| {
+                    info!(">>>>>>>>>>>>>>>>>>>>> Aggchain proof public values verification succeeded!!!!");
+                });
             info!(">>>>>>>>>>>>>> CHECKPOINT 5");
 
             Ok(AggchainProverInputs {

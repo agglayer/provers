@@ -44,6 +44,14 @@ impl AggchainProofWitness {
 
         Ok(self.public_values())
     }
+
+    pub fn verify_aggchain_inputs_debug(&self) -> Result<AggchainProofPublicValues, ProofError> {
+
+        // Verify the bridge constraints
+        self.bridge_constraints_input().verify()?;
+
+        Ok(self.public_values())
+    }
 }
 
 impl AggchainProofWitness {
