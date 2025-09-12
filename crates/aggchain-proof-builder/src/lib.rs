@@ -331,6 +331,14 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             |unclaim| unclaim.global_index,
         );
 
+        info!(">>>>>>>>>>>>>>>>> CHECKPOINT 1 <<<<<<<<<<<<<<<<");
+        info!(
+            ">>>>>>>>>>>>>>>>>>>>>>>>>>> Preparing aggchain proof inputs - inserted_gers: {inserted_gers:?} \n \
+             removed_gers: {removed_gers:?} \n unset_claims: {unset_claims:?} \
+             raw_inserted_gers: {raw_inserted_gers:?}\n"
+        );
+
+
         let l1_info_tree_leaf = request.aggchain_proof_inputs.l1_info_tree_leaf;
         let mut fep_inputs = FepInputs {
             l1_head: l1_info_tree_leaf.inner.block_hash,
@@ -404,6 +412,8 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                 },
             };
 
+            let test_aggchain_proof_witness = prover_witness.clone();
+
             let output_root = prover_witness.fep.compute_claim_root();
 
             let sp1_stdin = sp1_fast(|| {
@@ -424,6 +434,23 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             info!(last_proven_block=%request.aggchain_proof_inputs.last_proven_block,
                 end_block=%request.end_block,
                 "Chain data for aggchain proof generation successfully retrieved");
+
+
+            // Should pass when filtering by commitment matches unset_claims
+            let input = aggchain_proof_core::bridge::BridgeConstraintsInput {
+                commit_imported_bridge_exits: test_aggchain_proof_witness.commit_imported_bridge_exits,
+                bridge_witness: test_aggchain_proof_witness.bridge_witness,
+                l1_info_root: test_aggchain_proof_witness.l1_info_root,
+                ger_addr: prover_witness.bridge_witness.caller_address,
+                prev_l2_block_hash: test_aggchain_proof_witness.fep.prev_block_hash,
+                new_l2_block_hash: test_aggchain_proof_witness.fep.new_block_hash,
+                new_local_exit_root: test_aggchain_proof_witness.new_local_exit_root
+            };
+            info!(">>>>>>>>>>>>>> CHECKPOINT 2");
+            _ = input.verify().inspect_err(|error| {
+                error!(">>>>>>>>>>>>>>>>>>>>> Bridge constraints verification failed: {error:?}");
+            });
+            info!(">>>>>>>>>>>>>> CHECKPOINT 3");
 
             Ok(AggchainProverInputs {
                 output_root,

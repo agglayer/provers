@@ -156,6 +156,8 @@ impl BridgeConstraintsInput {
     ) -> Result<(C::Return, C::Return), BridgeConstraintsError> {
         let address = alloy_primitives::Address::from(address);
 
+        println!(">>>>>>>>>>> CHECKPOINT 200-01 address: {:?}", address);
+
         // Get the state of the hash chain of the previous block on L2
         let prev_hash_chain = StaticCallWithContext {
             address,
@@ -167,6 +169,8 @@ impl BridgeConstraintsInput {
             &self.bridge_witness.prev_l2_block_sketch,
             calldata.clone(),
         )?;
+
+        println!(">>>>>>>>>>> CHECKPOINT 200-02");
 
         // Get the state of the hash chain of the new block on L2
         let new_hash_chain = StaticCallWithContext {
@@ -180,6 +184,8 @@ impl BridgeConstraintsInput {
             calldata,
         )?;
 
+        println!(">>>>>>>>>>> CHECKPOINT 200-03");
+
         Ok((prev_hash_chain, new_hash_chain))
     }
 
@@ -188,6 +194,7 @@ impl BridgeConstraintsInput {
         // Verify the hash chain on inserted GER
         {
             let hash_chain_type = HashChainType::InsertedGER;
+            println!(">>>>>>>>>>> CHECKPOINT 101-01");
             let (prev_hash_chain, new_hash_chain): (Digest, Digest) = self
                 .fetch_hash_chains(
                     hash_chain_type,
@@ -196,12 +203,15 @@ impl BridgeConstraintsInput {
                 )
                 .map(|(prev, new)| (prev.0.into(), new.0.into()))?;
 
+            println!(">>>>>>>>>>> CHECKPOINT 101-02");
+
             self.validate_hash_chain(
                 &self.bridge_witness.raw_inserted_gers,
                 prev_hash_chain,
                 new_hash_chain,
                 hash_chain_type,
             )?;
+            println!(">>>>>>>>>>> CHECKPOINT 101-03");
         }
 
         // Verify the hash chain on removed GER
@@ -231,6 +241,8 @@ impl BridgeConstraintsInput {
         &self,
         bridge_address: Address,
     ) -> Result<(), BridgeConstraintsError> {
+        println!("Verifying claims hash chains...");
+        println!(">>>>>>>>>>>>>>> verify_claims_hash_chains CHECKPOINT 20: bridge_address: {:?}", bridge_address);
         // Verify the hash chain on claimed global index
         {
             let hash_chain_type = HashChainType::ClaimedGlobalIndex;
@@ -249,8 +261,13 @@ impl BridgeConstraintsInput {
                 .map(|&idx| idx.commitment())
                 .collect();
 
+            println!(">>>>>>>>>>>>>>> verify_claims_hash_chains CHECKPOINT 21: prev_hash_chain: {:?} \
+            new_hash_chain: {:?}, claims: {:?}", prev_hash_chain, new_hash_chain, claims);
+
             self.validate_hash_chain(&claims, prev_hash_chain, new_hash_chain, hash_chain_type)?;
         }
+
+        println!(">>>>>>>>>>>>>>> verify_claims_hash_chains CHECKPOINT 22");
 
         // Verify the hash chain on unset global index
         {
@@ -270,6 +287,9 @@ impl BridgeConstraintsInput {
                 .map(|value| value.to_be_bytes().into())
                 .collect();
 
+            println!(">>>>>>>>>>>>>>> verify_claims_hash_chains CHECKPOINT 23: prev_hash_chain: {:?} \
+            new_hash_chain: {:?}, unset_claims: {:?}", prev_hash_chain, new_hash_chain, unset_claims);
+
             self.validate_hash_chain(
                 &unset_claims,
                 prev_hash_chain,
@@ -277,6 +297,8 @@ impl BridgeConstraintsInput {
                 hash_chain_type,
             )?;
         }
+
+        println!(">>>>>>>>>>>>>>> verify_claims_hash_chains CHECKPOINT 24");
 
         Ok(())
     }
@@ -328,10 +350,9 @@ impl BridgeConstraintsInput {
         Ok(bridge_address.into())
     }
 
-    /// Verify that the claims (defined by the global index and bridge exit
-    /// hash) filtered with the global indexes that got unclaimed are equal
+    /// Verify that the claims filtered with the global indexes that got unclaimed are equal
     /// to commited imported bridge exits.
-    fn verify_constrained_global_indices(&self) -> Result<(), BridgeConstraintsError> {
+    fn verify_constrained_claims(&self) -> Result<(), BridgeConstraintsError> {
         let constrained_claims = ImportedBridgeExitCommitmentValues {
             claims: filter_values(
                 &self.bridge_witness.unset_claims, // Vec<U256> of unclaimed global indexes
@@ -340,15 +361,30 @@ impl BridgeConstraintsInput {
             )?,
         };
 
+        println!(">>>>>>>>>>>>>>>> verify_constrained_claims CHECKPOINT 10:  self.bridge_witness.unset_claim: {:?}\
+        \n self.bridge_witness.bridge_exits_claimed: {:?}\
+            \n constrained_claims.claims: {:?}", self.bridge_witness.unset_claims,
+                 self.bridge_witness.bridge_exits_claimed,
+                 constrained_claims.claims
+        );
+
         let computed_commitment =
             constrained_claims.commitment(IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION);
 
+        println!(">>>>>>>>>>>>>>>> verify_constrained_claims CHECKPOINT 11:  computed_commitment: {:?} \
+                self.commit_imported_bridge_exits {:?}",
+                 computed_commitment,
+                 self.commit_imported_bridge_exits
+        );
+
         if computed_commitment != self.commit_imported_bridge_exits {
+            println!(">>>>>>>>>>>>>>>> verify_constrained_claims CHECKPOINT 12");
             return Err(BridgeConstraintsError::MismatchConstrainedBridgeExits {
                 computed: computed_commitment,
                 input: self.commit_imported_bridge_exits,
             });
         }
+        println!(">>>>>>>>>>>>>>>> verify_constrained_claims CHECKPOINT 13");
 
         Ok(())
     }
@@ -398,11 +434,17 @@ impl BridgeConstraintsInput {
 
     /// Verify the bridge state.
     pub fn verify(&self) -> Result<(), BridgeConstraintsError> {
+        println!(">>>>>>>>>>> CHECKPOINT 101");
         self.verify_ger_hash_chains()?;
+        println!(">>>>>>>>>>> CHECKPOINT 102");
         let bridge_address = self.fetch_bridge_address()?;
+        println!(">>>>>>>>>>> CHECKPOINT 103");
         self.verify_claims_hash_chains(bridge_address)?;
+        println!(">>>>>>>>>>> CHECKPOINT 104");
         self.verify_new_ler(bridge_address)?;
-        self.verify_constrained_global_indices()?;
+        println!(">>>>>>>>>>> CHECKPOINT 105");
+        self.verify_constrained_claims()?;
+        println!(">>>>>>>>>>> CHECKPOINT 106");
         self.verify_inserted_gers()
     }
 
@@ -416,16 +458,26 @@ impl BridgeConstraintsInput {
     ) -> Result<(), BridgeConstraintsError> {
         let rebuilt_hash_chain = hashes
             .iter()
-            .fold(prev_hash_chain, |acc, &hash| keccak256_combine([acc, hash]));
+            .fold(prev_hash_chain, |acc, &hash| {
+                println!(">>>>>>>>>>>>>>> validate_hash_chain CHECKPOINT 30: prev_hash_chain: {:?} \
+                acc: {:?}, hash: {:?}", prev_hash_chain, acc, hash);
+                keccak256_combine([acc, hash])
+            });
+
+        println!(">>>>>>>>>>>>>>> validate_hash_chain CHECKPOINT 31: rebuilt_hash_chain: {:?} \
+                new_hash_chain: {:?}", rebuilt_hash_chain, new_hash_chain);
 
         if rebuilt_hash_chain != new_hash_chain {
+            println!(">>>>>>>>>>>>>>> validate_hash_chain CHECKPOINT 32");
             eprintln!(
                 "block_hash. prev: {:?}, new: {:?}",
                 self.prev_l2_block_hash, self.new_l2_block_hash
             );
+            println!(">>>>>>>>>>>>>>> validate_hash_chain CHECKPOINT 33");
             hashes.iter().enumerate().for_each(|(idx, hash)| {
                 eprintln!("element #{idx} ({hash_chain_type:?}): {hash:?}")
             });
+            println!(">>>>>>>>>>>>>>> validate_hash_chain CHECKPOINT 34");
 
             return Err(BridgeConstraintsError::MismatchHashChain {
                 prev_hash_chain,
@@ -434,6 +486,8 @@ impl BridgeConstraintsInput {
                 hash_chain_type,
             });
         }
+
+        println!(">>>>>>>>>>>>>>> validate_hash_chain CHECKPOINT 35");
 
         Ok(())
     }
@@ -1017,7 +1071,7 @@ mod tests {
         };
 
         // Should pass when filtering by commitment matches unset_claims.
-        input.verify_constrained_global_indices().unwrap();
+        input.verify_constrained_claims().unwrap();
     }
 
     #[test]
@@ -1063,7 +1117,7 @@ mod tests {
             ..base_input
         };
 
-        let err = input.verify_constrained_global_indices().unwrap_err();
+        let err = input.verify_constrained_claims().unwrap_err();
         assert!(matches!(
             err,
             BridgeConstraintsError::MismatchConstrainedBridgeExits { .. }
