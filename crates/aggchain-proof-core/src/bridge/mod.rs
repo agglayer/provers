@@ -328,10 +328,9 @@ impl BridgeConstraintsInput {
         Ok(bridge_address.into())
     }
 
-    /// Verify that the claims (defined by the global index and bridge exit
-    /// hash) filtered with the global indexes that got unclaimed are equal
-    /// to commited imported bridge exits.
-    fn verify_constrained_global_indices(&self) -> Result<(), BridgeConstraintsError> {
+    /// Verify that the claims filtered with the global indexes that got
+    /// unclaimed are equal to commited imported bridge exits.
+    pub fn verify_constrained_claims(&self) -> Result<(), BridgeConstraintsError> {
         let constrained_claims = ImportedBridgeExitCommitmentValues {
             claims: filter_values(
                 &self.bridge_witness.unset_claims, // Vec<U256> of unclaimed global indexes
@@ -402,7 +401,7 @@ impl BridgeConstraintsInput {
         let bridge_address = self.fetch_bridge_address()?;
         self.verify_claims_hash_chains(bridge_address)?;
         self.verify_new_ler(bridge_address)?;
-        self.verify_constrained_global_indices()?;
+        self.verify_constrained_claims()?;
         self.verify_inserted_gers()
     }
 
@@ -1017,7 +1016,7 @@ mod tests {
         };
 
         // Should pass when filtering by commitment matches unset_claims.
-        input.verify_constrained_global_indices().unwrap();
+        input.verify_constrained_claims().unwrap();
     }
 
     #[test]
@@ -1063,7 +1062,7 @@ mod tests {
             ..base_input
         };
 
-        let err = input.verify_constrained_global_indices().unwrap_err();
+        let err = input.verify_constrained_claims().unwrap_err();
         assert!(matches!(
             err,
             BridgeConstraintsError::MismatchConstrainedBridgeExits { .. }

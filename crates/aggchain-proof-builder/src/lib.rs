@@ -289,9 +289,8 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .aggchain_proof_inputs
             .sorted_inserted_gers(&new_blocks_range);
 
-        // NOTE: Corresponds to all the bridge exits claimed because we do not have
-        // unset claims yet.
-        let bridge_exits_claimed: Vec<GlobalIndexWithLeafHash> = filter_sort_map(
+        // All the bridge exits in the new blocks range, also those that are unclaimed.
+        let all_imported_bridge_exits: Vec<GlobalIndexWithLeafHash> = filter_sort_map(
             request.aggchain_proof_inputs.imported_bridge_exits,
             &new_blocks_range,
             |ib| ib.block_number,
@@ -330,6 +329,13 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             |unclaim| unclaim.block_number,
             |unclaim| unclaim.global_index,
         );
+
+        // Filter out the unset claims from the all imported bridge exits
+        let claimed_imported_bridge_exits: Vec<GlobalIndexWithLeafHash> = all_imported_bridge_exits
+            .iter()
+            .filter(|value| !unset_claims.contains(&value.global_index))
+            .cloned()
+            .collect();
 
         let l1_info_tree_leaf = request.aggchain_proof_inputs.l1_info_tree_leaf;
         let mut fep_inputs = FepInputs {
@@ -389,12 +395,12 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                 origin_network: network_id,
                 fep: fep_inputs,
                 commit_imported_bridge_exits: ImportedBridgeExitCommitmentValues {
-                    claims: bridge_exits_claimed.clone(),
+                    claims: claimed_imported_bridge_exits,
                 }
                 .commitment(IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION),
                 bridge_witness: BridgeWitness {
                     inserted_gers,
-                    bridge_exits_claimed,
+                    bridge_exits_claimed: all_imported_bridge_exits,
                     removed_gers,
                     raw_inserted_gers,
                     unset_claims,
