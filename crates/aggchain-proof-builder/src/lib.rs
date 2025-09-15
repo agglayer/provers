@@ -315,14 +315,14 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .cloned()
             .collect();
 
-        // Prepare the hash chain of the all the GERs (inserted and removed) for the
+        // Prepare the hash chain of all the GERs (inserted and removed) for the
         // proof.
         let raw_inserted_gers = raw_inserted_gers
             .into_iter()
             .map(|inserted_ger| inserted_ger.ger())
             .collect();
 
-        // Prepare unset claims for the proof.
+        // Prepare unset claims input for the proof.
         let unset_claims: Vec<U256> = filter_sort_map(
             request.aggchain_proof_inputs.unclaims,
             &new_blocks_range,
@@ -330,7 +330,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             |unclaim| unclaim.global_index,
         );
 
-        // Filter out the unset claims from the all imported bridge exits
+        // Filter out the unset claims from the all imported bridge exits list.
         let claimed_imported_bridge_exits: Vec<GlobalIndexWithLeafHash> = all_imported_bridge_exits
             .iter()
             .filter(|value| !unset_claims.contains(&value.global_index))

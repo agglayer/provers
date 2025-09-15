@@ -27,7 +27,7 @@ impl Ord for UnclaimWithBlockNumber {
             // If equal, compare by block_index
             .then_with(|| {
                 let ordering = self.block_index.cmp(&other.block_index);
-                // Debug assert that if block_number and block_index are equal,
+                // Assert that if block_number and block_index are equal,
                 // then global_index should also be equal to maintain Ord guarantees.
                 assert!(
                     ordering != Ordering::Equal || self.global_index == other.global_index,

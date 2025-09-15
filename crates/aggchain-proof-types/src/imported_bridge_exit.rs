@@ -25,7 +25,7 @@ impl Ord for ImportedBridgeExitWithBlockNumber {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.block_number.cmp(&other.block_number).then_with(|| {
             let ordering = self.global_index.cmp(&other.global_index);
-            // Debug assert that if block_number and global_index are equal,
+            // Assert that if block_number and global_index are equal,
             // then bridge_exit_hash should also be equal to maintain Ord guarantees.
             assert!(
                 ordering != Ordering::Equal || self.bridge_exit_hash == other.bridge_exit_hash,
