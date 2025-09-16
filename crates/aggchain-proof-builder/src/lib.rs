@@ -12,7 +12,7 @@ use std::{
 
 use aggchain_proof_contracts::{
     contracts::{
-        GetTrustedSequencerAddress, L1RollupConfigHashFetcher, L2EvmStateSketchFetcher,
+        GetTrustedSequencerAddress, L1OpSuccinctConfigFetcher, L2EvmStateSketchFetcher,
         L2LocalExitRootFetcher, L2OutputAtBlockFetcher,
     },
     AggchainContractsClient,
@@ -210,7 +210,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             + L2OutputAtBlockFetcher
             + L2EvmStateSketchFetcher
             + GetTrustedSequencerAddress
-            + L1RollupConfigHashFetcher,
+            + L1OpSuccinctConfigFetcher,
     {
         info!(last_proven_block=%request.aggchain_proof_inputs.last_proven_block,
             end_block=%request.end_block,
@@ -239,8 +239,8 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 
-        let rollup_config_hash = contracts_client
-            .get_rollup_config_hash()
+        let op_succinct_config = contracts_client
+            .get_op_succinct_config()
             .await
             .map_err(Error::L1ChainDataRetrievalError)?;
 
@@ -288,7 +288,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         let mut fep_inputs = FepInputs {
             l1_head: l1_info_tree_leaf.inner.block_hash,
             claim_block_num: request.end_block as u32,
-            rollup_config_hash,
+            rollup_config_hash: op_succinct_config.rollup_config_hash,
             prev_state_root: l2_pre_root_output_at_block.state_root,
             prev_withdrawal_storage_root: l2_pre_root_output_at_block.withdrawal_storage_root,
             prev_block_hash: l2_pre_root_output_at_block.latest_block_hash,
