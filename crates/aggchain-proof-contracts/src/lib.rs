@@ -134,7 +134,7 @@ where
             .opSuccinctConfigs(self.op_succinct_config_name)
             .call()
             .await
-            .map_err(Error::RollupConfigHashError)?;
+            .map_err(Error::OpSuccinctConfigRetrievalError)?;
 
         Ok(OpSuccinctConfig {
             range_vkey_commitment: (op_succinct_config.rangeVkeyCommitment.0).into(),

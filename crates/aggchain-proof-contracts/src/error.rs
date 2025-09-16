@@ -42,8 +42,8 @@ pub enum Error {
     #[error("Error performing rollup manager rollup id to rollup data call")]
     InvalidRollupIdToRollupData(#[source] alloy::contract::Error),
 
-    #[error("Error retrieving rollup config hash from the op succinct config")]
-    RollupConfigHashError(#[source] alloy::contract::Error),
+    #[error("Error retrieving op succinct config")]
+    OpSuccinctConfigRetrievalError(#[source] alloy::contract::Error),
 
     #[error("Error retrieving aggchain vkey")]
     AggchainVKeyRetrievalError(#[source] alloy::contract::Error),

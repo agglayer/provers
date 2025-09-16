@@ -131,7 +131,7 @@ mod aggchain_contracts_rpc_client {
             },
         ))
     }
-    
+
     fn mock_trusted_sequencer_call(server_l1: &mut ServerGuard) -> mockito::Mock {
         let trusted_sequencer_expected_body = serde_json::json!(
         {
@@ -164,13 +164,15 @@ mod aggchain_contracts_rpc_client {
     }
 
     fn mock_op_succinct_configs(server_l1: &mut ServerGuard) -> mockito::Mock {
-        // opSuccinctConfigs takes a bytes32 parameter (the config name) and returns 3 bytes32 values
+        // opSuccinctConfigs takes a bytes32 parameter (the config name) and returns 3
+        // bytes32 values
         let op_succinct_config_name = keccak256(b"opsuccinct_genesis");
-        
-        // Function selector for opSuccinctConfigs(bytes32) - first 4 bytes of keccak256 hash
+
+        // Function selector for opSuccinctConfigs(bytes32) - first 4 bytes of keccak256
+        // hash
         let function_selector = &keccak256(b"opSuccinctConfigs(bytes32)")[..4];
         let calldata = [function_selector, &op_succinct_config_name[..]].concat();
-        
+
         let expected_body = serde_json::json!({
             "method": "eth_call",
             "params": [{
@@ -181,11 +183,18 @@ mod aggchain_contracts_rpc_client {
             "jsonrpc": "2.0",
         });
 
-        // Return three bytes32 values (aggregationVkey, rangeVkeyCommitment, rollupConfigHash)
-        let aggregation_vkey = B256::from_str("0x1111111111111111111111111111111111111111111111111111111111111111").unwrap();
-        let range_vkey_commitment = B256::from_str("0x2222222222222222222222222222222222222222222222222222222222222222").unwrap();
-        let rollup_config_hash = B256::from_str("0xaaaeffa0811291c96c8cbddcc148bf48a6d68c7974b94356f53754ef617122dd").unwrap();
-        
+        // Return three bytes32 values (aggregationVkey, rangeVkeyCommitment,
+        // rollupConfigHash)
+        let aggregation_vkey =
+            B256::from_str("0x1111111111111111111111111111111111111111111111111111111111111111")
+                .unwrap();
+        let range_vkey_commitment =
+            B256::from_str("0x2222222222222222222222222222222222222222222222222222222222222222")
+                .unwrap();
+        let rollup_config_hash =
+            B256::from_str("0xaaaeffa0811291c96c8cbddcc148bf48a6d68c7974b94356f53754ef617122dd")
+                .unwrap();
+
         // ABI encode the tuple of three bytes32 values
         let result_tuple = (aggregation_vkey, range_vkey_commitment, rollup_config_hash);
         let result = json!({
@@ -397,16 +406,22 @@ mod aggchain_contracts_rpc_client {
             op_succinct_config,
             OpSuccinctConfig {
                 aggregation_vkey: Digest(
-                    B256::from_str("0x1111111111111111111111111111111111111111111111111111111111111111")?
-                        .0
+                    B256::from_str(
+                        "0x1111111111111111111111111111111111111111111111111111111111111111"
+                    )?
+                    .0
                 ),
                 range_vkey_commitment: Digest(
-                    B256::from_str("0x2222222222222222222222222222222222222222222222222222222222222222")?
-                        .0
+                    B256::from_str(
+                        "0x2222222222222222222222222222222222222222222222222222222222222222"
+                    )?
+                    .0
                 ),
                 rollup_config_hash: Digest(
-                    B256::from_str("0xaaaeffa0811291c96c8cbddcc148bf48a6d68c7974b94356f53754ef617122dd")?
-                        .0
+                    B256::from_str(
+                        "0xaaaeffa0811291c96c8cbddcc148bf48a6d68c7974b94356f53754ef617122dd"
+                    )?
+                    .0
                 ),
             }
         );
