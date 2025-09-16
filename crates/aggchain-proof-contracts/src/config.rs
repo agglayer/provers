@@ -96,10 +96,6 @@ fn default_evm_sketch_genesis() -> String {
 }
 
 fn default_op_succinct_config_name() -> String {
-    println!(
-        ">>>>>>>>>>>>>>>>>>>>>>>>> VALUE:{}",
-        keccak256(b"opsuccinct_genesis")
-    );
     keccak256(b"opsuccinct_genesis").to_string()
 }
 
