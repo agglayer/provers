@@ -448,7 +448,6 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             .map_err(|_| {
                 Error::InvalidOpSuccinctConfigName(config.op_succinct_config_name.clone())
             })?;
-        let op_succinct_config_name = Digest(op_succinct_config_name).into();
 
         info!(global_exit_root_manager_l2=%config.global_exit_root_manager_v2_sovereign_chain,
             polygon_zkevm_bridge_v2=%polygon_zkevm_bridge_v2.address(),
@@ -465,7 +464,7 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             trusted_sequencer_addr,
             static_call_caller_address: config.static_call_caller_address,
             evm_sketch_genesis: config::parse_evm_sketch_genesis(&config.evm_sketch_genesis)?,
-            op_succinct_config_name,
+            op_succinct_config_name: Digest(op_succinct_config_name).into(),
         })
     }
 }
