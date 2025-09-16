@@ -42,8 +42,8 @@ pub enum Error {
     #[error("Error performing rollup manager rollup id to rollup data call")]
     InvalidRollupIdToRollupData(#[source] alloy::contract::Error),
 
-    #[error("Error retrieving rollup config hash")]
-    RollupConfigHashError(#[source] alloy::contract::Error),
+    #[error("Error retrieving op succinct config")]
+    OpSuccinctConfigRetrievalError(#[source] alloy::contract::Error),
 
     #[error("Error retrieving aggchain vkey")]
     AggchainVKeyRetrievalError(#[source] alloy::contract::Error),
@@ -71,6 +71,9 @@ pub enum Error {
 
     #[error("Invalid evm sketch genesis input: {0}")]
     InvalidEvmSketchGenesisInput(String),
+
+    #[error("Invalid op succinct config name input: {0}")]
+    InvalidOpSuccinctConfigName(String),
 
     #[error(transparent)]
     Other(eyre::Report),

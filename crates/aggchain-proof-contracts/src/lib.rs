@@ -14,7 +14,7 @@ use aggchain_proof_core::bridge::{
 use agglayer_interop::types::Digest;
 use agglayer_primitives::Address;
 use alloy::{
-    eips::BlockNumberOrTag, network::AnyNetwork, primitives::B256, providers::Provider,
+    eips::BlockNumberOrTag, hex, network::AnyNetwork, primitives::B256, providers::Provider,
     sol_types::SolCall,
 };
 use contracts::{
@@ -38,8 +38,9 @@ use crate::{
     config::AggchainProofContractsConfig,
     contracts::{
         AggchainFep, AggchainFepRpcClient, GlobalExitRootManagerL2SovereignChain,
-        L1RollupConfigHashFetcher, L2LocalExitRootFetcher, L2OutputAtBlock, L2OutputAtBlockFetcher,
-        PolygonRollupManagerRpcClient, PolygonZkevmBridgeV2, ZkevmBridgeRpcClient,
+        L1OpSuccinctConfigFetcher, L2LocalExitRootFetcher, L2OutputAtBlock, L2OutputAtBlockFetcher,
+        OpSuccinctConfig, PolygonRollupManagerRpcClient, PolygonZkevmBridgeV2,
+        ZkevmBridgeRpcClient,
     },
 };
 
@@ -48,7 +49,7 @@ use crate::{
 pub trait AggchainContractsClient:
     L2LocalExitRootFetcher
     + L2OutputAtBlockFetcher
-    + L1RollupConfigHashFetcher
+    + L1OpSuccinctConfigFetcher
     + L2EvmStateSketchFetcher
 {
 }
@@ -80,6 +81,9 @@ pub struct AggchainContractsRpcClient<RpcProvider> {
 
     /// Evm sketch genesis configuration.
     evm_sketch_genesis: Genesis,
+
+    /// Aggchain FEP opSuccinctConfig name.
+    op_succinct_config_name: agglayer_primitives::alloy_primitives::FixedBytes<32>,
 }
 
 impl<T: alloy::providers::Provider> AggchainContractsClient for AggchainContractsRpcClient<T> {}
@@ -120,19 +124,23 @@ where
 }
 
 #[async_trait::async_trait]
-impl<RpcProvider> L1RollupConfigHashFetcher for AggchainContractsRpcClient<RpcProvider>
+impl<RpcProvider> L1OpSuccinctConfigFetcher for AggchainContractsRpcClient<RpcProvider>
 where
     RpcProvider: alloy::providers::Provider + Send + Sync,
 {
-    async fn get_rollup_config_hash(&self) -> Result<Digest, Error> {
-        let response = self
+    async fn get_op_succinct_config(&self) -> Result<OpSuccinctConfig, Error> {
+        let op_succinct_config = self
             .aggchain_fep
-            .rollupConfigHash()
+            .opSuccinctConfigs(self.op_succinct_config_name)
             .call()
             .await
-            .map_err(Error::RollupConfigHashError)?;
+            .map_err(Error::OpSuccinctConfigRetrievalError)?;
 
-        Ok((response.0).into())
+        Ok(OpSuccinctConfig {
+            range_vkey_commitment: (op_succinct_config.rangeVkeyCommitment.0).into(),
+            aggregation_vkey: (op_succinct_config.aggregationVkey.0).into(),
+            rollup_config_hash: (op_succinct_config.rollupConfigHash.0).into(),
+        })
     }
 }
 
@@ -432,6 +440,15 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             .map_err(Error::UnableToRetrieveTrustedSequencerAddress)?
             .into();
 
+        let op_succinct_config_name: [u8; 32] = hex::decode(&config.op_succinct_config_name)
+            .map_err(|_| {
+                Error::InvalidOpSuccinctConfigName(config.op_succinct_config_name.clone())
+            })?
+            .try_into()
+            .map_err(|_| {
+                Error::InvalidOpSuccinctConfigName(config.op_succinct_config_name.clone())
+            })?;
+
         info!(global_exit_root_manager_l2=%config.global_exit_root_manager_v2_sovereign_chain,
             polygon_zkevm_bridge_v2=%polygon_zkevm_bridge_v2.address(),
             polygon_rollup_manager=%config.polygon_rollup_manager,
@@ -447,6 +464,7 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             trusted_sequencer_addr,
             static_call_caller_address: config.static_call_caller_address,
             evm_sketch_genesis: config::parse_evm_sketch_genesis(&config.evm_sketch_genesis)?,
+            op_succinct_config_name: Digest(op_succinct_config_name).into(),
         })
     }
 }

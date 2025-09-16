@@ -5205,8 +5205,8 @@ dependencies = [
 
 [[package]]
 name = "op-succinct-elfs"
-version = "0.1.0"
-source = "git+https://github.com/agglayer/op-succinct.git?tag=v2.3.1-agglayer#cffd968bd744cddc262543e1195fdd36110ecf83"
+version = "3.1.0"
+source = "git+https://github.com/agglayer/op-succinct.git?tag=v3.1.0-agglayer#9af9cecad2c7f6ee17c87e9bba616ef4d638c958"
 
 [[package]]
 name = "op-succinct-grpc"
