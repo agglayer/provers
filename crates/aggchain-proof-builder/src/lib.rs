@@ -29,7 +29,7 @@ use aggkit_prover_types::vkey_hash::VKeyHash;
 use agglayer_interop::types::{
     bincode, GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues,
 };
-use agglayer_primitives::{Address, Digest};
+use agglayer_primitives::{Address, Digest, B256};
 use alloy::eips::BlockNumberOrTag;
 pub use error::Error;
 use eyre::Context as _;
@@ -243,6 +243,34 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .get_op_succinct_config()
             .await
             .map_err(Error::L1ChainDataRetrievalError)?;
+
+        // Check if retrieved op-succinct config aggregation_vkey and
+        // range_vkey_commitment match the values from the `proposer_elfs`
+        // library. This is a safety check to ensure that the same proposer
+        // aggregation program is used.
+        if op_succinct_config.aggregation_vkey.0 != aggregation_vkey.bytes32_raw() {
+            error!(
+                "Mismatch on the aggregation vkey - got from op succinct config: {}, expected: {}",
+                op_succinct_config.aggregation_vkey,
+                aggregation_vkey.bytes32()
+            );
+            return Err(Error::MismatchAggregationVkeyHash {
+                got: VKeyHash::from_bytes(B256::from(op_succinct_config.aggregation_vkey)),
+                expected: proposer_elfs::aggregation::VKEY_HASH,
+            });
+        }
+        let range_vkey_commitment_check = Digest(proposer_elfs::range::VKEY_COMMITMENT);
+        if op_succinct_config.range_vkey_commitment != range_vkey_commitment_check {
+            error!(
+                "Mismatch on the range vkey commitment - got from op succinct config: {}, \
+                 expected: {}",
+                op_succinct_config.range_vkey_commitment, range_vkey_commitment_check
+            );
+            return Err(Error::MismatchAggregationVkeyHash {
+                got: VKeyHash::from_bytes(B256::from(op_succinct_config.aggregation_vkey)),
+                expected: AGGREGATION_VKEY_HASH,
+            });
+        }
 
         let prev_l2_block_sketch = contracts_client
             .get_prev_l2_block_sketch(BlockNumberOrTag::Number(
