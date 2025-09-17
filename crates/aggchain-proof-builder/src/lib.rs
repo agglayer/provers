@@ -266,9 +266,9 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                  expected: {}",
                 op_succinct_config.range_vkey_commitment, range_vkey_commitment_check
             );
-            return Err(Error::MismatchAggregationVkeyHash {
-                got: VKeyHash::from_bytes(B256::from(op_succinct_config.aggregation_vkey)),
-                expected: AGGREGATION_VKEY_HASH,
+            return Err(Error::MismatchRangeVkeyCommitment {
+                got: op_succinct_config.range_vkey_commitment,
+                expected: range_vkey_commitment_check,
             });
         }
 

@@ -1,6 +1,7 @@
 use aggchain_proof_core::full_execution_proof::AggregationProofPublicValues;
 use aggkit_prover_types::vkey_hash::VKeyHash;
 use agglayer_interop::types::bincode;
+use agglayer_primitives::Digest;
 
 use crate::WitnessGeneration;
 
@@ -38,6 +39,9 @@ pub enum Error {
 
     #[error("Mismatch on the aggregation vkey. got: {got:?}, expected: {expected:?}")]
     MismatchAggregationVkeyHash { got: VKeyHash, expected: VKeyHash },
+
+    #[error("Mismatch on the range vkey commitment. got: {got:?}, expected: {expected:?}")]
+    MismatchRangeVkeyCommitment { got: Digest, expected: Digest },
 
     /// Mismatch on the aggregation proof public values between what we got from
     /// the contracts and what we expect from the proof public values.
