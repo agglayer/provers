@@ -16,13 +16,13 @@ pub struct ImportedBridgeExitWithBlockNumber {
 }
 
 impl PartialOrd for ImportedBridgeExitWithBlockNumber {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
 impl Ord for ImportedBridgeExitWithBlockNumber {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    fn cmp(&self, other: &Self) -> Ordering {
         self.block_number.cmp(&other.block_number).then_with(|| {
             let ordering = self.global_index.cmp(&other.global_index);
             // Assert that if block_number and global_index are equal,

@@ -261,16 +261,16 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .await
             .map_err(Error::UnableToFetchTrustedSequencerAddress)?;
 
-        // Helper function to filter, sort, and convert a vector of items to the desired
-        // output type. It filters items based on a range of blocks, sorts them
-        // using type Ord implementation, and maps them to a new type using the
-        // provided mapping function.
+        // Helper function to filter, sort, and convert an iterator of items to the
+        // desired output type. It filters items based on a range of blocks,
+        // sorts them using type Ord implementation, and maps them to a new type
+        // using the provided mapping function.
         fn filter_sort_map<T, F, U>(
-            items: Vec<T>,
+            items: impl IntoIterator<Item = T>,
             range: &std::ops::RangeInclusive<u64>,
             block_number_fn: fn(&T) -> u64,
             map_fn: F,
-        ) -> Vec<U>
+        ) -> impl Iterator<Item = U>
         where
             F: Fn(T) -> U,
             T: Ord,
@@ -280,7 +280,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                 .filter(|item| range.contains(&block_number_fn(item)))
                 .collect();
             filtered_items.sort();
-            filtered_items.into_iter().map(map_fn).collect()
+            filtered_items.into_iter().map(map_fn)
         }
 
         // Retrieve all the raw GERs from the aggsender input.
@@ -298,7 +298,8 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                 global_index: ib.global_index.into(),
                 bridge_exit_hash: ib.bridge_exit_hash.0,
             },
-        );
+        )
+        .collect();
 
         // Prepare removed GERS for the proof.
         let removed_gers: Vec<Digest> = filter_sort_map(
@@ -306,7 +307,8 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             &new_blocks_range,
             |removed_ger| removed_ger.block_number,
             |removed_ger| removed_ger.global_exit_root,
-        );
+        )
+        .collect();
 
         // Prepare inserted GERS for the proof, filtering out the removed ones.
         let inserted_gers: Vec<InsertedGER> = raw_inserted_gers
@@ -328,7 +330,8 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             &new_blocks_range,
             |unclaim| unclaim.block_number,
             |unclaim| unclaim.global_index,
-        );
+        )
+        .collect();
 
         // Filter out the unset claims from the all imported bridge exits list.
         let claimed_imported_bridge_exits: Vec<GlobalIndexWithLeafHash> = all_imported_bridge_exits

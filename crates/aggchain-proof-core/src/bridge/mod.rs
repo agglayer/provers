@@ -333,8 +333,8 @@ impl BridgeConstraintsInput {
     pub fn verify_constrained_claims(&self) -> Result<(), BridgeConstraintsError> {
         let constrained_claims = ImportedBridgeExitCommitmentValues {
             claims: filter_values(
-                &self.bridge_witness.unset_claims, // Vec<U256> of unclaimed global indexes
-                &self.bridge_witness.bridge_exits_claimed, // Vec<GlobalIndexWithLeafHash>
+                &self.bridge_witness.unset_claims,
+                &self.bridge_witness.bridge_exits_claimed,
                 |exit: &GlobalIndexWithLeafHash| -> U256 { exit.global_index },
             )?,
         };
