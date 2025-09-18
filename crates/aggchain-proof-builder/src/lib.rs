@@ -246,7 +246,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
 
         // Check if retrieved op-succinct config aggregation_vkey and
         // range_vkey_commitment match the values from the `proposer_elfs`
-        // library. This is a safety check to ensure that the same proposer
+        // library. This is a sanity check to ensure that the same proposer
         // aggregation program is used.
         if op_succinct_config.aggregation_vkey.0 != aggregation_vkey.bytes32_raw() {
             error!(
