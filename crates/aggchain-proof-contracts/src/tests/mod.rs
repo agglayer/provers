@@ -114,7 +114,6 @@ mod aggchain_contracts_rpc_client {
             ),
             static_call_caller_address: address!("0x39027D57969aD59161365e0bbd53D2F63eE5AAA6"),
             evm_sketch_genesis: "mainnet".to_string(),
-            op_succinct_config_name: keccak256(b"opsuccinct_genesis").to_string(),
         };
 
         let result = AggchainContractsRpcClient::new(1, &config).await;
@@ -282,7 +281,6 @@ mod aggchain_contracts_rpc_client {
             global_exit_root_manager_v2_sovereign_chain: dummy_address(),
             static_call_caller_address: address!("0x39027D57969aD59161365e0bbd53D2F63eE5AAA6"),
             evm_sketch_genesis: "mainnet".to_string(),
-            op_succinct_config_name: keccak256(b"opsuccinct_genesis").to_string(),
         };
 
         let result = AggchainContractsRpcClient::new(1, &config).await;
