@@ -1,4 +1,4 @@
-use agglayer_primitives::{address, keccak::keccak256, Address};
+use agglayer_primitives::{address, Address};
 use prover_alloy::L1RpcEndpoint;
 use prover_utils::from_env_or_default;
 use serde::{Deserialize, Serialize};
@@ -49,11 +49,6 @@ pub struct AggchainProofContractsConfig {
     /// or path to a custom genesis file.
     #[serde(default = "default_evm_sketch_genesis")]
     pub evm_sketch_genesis: String,
-
-    /// Name of the OP Succinct config to use.
-    /// Default is keccak256("opsuccinct_genesis").
-    #[serde(default = "default_op_succinct_config_name")]
-    pub op_succinct_config_name: String,
 }
 
 impl Default for AggchainProofContractsConfig {
@@ -67,7 +62,6 @@ impl Default for AggchainProofContractsConfig {
                 default_global_exit_root_manager_v2_sovereign_chain(),
             static_call_caller_address: default_static_call_caller_address(),
             evm_sketch_genesis: default_evm_sketch_genesis(),
-            op_succinct_config_name: default_op_succinct_config_name(),
         }
     }
 }
@@ -93,10 +87,6 @@ fn default_static_call_caller_address() -> Address {
 
 fn default_evm_sketch_genesis() -> String {
     String::from("mainnet")
-}
-
-fn default_op_succinct_config_name() -> String {
-    keccak256(b"opsuccinct_genesis").to_string()
 }
 
 pub(crate) fn parse_evm_sketch_genesis(evm_sketch_genesis: &str) -> Result<Genesis, crate::Error> {
