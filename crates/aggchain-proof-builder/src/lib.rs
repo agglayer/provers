@@ -13,7 +13,7 @@ use std::{
 use aggchain_proof_contracts::{
     contracts::{
         GetTrustedSequencerAddress, L1OpSuccinctConfigFetcher, L2EvmStateSketchFetcher,
-        L2LocalExitRootFetcher, L2OutputAtBlockFetcher,
+        L2LocalExitRootFetcher, L2OutputAtBlockFetcher, OpSuccinctConfig,
     },
     AggchainContractsClient,
 };
@@ -141,6 +141,9 @@ pub struct AggchainProofBuilder<ContractsClient> {
     /// Verification key for the aggchain proof.
     aggchain_vkey: Arc<SP1VerifyingKey>,
 
+    /// Range vkey commitment of the proposer range proofs program.
+    range_vkey_commitment: Digest,
+
     /// Static call caller address.
     static_call_caller_address: Address,
 }
@@ -155,7 +158,10 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     pub async fn new(
         config: &AggchainProofBuilderConfig,
         contracts_client: Arc<ContractsClient>,
-    ) -> eyre::Result<Self> {
+    ) -> eyre::Result<Self>
+    where
+        ContractsClient: L1OpSuccinctConfigFetcher,
+    {
         let executor = Executor::new(
             config.primary_prover.clone(),
             config.fallback_prover.clone(),
@@ -169,8 +175,10 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
 
         let prover = Buffer::new(executor, MAX_CONCURRENT_REQUESTS);
 
-        // Retrieve the entire aggregation vkey from the ELF
+        // Retrieve the entire aggregation vkey and the range vkey commitment from the
+        // ELF
         let aggregation_vkey = proposer_elfs::aggregation::VKEY.vkey().clone();
+        let range_vkey_commitment = Digest(proposer_elfs::range::VKEY_COMMITMENT);
 
         // Check mismatch on aggregation vkey
         {
@@ -186,12 +194,27 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             }
         }
 
+        // Check the mismatch of the keys from the op-succinct configuration in the
+        // contract
+        let op_succinct_config = contracts_client
+            .get_op_succinct_config()
+            .await
+            .map_err(Error::L1ChainDataRetrievalError)?;
+
+        // Validate that the OpSuccinct config keys match expected values
+        validate_op_succinct_config_keys(
+            &op_succinct_config,
+            &aggregation_vkey,
+            &range_vkey_commitment,
+        )?;
+
         Ok(AggchainProofBuilder {
             aggchain_vkey,
             contracts_client,
             prover,
             network_id: config.network_id,
             aggregation_vkey: Arc::new(aggregation_vkey),
+            range_vkey_commitment,
             static_call_caller_address: config.contracts.static_call_caller_address,
         })
     }
@@ -204,6 +227,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         network_id: u32,
         aggregation_vkey: Arc<SP1VerifyingKey>,
         static_call_caller_address: Address,
+        range_vkey_commitment: Digest,
     ) -> Result<AggchainProverInputs, Error>
     where
         ContractsClient: L2LocalExitRootFetcher
@@ -244,33 +268,12 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .await
             .map_err(Error::L1ChainDataRetrievalError)?;
 
-        // Check if retrieved op-succinct config aggregation_vkey and
-        // range_vkey_commitment match the values from the `proposer_elfs`
-        // library. This is a sanity check to ensure that the same proposer
-        // aggregation program is used.
-        if op_succinct_config.aggregation_vkey.0 != aggregation_vkey.bytes32_raw() {
-            error!(
-                "Mismatch on the aggregation vkey - got from op succinct config: {}, expected: {}",
-                op_succinct_config.aggregation_vkey,
-                aggregation_vkey.bytes32()
-            );
-            return Err(Error::MismatchAggregationVkeyHash {
-                got: VKeyHash::from_bytes(B256::from(op_succinct_config.aggregation_vkey)),
-                expected: proposer_elfs::aggregation::VKEY_HASH,
-            });
-        }
-        let range_vkey_commitment_check = Digest(proposer_elfs::range::VKEY_COMMITMENT);
-        if op_succinct_config.range_vkey_commitment != range_vkey_commitment_check {
-            error!(
-                "Mismatch on the range vkey commitment - got from op succinct config: {}, \
-                 expected: {}",
-                op_succinct_config.range_vkey_commitment, range_vkey_commitment_check
-            );
-            return Err(Error::MismatchRangeVkeyCommitment {
-                got: op_succinct_config.range_vkey_commitment,
-                expected: range_vkey_commitment_check,
-            });
-        }
+        // Validate that the OpSuccinct config keys match expected values
+        validate_op_succinct_config_keys(
+            &op_succinct_config,
+            &aggregation_vkey,
+            &range_vkey_commitment,
+        )?;
 
         let prev_l2_block_sketch = contracts_client
             .get_prev_l2_block_sketch(BlockNumberOrTag::Number(
@@ -414,6 +417,41 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     }
 }
 
+/// Validates that the OpSuccinct config keys match the expected values.
+/// This ensures that the same proposer aggregation program is being used.
+fn validate_op_succinct_config_keys(
+    op_succinct_config: &OpSuccinctConfig,
+    aggregation_vkey: &SP1VerifyingKey,
+    expected_range_vkey_commitment: &Digest,
+) -> Result<(), Error> {
+    // Check if retrieved op-succinct config aggregation_vkey matches
+    if op_succinct_config.aggregation_vkey.0 != aggregation_vkey.bytes32_raw() {
+        error!(
+            "Mismatch on the aggregation vkey - got from op succinct config: {}, expected: {}",
+            op_succinct_config.aggregation_vkey,
+            aggregation_vkey.bytes32()
+        );
+        return Err(Error::MismatchAggregationVkeyHash {
+            got: VKeyHash::from_bytes(B256::from(op_succinct_config.aggregation_vkey)),
+            expected: proposer_elfs::aggregation::VKEY_HASH,
+        });
+    }
+
+    // Check if retrieved op-succinct config range_vkey_commitment matches
+    if op_succinct_config.range_vkey_commitment != *expected_range_vkey_commitment {
+        error!(
+            "Mismatch on the range vkey commitment - got from op succinct config: {}, expected: {}",
+            op_succinct_config.range_vkey_commitment, expected_range_vkey_commitment
+        );
+        return Err(Error::MismatchRangeVkeyCommitment {
+            got: op_succinct_config.range_vkey_commitment,
+            expected: *expected_range_vkey_commitment,
+        });
+    }
+
+    Ok(())
+}
+
 impl<ContractsClient> tower::Service<AggchainProofBuilderRequest>
     for AggchainProofBuilder<ContractsClient>
 where
@@ -442,6 +480,7 @@ where
         let aggregation_vkey = self.aggregation_vkey.clone();
         let aggchain_vkey = self.aggchain_vkey.clone();
         let static_call_caller_address = self.static_call_caller_address;
+        let range_vkey_commitment = self.range_vkey_commitment;
 
         // TODO: figure out a way to stop only this service upon an sp1 panic, and not
         // the entire system. For now, just ignore the panic, even though some
@@ -458,6 +497,7 @@ where
                 network_id,
                 aggregation_vkey,
                 static_call_caller_address,
+                range_vkey_commitment,
             )
             .await?;
 
