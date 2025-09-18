@@ -100,6 +100,8 @@ mod aggchain_contracts_rpc_client {
             .create();
 
         let mock_l1_trusted_sequencer = mock_trusted_sequencer_call(&mut server_l1);
+        let mock_l1_selected_op_succinct_config_name =
+            mock_selected_op_succinct_config_name_call(&mut server_l1);
 
         let mock_server_l1_url = L1RpcEndpoint::from_str(&server_l1.url()).unwrap();
         let mock_server_l2_el_url = Url::parse(&server_l2_el.url()).unwrap();
@@ -121,6 +123,9 @@ mod aggchain_contracts_rpc_client {
         mock_l2.assert_async().await;
         mock_l1.assert_async().await;
         mock_l1_trusted_sequencer.assert_async().await;
+        mock_l1_selected_op_succinct_config_name
+            .assert_async()
+            .await;
         Ok((
             result?,
             TestServers {
@@ -162,6 +167,40 @@ mod aggchain_contracts_rpc_client {
             .create()
     }
 
+    fn mock_selected_op_succinct_config_name_call(server_l1: &mut ServerGuard) -> mockito::Mock {
+        // Function selector for selectedOpSuccinctConfigName() - first 4 bytes of
+        // keccak256 hash
+        let function_selector = &keccak256(b"selectedOpSuccinctConfigName()")[..4];
+
+        let expected_body = serde_json::json!({
+            "method": "eth_call",
+            "params": [{
+                "to": "0x8e80ffe6dc044f4a766afd6e5a8732fe0977a493",
+                "input": format!("0x{}", hex::encode(function_selector)),
+            }, "latest"],
+            "id": 2,
+            "jsonrpc": "2.0",
+        });
+
+        // Return the same config name that will be used by opSuccinctConfigs
+        let op_succinct_config_name = keccak256(b"opsuccinct_genesis");
+
+        let result = json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "result": format!("0x{}", hex::encode(op_succinct_config_name))
+        })
+        .to_string();
+
+        server_l1
+            .mock("POST", "/")
+            .with_status(200)
+            .with_header("content-type", "text/javascript")
+            .match_body(mockito::Matcher::Json(expected_body))
+            .with_body(result)
+            .create()
+    }
+
     fn mock_op_succinct_configs(server_l1: &mut ServerGuard) -> mockito::Mock {
         // opSuccinctConfigs takes a bytes32 parameter (the config name) and returns 3
         // bytes32 values
@@ -178,7 +217,7 @@ mod aggchain_contracts_rpc_client {
                 "to": "0x8e80ffe6dc044f4a766afd6e5a8732fe0977a493",
                 "input": format!("0x{}", hex::encode(calldata)),
             }, "latest"],
-            "id": 2,
+            "id": 3,
             "jsonrpc": "2.0",
         });
 
@@ -198,7 +237,7 @@ mod aggchain_contracts_rpc_client {
         let result_tuple = (aggregation_vkey, range_vkey_commitment, rollup_config_hash);
         let result = json!({
             "jsonrpc": "2.0",
-            "id": 2,
+            "id": 3,
             "result": format!("0x{}", hex::encode(alloy::sol_types::SolValue::abi_encode(&result_tuple)))
         }).to_string();
 
