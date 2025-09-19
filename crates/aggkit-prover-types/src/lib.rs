@@ -6,6 +6,7 @@ pub mod conversion;
 pub mod error;
 #[cfg(feature = "sp1")]
 pub mod vkey;
+#[cfg(feature = "sp1")]
 pub mod vkey_hash;
 
 pub use agglayer_interop::types::{bincode, Digest};

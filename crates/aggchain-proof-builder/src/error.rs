@@ -1,6 +1,6 @@
 use aggchain_proof_core::full_execution_proof::AggregationProofPublicValues;
-use aggkit_prover_types::vkey_hash::VKeyHash;
 use agglayer_interop::types::bincode;
+use agglayer_primitives::vkey_hash::VKeyHash;
 
 use crate::WitnessGeneration;
 

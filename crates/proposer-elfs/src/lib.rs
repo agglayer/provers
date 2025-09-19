@@ -1,6 +1,6 @@
 pub use aggkit_prover_types::{
     vkey::LazyVerifyingKey,
-    vkey_hash::{HashU32, VKeyHash},
+    vkey_hash::{HashU32, Sp1VKeyHash, VKeyHash},
 };
 
 mod vkeys_raw {
