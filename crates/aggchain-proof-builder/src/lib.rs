@@ -29,7 +29,7 @@ use aggkit_prover_types::vkey_hash::VKeyHash;
 use agglayer_interop::types::{
     bincode, GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues,
 };
-use agglayer_primitives::{Address, Digest, B256};
+use agglayer_primitives::{Address, Digest};
 use alloy::eips::BlockNumberOrTag;
 pub use error::Error;
 use eyre::Context as _;
