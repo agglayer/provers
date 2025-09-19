@@ -425,15 +425,15 @@ fn validate_op_succinct_config_keys(
     expected_range_vkey_commitment: &Digest,
 ) -> Result<(), Error> {
     // Check if retrieved op-succinct config aggregation_vkey matches
-    if op_succinct_config.aggregation_vkey.0 != aggregation_vkey.bytes32_raw() {
+    let expected_aggregation_vkey = Digest(aggregation_vkey.bytes32_raw());
+    if op_succinct_config.aggregation_vkey != expected_aggregation_vkey {
         error!(
             "Mismatch on the aggregation vkey - got from op succinct config: {}, expected: {}",
-            op_succinct_config.aggregation_vkey,
-            aggregation_vkey.bytes32()
+            op_succinct_config.aggregation_vkey, expected_aggregation_vkey
         );
-        return Err(Error::MismatchAggregationVkeyHash {
-            got: VKeyHash::from_bytes(B256::from(op_succinct_config.aggregation_vkey)),
-            expected: proposer_elfs::aggregation::VKEY_HASH,
+        return Err(Error::MismatchAggregationVkey {
+            got: op_succinct_config.aggregation_vkey,
+            expected: expected_aggregation_vkey,
         });
     }
 
