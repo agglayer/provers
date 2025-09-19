@@ -25,7 +25,7 @@ use aggchain_proof_core::{
     proof::{AggchainProofWitness, IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION},
 };
 use aggchain_proof_types::AggchainProofInputs;
-use aggkit_prover_types::vkey_hash::VKeyHash;
+use aggkit_prover_types::vkey_hash::{VKeyHash, Sp1VKeyHash};
 use agglayer_interop::types::{
     bincode, GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues,
 };
