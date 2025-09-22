@@ -138,7 +138,7 @@ where
 
         Ok(OpSuccinctConfig {
             range_vkey_commitment: (op_succinct_config.rangeVkeyCommitment.0).into(),
-            aggregation_vkey: (op_succinct_config.aggregationVkey.0).into(),
+            aggregation_vkey_hash: (op_succinct_config.aggregationVkey.0).into(),
             rollup_config_hash: (op_succinct_config.rollupConfigHash.0).into(),
         })
     }

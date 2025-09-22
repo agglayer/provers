@@ -425,16 +425,16 @@ fn validate_op_succinct_config_keys(
     expected_range_vkey_commitment: &Digest,
 ) -> Result<(), Error> {
     // Check if retrieved op-succinct config aggregation_vkey matches
-    let expected_aggregation_vkey = Digest(aggregation_vkey.bytes32_raw());
-    if op_succinct_config.aggregation_vkey != expected_aggregation_vkey {
+    let expected_aggregation_vkey_hash = Digest(aggregation_vkey.bytes32_raw());
+    if op_succinct_config.aggregation_vkey_hash != expected_aggregation_vkey_hash {
         error!(
             "Mismatch on the aggregation vkey - got from op succinct contract config: {}, \
              expected from elf config: {}",
-            op_succinct_config.aggregation_vkey, expected_aggregation_vkey
+            op_succinct_config.aggregation_vkey_hash, expected_aggregation_vkey_hash
         );
-        return Err(Error::MismatchAggregationVkey {
-            got: op_succinct_config.aggregation_vkey,
-            expected: expected_aggregation_vkey,
+        return Err(Error::MismatchAggregationVkeyHash {
+            got: op_succinct_config.aggregation_vkey_hash,
+            expected: expected_aggregation_vkey_hash,
         });
     }
 

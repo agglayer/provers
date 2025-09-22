@@ -405,7 +405,7 @@ mod aggchain_contracts_rpc_client {
         assert_eq!(
             op_succinct_config,
             OpSuccinctConfig {
-                aggregation_vkey: Digest(
+                aggregation_vkey_hash: Digest(
                     B256::from_str(
                         "0x1111111111111111111111111111111111111111111111111111111111111111"
                     )?

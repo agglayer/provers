@@ -44,10 +44,10 @@ pub enum Error {
     MismatchAggregationElfVkeyHash { got: VKeyHash, expected: VKeyHash },
 
     #[error(
-        "Mismatch on the aggregation vkey - got from op succinct contract config: {got:?}, \
+        "Mismatch on the aggregation vkey hash - got from op succinct contract config: {got:?}, \
          expected from the elf: {expected:?}"
     )]
-    MismatchAggregationVkey { got: Digest, expected: Digest },
+    MismatchAggregationVkeyHash { got: Digest, expected: Digest },
 
     #[error(
         "Mismatch on the range vkey commitment - got from op succinct config: {got:?}, expected \
