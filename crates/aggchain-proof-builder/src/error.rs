@@ -49,7 +49,10 @@ pub enum Error {
     )]
     MismatchAggregationVkey { got: Digest, expected: Digest },
 
-    #[error("Mismatch on the range vkey commitment. got: {got:?}, expected: {expected:?}")]
+    #[error(
+        "Mismatch on the range vkey commitment - got from op succinct config: {got:?}, expected \
+         from the elf: {expected:?}"
+    )]
     MismatchRangeVkeyCommitment { got: Digest, expected: Digest },
 
     /// Mismatch on the aggregation proof public values between what we got from
