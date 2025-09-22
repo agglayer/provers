@@ -37,10 +37,16 @@ pub enum Error {
     #[error("Prover service is not ready")]
     ProverServiceReadyError(#[source] tower::BoxError),
 
-    #[error("Mismatch on the aggregation vkey hash. got: {got:?}, expected: {expected:?}")]
-    MismatchAggregationVkeyHash { got: VKeyHash, expected: VKeyHash },
+    #[error(
+        "Mismatch on the aggregation vkey hash derived from the elf aggregation vkey. got: \
+         {got:?}, expected: {expected:?}"
+    )]
+    MismatchAggregationElfVkeyHash { got: VKeyHash, expected: VKeyHash },
 
-    #[error("Mismatch on the aggregation vkey. got: {got:?}, expected: {expected:?}")]
+    #[error(
+        "Mismatch on the aggregation vkey - got from op succinct contract config: {got:?}, \
+         expected from the elf: {expected:?}"
+    )]
     MismatchAggregationVkey { got: Digest, expected: Digest },
 
     #[error("Mismatch on the range vkey commitment. got: {got:?}, expected: {expected:?}")]

@@ -187,7 +187,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             let expected = AGGREGATION_VKEY_HASH;
 
             if retrieved != expected {
-                return Err(eyre::Report::from(Error::MismatchAggregationVkeyHash {
+                return Err(eyre::Report::from(Error::MismatchAggregationElfVkeyHash {
                     got: retrieved,
                     expected,
                 }));
@@ -428,7 +428,8 @@ fn validate_op_succinct_config_keys(
     let expected_aggregation_vkey = Digest(aggregation_vkey.bytes32_raw());
     if op_succinct_config.aggregation_vkey != expected_aggregation_vkey {
         error!(
-            "Mismatch on the aggregation vkey - got from op succinct config: {}, expected: {}",
+            "Mismatch on the aggregation vkey - got from op succinct contract config: {}, \
+             expected from elf config: {}",
             op_succinct_config.aggregation_vkey, expected_aggregation_vkey
         );
         return Err(Error::MismatchAggregationVkey {
