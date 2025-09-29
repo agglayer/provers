@@ -46,11 +46,5 @@ test-log.workspace = true
 tokio.workspace = true
 tokio-util.workspace = true
 
-[build-dependencies]
-tonic-build = { version = "0.12", default-features = false, features = [
-    "prost",
-    "transport",
-] }
-
 [features]
 testutils = ["dep:mockall"]
