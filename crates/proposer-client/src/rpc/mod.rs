@@ -1,9 +1,9 @@
 use std::{fmt::Display, time::Duration};
 
 use alloy_primitives::B256;
-pub use crate::generated::proofs as grpc;
 use tracing::{error, info};
 
+pub use crate::generated::proofs as grpc;
 use crate::{
     error::{self, Error, ProofRequestError},
     GrpcUri, MockProofId, RequestId,
