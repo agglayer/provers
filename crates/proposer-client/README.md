@@ -9,9 +9,10 @@ The gRPC client code for `op-succinct-grpc` is generated using [buf](https://buf
 
 ### Regenerating gRPC Code with cargo make
 
-To regenerate the gRPC code after proto changes (it would regenerate all other proto files), use:
+To regenerate the gRPC code after proto changes (it would also regenerate all other proto files), use:
 
 ```bash
+# From the project root
 cargo make generate-proto
 ```
 
