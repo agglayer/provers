@@ -1,5 +1,5 @@
 [tasks.generate-proto]
-dependencies = ["generate-aggkit-proto", "generate-agglayer-proto"]
+dependencies = ["generate-aggkit-proto", "generate-agglayer-proto", "generate-op-succinct-grpc-proto"]
 
 [tasks.generate-aggkit-proto]
 command = "buf"
@@ -9,6 +9,11 @@ dependencies = ["install-proto-deps"]
 [tasks.generate-agglayer-proto]
 command = "buf"
 args = ["generate", "--template", "buf.agglayer-prover.gen.yaml"]
+dependencies = ["install-proto-deps"]
+
+[tasks.generate-op-succinct-grpc-proto]
+command = "buf"
+args = ["generate", "--template", "buf.op-succinct-grpc.gen.yaml"]
 dependencies = ["install-proto-deps"]
 
 [tasks.install-proto-deps]

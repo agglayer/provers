@@ -1,0 +1,27 @@
+version: v2
+
+managed:
+  enabled: true
+
+plugins:
+  - local: protoc-gen-prost
+    out: crates/proposer-client/src/generated
+    strategy: all
+    opt:
+      - bytes=.
+      - file_descriptor_set
+      - compile_well_known_types
+
+  - local: protoc-gen-prost-serde
+    out: crates/proposer-client/src/generated
+
+  - local: protoc-gen-prost-crate
+    out: crates/proposer-client/src/generated/
+    opt:
+      - no_features
+
+  - local: protoc-gen-tonic
+    out: crates/proposer-client/src/generated
+
+inputs:
+  - module: buf.build/agglayer/op-succinct-grpc 

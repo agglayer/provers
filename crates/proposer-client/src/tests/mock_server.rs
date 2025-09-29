@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use eyre::{eyre, Context};
-use op_succinct_grpc::proofs::{GetMockProofRequest, GetMockProofResponse};
+use crate::generated::proofs::{GetMockProofRequest, GetMockProofResponse};
 pub use tonic::transport::Error as TransportError;
 use tonic::{transport::server::TcpIncoming, Request, Response, Status};
 use tracing::info;

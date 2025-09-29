@@ -4,3 +4,6 @@ deps:
   - name: buf.build/agglayer/interop
     commit: 85e8a3d9f59c4f9790789b45afb87c8e
     digest: b5:27520cc3a605a2a49e8b577e89f2cdd1796e91823ad23088be0cf43dbf7760eaa0949d460bfb69156633b7a3d5e921f8f3b08143062db4f82e41cef1834592f7
+  - name: buf.build/agglayer/op-succinct-grpc
+    commit: ad1c8350856c4f0ea6e715a35c546c5f
+    digest: b5:0a8510de88bb72b769e8d8c363274175825ede06cf07a329ecd4847c52df3ab2a2527a218048243d9c6fdda90d370e58ff6238cdc0db3341ef217c5021793c3c

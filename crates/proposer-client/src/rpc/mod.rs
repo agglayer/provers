@@ -1,7 +1,7 @@
 use std::{fmt::Display, time::Duration};
 
 use alloy_primitives::B256;
-pub use op_succinct_grpc::proofs as grpc;
+pub use crate::generated::proofs as grpc;
 use tracing::{error, info};
 
 use crate::{
