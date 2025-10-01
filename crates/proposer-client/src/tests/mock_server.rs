@@ -1,12 +1,14 @@
 use std::time::Duration;
 
 use eyre::{eyre, Context};
-use op_succinct_grpc::proofs::{GetMockProofRequest, GetMockProofResponse};
 pub use tonic::transport::Error as TransportError;
 use tonic::{transport::server::TcpIncoming, Request, Response, Status};
 use tracing::info;
 
-use crate::rpc::grpc::{self, proofs_server::Proofs};
+use crate::{
+    generated::proofs::{GetMockProofRequest, GetMockProofResponse},
+    rpc::grpc::{self, proofs_server::Proofs},
+};
 
 mockall::mock! {
     /// Mock op-succinct proofs service.

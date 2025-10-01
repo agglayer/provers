@@ -5210,22 +5210,6 @@ version = "3.1.0"
 source = "git+https://github.com/agglayer/op-succinct.git?tag=v3.1.0-agglayer#9af9cecad2c7f6ee17c87e9bba616ef4d638c958"
 
 [[package]]
-name = "op-succinct-grpc"
-version = "0.1.0"
-source = "git+https://github.com/agglayer/op-succinct-grpc.git?tag=v0.1.0#ac519a1cb16e566b3e49ccae5cbe1a9959a70118"
-dependencies = [
- "bincode",
- "bytes",
- "pbjson",
- "pbjson-types",
- "prost",
- "serde",
- "tonic 0.12.3",
- "tonic-build",
- "tracing",
-]
-
-[[package]]
 name = "opaque-debug"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5722,33 +5706,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pbjson-build"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6eea3058763d6e656105d1403cb04e0a41b7bbac6362d413e7c33be0c32279c9"
-dependencies = [
- "heck 0.5.0",
- "itertools 0.13.0",
- "prost",
- "prost-types",
-]
-
-[[package]]
-name = "pbjson-types"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e54e5e7bfb1652f95bc361d76f3c780d8e526b134b85417e774166ee941f0887"
-dependencies = [
- "bytes",
- "chrono",
- "pbjson",
- "pbjson-build",
- "prost",
- "prost-build",
- "serde",
-]
-
-[[package]]
 name = "pem-rfc7468"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6130,7 +6087,7 @@ dependencies = [
  "jsonrpsee",
  "mockall",
  "mockito",
- "op-succinct-grpc",
+ "pbjson",
  "proposer-client",
  "prost",
  "prover-executor",

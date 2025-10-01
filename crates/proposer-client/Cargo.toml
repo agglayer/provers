@@ -16,6 +16,7 @@ educe.workspace = true
 eyre.workspace = true
 hex.workspace = true
 jsonrpsee.workspace = true
+pbjson.workspace = true
 prost.workspace = true
 prover-executor.workspace = true
 serde.workspace = true
@@ -29,7 +30,6 @@ url.workspace = true
 
 # Ecosystem dependencies
 agglayer-interop-types.workspace = true
-op-succinct-grpc.workspace = true
 
 # Local dependencies
 prover-utils.workspace = true
