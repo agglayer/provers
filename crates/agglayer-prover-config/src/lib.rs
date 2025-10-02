@@ -14,7 +14,8 @@ pub use crate::{shutdown::ShutdownConfig, telemetry::TelemetryConfig};
 pub mod shutdown;
 pub(crate) mod telemetry;
 
-pub(crate) const DEFAULT_IP: std::net::Ipv4Addr = std::net::Ipv4Addr::new(0, 0, 0, 0);
+pub(crate) const DEFAULT_IP: Ipv4Addr = Ipv4Addr::new(0, 0, 0, 0);
+pub const DEFAULT_GRPC_MESSAGE_SIZE: usize = 64 * 1024 * 1024; // 64MB
 
 /// The Agglayer Prover configuration.
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
@@ -125,13 +126,13 @@ pub struct ClientProverConfig {
 }
 
 const fn default_max_decoding_message_size() -> usize {
-    4 * 1024 * 1024
+    DEFAULT_GRPC_MESSAGE_SIZE
 }
 fn same_as_default_max_decoding_message_size(value: &usize) -> bool {
     *value == default_max_decoding_message_size()
 }
 const fn default_max_encoding_message_size() -> usize {
-    4 * 1024 * 1024
+    DEFAULT_GRPC_MESSAGE_SIZE
 }
 fn same_as_default_max_encoding_message_size(value: &usize) -> bool {
     *value == default_max_encoding_message_size()
