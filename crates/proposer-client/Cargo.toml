@@ -24,7 +24,7 @@ serde_with = { workspace = true, features = ["hex"] }
 sp1-sdk.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
-tonic.workspace = true
+tonic = { workspace = true, features = ["channel"] }
 tracing.workspace = true
 url.workspace = true
 
@@ -45,12 +45,6 @@ serde_json.workspace = true
 test-log.workspace = true
 tokio.workspace = true
 tokio-util.workspace = true
-
-[build-dependencies]
-tonic-build = { version = "0.12", default-features = false, features = [
-    "prost",
-    "transport",
-] }
 
 [features]
 testutils = ["dep:mockall"]
