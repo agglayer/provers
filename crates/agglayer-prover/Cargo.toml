@@ -15,11 +15,11 @@ prost.workspace = true
 sp1-sdk.workspace = true
 tokio = { workspace = true, features = ["full"] }
 tokio-util.workspace = true
-tracing.workspace = true
+tonic = { workspace = true, features = ["zstd", "router"] }
+tonic-health.workspace = true
+tonic-reflection.workspace = true
 tower = { workspace = true, features = ["timeout"] }
-tonic = { workspace = true, features = ["zstd"] }
-tonic-health = "0.12.3"
-tonic-reflection = "0.12.3"
+tracing.workspace = true
 
 agglayer-prover-config.workspace = true
 agglayer-prover-types.workspace = true

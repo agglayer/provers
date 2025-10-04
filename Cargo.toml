@@ -53,7 +53,6 @@ unified-bridge = "0.11.0"
 
 # Ecosystem dependencies
 op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v3.1.0-agglayer" }
-op-succinct-grpc = { git = "https://github.com/agglayer/op-succinct-grpc.git", tag = "v0.1.0" }
 
 # SP1 dependencies
 # Please check if the toolchain image at the top `scripts/make/Makefile.elf.toml` could also be
@@ -86,6 +85,7 @@ arc-swap = "1.7"
 async-trait = "0.1.82"
 base64 = "0.22.0"
 buildstructor = "0.5.4"
+bytes = "1.10"
 clap = { version = "4.5", features = ["derive", "env"] }
 color-eyre = "0.6.5"
 derive_more = "2.0"
@@ -100,6 +100,7 @@ fail = { version = "0.5.1", default-features = false }
 ff = { version = "0.13", features = ["derive"] }
 futures = "0.3.31"
 hex = "0.4.3"
+http-body-util = "0.1.2"
 hyper = "1.5"
 # Temporary until https://github.com/mitsuhiko/insta/pull/672 or similar lands
 insta = { git = "https://github.com/freyskeyd/insta", branch = "chore/updating-deps-to-avoid-serialize-error", features = [
@@ -113,7 +114,7 @@ mockall = "0.13.1"
 mockito = "1.6"
 parking_lot = "0.12.3"
 pbjson = "0.7.0"
-prost = "0.13.4"
+prost = "0.13.5"
 rand = "0.8.5"
 rstest = "0.22.0"
 reqwest = "0.12"
@@ -129,8 +130,10 @@ tokio = { version = "1.42", features = ["full"] }
 tokio-stream = { version = "0.1.17", features = ["sync"] }
 tokio-util = "0.7.13"
 toml = "0.8.15"
-tonic = { version = "0.12.3", default-features = false }
-tonic-types = "0.12.3"
+tonic = { version = "0.13.1", default-features = false }
+tonic-health = "0.13.1"
+tonic-reflection = "0.13.1"
+tonic-types = "0.13.1"
 tower = "0.4.13"
 tracing = "0.1.41"
 tracing-appender = "0.2.3"
