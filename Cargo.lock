@@ -5193,7 +5193,7 @@ dependencies = [
 [[package]]
 name = "op-succinct-elfs"
 version = "3.2.2"
-source = "git+https://github.com/agglayer/op-succinct.git?branch=vcastellm%2Fbump-kona#d5b8d758d3b82285c40fa29620c28de87b0fab1f"
+source = "git+https://github.com/agglayer/op-succinct.git?rev=374dad40c9b862e4fcb9056adad17d861ae90a8f#374dad40c9b862e4fcb9056adad17d861ae90a8f"
 
 [[package]]
 name = "opaque-debug"
