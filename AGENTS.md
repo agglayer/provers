@@ -9,7 +9,7 @@
   - Propagate errors with `?` when the calling function should handle them
   - Use `.log_err()` or similar when you need to ignore errors but want visibility
   - Use explicit error handling with `match` or `if let Err(...)` when you need custom logic
-  - Example: avoid `let _ = client.request(...).await?;` - use `client.request(...).await?;` instead
+  - Example: avoid `let _ = client.request(...).await;` - use `client.request(...).await?;` instead
 * When implementing async operations that may fail, ensure errors propagate to the UI layer so users get meaningful feedback.
 
 * Avoid creative additions unless explicitly requested
