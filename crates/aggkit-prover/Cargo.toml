@@ -43,6 +43,7 @@ prover-logger.workspace = true
 hyper-util = "0.1.10"
 mockall.workspace = true
 tokio-stream = { workspace = true, features = ["sync"] }
+tonic = { workspace = true, features = ["channel", "server", "router"] }
 
 [build-dependencies]
 color-eyre.workspace = true
