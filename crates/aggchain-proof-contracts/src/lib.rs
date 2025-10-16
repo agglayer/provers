@@ -14,7 +14,7 @@ use aggchain_proof_core::bridge::{
 use agglayer_interop::types::Digest;
 use agglayer_primitives::Address;
 use alloy::{
-    eips::BlockNumberOrTag, hex, network::AnyNetwork, primitives::B256, providers::Provider,
+    eips::BlockNumberOrTag, network::AnyNetwork, primitives::B256, providers::Provider,
     sol_types::SolCall,
 };
 use contracts::{
@@ -86,12 +86,12 @@ pub struct AggchainContractsRpcClient<RpcProvider> {
     op_succinct_config_name: agglayer_primitives::alloy_primitives::FixedBytes<32>,
 }
 
-impl<T: alloy::providers::Provider> AggchainContractsClient for AggchainContractsRpcClient<T> {}
+impl<T: Provider> AggchainContractsClient for AggchainContractsRpcClient<T> {}
 
 #[async_trait::async_trait]
 impl<RpcProvider> L2LocalExitRootFetcher for AggchainContractsRpcClient<RpcProvider>
 where
-    RpcProvider: alloy::providers::Provider + Send + Sync,
+    RpcProvider: Provider + Send + Sync,
 {
     async fn get_l2_local_exit_root(&self, block_number: u64) -> Result<Digest, Error> {
         let response = self
@@ -126,7 +126,7 @@ where
 #[async_trait::async_trait]
 impl<RpcProvider> L1OpSuccinctConfigFetcher for AggchainContractsRpcClient<RpcProvider>
 where
-    RpcProvider: alloy::providers::Provider + Send + Sync,
+    RpcProvider: Provider + Send + Sync,
 {
     async fn get_op_succinct_config(&self) -> Result<OpSuccinctConfig, Error> {
         let op_succinct_config = self
@@ -138,7 +138,7 @@ where
 
         Ok(OpSuccinctConfig {
             range_vkey_commitment: (op_succinct_config.rangeVkeyCommitment.0).into(),
-            aggregation_vkey: (op_succinct_config.aggregationVkey.0).into(),
+            aggregation_vkey_hash: (op_succinct_config.aggregationVkey.0).into(),
             rollup_config_hash: (op_succinct_config.rollupConfigHash.0).into(),
         })
     }
@@ -440,14 +440,11 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             .map_err(Error::UnableToRetrieveTrustedSequencerAddress)?
             .into();
 
-        let op_succinct_config_name: [u8; 32] = hex::decode(&config.op_succinct_config_name)
-            .map_err(|_| {
-                Error::InvalidOpSuccinctConfigName(config.op_succinct_config_name.clone())
-            })?
-            .try_into()
-            .map_err(|_| {
-                Error::InvalidOpSuccinctConfigName(config.op_succinct_config_name.clone())
-            })?;
+        let op_succinct_config_name = aggchain_fep
+            .selectedOpSuccinctConfigName()
+            .call()
+            .await
+            .map_err(Error::SelectedOpSuccinctConfigRetrievalError)?;
 
         info!(global_exit_root_manager_l2=%config.global_exit_root_manager_v2_sovereign_chain,
             polygon_zkevm_bridge_v2=%polygon_zkevm_bridge_v2.address(),
@@ -464,7 +461,7 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             trusted_sequencer_addr,
             static_call_caller_address: config.static_call_caller_address,
             evm_sketch_genesis: config::parse_evm_sketch_genesis(&config.evm_sketch_genesis)?,
-            op_succinct_config_name: Digest(op_succinct_config_name).into(),
+            op_succinct_config_name,
         })
     }
 }

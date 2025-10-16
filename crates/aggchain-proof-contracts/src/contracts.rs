@@ -100,8 +100,8 @@ pub struct L2OutputAtBlock {
 /// opSuccinctConfigs.
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct OpSuccinctConfig {
-    /// The verification key of the aggregation SP1 program.
-    pub aggregation_vkey: Digest,
+    /// The verification key hash of the aggregation SP1 program.
+    pub aggregation_vkey_hash: Digest,
     /// The 32 byte commitment to the BabyBear representation of the
     /// verification key of the range SP1 program. Specifically, this
     /// verification key is the output of converting the [u32; 8] range

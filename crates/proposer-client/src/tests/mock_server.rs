@@ -1,12 +1,13 @@
 use std::time::Duration;
 
-use eyre::{eyre, Context};
-use op_succinct_grpc::proofs::{GetMockProofRequest, GetMockProofResponse};
 pub use tonic::transport::Error as TransportError;
 use tonic::{transport::server::TcpIncoming, Request, Response, Status};
 use tracing::info;
 
-use crate::rpc::grpc::{self, proofs_server::Proofs};
+use crate::{
+    generated::proofs::{GetMockProofRequest, GetMockProofResponse},
+    rpc::grpc::{self, proofs_server::Proofs},
+};
 
 mockall::mock! {
     /// Mock op-succinct proofs service.
@@ -39,10 +40,9 @@ impl MockProofsService {
 
         let task = tokio::spawn({
             let cancellation_token = cancellation_token.clone();
-            let incoming =
-                TcpIncoming::from_listener(listener, false, Some(Duration::from_secs(5)))
-                    .map_err(|e| eyre!(e))
-                    .context("Failed to create TcpIncoming from listener")?;
+            let incoming = TcpIncoming::from(listener)
+                .with_nodelay(Some(false))
+                .with_keepalive(Some(Duration::from_secs(5)));
 
             async move {
                 tonic::transport::Server::builder()

@@ -1,6 +1,6 @@
 // @generated
 /// Generated client implementations.
-pub mod pessimistic_proof_service_client {
+pub mod proofs_client {
     #![allow(
         unused_variables,
         dead_code,
@@ -11,10 +11,10 @@ pub mod pessimistic_proof_service_client {
     use tonic::codegen::*;
     use tonic::codegen::http::Uri;
     #[derive(Debug, Clone)]
-    pub struct PessimisticProofServiceClient<T> {
+    pub struct ProofsClient<T> {
         inner: tonic::client::Grpc<T>,
     }
-    impl PessimisticProofServiceClient<tonic::transport::Channel> {
+    impl ProofsClient<tonic::transport::Channel> {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
@@ -25,7 +25,7 @@ pub mod pessimistic_proof_service_client {
             Ok(Self::new(conn))
         }
     }
-    impl<T> PessimisticProofServiceClient<T>
+    impl<T> ProofsClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::Body>,
         T::Error: Into<StdError>,
@@ -43,7 +43,7 @@ pub mod pessimistic_proof_service_client {
         pub fn with_interceptor<F>(
             inner: T,
             interceptor: F,
-        ) -> PessimisticProofServiceClient<InterceptedService<T, F>>
+        ) -> ProofsClient<InterceptedService<T, F>>
         where
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
@@ -57,9 +57,7 @@ pub mod pessimistic_proof_service_client {
                 http::Request<tonic::body::Body>,
             >>::Error: Into<StdError> + std::marker::Send + std::marker::Sync,
         {
-            PessimisticProofServiceClient::new(
-                InterceptedService::new(inner, interceptor),
-            )
+            ProofsClient::new(InterceptedService::new(inner, interceptor))
         }
         /// Compress requests with the given encoding.
         ///
@@ -92,11 +90,11 @@ pub mod pessimistic_proof_service_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn generate_proof(
+        pub async fn request_agg_proof(
             &mut self,
-            request: impl tonic::IntoRequest<super::GenerateProofRequest>,
+            request: impl tonic::IntoRequest<super::AggProofRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::GenerateProofResponse>,
+            tonic::Response<super::AggProofResponse>,
             tonic::Status,
         > {
             self.inner
@@ -109,22 +107,41 @@ pub mod pessimistic_proof_service_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/agglayer.prover.v1.PessimisticProofService/GenerateProof",
+                "/proofs.Proofs/RequestAggProof",
             );
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(
-                    GrpcMethod::new(
-                        "agglayer.prover.v1.PessimisticProofService",
-                        "GenerateProof",
-                    ),
-                );
+                .insert(GrpcMethod::new("proofs.Proofs", "RequestAggProof"));
+            self.inner.unary(req, path, codec).await
+        }
+        pub async fn get_mock_proof(
+            &mut self,
+            request: impl tonic::IntoRequest<super::GetMockProofRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::GetMockProofResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/proofs.Proofs/GetMockProof",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("proofs.Proofs", "GetMockProof"));
             self.inner.unary(req, path, codec).await
         }
     }
 }
 /// Generated server implementations.
-pub mod pessimistic_proof_service_server {
+pub mod proofs_server {
     #![allow(
         unused_variables,
         dead_code,
@@ -133,26 +150,33 @@ pub mod pessimistic_proof_service_server {
         clippy::let_unit_value,
     )]
     use tonic::codegen::*;
-    /// Generated trait containing gRPC methods that should be implemented for use with PessimisticProofServiceServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with ProofsServer.
     #[async_trait]
-    pub trait PessimisticProofService: std::marker::Send + std::marker::Sync + 'static {
-        async fn generate_proof(
+    pub trait Proofs: std::marker::Send + std::marker::Sync + 'static {
+        async fn request_agg_proof(
             &self,
-            request: tonic::Request<super::GenerateProofRequest>,
+            request: tonic::Request<super::AggProofRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::GenerateProofResponse>,
+            tonic::Response<super::AggProofResponse>,
+            tonic::Status,
+        >;
+        async fn get_mock_proof(
+            &self,
+            request: tonic::Request<super::GetMockProofRequest>,
+        ) -> std::result::Result<
+            tonic::Response<super::GetMockProofResponse>,
             tonic::Status,
         >;
     }
     #[derive(Debug)]
-    pub struct PessimisticProofServiceServer<T> {
+    pub struct ProofsServer<T> {
         inner: Arc<T>,
         accept_compression_encodings: EnabledCompressionEncodings,
         send_compression_encodings: EnabledCompressionEncodings,
         max_decoding_message_size: Option<usize>,
         max_encoding_message_size: Option<usize>,
     }
-    impl<T> PessimisticProofServiceServer<T> {
+    impl<T> ProofsServer<T> {
         pub fn new(inner: T) -> Self {
             Self::from_arc(Arc::new(inner))
         }
@@ -203,10 +227,9 @@ pub mod pessimistic_proof_service_server {
             self
         }
     }
-    impl<T, B> tonic::codegen::Service<http::Request<B>>
-    for PessimisticProofServiceServer<T>
+    impl<T, B> tonic::codegen::Service<http::Request<B>> for ProofsServer<T>
     where
-        T: PessimisticProofService,
+        T: Proofs,
         B: Body + std::marker::Send + 'static,
         B::Error: Into<StdError> + std::marker::Send + 'static,
     {
@@ -221,29 +244,23 @@ pub mod pessimistic_proof_service_server {
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             match req.uri().path() {
-                "/agglayer.prover.v1.PessimisticProofService/GenerateProof" => {
+                "/proofs.Proofs/RequestAggProof" => {
                     #[allow(non_camel_case_types)]
-                    struct GenerateProofSvc<T: PessimisticProofService>(pub Arc<T>);
-                    impl<
-                        T: PessimisticProofService,
-                    > tonic::server::UnaryService<super::GenerateProofRequest>
-                    for GenerateProofSvc<T> {
-                        type Response = super::GenerateProofResponse;
+                    struct RequestAggProofSvc<T: Proofs>(pub Arc<T>);
+                    impl<T: Proofs> tonic::server::UnaryService<super::AggProofRequest>
+                    for RequestAggProofSvc<T> {
+                        type Response = super::AggProofResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::GenerateProofRequest>,
+                            request: tonic::Request<super::AggProofRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as PessimisticProofService>::generate_proof(
-                                        &inner,
-                                        request,
-                                    )
-                                    .await
+                                <T as Proofs>::request_agg_proof(&inner, request).await
                             };
                             Box::pin(fut)
                         }
@@ -254,7 +271,52 @@ pub mod pessimistic_proof_service_server {
                     let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
-                        let method = GenerateProofSvc(inner);
+                        let method = RequestAggProofSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/proofs.Proofs/GetMockProof" => {
+                    #[allow(non_camel_case_types)]
+                    struct GetMockProofSvc<T: Proofs>(pub Arc<T>);
+                    impl<
+                        T: Proofs,
+                    > tonic::server::UnaryService<super::GetMockProofRequest>
+                    for GetMockProofSvc<T> {
+                        type Response = super::GetMockProofResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::GetMockProofRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as Proofs>::get_mock_proof(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let method = GetMockProofSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -292,7 +354,7 @@ pub mod pessimistic_proof_service_server {
             }
         }
     }
-    impl<T> Clone for PessimisticProofServiceServer<T> {
+    impl<T> Clone for ProofsServer<T> {
         fn clone(&self) -> Self {
             let inner = self.inner.clone();
             Self {
@@ -305,8 +367,8 @@ pub mod pessimistic_proof_service_server {
         }
     }
     /// Generated gRPC service name
-    pub const SERVICE_NAME: &str = "agglayer.prover.v1.PessimisticProofService";
-    impl<T> tonic::server::NamedService for PessimisticProofServiceServer<T> {
+    pub const SERVICE_NAME: &str = "proofs.Proofs";
+    impl<T> tonic::server::NamedService for ProofsServer<T> {
         const NAME: &'static str = SERVICE_NAME;
     }
 }

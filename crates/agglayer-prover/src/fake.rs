@@ -1,5 +1,6 @@
 use std::{net::SocketAddr, sync::Arc};
 
+use agglayer_prover_config::DEFAULT_GRPC_MESSAGE_SIZE;
 use agglayer_prover_types::{
     bincode,
     v1::{
@@ -41,10 +42,12 @@ impl FakeProver {
         cancellation_token: tokio_util::sync::CancellationToken,
     ) -> Result<tokio::task::JoinHandle<Result<(), tonic::transport::Error>>, ()> {
         let svc = PessimisticProofServiceServer::new(fake_prover)
+            .max_decoding_message_size(DEFAULT_GRPC_MESSAGE_SIZE)
+            .max_encoding_message_size(DEFAULT_GRPC_MESSAGE_SIZE)
             .send_compressed(CompressionEncoding::Zstd)
             .accept_compressed(CompressionEncoding::Zstd);
 
-        let (mut health_reporter, health_service) = tonic_health::server::health_reporter();
+        let (health_reporter, health_service) = tonic_health::server::health_reporter();
 
         health_reporter
             .set_serving::<PessimisticProofServiceServer<FakeProver>>()

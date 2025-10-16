@@ -5,10 +5,7 @@ use eyre::Context as _;
 use http::{Request, Response};
 use tokio::{net::TcpListener, runtime::Runtime};
 use tokio_util::sync::CancellationToken;
-use tonic::{
-    body::{boxed, BoxBody},
-    server::NamedService,
-};
+use tonic::{body::Body, server::NamedService};
 use tower::{Service, ServiceExt};
 use tracing::{debug, info};
 
@@ -68,7 +65,7 @@ impl ProverEngine {
 
     pub fn add_rpc_service<S>(mut self, rpc_service: S) -> Self
     where
-        S: Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
+        S: Service<Request<Body>, Response = Response<Body>, Error = Infallible>
             + NamedService
             + Clone
             + Sync
@@ -134,7 +131,7 @@ impl ProverEngine {
         };
         let tcp_listener = prover_runtime.block_on(TcpListener::bind(self.rpc_socket_addr))?;
 
-        let (mut health_reporter, health_service) = tonic_health::server::health_reporter();
+        let (health_reporter, health_service) = tonic_health::server::health_reporter();
 
         let (reflection_v1, reflection_v1alpha) = self.reflection.iter().fold(
             (
@@ -222,7 +219,7 @@ impl ProverEngine {
 
 fn add_rpc_service<S>(rpc_server: axum::Router, rpc_service: S) -> axum::Router
 where
-    S: Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
+    S: Service<Request<Body>, Response = Response<Body>, Error = Infallible>
         + NamedService
         + Clone
         + Sync
@@ -233,6 +230,6 @@ where
 {
     rpc_server.route_service(
         &format!("/{}/{{*rest}}", S::NAME),
-        rpc_service.map_request(|r: Request<axum::body::Body>| r.map(boxed)),
+        rpc_service.map_request(|r: Request<axum::body::Body>| r.map(Body::new)),
     )
 }
