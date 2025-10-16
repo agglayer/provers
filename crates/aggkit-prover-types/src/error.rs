@@ -80,6 +80,24 @@ pub enum AggchainProofRequestError {
     },
     #[error("Missing aggchain-proof request")]
     MissingAggchainProofRequest { field_path: String },
+
+    #[error("Invalid removed global exit root")]
+    InvalidRemovedGer {
+        field_path: String,
+        source: eyre::Error,
+    },
+
+    #[error("Invalid unclaim")]
+    InvalidUnclaim {
+        field_path: String,
+        source: eyre::Error,
+    },
+
+    #[error("Missing removed global exit root")]
+    MissingRemovedGer { field_path: String },
+
+    #[error("Missing unclaim global index")]
+    MissingUnclaimGlobalIndex { field_path: String },
 }
 
 impl AggchainProofRequestError {
@@ -107,9 +125,11 @@ impl AggchainProofRequestError {
             | AggchainProofRequestError::MissingAggchainProofRequest { field_path }
             | AggchainProofRequestError::InvalidAggchainProofRequest { field_path, .. }
             | AggchainProofRequestError::MissingOptimisticModeSignature { field_path }
-            | AggchainProofRequestError::InvalidOptimisticModeSignature { field_path, .. } => {
-                field_path
-            }
+            | AggchainProofRequestError::InvalidOptimisticModeSignature { field_path, .. }
+            | AggchainProofRequestError::InvalidRemovedGer { field_path, .. }
+            | AggchainProofRequestError::InvalidUnclaim { field_path, .. }
+            | AggchainProofRequestError::MissingRemovedGer { field_path, .. }
+            | AggchainProofRequestError::MissingUnclaimGlobalIndex { field_path, .. } => field_path,
         }
     }
 }
