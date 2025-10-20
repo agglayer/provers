@@ -122,24 +122,28 @@ pub struct AggchainProofBuilderResponse {
     pub public_values: AggchainProofPublicValues,
 }
 
-/// Filters out values from a list based on a set of keys to remove, using a key extraction function.
+/// Filters out values from a list based on a set of keys to remove, using a key
+/// extraction function.
 ///
-/// This function iterates over `values`, removing up to N occurrences of each value whose key,
-/// as determined by `key_fn`, matches a key in `keys_to_remove`, where N is the number of times
-/// the key appears in `keys_to_remove`. The removal is performed in order, and only the first N
-/// matching values are removed for each key. Remaining values are preserved in their original order.
+/// This function iterates over `values`, removing up to N occurrences of each
+/// value whose key, as determined by `key_fn`, matches a key in
+/// `keys_to_remove`, where N is the number of times the key appears in
+/// `keys_to_remove`. The removal is performed in order, and only the first N
+/// matching values are removed for each key. Remaining values are preserved in
+/// their original order.
 ///
 /// # Arguments
 ///
-/// * `keys_to_remove` - A slice of keys indicating which values to remove. Each occurrence of a key
-///   in this slice will remove one matching value from `values`.
+/// * `keys_to_remove` - A slice of keys indicating which values to remove. Each
+///   occurrence of a key in this slice will remove one matching value from
+///   `values`.
 /// * `values` - The slice of values to filter.
 /// * `key_fn` - A function that extracts a key from a value for comparison.
 ///
 /// # Returns
 ///
-/// Returns a `Result` containing a `Vec<V>` of the filtered values, or an error if an overflow occurs
-/// while counting removals.
+/// Returns a `Result` containing a `Vec<V>` of the filtered values, or an error
+/// if an overflow occurs while counting removals.
 ///
 /// # Example
 ///
@@ -152,7 +156,8 @@ pub struct AggchainProofBuilderResponse {
 ///
 /// # Errors
 ///
-/// Returns `Error::FilteringValuesOverflow` if the removal count for any key would overflow `usize`.
+/// Returns `Error::FilteringValuesOverflow` if the removal count for any key
+/// would overflow `usize`.
 pub fn filter_values<K, V, KF>(
     keys_to_remove: &[K],
     values: &[V],
@@ -174,7 +179,8 @@ where
             .ok_or(Error::FilteringValuesOverflow(*count))?;
     }
 
-    // For each value, if its key is in removal_map and count > 0, skip it and decrement count
+    // For each value, if its key is in removal_map and count > 0, skip it and
+    // decrement count
     let mut result = Vec::new();
     for value in values {
         let key = key_fn(value);
@@ -190,23 +196,27 @@ where
     Ok(result)
 }
 
-/// Filters, sorts, and maps items from an iterator based on a block number range.
+/// Filters, sorts, and maps items from an iterator based on a block number
+/// range.
 ///
-/// This function takes an iterator of items, filters them to include only those whose
-/// block number (as determined by `block_number_fn`) falls within the specified `range`,
-/// sorts the filtered items using their `Ord` implementation, and then maps each item
-/// to a new type using the provided `map_fn`.
+/// This function takes an iterator of items, filters them to include only those
+/// whose block number (as determined by `block_number_fn`) falls within the
+/// specified `range`, sorts the filtered items using their `Ord`
+/// implementation, and then maps each item to a new type using the provided
+/// `map_fn`.
 ///
 /// # Type Parameters
 /// - `T`: The type of the input items. Must implement `Ord`.
-/// - `F`: The mapping function type. Must be a function or closure that takes `T` and returns `U`.
+/// - `F`: The mapping function type. Must be a function or closure that takes
+///   `T` and returns `U`.
 /// - `U`: The type of the output items.
 ///
 /// # Arguments
 /// - `items`: An iterator of items to process.
 /// - `range`: The inclusive range of block numbers to filter by.
 /// - `block_number_fn`: A function that extracts the block number from an item.
-/// - `map_fn`: A function that maps each filtered and sorted item to the desired output type.
+/// - `map_fn`: A function that maps each filtered and sorted item to the
+///   desired output type.
 ///
 /// # Returns
 /// An iterator over the mapped items, filtered and sorted as described.
@@ -220,7 +230,8 @@ where
 ///     &range,
 ///     |item| item.block_number,
 ///     |item| item.to_output_type(),
-/// ).collect();
+/// )
+/// .collect();
 /// ```
 fn filter_sort_map<T, F, U>(
     items: impl IntoIterator<Item = T>,
