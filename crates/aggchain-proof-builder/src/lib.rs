@@ -147,7 +147,7 @@ pub struct AggchainProofBuilderResponse {
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
 /// let keys_to_remove = [1, 2, 2];
 /// let values = [1, 2, 2, 3, 4];
 /// let filtered = filter_values(&keys_to_remove, &values, |v| *v).unwrap();
