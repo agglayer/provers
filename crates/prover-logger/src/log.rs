@@ -50,7 +50,7 @@ impl Display for LogLevel {
 impl From<LogLevel> for EnvFilter {
     fn from(value: LogLevel) -> Self {
         EnvFilter::new(format!(
-            "info,aggkit_prover={value},aggchain_proof_builder={value},\
+            "warn,aggkit_prover={value},aggchain_proof_builder={value},\
              aggchain_proof_contracts={value},aggchain_proof_service={value},\
              agglayer_telemetry={value},proposer_client={value}, \
              proposer_service={value},prover_engine={value},prover_executor={value}",
