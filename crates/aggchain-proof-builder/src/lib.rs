@@ -496,7 +496,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         .collect();
 
         // Filter out the unset claims from the all imported bridge exits list.
-        let claimed_imported_bridge_exits =
+        let filtered_claimed_imported_bridge_exits =
             filter_values(&unset_claims, &all_imported_bridge_exits, |value| {
                 value.global_index
             })?;
@@ -559,7 +559,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                 origin_network: network_id,
                 fep: fep_inputs,
                 commit_imported_bridge_exits: ImportedBridgeExitCommitmentValues {
-                    claims: claimed_imported_bridge_exits,
+                    claims: filtered_claimed_imported_bridge_exits,
                 }
                 .commitment(IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION),
                 bridge_witness: BridgeWitness {
