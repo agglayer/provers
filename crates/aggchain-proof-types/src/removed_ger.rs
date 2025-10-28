@@ -24,7 +24,9 @@ impl Ord for RemovedGerWithBlockNumber {
         // First compare by block_number
         self.block_number
             .cmp(&other.block_number)
+            // If equal, compare by block_index
             .then_with(|| self.block_index.cmp(&other.block_index))
+            // If still equal, compare by global_exit_root
             .then_with(|| self.global_exit_root.cmp(&other.global_exit_root))
     }
 }

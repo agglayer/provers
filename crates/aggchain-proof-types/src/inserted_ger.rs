@@ -19,9 +19,12 @@ impl PartialOrd for InsertedGerWithBlockNumber {
 
 impl Ord for InsertedGerWithBlockNumber {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        // First compare by block_number
         self.block_number
             .cmp(&other.block_number)
+            // If equal, compare by block_index
             .then_with(|| self.block_index.cmp(&other.block_index))
+            // If still equal, compare by l1_info_tree_index
             .then_with(|| {
                 self.inserted_ger
                     .l1_leaf

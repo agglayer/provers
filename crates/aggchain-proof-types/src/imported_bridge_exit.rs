@@ -24,8 +24,11 @@ impl PartialOrd for ImportedBridgeExitWithBlockNumber {
 impl Ord for ImportedBridgeExitWithBlockNumber {
     fn cmp(&self, other: &Self) -> Ordering {
         self.block_number
+            // First compare by block_number
             .cmp(&other.block_number)
+            // If equal, compare by block_index
             .then_with(|| self.global_index.cmp(&other.global_index))
+            // If still equal, compare by bridge_exit_hash
             .then_with(|| self.bridge_exit_hash.cmp(&other.bridge_exit_hash))
     }
 }
