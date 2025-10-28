@@ -24,16 +24,7 @@ impl Ord for RemovedGerWithBlockNumber {
         // First compare by block_number
         self.block_number
             .cmp(&other.block_number)
-            // If equal, compare by block_index
-            .then_with(|| {
-                let ordering = self.block_index.cmp(&other.block_index);
-                // Assert that if block_number and block_index are equal,
-                // then global_exit_root should also be equal to maintain Ord guarantees.
-                assert!(
-                    ordering != Ordering::Equal || self.global_exit_root == other.global_exit_root,
-                    "Items with same block_number and block_index must have same global_exit_root"
-                );
-                ordering
-            })
+            .then_with(|| self.block_index.cmp(&other.block_index))
+            .then_with(|| self.global_exit_root.cmp(&other.global_exit_root))
     }
 }

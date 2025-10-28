@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 // TODO: move this to interop repository
 // https://github.com/agglayer/provers/issues/141
-#[derive(Deserialize, Serialize, Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Deserialize, Serialize, Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct BridgeExitHash(pub agglayer_interop::types::Digest);
 
 #[derive(Deserialize, Serialize, Clone, Debug, Eq, PartialEq)]
@@ -23,15 +23,9 @@ impl PartialOrd for ImportedBridgeExitWithBlockNumber {
 
 impl Ord for ImportedBridgeExitWithBlockNumber {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.block_number.cmp(&other.block_number).then_with(|| {
-            let ordering = self.global_index.cmp(&other.global_index);
-            // Assert that if block_number and global_index are equal,
-            // then bridge_exit_hash should also be equal to maintain Ord guarantees.
-            assert!(
-                ordering != Ordering::Equal || self.bridge_exit_hash == other.bridge_exit_hash,
-                "Items with same block_number and global_index must have the same bridge_exit_hash"
-            );
-            ordering
-        })
+        self.block_number
+            .cmp(&other.block_number)
+            .then_with(|| self.global_index.cmp(&other.global_index))
+            .then_with(|| self.bridge_exit_hash.cmp(&other.bridge_exit_hash))
     }
 }
