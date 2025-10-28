@@ -26,6 +26,9 @@ impl Ord for InsertedGerWithBlockNumber {
             .then_with(|| self.block_index.cmp(&other.block_index))
             // If still equal, compare by l1_info_tree_index
             .then_with(|| {
+                // Note - `MerkleProof`, `L1InfoTreeLeaf` in `InsertedGer` do not have `Ord`
+                // implementation. We use `l1_info_tree_index` to differentiate
+                // them.
                 self.inserted_ger
                     .l1_leaf
                     .l1_info_tree_index
