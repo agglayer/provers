@@ -537,7 +537,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                 .commitment(IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION),
                 bridge_witness: BridgeWitness {
                     inserted_gers,
-                    bridge_exits_claimed: all_imported_bridge_exits,
+                    claimed_imported_bridge_exits: all_imported_bridge_exits,
                     removed_gers,
                     raw_inserted_gers,
                     unset_claims,
