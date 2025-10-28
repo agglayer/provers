@@ -122,7 +122,7 @@
     "removed_gers": [
       "0x8c1bb9070586ac73e99e587801a5206589b549b43ecb2816b1b0e2245e24a9d3"
     ],
-    "bridge_exits_claimed": [
+    "claimed_imported_bridge_exits": [
       {
         "global_index": "0x0",
         "bridge_exit_hash": "0xcd6f92ab5c8e8a908f66a9dc3e2c64204babd6a0df9aae2fdb42b9669688967e"
