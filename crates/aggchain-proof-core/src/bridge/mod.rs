@@ -123,8 +123,8 @@ pub struct BridgeWitness {
     /// List of removed GER.
     pub removed_gers: Vec<Digest>,
     /// List of the each imported bridge exit containing the global index and
-    /// the leaf hash.
-    pub claimed_imported_bridge_exits: Vec<GlobalIndexWithLeafHash>,
+    /// the leaf hash (both claimed and unclaimed).
+    pub imported_bridge_exits: Vec<GlobalIndexWithLeafHash>,
     /// List of the global indexes that got unclaimed.
     pub unset_claims: Vec<U256>,
     /// State sketch for the prev L2 block.
@@ -244,7 +244,7 @@ impl BridgeConstraintsInput {
 
             let claims: Vec<Digest> = self
                 .bridge_witness
-                .claimed_imported_bridge_exits
+                .imported_bridge_exits
                 .iter()
                 .map(|&idx| idx.commitment())
                 .collect();
@@ -334,7 +334,7 @@ impl BridgeConstraintsInput {
         let constrained_claims = ImportedBridgeExitCommitmentValues {
             claims: filter_values(
                 &self.bridge_witness.unset_claims,
-                &self.bridge_witness.claimed_imported_bridge_exits,
+                &self.bridge_witness.imported_bridge_exits,
                 |exit: &GlobalIndexWithLeafHash| -> U256 { exit.global_index },
             )?,
         };
@@ -870,7 +870,7 @@ mod tests {
                 inserted_gers: final_imported_l1_info_tree_leafs,
                 raw_inserted_gers,
                 removed_gers,
-                claimed_imported_bridge_exits,
+                imported_bridge_exits: claimed_imported_bridge_exits,
                 unset_claims,
                 prev_l2_block_sketch,
                 new_l2_block_sketch,
@@ -973,7 +973,7 @@ mod tests {
         }
 
         // Claimed exits: include a duplicate hash (20) to verify multiplicity handling.
-        let base_claims = &base_input.bridge_witness.claimed_imported_bridge_exits;
+        let base_claims = &base_input.bridge_witness.imported_bridge_exits;
         let n = base_claims.len().min(4);
         let hash_choices = [d(10), d(20), d(20), d(30)];
         let claims: Vec<GlobalIndexWithLeafHash> = (0..n)
@@ -1009,7 +1009,7 @@ mod tests {
         let input = BridgeConstraintsInput {
             commit_imported_bridge_exits: expected_commitment,
             bridge_witness: BridgeWitness {
-                claimed_imported_bridge_exits: claims,
+                imported_bridge_exits: claims,
                 unset_claims,
                 ..base_input.bridge_witness
             },
@@ -1033,7 +1033,7 @@ mod tests {
             Digest([byte; 32])
         }
 
-        let base_claims = &base_input.bridge_witness.claimed_imported_bridge_exits;
+        let base_claims = &base_input.bridge_witness.imported_bridge_exits;
         let n = base_claims.len().min(4);
         let hash_choices = [d(10), d(20), d(20), d(30)];
         let claims: Vec<GlobalIndexWithLeafHash> = (0..n)
@@ -1056,7 +1056,7 @@ mod tests {
             // Intentionally wrong commitment to trigger mismatch
             commit_imported_bridge_exits: d(0),
             bridge_witness: BridgeWitness {
-                claimed_imported_bridge_exits: claims,
+                imported_bridge_exits: claims,
                 unset_claims,
                 ..base_input.bridge_witness
             },
