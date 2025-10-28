@@ -148,6 +148,8 @@ pub struct AggchainProofBuilderResponse {
 /// # Example
 ///
 /// ```
+/// use aggchain_proof_builder::filter_values;
+///
 /// let keys_to_remove = [1, 2, 2];
 /// let values = [1, 2, 2, 3, 4];
 /// let filtered = filter_values(&keys_to_remove, &values, |v| *v).unwrap();
@@ -222,7 +224,31 @@ where
 /// An iterator over the mapped items, filtered and sorted as described.
 ///
 /// # Example
-/// ```
+/// ```no_run
+/// # use aggchain_proof_builder::filter_sort_map;
+/// # struct Item { block_number: u64 }
+/// # impl Item {
+/// #     fn to_output_type(self) -> u64 { self.block_number }
+/// # }
+/// # impl Ord for Item {
+/// #     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+/// #         self.block_number.cmp(&other.block_number)
+/// #     }
+/// # }
+/// # impl PartialOrd for Item {
+/// #     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+/// #         Some(self.cmp(other))
+/// #     }
+/// # }
+/// # impl Eq for Item {}
+/// # impl PartialEq for Item {
+/// #     fn eq(&self, other: &Self) -> bool {
+/// #         self.block_number == other.block_number
+/// #     }
+/// # }
+/// let item1 = Item { block_number: 100 };
+/// let item2 = Item { block_number: 150 };
+/// let item3 = Item { block_number: 250 };
 /// let items = vec![item1, item2, item3];
 /// let range = 100..=200;
 /// let result: Vec<_> = filter_sort_map(
@@ -232,8 +258,9 @@ where
 ///     |item| item.to_output_type(),
 /// )
 /// .collect();
+/// assert_eq!(result, vec![100, 150]);
 /// ```
-fn filter_sort_map<T, F, U>(
+pub fn filter_sort_map<T, F, U>(
     items: impl IntoIterator<Item = T>,
     range: &std::ops::RangeInclusive<u64>,
     block_number_fn: fn(&T) -> u64,
