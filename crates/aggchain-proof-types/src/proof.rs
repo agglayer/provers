@@ -62,11 +62,11 @@ impl AggchainProofInputs {
                 proof: e.inserted_ger.proof_ger_l1root,
                 l1_info_tree_leaf: e.inserted_ger.l1_leaf,
                 block_number: e.block_number,
-                block_index: e.block_index,
+                log_index: e.log_index,
             })
             .collect();
 
-        values.sort_unstable_by_key(|e| (e.block_number, e.block_index));
+        values.sort_unstable_by_key(|e| (e.block_number, e.log_index));
         values
     }
 }

@@ -13,6 +13,7 @@ pub struct ImportedBridgeExitWithBlockNumber {
     pub block_number: u64,
     pub bridge_exit_hash: BridgeExitHash,
     pub global_index: GlobalIndex,
+    pub log_index: u64,
 }
 
 impl PartialOrd for ImportedBridgeExitWithBlockNumber {
@@ -26,8 +27,8 @@ impl Ord for ImportedBridgeExitWithBlockNumber {
         self.block_number
             // First compare by block_number
             .cmp(&other.block_number)
-            // If equal, compare by block_index
-            .then_with(|| self.global_index.cmp(&other.global_index))
+            // If equal, compare by log_index
+            .then_with(|| self.log_index.cmp(&other.log_index))
             // If still equal, compare by bridge_exit_hash
             .then_with(|| self.bridge_exit_hash.cmp(&other.bridge_exit_hash))
     }

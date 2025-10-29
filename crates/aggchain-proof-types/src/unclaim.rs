@@ -10,7 +10,7 @@ pub struct UnclaimWithBlockNumber {
     /// The block number of this unclaim.
     pub block_number: u64,
     /// Index within that block in which a claim got unclaimed.
-    pub block_index: u64,
+    pub log_index: u64,
 }
 
 impl PartialOrd for UnclaimWithBlockNumber {
@@ -24,8 +24,8 @@ impl Ord for UnclaimWithBlockNumber {
         // First compare by block_number
         self.block_number
             .cmp(&other.block_number)
-            // If equal, compare by block_index
-            .then_with(|| self.block_index.cmp(&other.block_index))
+            // If equal, compare by log_index
+            .then_with(|| self.log_index.cmp(&other.log_index))
             // If still equal, compare by global_index
             .then_with(|| self.global_index.cmp(&other.global_index))
     }

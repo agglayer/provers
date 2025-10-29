@@ -20,7 +20,7 @@ impl TryFrom<v1::Unclaim> for UnclaimWithBlockNumber {
         Ok(Self {
             global_index,
             block_number: value.block_number,
-            block_index: value.block_index,
+            log_index: value.log_index,
         })
     }
 }

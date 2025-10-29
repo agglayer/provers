@@ -10,7 +10,7 @@ pub struct RemovedGerWithBlockNumber {
     /// The block number of the removed GER.
     pub block_number: u64,
     /// Index within the block where the GER got removed.
-    pub block_index: u64,
+    pub log_index: u64,
 }
 
 impl PartialOrd for RemovedGerWithBlockNumber {
@@ -24,8 +24,8 @@ impl Ord for RemovedGerWithBlockNumber {
         // First compare by block_number
         self.block_number
             .cmp(&other.block_number)
-            // If equal, compare by block_index
-            .then_with(|| self.block_index.cmp(&other.block_index))
+            // If equal, compare by log_index
+            .then_with(|| self.log_index.cmp(&other.log_index))
             // If still equal, compare by global_exit_root
             .then_with(|| self.global_exit_root.cmp(&other.global_exit_root))
     }

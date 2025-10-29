@@ -577,7 +577,7 @@ mod tests {
                     None
                 } else {
                     Some(InsertedGER {
-                        block_index: 0u64,  // dataset already ordered
+                        log_index: 0u64,    // dataset already ordered
                         block_number: 0u64, // dataset already ordered
                         proof: MerkleProof::new(
                             l1_info_root,

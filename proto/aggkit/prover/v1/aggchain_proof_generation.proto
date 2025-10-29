@@ -93,6 +93,9 @@ message ImportedBridgeExitWithBlockNumber {
 
   // Bridge exit hash.
   agglayer.interop.types.v1.FixedBytes32 bridge_exit_hash = 3;
+
+  // Index within that block in which a claim got unclaimed.
+  uint64 log_index = 4;
 }
 
 // Inserted GER with block number.
@@ -103,8 +106,8 @@ message ProvenInsertedGERWithBlockNumber {
   // The insert GER.
   ProvenInsertedGER proven_inserted_ger = 2;
 
-  // The index of the injected GER event in block
-  uint64 block_index = 3;
+  // The index of the injected GER event in block.
+  uint64 log_index = 3;
 }
 
 // Proven inserted GER.
@@ -125,7 +128,7 @@ message RemovedGER {
     uint64 block_number = 2;
 
     // Index within the block where the GER got removed.
-    uint64 block_index = 3;
+    uint64 log_index = 3;
 }
 
 // Represents one claim that got unclaimed.
@@ -137,5 +140,5 @@ message Unclaim {
     uint64 block_number = 2;
 
     // Index within that block in which a claim got unclaimed.
-    uint64 block_index = 3;
+    uint64 log_index = 3;
 }

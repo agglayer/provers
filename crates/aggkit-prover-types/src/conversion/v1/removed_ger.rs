@@ -20,7 +20,7 @@ impl TryFrom<v1::RemovedGer> for RemovedGerWithBlockNumber {
         Ok(Self {
             global_exit_root,
             block_number: value.block_number,
-            block_index: value.block_index,
+            log_index: value.log_index,
         })
     }
 }
