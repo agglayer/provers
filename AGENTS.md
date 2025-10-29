@@ -40,11 +40,6 @@ The project is structured as a Rust workspace with multiple interconnected crate
   - `aggchain-proof-contracts`: L1/L2 smart contract integration
   - `aggchain-proof-types`: Type definitions
 
-### Agglayer Prover
-- **agglayer-prover**: Main Agglayer prover service
-- **agglayer-prover-config**: Configuration management
-- **agglayer-prover-types**: Type definitions for Agglayer
-
 ### Aggkit Prover
 - **aggkit-prover**: Aggregation kit prover implementation
 - **aggkit-prover-config**: Configuration for aggkit
@@ -136,7 +131,7 @@ The project integrates with SP1's proving network rather than generating proofs 
 
 ## Workspace Configuration
 
-- Default workspace members: `agglayer-prover`, `aggkit-prover`
+- Default workspace members: `aggkit-prover`
 - Excluded from workspace: `prover-dummy-program`, `aggchain-proof-program` (SP1 programs)
 - Uses Rust 2021 edition with resolver v2
 
