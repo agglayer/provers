@@ -94,7 +94,7 @@ message ImportedBridgeExitWithBlockNumber {
   // Bridge exit hash.
   agglayer.interop.types.v1.FixedBytes32 bridge_exit_hash = 3;
 
-  // Index within that block in which a claim got unclaimed.
+  // Log index within that block in which a bridge exit happened.
   uint64 log_index = 4;
 }
 
