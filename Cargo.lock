@@ -335,58 +335,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "agglayer-prover"
-version = "0.1.0"
-dependencies = [
- "agglayer-prover-config",
- "agglayer-prover-types",
- "agglayer-telemetry",
- "anyhow",
- "buildstructor",
- "eyre",
- "prost",
- "prover-engine",
- "prover-executor",
- "prover-logger",
- "sp1-sdk",
- "tokio",
- "tokio-util",
- "tonic 0.13.1",
- "tonic-health",
- "tonic-reflection",
- "tower 0.4.13",
- "tracing",
-]
-
-[[package]]
-name = "agglayer-prover-config"
-version = "0.1.0"
-dependencies = [
- "insta",
- "pretty_assertions",
- "prover-config",
- "prover-logger",
- "prover-utils",
- "serde",
- "thiserror 2.0.12",
- "toml 0.8.22",
-]
-
-[[package]]
-name = "agglayer-prover-types"
-version = "0.1.0"
-dependencies = [
- "agglayer-interop",
- "pbjson",
- "prost",
- "prover-executor",
- "serde",
- "sp1-sdk",
- "thiserror 2.0.12",
- "tonic 0.13.1",
-]
-
-[[package]]
 name = "agglayer-telemetry"
 version = "0.2.1"
 source = "git+https://github.com/agglayer/agglayer.git?branch=release%2F0.2.1#581768e9a82b1cf20fac6536d86d1cfbd37641fb"
