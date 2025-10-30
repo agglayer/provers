@@ -26,7 +26,7 @@ jobs:
       - name: Add index file
         run: |
           mkdir host-docs
-          echo "<meta http-equiv=\"refresh\" content=\"0; url=agglayer-prover\">" > target/doc/index.html
+          echo "<meta http-equiv=\"refresh\" content=\"0; url=aggkit-prover\">" > target/doc/index.html
           cp -r target/doc/* ./host-docs
       - name: Upload documentation
         uses: actions/upload-pages-artifact@v4.0.0
