@@ -63,6 +63,24 @@ impl TryFrom<v1::GenerateAggchainProofRequest> for AggchainProofInputs {
                     field_path: "imported_bridge_exits".to_string(),
                     source: eyre::Error::from(error),
                 })?,
+            removed_gers: value
+                .removed_gers
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()
+                .map_err(|error| Error::InvalidRemovedGer {
+                    field_path: "removed_gers".to_string(),
+                    source: eyre::Error::from(error),
+                })?,
+            unclaims: value
+                .unclaims
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()
+                .map_err(|error| Error::InvalidUnclaim {
+                    field_path: "unclaims".to_string(),
+                    source: eyre::Error::from(error),
+                })?,
         })
     }
 }

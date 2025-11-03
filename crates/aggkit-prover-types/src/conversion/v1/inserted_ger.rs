@@ -8,7 +8,7 @@ impl TryFrom<v1::ProvenInsertedGerWithBlockNumber> for InsertedGerWithBlockNumbe
     fn try_from(value: v1::ProvenInsertedGerWithBlockNumber) -> Result<Self, Self::Error> {
         Ok(Self {
             block_number: value.block_number,
-            block_index: value.block_index,
+            log_index: value.log_index,
             inserted_ger: value
                 .proven_inserted_ger
                 .ok_or_else(|| Error::MissingInsertedGer {
