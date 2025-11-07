@@ -951,10 +951,16 @@ mod tests {
         //    --exact --show-output --include-ignored` (Or you can limit to `--package
         //    aggchain-proof-core --lib` if your cargo folder is not filled yet)
         // 4. The file should then be ready for committing
-        // Note that it is possible the RPC no longer has the required blocks available
+        // Note that it is possible the RPC no longer has the required blocks available
         // for proof getting.
         // In this case, you can use the script here to regenerate the tests:
         // https://github.com/agglayer/agglayer-contracts/blob/4e1e07dd83f822b9a05d1cf45bc15d0341e3a2b3/tools/deploySovereignTest/deploySovereign.ts
+        //
+        // CURRENT ISSUE: The alloy-op-evm v0.23.1 upgrade introduced stricter transaction
+        // validation that checks account balances before disable_balance_check takes effect.
+        // The test data has the caller address (0x39027d57969ad59161365e0bbd53d2f63ee5aaa6)
+        // with 0 balance, causing "lack of funds (0) for max fee" error. This test needs
+        // regeneration with the RPC URL to include proper account state.
 
         assert_bridge_data(bridge_data_input);
     }
