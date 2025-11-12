@@ -28,5 +28,10 @@
         "holoceneTime": 0,
         "pragueTime": 0,
         "isthmusTime": 0
+    },
+    "alloc": {
+        "0x39027D57969aD59161365e0bbd53D2F63eE5AAA6": {
+            "balance": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        }
     }
 }
