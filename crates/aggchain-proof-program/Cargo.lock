@@ -4358,7 +4358,7 @@ checksum = "1b6b67fb9a61334225b5b790716f609cd58395f895b3fe8b328786812a40bc3b"
 [[package]]
 name = "sp1-cc-client-executor"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/sp1-contract-call/?tag=reth-1.9.1#6957107c34f9e0fcc87aab35d693d4c1da088c84"
+source = "git+https://github.com/succinctlabs/sp1-contract-call/?branch=aurelien%2Fdisable-fee-charge#0ebf5224a9de177f08cf0f5276e1ef98fd9ea390"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
