@@ -64,10 +64,10 @@ sp1-sdk = "=5.2.2"
 sp1-prover = "=5.2.2"
 sp1-zkvm = "=5.2.2"
 
-sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", branch = "aurelien/disable-fee-charge", features = [
+sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", tag = "reth-1.9.1b", features = [
     "optimism",
 ] }
-sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", branch = "aurelien/disable-fee-charge", features = [
+sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", tag = "reth-1.9.1b", features = [
     "optimism",
 ] }
 

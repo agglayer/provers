@@ -3870,7 +3870,7 @@ dependencies = [
 [[package]]
 name = "rsp-client-executor"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/rsp?tag=reth-1.9.1#545ae85f21ba274b97ee8cb68b86acc5c3dd6b4a"
+source = "git+https://github.com/succinctlabs/rsp?tag=reth-1.9.1b#1ddb68b4bcf7060af7eb4930e79a17f927c99c93"
 dependencies = [
  "alloy-consensus",
  "alloy-evm",
@@ -3903,7 +3903,7 @@ dependencies = [
 [[package]]
 name = "rsp-mpt"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/rsp?tag=reth-1.9.1#545ae85f21ba274b97ee8cb68b86acc5c3dd6b4a"
+source = "git+https://github.com/succinctlabs/rsp?tag=reth-1.9.1b#1ddb68b4bcf7060af7eb4930e79a17f927c99c93"
 dependencies = [
  "alloy-primitives",
  "alloy-rlp",
@@ -3918,7 +3918,7 @@ dependencies = [
 [[package]]
 name = "rsp-primitives"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/rsp?tag=reth-1.9.1#545ae85f21ba274b97ee8cb68b86acc5c3dd6b4a"
+source = "git+https://github.com/succinctlabs/rsp?tag=reth-1.9.1b#1ddb68b4bcf7060af7eb4930e79a17f927c99c93"
 dependencies = [
  "alloy-eips",
  "alloy-genesis",
@@ -3937,7 +3937,7 @@ dependencies = [
 [[package]]
 name = "rsp-witness-db"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/rsp?tag=reth-1.9.1#545ae85f21ba274b97ee8cb68b86acc5c3dd6b4a"
+source = "git+https://github.com/succinctlabs/rsp?tag=reth-1.9.1b#1ddb68b4bcf7060af7eb4930e79a17f927c99c93"
 dependencies = [
  "alloy-primitives",
  "reth-storage-errors",
@@ -4358,7 +4358,7 @@ checksum = "1b6b67fb9a61334225b5b790716f609cd58395f895b3fe8b328786812a40bc3b"
 [[package]]
 name = "sp1-cc-client-executor"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/sp1-contract-call/?branch=aurelien%2Fdisable-fee-charge#0ebf5224a9de177f08cf0f5276e1ef98fd9ea390"
+source = "git+https://github.com/succinctlabs/sp1-contract-call/?tag=reth-1.9.1b#d02b69e487a7dd25a2487a2f600d32ac2e03fd82"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
