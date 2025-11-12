@@ -32,6 +32,7 @@ impl TryFrom<v1::ImportedBridgeExitWithBlockNumber> for ImportedBridgeExitWithBl
                         source: eyre::Error::from(error),
                     })?,
             ),
+            log_index: value.log_index,
         })
     }
 }
