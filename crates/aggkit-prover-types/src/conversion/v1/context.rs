@@ -55,8 +55,8 @@ impl Contextualize for AggchainProofInputs {
                 int_to_bytes!(ger.block_number),
             );
             context.insert(
-                format!("ger/{name}/log_index"),
-                int_to_bytes!(ger.log_index),
+                format!("ger/{name}/block_index"),
+                int_to_bytes!(ger.block_index),
             );
             context.insert(
                 format!("ger/{name}/l1_leaf_index"),

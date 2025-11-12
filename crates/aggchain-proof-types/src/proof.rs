@@ -6,8 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     imported_bridge_exit::ImportedBridgeExitWithBlockNumber,
-    inserted_ger::InsertedGerWithBlockNumber, removed_ger::RemovedGerWithBlockNumber,
-    unclaim::UnclaimWithBlockNumber,
+    inserted_ger::InsertedGerWithBlockNumber,
 };
 
 /// Data needed as the input for the aggchain proof generation.
@@ -36,12 +35,6 @@ pub struct AggchainProofInputs {
 
     /// Imported bridge exits.
     pub imported_bridge_exits: Vec<ImportedBridgeExitWithBlockNumber>,
-
-    /// Array of the removed GERs.
-    pub removed_gers: Vec<RemovedGerWithBlockNumber>,
-
-    /// Array of the unclaims.
-    pub unclaims: Vec<UnclaimWithBlockNumber>,
 }
 
 /// Data needed as the input for the aggchain proof generation.
@@ -62,11 +55,11 @@ impl AggchainProofInputs {
                 proof: e.inserted_ger.proof_ger_l1root,
                 l1_info_tree_leaf: e.inserted_ger.l1_leaf,
                 block_number: e.block_number,
-                log_index: e.log_index,
+                block_index: e.block_index,
             })
             .collect();
 
-        values.sort_unstable_by_key(|e| (e.block_number, e.log_index));
+        values.sort_unstable_by_key(|e| (e.block_number, e.block_index));
         values
     }
 }

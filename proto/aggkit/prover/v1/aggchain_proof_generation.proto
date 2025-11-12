@@ -38,12 +38,6 @@ message GenerateAggchainProofRequest {
 
   // bridge exits
   repeated ImportedBridgeExitWithBlockNumber imported_bridge_exits = 7;
-
-  // Array of the removed GERs.
-  repeated RemovedGER removed_gers = 8;
-
-  // Array of the unclaims.
-  repeated Unclaim unclaims = 9;
 }
 
 // The request message for generating optimistic aggchain proof.
@@ -93,9 +87,6 @@ message ImportedBridgeExitWithBlockNumber {
 
   // Bridge exit hash.
   agglayer.interop.types.v1.FixedBytes32 bridge_exit_hash = 3;
-
-  // Log index within that block in which a bridge exit happened.
-  uint64 log_index = 4;
 }
 
 // Inserted GER with block number.
@@ -106,8 +97,8 @@ message ProvenInsertedGERWithBlockNumber {
   // The insert GER.
   ProvenInsertedGER proven_inserted_ger = 2;
 
-  // The index of the injected GER event in block.
-  uint64 log_index = 3;
+  // The index of the injected GER event in block
+  uint64 block_index = 3;
 }
 
 // Proven inserted GER.
@@ -117,28 +108,4 @@ message ProvenInsertedGER {
 
   // L1InfoTree leaf
   agglayer.interop.types.v1.L1InfoTreeLeafWithContext l1_leaf = 2;
-}
-
-// Represents one removed Global Exit Root (GER).
-message RemovedGER {
-    // The global exit root.
-    agglayer.interop.types.v1.FixedBytes32 global_exit_root = 1;
-
-    // The block number of the removed GER.
-    uint64 block_number = 2;
-
-    // Index within the block where the GER got removed.
-    uint64 log_index = 3;
-}
-
-// Represents one claim that got unclaimed.
-message Unclaim {
-    // Global index that got unclaimed.
-    agglayer.interop.types.v1.FixedBytes32 global_index = 1;
-
-    // The block number of an unclaim.
-    uint64 block_number = 2;
-
-    // Index within that block in which a claim got unclaimed.
-    uint64 log_index = 3;
 }
