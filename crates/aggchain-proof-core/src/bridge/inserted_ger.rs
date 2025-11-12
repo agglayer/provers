@@ -12,7 +12,7 @@ pub struct InsertedGER {
     /// Block number in which the GER got inserted.
     pub block_number: u64,
     /// Index within the block.
-    pub log_index: u64,
+    pub block_index: u64,
 }
 
 impl InsertedGER {

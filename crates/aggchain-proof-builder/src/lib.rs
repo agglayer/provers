@@ -5,7 +5,6 @@ mod error;
 mod tests;
 
 use std::{
-    hash::Hash,
     panic::AssertUnwindSafe,
     sync::Arc,
     task::{Context, Poll},
@@ -30,7 +29,7 @@ use aggkit_prover_types::vkey_hash::{Sp1VKeyHash, VKeyHash};
 use agglayer_interop::types::{
     bincode, GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues,
 };
-use agglayer_primitives::{Address, Digest, U256};
+use agglayer_primitives::{Address, Digest};
 use alloy::eips::BlockNumberOrTag;
 pub use error::Error;
 use eyre::Context as _;
@@ -120,162 +119,6 @@ pub struct AggchainProofBuilderResponse {
 
     /// The public inputs that were provided to the proof
     pub public_values: AggchainProofPublicValues,
-}
-
-/// Filters out values from a list based on a set of keys to remove, using a key
-/// extraction function.
-///
-/// This function iterates over `values`, removing up to N occurrences of each
-/// value whose key, as determined by `key_fn`, matches a key in
-/// `keys_to_remove`, where N is the number of times the key appears in
-/// `keys_to_remove`. The removal is performed in order, and only the first N
-/// matching values are removed for each key. Remaining values are preserved in
-/// their original order.
-///
-/// # Arguments
-///
-/// * `keys_to_remove` - A slice of keys indicating which values to remove. Each
-///   occurrence of a key in this slice will remove one matching value from
-///   `values`.
-/// * `values` - The slice of values to filter.
-/// * `key_fn` - A function that extracts a key from a value for comparison.
-///
-/// # Returns
-///
-/// Returns a `Result` containing a `Vec<V>` of the filtered values, or an error
-/// if an overflow occurs while counting removals.
-///
-/// # Example
-///
-/// ```
-/// use aggchain_proof_builder::filter_values;
-///
-/// let keys_to_remove = [1, 2, 2];
-/// let values = [1, 2, 2, 3, 4];
-/// let filtered = filter_values(&keys_to_remove, &values, |v| *v).unwrap();
-/// assert_eq!(filtered, vec![3, 4]);
-/// ```
-///
-/// # Errors
-///
-/// Returns `Error::FilteringValuesOverflow` if the removal count for any key
-/// would overflow `usize`.
-pub fn filter_values<K, V, KF>(
-    keys_to_remove: &[K],
-    values: &[V],
-    mut key_fn: KF,
-) -> Result<Vec<V>, Error>
-where
-    K: Eq + Hash + Copy,
-    V: Clone,
-    KF: FnMut(&V) -> K,
-{
-    use std::collections::HashMap;
-
-    // Count how many times each key should be removed
-    let mut removal_map: HashMap<K, usize> = HashMap::new();
-    for &key in keys_to_remove {
-        let count = removal_map.entry(key).or_insert(0);
-        *count = count
-            .checked_add(1)
-            .ok_or(Error::FilteringValuesOverflow(*count))?;
-    }
-
-    // For each value, if its key is in removal_map and count > 0, skip it and
-    // decrement count
-    let mut result = Vec::new();
-    for value in values {
-        let key = key_fn(value);
-        if let Some(count) = removal_map.get_mut(&key) {
-            if *count > 0 {
-                *count -= 1;
-                continue;
-            }
-        }
-        result.push(value.clone());
-    }
-
-    Ok(result)
-}
-
-/// Filters, sorts, and maps items from an iterator based on a block number
-/// range.
-///
-/// This function takes an iterator of items, filters them to include only those
-/// whose block number (as determined by `block_number_fn`) falls within the
-/// specified `range`, sorts the filtered items using their `Ord`
-/// implementation, and then maps each item to a new type using the provided
-/// `map_fn`.
-///
-/// # Type Parameters
-/// - `T`: The type of the input items. Must implement `Ord`.
-/// - `F`: The mapping function type. Must be a function or closure that takes
-///   `T` and returns `U`.
-/// - `U`: The type of the output items.
-///
-/// # Arguments
-/// - `items`: An iterator of items to process.
-/// - `range`: The inclusive range of block numbers to filter by.
-/// - `block_number_fn`: A function that extracts the block number from an item.
-/// - `map_fn`: A function that maps each filtered and sorted item to the
-///   desired output type.
-///
-/// # Returns
-/// An iterator over the mapped items, filtered and sorted as described.
-///
-/// # Example
-/// ```no_run
-/// # use aggchain_proof_builder::filter_sort_map;
-/// # struct Item { block_number: u64 }
-/// # impl Item {
-/// #     fn to_output_type(self) -> u64 { self.block_number }
-/// # }
-/// # impl Ord for Item {
-/// #     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-/// #         self.block_number.cmp(&other.block_number)
-/// #     }
-/// # }
-/// # impl PartialOrd for Item {
-/// #     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-/// #         Some(self.cmp(other))
-/// #     }
-/// # }
-/// # impl Eq for Item {}
-/// # impl PartialEq for Item {
-/// #     fn eq(&self, other: &Self) -> bool {
-/// #         self.block_number == other.block_number
-/// #     }
-/// # }
-/// let item1 = Item { block_number: 100 };
-/// let item2 = Item { block_number: 150 };
-/// let item3 = Item { block_number: 250 };
-/// let items = vec![item1, item2, item3];
-/// let range = 100..=200;
-/// let result: Vec<_> = filter_sort_map(
-///     items,
-///     &range,
-///     |item| item.block_number,
-///     |item| item.to_output_type(),
-/// )
-/// .collect();
-/// assert_eq!(result, vec![100, 150]);
-/// ```
-pub fn filter_sort_map<T, F, U>(
-    items: impl IntoIterator<Item = T>,
-    range: &std::ops::RangeInclusive<u64>,
-    block_number_fn: fn(&T) -> u64,
-    map_fn: F,
-) -> impl Iterator<Item = U>
-where
-    F: Fn(T) -> U,
-    T: Ord,
-{
-    let mut filtered_items: Vec<_> = items
-        .into_iter()
-        .filter(|item| range.contains(&block_number_fn(item)))
-        .collect();
-    filtered_items.sort();
-    filtered_items.into_iter().map(map_fn)
 }
 
 /// This service is responsible for building an Aggchain proof.
@@ -449,57 +292,28 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .await
             .map_err(Error::UnableToFetchTrustedSequencerAddress)?;
 
-        // Retrieve all the raw GERs from the aggsender input.
-        // Removed GERs from this list have invalid merkle proofs.
-        let raw_inserted_gers: Vec<InsertedGER> = request
+        // From the request
+        let inserted_gers: Vec<InsertedGER> = request
             .aggchain_proof_inputs
             .sorted_inserted_gers(&new_blocks_range);
 
-        // All the bridge exits in the new blocks range, also those that are unclaimed.
-        let all_imported_bridge_exits: Vec<GlobalIndexWithLeafHash> = filter_sort_map(
-            request.aggchain_proof_inputs.imported_bridge_exits,
-            &new_blocks_range,
-            |ib| ib.block_number,
-            |ib| GlobalIndexWithLeafHash {
-                global_index: ib.global_index.into(),
-                bridge_exit_hash: ib.bridge_exit_hash.0,
-            },
-        )
-        .collect();
-
-        // Prepare removed GERS for the proof.
-        let removed_gers: Vec<Digest> = filter_sort_map(
-            request.aggchain_proof_inputs.removed_gers,
-            &new_blocks_range,
-            |removed_ger| removed_ger.block_number,
-            |removed_ger| removed_ger.global_exit_root,
-        )
-        .collect();
-
-        // Prepare inserted GERS for the proof, filtering out the removed ones.
-        let inserted_gers = filter_values(&removed_gers, &raw_inserted_gers, |value| value.ger())?;
-
-        // Prepare the hash chain of all the GERs (inserted and removed) for the
-        // proof.
-        let raw_inserted_gers = raw_inserted_gers
-            .into_iter()
+        // NOTE: Corresponds to all of them because we do not have removed GERs yet.
+        let inserted_gers_hash_chain = inserted_gers
+            .iter()
             .map(|inserted_ger| inserted_ger.ger())
             .collect();
 
-        // Prepare unset claims input for the proof.
-        let unset_claims: Vec<U256> = filter_sort_map(
-            request.aggchain_proof_inputs.unclaims,
-            &new_blocks_range,
-            |unclaim| unclaim.block_number,
-            |unclaim| unclaim.global_index,
-        )
-        .collect();
-
-        // Filter out the unset claims from the all imported bridge exits list.
-        let filtered_claimed_imported_bridge_exits =
-            filter_values(&unset_claims, &all_imported_bridge_exits, |value| {
-                value.global_index
-            })?;
+        // NOTE: Corresponds to all of them because we do not have unset claims yet.
+        let bridge_exits_claimed: Vec<GlobalIndexWithLeafHash> = request
+            .aggchain_proof_inputs
+            .imported_bridge_exits
+            .iter()
+            .filter(|ib| new_blocks_range.contains(&ib.block_number))
+            .map(|ib| GlobalIndexWithLeafHash {
+                global_index: ib.global_index.into(),
+                bridge_exit_hash: ib.bridge_exit_hash.0,
+            })
+            .collect();
 
         let l1_info_tree_leaf = request.aggchain_proof_inputs.l1_info_tree_leaf;
         let mut fep_inputs = FepInputs {
@@ -559,15 +373,15 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                 origin_network: network_id,
                 fep: fep_inputs,
                 commit_imported_bridge_exits: ImportedBridgeExitCommitmentValues {
-                    claims: filtered_claimed_imported_bridge_exits,
+                    claims: bridge_exits_claimed.clone(),
                 }
                 .commitment(IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION),
                 bridge_witness: BridgeWitness {
                     inserted_gers,
-                    imported_bridge_exits: all_imported_bridge_exits,
-                    removed_gers,
-                    raw_inserted_gers,
-                    unset_claims,
+                    bridge_exits_claimed,
+                    global_indices_unset: vec![], // NOTE: no unset yet.
+                    raw_inserted_gers: inserted_gers_hash_chain,
+                    removed_gers: vec![], // NOTE: no removed GERs yet.
                     prev_l2_block_sketch,
                     new_l2_block_sketch,
                     caller_address: static_call_caller_address,

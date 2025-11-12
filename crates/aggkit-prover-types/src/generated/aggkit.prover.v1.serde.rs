@@ -28,12 +28,6 @@ impl serde::Serialize for GenerateAggchainProofRequest {
         if !self.imported_bridge_exits.is_empty() {
             len += 1;
         }
-        if !self.removed_gers.is_empty() {
-            len += 1;
-        }
-        if !self.unclaims.is_empty() {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("aggkit.prover.v1.GenerateAggchainProofRequest", len)?;
         if self.last_proven_block != 0 {
             #[allow(clippy::needless_borrow)]
@@ -60,12 +54,6 @@ impl serde::Serialize for GenerateAggchainProofRequest {
         if !self.imported_bridge_exits.is_empty() {
             struct_ser.serialize_field("importedBridgeExits", &self.imported_bridge_exits)?;
         }
-        if !self.removed_gers.is_empty() {
-            struct_ser.serialize_field("removedGers", &self.removed_gers)?;
-        }
-        if !self.unclaims.is_empty() {
-            struct_ser.serialize_field("unclaims", &self.unclaims)?;
-        }
         struct_ser.end()
     }
 }
@@ -90,9 +78,6 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
             "gerLeaves",
             "imported_bridge_exits",
             "importedBridgeExits",
-            "removed_gers",
-            "removedGers",
-            "unclaims",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -104,8 +89,6 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
             L1InfoTreeMerkleProof,
             GerLeaves,
             ImportedBridgeExits,
-            RemovedGers,
-            Unclaims,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -134,8 +117,6 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
                             "l1InfoTreeMerkleProof" | "l1_info_tree_merkle_proof" => Ok(GeneratedField::L1InfoTreeMerkleProof),
                             "gerLeaves" | "ger_leaves" => Ok(GeneratedField::GerLeaves),
                             "importedBridgeExits" | "imported_bridge_exits" => Ok(GeneratedField::ImportedBridgeExits),
-                            "removedGers" | "removed_gers" => Ok(GeneratedField::RemovedGers),
-                            "unclaims" => Ok(GeneratedField::Unclaims),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -162,8 +143,6 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
                 let mut l1_info_tree_merkle_proof__ = None;
                 let mut ger_leaves__ = None;
                 let mut imported_bridge_exits__ = None;
-                let mut removed_gers__ = None;
-                let mut unclaims__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::LastProvenBlock => {
@@ -214,18 +193,6 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
                             }
                             imported_bridge_exits__ = Some(map_.next_value()?);
                         }
-                        GeneratedField::RemovedGers => {
-                            if removed_gers__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("removedGers"));
-                            }
-                            removed_gers__ = Some(map_.next_value()?);
-                        }
-                        GeneratedField::Unclaims => {
-                            if unclaims__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("unclaims"));
-                            }
-                            unclaims__ = Some(map_.next_value()?);
-                        }
                     }
                 }
                 Ok(GenerateAggchainProofRequest {
@@ -236,8 +203,6 @@ impl<'de> serde::Deserialize<'de> for GenerateAggchainProofRequest {
                     l1_info_tree_merkle_proof: l1_info_tree_merkle_proof__,
                     ger_leaves: ger_leaves__.unwrap_or_default(),
                     imported_bridge_exits: imported_bridge_exits__.unwrap_or_default(),
-                    removed_gers: removed_gers__.unwrap_or_default(),
-                    unclaims: unclaims__.unwrap_or_default(),
                 })
             }
         }
@@ -679,9 +644,6 @@ impl serde::Serialize for ImportedBridgeExitWithBlockNumber {
         if self.bridge_exit_hash.is_some() {
             len += 1;
         }
-        if self.log_index != 0 {
-            len += 1;
-        }
         let mut struct_ser = serializer.serialize_struct("aggkit.prover.v1.ImportedBridgeExitWithBlockNumber", len)?;
         if self.block_number != 0 {
             #[allow(clippy::needless_borrow)]
@@ -693,11 +655,6 @@ impl serde::Serialize for ImportedBridgeExitWithBlockNumber {
         }
         if let Some(v) = self.bridge_exit_hash.as_ref() {
             struct_ser.serialize_field("bridgeExitHash", v)?;
-        }
-        if self.log_index != 0 {
-            #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
-            struct_ser.serialize_field("logIndex", ToString::to_string(&self.log_index).as_str())?;
         }
         struct_ser.end()
     }
@@ -715,8 +672,6 @@ impl<'de> serde::Deserialize<'de> for ImportedBridgeExitWithBlockNumber {
             "globalIndex",
             "bridge_exit_hash",
             "bridgeExitHash",
-            "log_index",
-            "logIndex",
         ];
 
         #[allow(clippy::enum_variant_names)]
@@ -724,7 +679,6 @@ impl<'de> serde::Deserialize<'de> for ImportedBridgeExitWithBlockNumber {
             BlockNumber,
             GlobalIndex,
             BridgeExitHash,
-            LogIndex,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -749,7 +703,6 @@ impl<'de> serde::Deserialize<'de> for ImportedBridgeExitWithBlockNumber {
                             "blockNumber" | "block_number" => Ok(GeneratedField::BlockNumber),
                             "globalIndex" | "global_index" => Ok(GeneratedField::GlobalIndex),
                             "bridgeExitHash" | "bridge_exit_hash" => Ok(GeneratedField::BridgeExitHash),
-                            "logIndex" | "log_index" => Ok(GeneratedField::LogIndex),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -772,7 +725,6 @@ impl<'de> serde::Deserialize<'de> for ImportedBridgeExitWithBlockNumber {
                 let mut block_number__ = None;
                 let mut global_index__ = None;
                 let mut bridge_exit_hash__ = None;
-                let mut log_index__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::BlockNumber => {
@@ -795,21 +747,12 @@ impl<'de> serde::Deserialize<'de> for ImportedBridgeExitWithBlockNumber {
                             }
                             bridge_exit_hash__ = map_.next_value()?;
                         }
-                        GeneratedField::LogIndex => {
-                            if log_index__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("logIndex"));
-                            }
-                            log_index__ = 
-                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
-                        }
                     }
                 }
                 Ok(ImportedBridgeExitWithBlockNumber {
                     block_number: block_number__.unwrap_or_default(),
                     global_index: global_index__,
                     bridge_exit_hash: bridge_exit_hash__,
-                    log_index: log_index__.unwrap_or_default(),
                 })
             }
         }
@@ -940,7 +883,7 @@ impl serde::Serialize for ProvenInsertedGerWithBlockNumber {
         if self.proven_inserted_ger.is_some() {
             len += 1;
         }
-        if self.log_index != 0 {
+        if self.block_index != 0 {
             len += 1;
         }
         let mut struct_ser = serializer.serialize_struct("aggkit.prover.v1.ProvenInsertedGERWithBlockNumber", len)?;
@@ -952,10 +895,10 @@ impl serde::Serialize for ProvenInsertedGerWithBlockNumber {
         if let Some(v) = self.proven_inserted_ger.as_ref() {
             struct_ser.serialize_field("provenInsertedGer", v)?;
         }
-        if self.log_index != 0 {
+        if self.block_index != 0 {
             #[allow(clippy::needless_borrow)]
             #[allow(clippy::needless_borrows_for_generic_args)]
-            struct_ser.serialize_field("logIndex", ToString::to_string(&self.log_index).as_str())?;
+            struct_ser.serialize_field("blockIndex", ToString::to_string(&self.block_index).as_str())?;
         }
         struct_ser.end()
     }
@@ -971,15 +914,15 @@ impl<'de> serde::Deserialize<'de> for ProvenInsertedGerWithBlockNumber {
             "blockNumber",
             "proven_inserted_ger",
             "provenInsertedGer",
-            "log_index",
-            "logIndex",
+            "block_index",
+            "blockIndex",
         ];
 
         #[allow(clippy::enum_variant_names)]
         enum GeneratedField {
             BlockNumber,
             ProvenInsertedGer,
-            LogIndex,
+            BlockIndex,
         }
         impl<'de> serde::Deserialize<'de> for GeneratedField {
             fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
@@ -1003,7 +946,7 @@ impl<'de> serde::Deserialize<'de> for ProvenInsertedGerWithBlockNumber {
                         match value {
                             "blockNumber" | "block_number" => Ok(GeneratedField::BlockNumber),
                             "provenInsertedGer" | "proven_inserted_ger" => Ok(GeneratedField::ProvenInsertedGer),
-                            "logIndex" | "log_index" => Ok(GeneratedField::LogIndex),
+                            "blockIndex" | "block_index" => Ok(GeneratedField::BlockIndex),
                             _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -1025,7 +968,7 @@ impl<'de> serde::Deserialize<'de> for ProvenInsertedGerWithBlockNumber {
             {
                 let mut block_number__ = None;
                 let mut proven_inserted_ger__ = None;
-                let mut log_index__ = None;
+                let mut block_index__ = None;
                 while let Some(k) = map_.next_key()? {
                     match k {
                         GeneratedField::BlockNumber => {
@@ -1042,11 +985,11 @@ impl<'de> serde::Deserialize<'de> for ProvenInsertedGerWithBlockNumber {
                             }
                             proven_inserted_ger__ = map_.next_value()?;
                         }
-                        GeneratedField::LogIndex => {
-                            if log_index__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("logIndex"));
+                        GeneratedField::BlockIndex => {
+                            if block_index__.is_some() {
+                                return Err(serde::de::Error::duplicate_field("blockIndex"));
                             }
-                            log_index__ = 
+                            block_index__ = 
                                 Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
                             ;
                         }
@@ -1055,282 +998,10 @@ impl<'de> serde::Deserialize<'de> for ProvenInsertedGerWithBlockNumber {
                 Ok(ProvenInsertedGerWithBlockNumber {
                     block_number: block_number__.unwrap_or_default(),
                     proven_inserted_ger: proven_inserted_ger__,
-                    log_index: log_index__.unwrap_or_default(),
+                    block_index: block_index__.unwrap_or_default(),
                 })
             }
         }
         deserializer.deserialize_struct("aggkit.prover.v1.ProvenInsertedGERWithBlockNumber", FIELDS, GeneratedVisitor)
-    }
-}
-impl serde::Serialize for RemovedGer {
-    #[allow(deprecated)]
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        use serde::ser::SerializeStruct;
-        let mut len = 0;
-        if self.global_exit_root.is_some() {
-            len += 1;
-        }
-        if self.block_number != 0 {
-            len += 1;
-        }
-        if self.log_index != 0 {
-            len += 1;
-        }
-        let mut struct_ser = serializer.serialize_struct("aggkit.prover.v1.RemovedGER", len)?;
-        if let Some(v) = self.global_exit_root.as_ref() {
-            struct_ser.serialize_field("globalExitRoot", v)?;
-        }
-        if self.block_number != 0 {
-            #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
-            struct_ser.serialize_field("blockNumber", ToString::to_string(&self.block_number).as_str())?;
-        }
-        if self.log_index != 0 {
-            #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
-            struct_ser.serialize_field("logIndex", ToString::to_string(&self.log_index).as_str())?;
-        }
-        struct_ser.end()
-    }
-}
-impl<'de> serde::Deserialize<'de> for RemovedGer {
-    #[allow(deprecated)]
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        const FIELDS: &[&str] = &[
-            "global_exit_root",
-            "globalExitRoot",
-            "block_number",
-            "blockNumber",
-            "log_index",
-            "logIndex",
-        ];
-
-        #[allow(clippy::enum_variant_names)]
-        enum GeneratedField {
-            GlobalExitRoot,
-            BlockNumber,
-            LogIndex,
-        }
-        impl<'de> serde::Deserialize<'de> for GeneratedField {
-            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
-            where
-                D: serde::Deserializer<'de>,
-            {
-                struct GeneratedVisitor;
-
-                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-                    type Value = GeneratedField;
-
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                        write!(formatter, "expected one of: {:?}", &FIELDS)
-                    }
-
-                    #[allow(unused_variables)]
-                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
-                    where
-                        E: serde::de::Error,
-                    {
-                        match value {
-                            "globalExitRoot" | "global_exit_root" => Ok(GeneratedField::GlobalExitRoot),
-                            "blockNumber" | "block_number" => Ok(GeneratedField::BlockNumber),
-                            "logIndex" | "log_index" => Ok(GeneratedField::LogIndex),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
-                        }
-                    }
-                }
-                deserializer.deserialize_identifier(GeneratedVisitor)
-            }
-        }
-        struct GeneratedVisitor;
-        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = RemovedGer;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct aggkit.prover.v1.RemovedGER")
-            }
-
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<RemovedGer, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
-            {
-                let mut global_exit_root__ = None;
-                let mut block_number__ = None;
-                let mut log_index__ = None;
-                while let Some(k) = map_.next_key()? {
-                    match k {
-                        GeneratedField::GlobalExitRoot => {
-                            if global_exit_root__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("globalExitRoot"));
-                            }
-                            global_exit_root__ = map_.next_value()?;
-                        }
-                        GeneratedField::BlockNumber => {
-                            if block_number__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("blockNumber"));
-                            }
-                            block_number__ = 
-                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
-                        }
-                        GeneratedField::LogIndex => {
-                            if log_index__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("logIndex"));
-                            }
-                            log_index__ = 
-                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
-                        }
-                    }
-                }
-                Ok(RemovedGer {
-                    global_exit_root: global_exit_root__,
-                    block_number: block_number__.unwrap_or_default(),
-                    log_index: log_index__.unwrap_or_default(),
-                })
-            }
-        }
-        deserializer.deserialize_struct("aggkit.prover.v1.RemovedGER", FIELDS, GeneratedVisitor)
-    }
-}
-impl serde::Serialize for Unclaim {
-    #[allow(deprecated)]
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        use serde::ser::SerializeStruct;
-        let mut len = 0;
-        if self.global_index.is_some() {
-            len += 1;
-        }
-        if self.block_number != 0 {
-            len += 1;
-        }
-        if self.log_index != 0 {
-            len += 1;
-        }
-        let mut struct_ser = serializer.serialize_struct("aggkit.prover.v1.Unclaim", len)?;
-        if let Some(v) = self.global_index.as_ref() {
-            struct_ser.serialize_field("globalIndex", v)?;
-        }
-        if self.block_number != 0 {
-            #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
-            struct_ser.serialize_field("blockNumber", ToString::to_string(&self.block_number).as_str())?;
-        }
-        if self.log_index != 0 {
-            #[allow(clippy::needless_borrow)]
-            #[allow(clippy::needless_borrows_for_generic_args)]
-            struct_ser.serialize_field("logIndex", ToString::to_string(&self.log_index).as_str())?;
-        }
-        struct_ser.end()
-    }
-}
-impl<'de> serde::Deserialize<'de> for Unclaim {
-    #[allow(deprecated)]
-    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        const FIELDS: &[&str] = &[
-            "global_index",
-            "globalIndex",
-            "block_number",
-            "blockNumber",
-            "log_index",
-            "logIndex",
-        ];
-
-        #[allow(clippy::enum_variant_names)]
-        enum GeneratedField {
-            GlobalIndex,
-            BlockNumber,
-            LogIndex,
-        }
-        impl<'de> serde::Deserialize<'de> for GeneratedField {
-            fn deserialize<D>(deserializer: D) -> std::result::Result<GeneratedField, D::Error>
-            where
-                D: serde::Deserializer<'de>,
-            {
-                struct GeneratedVisitor;
-
-                impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-                    type Value = GeneratedField;
-
-                    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                        write!(formatter, "expected one of: {:?}", &FIELDS)
-                    }
-
-                    #[allow(unused_variables)]
-                    fn visit_str<E>(self, value: &str) -> std::result::Result<GeneratedField, E>
-                    where
-                        E: serde::de::Error,
-                    {
-                        match value {
-                            "globalIndex" | "global_index" => Ok(GeneratedField::GlobalIndex),
-                            "blockNumber" | "block_number" => Ok(GeneratedField::BlockNumber),
-                            "logIndex" | "log_index" => Ok(GeneratedField::LogIndex),
-                            _ => Err(serde::de::Error::unknown_field(value, FIELDS)),
-                        }
-                    }
-                }
-                deserializer.deserialize_identifier(GeneratedVisitor)
-            }
-        }
-        struct GeneratedVisitor;
-        impl<'de> serde::de::Visitor<'de> for GeneratedVisitor {
-            type Value = Unclaim;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                formatter.write_str("struct aggkit.prover.v1.Unclaim")
-            }
-
-            fn visit_map<V>(self, mut map_: V) -> std::result::Result<Unclaim, V::Error>
-                where
-                    V: serde::de::MapAccess<'de>,
-            {
-                let mut global_index__ = None;
-                let mut block_number__ = None;
-                let mut log_index__ = None;
-                while let Some(k) = map_.next_key()? {
-                    match k {
-                        GeneratedField::GlobalIndex => {
-                            if global_index__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("globalIndex"));
-                            }
-                            global_index__ = map_.next_value()?;
-                        }
-                        GeneratedField::BlockNumber => {
-                            if block_number__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("blockNumber"));
-                            }
-                            block_number__ = 
-                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
-                        }
-                        GeneratedField::LogIndex => {
-                            if log_index__.is_some() {
-                                return Err(serde::de::Error::duplicate_field("logIndex"));
-                            }
-                            log_index__ = 
-                                Some(map_.next_value::<::pbjson::private::NumberDeserialize<_>>()?.0)
-                            ;
-                        }
-                    }
-                }
-                Ok(Unclaim {
-                    global_index: global_index__,
-                    block_number: block_number__.unwrap_or_default(),
-                    log_index: log_index__.unwrap_or_default(),
-                })
-            }
-        }
-        deserializer.deserialize_struct("aggkit.prover.v1.Unclaim", FIELDS, GeneratedVisitor)
     }
 }

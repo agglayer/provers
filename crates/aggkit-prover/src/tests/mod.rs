@@ -48,8 +48,6 @@ async fn service_can_be_called() {
         l1_info_tree_merkle_proof: MerkleProof::new(Digest::default(), [Digest::default(); 32]),
         ger_leaves: Default::default(),
         imported_bridge_exits: Default::default(),
-        removed_gers: Default::default(),
-        unclaims: Default::default(),
     });
     let response = service.call(request).await;
     assert!(response.is_ok());
@@ -105,8 +103,6 @@ async fn testing_rpc_failure() {
         l1_info_tree_merkle_proof: None,
         ger_leaves: HashMap::new(),
         imported_bridge_exits: vec![],
-        removed_gers: vec![],
-        unclaims: vec![],
     });
 
     let response = client.generate_aggchain_proof(request).await;
