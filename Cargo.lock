@@ -240,8 +240,9 @@ dependencies = [
 
 [[package]]
 name = "agglayer-bincode"
-version = "0.11.0"
-source = "git+https://github.com/agglayer/interop.git?branch=feat%2Fupdate-alloy-sp1#c882874862b4cf95ccc5441372cfba0f69a072e2"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cbf2a8f2dc49e16c8ffbb6c216f00e52fd3174f0998d4fee093070a844ca6179"
 dependencies = [
  "bincode",
  "serde",
@@ -249,8 +250,9 @@ dependencies = [
 
 [[package]]
 name = "agglayer-elf-build"
-version = "0.11.0"
-source = "git+https://github.com/agglayer/interop.git?branch=feat%2Fupdate-alloy-sp1#c882874862b4cf95ccc5441372cfba0f69a072e2"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4167bda473bfa7066c8211904e3a8728d2e76fa35a4a7928c86d9645d9a4b416"
 dependencies = [
  "cargo_metadata",
  "clap",
@@ -260,8 +262,9 @@ dependencies = [
 
 [[package]]
 name = "agglayer-evm-client"
-version = "0.11.0"
-source = "git+https://github.com/agglayer/interop.git?branch=feat%2Fupdate-alloy-sp1#c882874862b4cf95ccc5441372cfba0f69a072e2"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "59ad2bb020cf0880e20de7a3e41520c28a633d5ee3edde63ef137da14b8330b8"
 dependencies = [
  "agglayer-primitives",
  "alloy",
@@ -273,8 +276,9 @@ dependencies = [
 
 [[package]]
 name = "agglayer-interop"
-version = "0.11.0"
-source = "git+https://github.com/agglayer/interop.git?branch=feat%2Fupdate-alloy-sp1#c882874862b4cf95ccc5441372cfba0f69a072e2"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30cc6c12f18d97d58cb93c05a9b31668f5ba1245f70f64735e0615533b37bf95"
 dependencies = [
  "agglayer-interop-grpc-types",
  "agglayer-interop-types",
@@ -282,8 +286,9 @@ dependencies = [
 
 [[package]]
 name = "agglayer-interop-grpc-types"
-version = "0.11.0"
-source = "git+https://github.com/agglayer/interop.git?branch=feat%2Fupdate-alloy-sp1#c882874862b4cf95ccc5441372cfba0f69a072e2"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c0756742ba20c02b6a8a811364ddb7b7575b01d9df7e29fda08229b64bad40ba"
 dependencies = [
  "agglayer-interop-types",
  "bincode",
@@ -296,8 +301,9 @@ dependencies = [
 
 [[package]]
 name = "agglayer-interop-types"
-version = "0.11.0"
-source = "git+https://github.com/agglayer/interop.git?branch=feat%2Fupdate-alloy-sp1#c882874862b4cf95ccc5441372cfba0f69a072e2"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f188098850486ce56f8fadebd3701c95fd812dc0263e51981415b4b446adf01"
 dependencies = [
  "agglayer-bincode",
  "agglayer-primitives",
@@ -315,8 +321,9 @@ dependencies = [
 
 [[package]]
 name = "agglayer-primitives"
-version = "0.11.0"
-source = "git+https://github.com/agglayer/interop.git?branch=feat%2Fupdate-alloy-sp1#c882874862b4cf95ccc5441372cfba0f69a072e2"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1269279b919d3816744296381de30b2ff31de7a1649988d2014e6efee0694541"
 dependencies = [
  "alloy-primitives",
  "byteorder",
@@ -348,8 +355,9 @@ dependencies = [
 
 [[package]]
 name = "agglayer-tries"
-version = "0.11.0"
-source = "git+https://github.com/agglayer/interop.git?branch=feat%2Fupdate-alloy-sp1#c882874862b4cf95ccc5441372cfba0f69a072e2"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e7b73707fbcb1be8be636437969b3f2af904f95b8f4ecfd6e88808bd6097c921"
 dependencies = [
  "agglayer-primitives",
  "hex",
@@ -10557,8 +10565,9 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 
 [[package]]
 name = "unified-bridge"
-version = "0.11.0"
-source = "git+https://github.com/agglayer/interop.git?branch=feat%2Fupdate-alloy-sp1#c882874862b4cf95ccc5441372cfba0f69a072e2"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d177b4f163ec0ad929fc6b85dc3d3f4417876deababed62e20acee97a340f2d"
 dependencies = [
  "agglayer-primitives",
  "agglayer-tries",

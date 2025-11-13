@@ -68,8 +68,9 @@ dependencies = [
 
 [[package]]
 name = "agglayer-primitives"
-version = "0.11.0"
-source = "git+https://github.com/agglayer/interop.git?branch=feat%2Fupdate-alloy-sp1#c882874862b4cf95ccc5441372cfba0f69a072e2"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1269279b919d3816744296381de30b2ff31de7a1649988d2014e6efee0694541"
 dependencies = [
  "alloy-primitives",
  "byteorder",
@@ -82,8 +83,9 @@ dependencies = [
 
 [[package]]
 name = "agglayer-tries"
-version = "0.11.0"
-source = "git+https://github.com/agglayer/interop.git?branch=feat%2Fupdate-alloy-sp1#c882874862b4cf95ccc5441372cfba0f69a072e2"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e7b73707fbcb1be8be636437969b3f2af904f95b8f4ecfd6e88808bd6097c921"
 dependencies = [
  "agglayer-primitives",
  "hex",
@@ -4893,8 +4895,9 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 
 [[package]]
 name = "unified-bridge"
-version = "0.11.0"
-source = "git+https://github.com/agglayer/interop.git?branch=feat%2Fupdate-alloy-sp1#c882874862b4cf95ccc5441372cfba0f69a072e2"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d177b4f163ec0ad929fc6b85dc3d3f4417876deababed62e20acee97a340f2d"
 dependencies = [
  "agglayer-primitives",
  "agglayer-tries",
