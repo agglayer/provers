@@ -8,4 +8,4 @@ license = "MIT OR Apache-2.0"
 sp1-zkvm.workspace = true
 
 [build-dependencies]
-sp1-cli = "=5.2.2"
+sp1-cli.workspace = true
