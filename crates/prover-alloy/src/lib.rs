@@ -49,7 +49,7 @@ pub fn build_alloy_fill_provider(
         .layer(retry_policy)
         .transport(http, is_local);
 
-    Ok(ProviderBuilder::new().on_client(client))
+    Ok(ProviderBuilder::new().connect_client(client))
 }
 
 /// Wrapper around alloy `Provider` client.
@@ -76,7 +76,7 @@ impl AlloyProvider {
             .transport(http, is_local);
 
         Ok(AlloyProvider {
-            client: ProviderBuilder::new().on_client(client),
+            client: ProviderBuilder::new().connect_client(client),
         })
     }
 }
