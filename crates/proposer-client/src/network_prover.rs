@@ -25,7 +25,7 @@ impl AggregationProver for NetworkProver {
     ) -> eyre::Result<SP1ProofWithPublicValues> {
         // TODO: Figure out a way to kill this struct if there's an unwind, and start
         // again with a fresh Prover
-        sp1_async(AssertUnwindSafe(self.wait_proof(request_id, timeout)))
+        sp1_async(AssertUnwindSafe(self.wait_proof(request_id, timeout, None)))
             .await?
             .map_err(|e| eyre!(e))
             .context("Failed waiting for proof")

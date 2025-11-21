@@ -324,7 +324,11 @@ where
     }
 }
 
-async fn host_execute<C: SolCall, P: Provider<AnyNetwork> + Clone, PT: Primitives>(
+async fn host_execute<
+    C: SolCall,
+    P: Provider<AnyNetwork> + Clone + std::fmt::Debug,
+    PT: Primitives,
+>(
     caller_address: Address,
     contract_address: alloy::primitives::Address,
     sketch: &EvmSketch<P, PT>,
