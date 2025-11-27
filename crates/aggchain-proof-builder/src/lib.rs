@@ -477,13 +477,15 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         .collect();
 
         // Prepare inserted GERS for the proof, filtering out the removed ones.
-        let inserted_gers = filter_values(&removed_gers, &raw_inserted_gers, |value| value.ger())?;
+        let inserted_gers = filter_values(&removed_gers, &raw_inserted_gers, |value| {
+            value.l1_info_tree_leaf.inner.global_exit_root
+        })?;
 
         // Prepare the hash chain of all the GERs (inserted and removed) for the
         // proof.
         let raw_inserted_gers = raw_inserted_gers
             .into_iter()
-            .map(|inserted_ger| inserted_ger.ger())
+            .map(|inserted_ger| inserted_ger.l1_info_tree_leaf.inner.global_exit_root)
             .collect();
 
         // Prepare unset claims input for the proof.
