@@ -141,7 +141,7 @@ impl AggregationProofProposer for ProposerRpcClient {
             .inspect_err(|e| error!("Get mock proof request failed: {e:?}"))
             .map_err(|e| Error::Requesting(Box::new(e)))?;
 
-        info!(proof_id = request.proof_id, "mock proof request fullfilled");
+        info!(proof_id = request.proof_id, "mock proof request fulfilled");
 
         Ok(response)
     }
