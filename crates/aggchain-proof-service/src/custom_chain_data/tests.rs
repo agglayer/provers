@@ -61,7 +61,7 @@ async fn test_custom_chain_data_builder_service() {
 
     let mut expected = [0u8; 96];
     // program selector
-    expected[0..4].copy_from_slice(&[0, 8, 0, 1]);
+    expected[0..4].copy_from_slice(&[0, 9, 0, 1]);
 
     // output root
     expected[32..64].copy_from_slice(&[1u8; 32]);
