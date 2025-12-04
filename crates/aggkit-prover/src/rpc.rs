@@ -17,6 +17,7 @@ use agglayer_interop::{
     types::bincode,
 };
 use prost::bytes::Bytes;
+use prover_executor::sp1_fast;
 use sp1_sdk::SP1_CIRCUIT_VERSION;
 use tonic::{Request, Response, Status};
 use tonic_types::{ErrorDetails, StatusExt};
@@ -155,8 +156,6 @@ impl AggchainProofGrpcService for GrpcService {
                     custom_chain_data: response.custom_chain_data.into(),
                 }))
             }
-            // TODO: Return a different error when the proof is not yet ready.
-            // The gRPC API currently does not expose the status.
             Err(error) => {
                 error!(%last_proven_block, %requested_end_block, ?error, "Unable to execute GenerateAggchainProof request");
                 Err(Status::internal(error.to_string()))
@@ -244,8 +243,8 @@ impl AggchainProofGrpcService for GrpcService {
                 context.insert(
                     "public_values".to_owned(),
                     Bytes::from(
-                        bincode::sp1v4()
-                            .serialize(&response.public_values)
+                        sp1_fast(|| bincode::sp1v4().serialize(&response.public_values))
+                            .unwrap_or_else(|_| Ok(b"bincode serialization failed".to_vec()))
                             .unwrap_or_else(|_| b"bincode serialization failed".to_vec()),
                     ),
                 );
@@ -278,8 +277,6 @@ impl AggchainProofGrpcService for GrpcService {
                     custom_chain_data: response.custom_chain_data.into(),
                 }))
             }
-            // TODO: Return a different error when the proof is not yet ready.
-            // The gRPC API currently does not expose the status.
             Err(error) => {
                 error!(%last_proven_block, %requested_end_block, ?error, "Unable to execute GenerateOptimisticAggchainProof request");
                 Err(Status::internal(error.to_string()))

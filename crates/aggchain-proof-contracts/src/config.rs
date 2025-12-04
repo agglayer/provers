@@ -44,9 +44,9 @@ pub struct AggchainProofContractsConfig {
     #[serde(default = "default_static_call_caller_address")]
     pub static_call_caller_address: Address,
 
-    // EVM sketch genesis configuration
-    // Default is "mainnet", could be "sepolia", "opmainnet"
-    // or path to a custom genesis file.
+    /// EVM sketch genesis configuration
+    /// Default is "mainnet", could be "sepolia", "opmainnet"
+    /// or path to a custom genesis file.
     #[serde(default = "default_evm_sketch_genesis")]
     pub evm_sketch_genesis: String,
 }

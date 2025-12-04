@@ -1,17 +1,13 @@
 use std::{convert::Infallible, future::IntoFuture, net::SocketAddr, time::Duration};
 
 use agglayer_telemetry::ServerBuilder as MetricsBuilder;
+use eyre::Context as _;
 use http::{Request, Response};
 use tokio::{net::TcpListener, runtime::Runtime};
 use tokio_util::sync::CancellationToken;
-use tonic::{
-    body::{boxed, BoxBody},
-    server::NamedService,
-};
+use tonic::{body::Body, server::NamedService};
 use tower::{Service, ServiceExt};
 use tracing::{debug, info};
-
-pub type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
 pub struct ProverEngine {
     rpc_server: axum::Router,
@@ -69,14 +65,14 @@ impl ProverEngine {
 
     pub fn add_rpc_service<S>(mut self, rpc_service: S) -> Self
     where
-        S: Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
+        S: Service<Request<Body>, Response = Response<Body>, Error = Infallible>
             + NamedService
             + Clone
             + Sync
             + Send
             + 'static,
         S::Future: Send + 'static,
-        S::Error: Into<BoxError> + Send,
+        S::Error: Into<eyre::Report> + Send,
     {
         self.rpc_server = add_rpc_service(self.rpc_server, rpc_service);
         self.healthy_service.push(S::NAME);
@@ -90,7 +86,7 @@ impl ProverEngine {
         self
     }
 
-    pub fn start(mut self) -> anyhow::Result<()> {
+    pub fn start(mut self) -> eyre::Result<()> {
         info!("Starting the prover engine");
         let cancellation_token = self.cancellation_token.take().unwrap_or_default();
         let _cancel_on_panic = cancellation_token.clone().drop_guard();
@@ -135,7 +131,7 @@ impl ProverEngine {
         };
         let tcp_listener = prover_runtime.block_on(TcpListener::bind(self.rpc_socket_addr))?;
 
-        let (mut health_reporter, health_service) = tonic_health::server::health_reporter();
+        let (health_reporter, health_service) = tonic_health::server::health_reporter();
 
         let (reflection_v1, reflection_v1alpha) = self.reflection.iter().fold(
             (
@@ -150,12 +146,12 @@ impl ProverEngine {
             },
         );
 
-        let reflection_v1 = reflection_v1.build_v1().map_err(|error| {
-            anyhow::Error::new(error).context("Unable to build the reflection_v1")
-        })?;
-        let reflection_v1alpha = reflection_v1alpha.build_v1alpha().map_err(|error| {
-            anyhow::Error::new(error).context("Unable to build the reflection_v1alpha")
-        })?;
+        let reflection_v1 = reflection_v1
+            .build_v1()
+            .context("Unable to build the reflection_v1")?;
+        let reflection_v1alpha = reflection_v1alpha
+            .build_v1alpha()
+            .context("Unable to build the reflection_v1alpha")?;
 
         debug!("Setting the health status of the services to healthy");
         prover_runtime.block_on(async {
@@ -223,17 +219,17 @@ impl ProverEngine {
 
 fn add_rpc_service<S>(rpc_server: axum::Router, rpc_service: S) -> axum::Router
 where
-    S: Service<Request<BoxBody>, Response = Response<BoxBody>, Error = Infallible>
+    S: Service<Request<Body>, Response = Response<Body>, Error = Infallible>
         + NamedService
         + Clone
         + Sync
         + Send
         + 'static,
     S::Future: Send + 'static,
-    S::Error: Into<BoxError> + Send,
+    S::Error: Into<eyre::Report> + Send,
 {
     rpc_server.route_service(
         &format!("/{}/{{*rest}}", S::NAME),
-        rpc_service.map_request(|r: Request<axum::body::Body>| r.map(boxed)),
+        rpc_service.map_request(|r: Request<axum::body::Body>| r.map(Body::new)),
     )
 }

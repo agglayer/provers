@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  merge_group:
   pull_request:
     branches:
       - "**"
@@ -18,10 +19,10 @@ env:
 
 jobs:
   isolated-feature-checks:
-    name: 'isolated feature checks'
+    name: "isolated feature checks"
     runs-on: ubuntu-latest-16-cores
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
@@ -29,14 +30,15 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: protoc,cargo-hack
-      - run: cargo hack --each-feature --all check
+      - run: cargo hack --each-feature --all check --all-targets --locked
+
   unit:
     name: Unit Tests
     runs-on: ubuntu-latest-16-cores
     timeout-minutes: 30
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -69,7 +71,7 @@ jobs:
     name: ELF Checking
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Define source checksum
         run: |

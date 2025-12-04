@@ -123,10 +123,10 @@ pub struct BridgeWitness {
     /// List of removed GER.
     pub removed_gers: Vec<Digest>,
     /// List of the each imported bridge exit containing the global index and
-    /// the leaf hash.
-    pub bridge_exits_claimed: Vec<GlobalIndexWithLeafHash>,
-    /// List of the global index of each unset bridge exit.
-    pub global_indices_unset: Vec<U256>,
+    /// the leaf hash (both claimed and unclaimed).
+    pub imported_bridge_exits: Vec<GlobalIndexWithLeafHash>,
+    /// List of the global indexes that got unclaimed.
+    pub unset_claims: Vec<U256>,
     /// State sketch for the prev L2 block.
     pub prev_l2_block_sketch: EvmSketchInput,
     /// State sketch for the new L2 block.
@@ -244,7 +244,7 @@ impl BridgeConstraintsInput {
 
             let claims: Vec<Digest> = self
                 .bridge_witness
-                .bridge_exits_claimed
+                .imported_bridge_exits
                 .iter()
                 .map(|&idx| idx.commitment())
                 .collect();
@@ -265,9 +265,9 @@ impl BridgeConstraintsInput {
 
             let unset_claims: Vec<Digest> = self
                 .bridge_witness
-                .global_indices_unset
+                .unset_claims
                 .iter()
-                .map(|idx| idx.to_be_bytes().into())
+                .map(|value| value.to_be_bytes().into())
                 .collect();
 
             self.validate_hash_chain(
@@ -328,15 +328,13 @@ impl BridgeConstraintsInput {
         Ok(bridge_address.into())
     }
 
-    /// Verify that the claimed global indexes minus the unset global indexes
-    /// are equal to the Constrained global indexes.
-    fn verify_constrained_global_indices(&self) -> Result<(), BridgeConstraintsError> {
-        // Check if the filtered claimed global indices are equal to the constrained
-        // global indices.
+    /// Verify that the claims filtered with the global indexes that got
+    /// unclaimed are equal to commited imported bridge exits.
+    pub fn verify_constrained_claims(&self) -> Result<(), BridgeConstraintsError> {
         let constrained_claims = ImportedBridgeExitCommitmentValues {
             claims: filter_values(
-                &self.bridge_witness.global_indices_unset,
-                &self.bridge_witness.bridge_exits_claimed,
+                &self.bridge_witness.unset_claims,
+                &self.bridge_witness.imported_bridge_exits,
                 |exit: &GlobalIndexWithLeafHash| -> U256 { exit.global_index },
             )?,
         };
@@ -403,7 +401,7 @@ impl BridgeConstraintsInput {
         let bridge_address = self.fetch_bridge_address()?;
         self.verify_claims_hash_chains(bridge_address)?;
         self.verify_new_ler(bridge_address)?;
-        self.verify_constrained_global_indices()?;
+        self.verify_constrained_claims()?;
         self.verify_inserted_gers()
     }
 
@@ -477,6 +475,7 @@ fn filter_values<K: Eq + Hash + Copy, V: Copy>(
 mod tests {
     use std::{collections::HashMap, fs::File, io::BufReader, str::FromStr};
 
+    use agglayer_primitives::U256;
     use alloy::rpc::types::BlockNumberOrTag;
     use alloy_primitives::hex;
     use serde_json::Value;
@@ -489,9 +488,10 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     #[ignore = "e2e test, sepolia provider needed"]
-    async fn test_bridge_contraints() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_bridge_constraints() -> Result<(), Box<dyn std::error::Error>> {
         // Initialize the environment variables.
         dotenvy::dotenv().ok();
+        tracing_subscriber::fmt().with_test_writer().init();
 
         println!("Starting bridge constraints test...");
 
@@ -556,7 +556,7 @@ mod tests {
             })
             .collect();
 
-        let unclaimed_global_indexes: Vec<U256> = json_data["unclaimedGlobalIndexes"]
+        let unset_claims: Vec<U256> = json_data["unsetClaims"]
             .as_array()
             .unwrap()
             .iter()
@@ -577,7 +577,7 @@ mod tests {
                     None
                 } else {
                     Some(InsertedGER {
-                        block_index: 0u64,  // dataset already ordered
+                        log_index: 0u64,    // dataset already ordered
                         block_number: 0u64, // dataset already ordered
                         proof: MerkleProof::new(
                             l1_info_root,
@@ -820,7 +820,7 @@ mod tests {
             .await?;
         println!("Step 10: Received new unset global index hash chain: {new_unset:?}");
 
-        let bridge_exits_claimed: Vec<GlobalIndexWithLeafHash> = claimed_global_indexes
+        let claimed_imported_bridge_exits: Vec<GlobalIndexWithLeafHash> = claimed_global_indexes
             .iter()
             .zip(claimed_leafs.iter())
             .map(|(&global_index, &leaf)| GlobalIndexWithLeafHash {
@@ -830,25 +830,26 @@ mod tests {
             .collect();
 
         let mut removal_map: HashMap<U256, usize> = HashMap::new();
-        for idx in &unclaimed_global_indexes {
+        for idx in &unset_claims {
             *removal_map.entry(*idx).or_insert(0) += 1;
         }
-        let bridge_exits_claimed_filtered: Vec<GlobalIndexWithLeafHash> = bridge_exits_claimed
-            .clone()
-            .into_iter()
-            .filter(|v| {
-                if let Some(count) = removal_map.get_mut(&v.global_index) {
-                    if *count > 0 {
-                        *count -= 1;
-                        false
+        let bridge_exits_claimed_filtered: Vec<GlobalIndexWithLeafHash> =
+            claimed_imported_bridge_exits
+                .clone()
+                .into_iter()
+                .filter(|v| {
+                    if let Some(count) = removal_map.get_mut(&v.global_index) {
+                        if *count > 0 {
+                            *count -= 1;
+                            false
+                        } else {
+                            true
+                        }
                     } else {
                         true
                     }
-                } else {
-                    true
-                }
-            })
-            .collect();
+                })
+                .collect();
 
         // Finalize the sketches
         let prev_l2_block_sketch = prev_l2_block_executor.finalize().await?;
@@ -869,8 +870,8 @@ mod tests {
                 inserted_gers: final_imported_l1_info_tree_leafs,
                 raw_inserted_gers,
                 removed_gers,
-                bridge_exits_claimed,
-                global_indices_unset: unclaimed_global_indexes,
+                imported_bridge_exits: claimed_imported_bridge_exits,
+                unset_claims,
                 prev_l2_block_sketch,
                 new_l2_block_sketch,
                 caller_address: address!("0x39027D57969aD59161365e0bbd53D2F63eE5AAA6"),
@@ -944,12 +945,127 @@ mod tests {
         // correctly, and thus this test failing.
         // In that case, you should update the file.
         // The process is to:
-        // 1. Obtain a Sepolia RPC key, and run `export RPC_11155111=https://eth-sepolia.g.alchemy.com/v2/[censored]`
-        // 2. Run `cargo test --workspace -- bridge::tests::test_bridge_contraints
+        // 1. Ask someone from Agglayer team to give you the required Quiknode RPC URL
+        // 2. Put it into an environment variable: `export RPC_11155420=https://dawn-maximum-dream.optimism-sepolia.quiknode.pro/[censored]`
+        // 3. Run `cargo test --workspace -- bridge::tests::test_bridge_constraints
         //    --exact --show-output --include-ignored` (Or you can limit to `--package
         //    aggchain-proof-core --lib` if your cargo folder is not filled yet)
-        // 3. The file should then be ready for committing
-
+        // 4. The file should then be ready for committing
+        // Note that it is possible the RPC no longer has the required blocks available
+        // for proof getting.
+        // In this case, you can use the script here to regenerate the tests:
+        // https://github.com/agglayer/agglayer-contracts/blob/4e1e07dd83f822b9a05d1cf45bc15d0341e3a2b3/tools/deploySovereignTest/deploySovereign.ts
         assert_bridge_data(bridge_data_input);
+    }
+
+    #[test]
+    fn test_verify_constrained_global_indices_filters_by_hash_success() {
+        // Load a valid base input from test file.
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("src/test_input/bridge_constraints_input.json");
+        let file = File::open(path).unwrap();
+        let reader = BufReader::new(file);
+        let base_input: BridgeConstraintsInput = serde_json::from_reader(reader).unwrap();
+
+        fn d(byte: u8) -> Digest {
+            Digest([byte; 32])
+        }
+
+        // Claimed exits: include a duplicate hash (20) to verify multiplicity handling.
+        let base_claims = &base_input.bridge_witness.imported_bridge_exits;
+        let n = base_claims.len().min(4);
+        let hash_choices = [d(10), d(20), d(20), d(30)];
+        let claims: Vec<GlobalIndexWithLeafHash> = (0..n)
+            .map(|i| GlobalIndexWithLeafHash {
+                global_index: base_claims[i].global_index,
+                bridge_exit_hash: hash_choices[i],
+            })
+            .collect();
+
+        // Compute proper unset claims. We want to unset the claims with bridge exit
+        // hash d(20) and d(30).
+        let unset_claims: Vec<U256> = claims
+            .iter()
+            .filter(|claim| claim.bridge_exit_hash == d(20) || claim.bridge_exit_hash == d(30))
+            .map(|claim| claim.global_index)
+            .collect();
+
+        // Expected constrained claims after removing by commitment once per occurrence.
+        let expected_filtered: Vec<GlobalIndexWithLeafHash> = filter_values(
+            &unset_claims,
+            &claims,
+            |exit: &GlobalIndexWithLeafHash| -> U256 { exit.global_index },
+        )
+        .unwrap();
+
+        assert_ne!(claims.len(), expected_filtered.len());
+
+        let expected_commitment = ImportedBridgeExitCommitmentValues {
+            claims: expected_filtered,
+        }
+        .commitment(IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION);
+
+        let input = BridgeConstraintsInput {
+            commit_imported_bridge_exits: expected_commitment,
+            bridge_witness: BridgeWitness {
+                imported_bridge_exits: claims,
+                unset_claims,
+                ..base_input.bridge_witness
+            },
+            ..base_input
+        };
+
+        // Should pass when filtering by commitment matches unset_claims.
+        input.verify_constrained_claims().unwrap();
+    }
+
+    #[test]
+    fn test_verify_constrained_global_indices_filters_by_hash_mismatch() {
+        // Load a valid base input from test file.
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("src/test_input/bridge_constraints_input.json");
+        let file = File::open(path).unwrap();
+        let reader = BufReader::new(file);
+        let base_input: BridgeConstraintsInput = serde_json::from_reader(reader).unwrap();
+
+        fn d(byte: u8) -> Digest {
+            Digest([byte; 32])
+        }
+
+        let base_claims = &base_input.bridge_witness.imported_bridge_exits;
+        let n = base_claims.len().min(4);
+        let hash_choices = [d(10), d(20), d(20), d(30)];
+        let claims: Vec<GlobalIndexWithLeafHash> = (0..n)
+            .map(|i| GlobalIndexWithLeafHash {
+                global_index: base_claims[i].global_index,
+                bridge_exit_hash: hash_choices[i],
+            })
+            .collect();
+
+        // Compute proper unset claims using commitment (keccak(global_index #
+        // bridge_exit_hash)). Just for fun we want to unset the claims with
+        // bridge_exit_hash d(20) and d(30).
+        let unset_claims: Vec<U256> = claims
+            .iter()
+            .filter(|claim| claim.bridge_exit_hash == d(20) || claim.bridge_exit_hash == d(30))
+            .map(|claim| claim.global_index)
+            .collect();
+
+        let input = BridgeConstraintsInput {
+            // Intentionally wrong commitment to trigger mismatch
+            commit_imported_bridge_exits: d(0),
+            bridge_witness: BridgeWitness {
+                imported_bridge_exits: claims,
+                unset_claims,
+                ..base_input.bridge_witness
+            },
+            ..base_input
+        };
+
+        let err = input.verify_constrained_claims().unwrap_err();
+        assert!(matches!(
+            err,
+            BridgeConstraintsError::MismatchConstrainedBridgeExits { .. }
+        ));
     }
 }

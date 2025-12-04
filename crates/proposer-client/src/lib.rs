@@ -16,6 +16,8 @@ pub mod mock_grpc_prover;
 pub mod network_prover;
 pub mod rpc;
 
+mod generated;
+
 #[cfg(test)]
 mod tests;
 

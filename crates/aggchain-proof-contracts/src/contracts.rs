@@ -63,8 +63,8 @@ pub trait L2OutputAtBlockFetcher {
 }
 
 #[async_trait::async_trait]
-pub trait L1RollupConfigHashFetcher {
-    async fn get_rollup_config_hash(&self) -> Result<Digest, Error>;
+pub trait L1OpSuccinctConfigFetcher {
+    async fn get_op_succinct_config(&self) -> Result<OpSuccinctConfig, Error>;
 }
 
 #[async_trait::async_trait]
@@ -93,4 +93,22 @@ pub struct L2OutputAtBlock {
     pub withdrawal_storage_root: Digest,
     pub latest_block_hash: Digest,
     pub output_root: Digest,
+}
+
+/// Configuration parameters for the OP Succinct verification.
+/// This config is retrieved from the Aggchain FEP contract, map of
+/// opSuccinctConfigs.
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+pub struct OpSuccinctConfig {
+    /// The verification key hash of the aggregation SP1 program.
+    pub aggregation_vkey_hash: Digest,
+    /// The 32 byte commitment to the BabyBear representation of the
+    /// verification key of the range SP1 program. Specifically, this
+    /// verification key is the output of converting the [u32; 8] range
+    /// BabyBear verification key to a [u8; 32] array.
+    pub range_vkey_commitment: Digest,
+    /// The hash of the chain's rollup config, which ensures the proofs
+    /// submitted are for the correct chain. This is used to prevent replay
+    /// attacks.
+    pub rollup_config_hash: Digest,
 }

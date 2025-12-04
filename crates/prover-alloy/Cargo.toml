@@ -15,9 +15,9 @@ agglayer-evm-client.workspace = true
 
 alloy.workspace = true
 async-trait.workspace = true
-anyhow.workspace = true
 derive_more.workspace = true
 educe.workspace = true
+eyre.workspace = true
 ff.workspace = true
 mockall = { workspace = true, optional = true }
 serde.workspace = true

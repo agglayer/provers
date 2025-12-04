@@ -1,7 +1,6 @@
 use std::{str::FromStr, sync::Arc};
 
 use alloy_primitives::B256;
-use anyhow::anyhow;
 use clap::Parser;
 use proposer_client::{config::ProposerClientConfig, FepProposerRequest, GrpcUri};
 use proposer_service::{config::ProposerServiceConfig, ProposerService};
@@ -45,8 +44,9 @@ struct Cli {
 }
 
 #[tokio::main]
-pub async fn main() -> anyhow::Result<()> {
+pub async fn main() -> eyre::Result<()> {
     println!("Starting Proposer service test...");
+    color_eyre::install()?;
 
     // Initialize the tracing
     prover_logger::tracing(&Log::default());
@@ -98,7 +98,7 @@ pub async fn main() -> anyhow::Result<()> {
         }
         Err(e) => {
             eprintln!("Error: {e:?}");
-            Err(anyhow!(e.to_string()))
+            eyre::bail!(e);
         }
     }
 }

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-default-members = ["crates/agglayer-prover", "crates/aggkit-prover"]
+default-members = ["crates/aggkit-prover"]
 members = ["crates/*"]
 exclude = ["crates/prover-dummy-program", "crates/aggchain-proof-program"]
 
@@ -25,9 +25,6 @@ aggchain-proof-types = { path = "crates/aggchain-proof-types" }
 aggkit-prover = { path = "crates/aggkit-prover" }
 aggkit-prover-config = { path = "crates/aggkit-prover-config" }
 aggkit-prover-types = { path = "crates/aggkit-prover-types" }
-agglayer-prover = { path = "crates/agglayer-prover" }
-agglayer-prover-config = { path = "crates/agglayer-prover-config" }
-agglayer-prover-types = { path = "crates/agglayer-prover-types" }
 proposer-client = { path = "crates/proposer-client" }
 proposer-elfs = { path = "crates/proposer-elfs" }
 proposer-service = { path = "crates/proposer-service" }
@@ -43,17 +40,16 @@ prover-utils = { path = "crates/prover-utils" }
 agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
 
 # Interop dependencies
-agglayer-elf-build = "0.9.0"
-agglayer-evm-client = "0.9.0"
-agglayer-interop = "0.9.0"
-agglayer-interop-types = "0.9.0"
-agglayer-primitives = "0.9.0"
-agglayer-tries = "0.9.0"
-unified-bridge = "0.9.0"
+agglayer-elf-build = "0.12.0"
+agglayer-evm-client = "0.12.0"
+agglayer-interop = "0.12.0"
+agglayer-interop-types = "0.12.0"
+agglayer-primitives = "0.12.0"
+agglayer-tries = "0.12.0"
+unified-bridge = "0.12.0"
 
 # Ecosystem dependencies
-op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v2.3.1-agglayer" }
-op-succinct-grpc = { git = "https://github.com/agglayer/op-succinct-grpc.git", tag = "v0.1.0" }
+op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v3.4.0-rc.1-agglayer" }
 
 # SP1 dependencies
 # Please check if the toolchain image at the top `scripts/make/Makefile.elf.toml` could also be
@@ -62,31 +58,33 @@ op-succinct-grpc = { git = "https://github.com/agglayer/op-succinct-grpc.git", t
 p3-baby-bear = "=0.2.3-succinct"
 p3-bn254-fr = "=0.2.3-succinct"
 p3-field = "=0.2.3-succinct"
-sp1-core-executor = "=5.0.0"
-sp1-core-machine = "=5.0.0"
-sp1-sdk = "=5.0.3"
-sp1-prover = "=5.0.1"
-sp1-zkvm = "=5.0.0"
+sp1-core-executor = "=5.2.2"
+sp1-core-machine = "=5.2.2"
+sp1-sdk = "=5.2.2"
+sp1-prover = "=5.2.2"
+sp1-zkvm = "=5.2.2"
 
-sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "9173159e6671c602610fe5df44c695de906e4ee3", features = [
+sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", tag = "reth-1.9.1b", features = [
     "optimism",
 ] }
-sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "9173159e6671c602610fe5df44c695de906e4ee3", features = [
+sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", tag = "reth-1.9.1b", features = [
     "optimism",
 ] }
 
 # Core dependencies
-alloy = { version = '0.14.0', features = ["full"] }
-alloy-rlp = "0.3.10"
-alloy-sol-macro = "1.1"
-alloy-sol-types = "1.1"
-alloy-primitives = { version = "1.2", features = ["serde", "k256"] }
+alloy = { version = '1.0.42', features = ["full"] }
+alloy-rlp = "0.3.12"
+alloy-sol-macro = "1.4.1"
+alloy-sol-types = "1.4.1"
+alloy-primitives = { version = "1.4.1", features = ["serde", "k256"] }
 anyhow = "1.0"
 arc-swap = "1.7"
 async-trait = "0.1.82"
-base64 = "0.22.0"
+base64 = "0.22"
 buildstructor = "0.5.4"
+bytes = "1.10"
 clap = { version = "4.5", features = ["derive", "env"] }
+color-eyre = "0.6.5"
 derive_more = "2.0"
 dirs = "5.0"
 dotenvy = "0.15.7"
@@ -99,12 +97,14 @@ fail = { version = "0.5.1", default-features = false }
 ff = { version = "0.13", features = ["derive"] }
 futures = "0.3.31"
 hex = "0.4.3"
+http-body-util = "0.1.2"
 hyper = "1.5"
 # Temporary until https://github.com/mitsuhiko/insta/pull/672 or similar lands
 insta = { git = "https://github.com/freyskeyd/insta", branch = "chore/updating-deps-to-avoid-serialize-error", features = [
     "toml",
     "yaml",
 ] }
+itertools = "0.14.0"
 jsonrpsee = { version = "0.24.7", features = ["full"] }
 k256 = "0.13.4"
 lazy_static = "1.5"
@@ -112,7 +112,7 @@ mockall = "0.13.1"
 mockito = "1.6"
 parking_lot = "0.12.3"
 pbjson = "0.7.0"
-prost = "0.13.4"
+prost = "0.13.5"
 rand = "0.8.5"
 rstest = "0.22.0"
 reqwest = "0.12"
@@ -128,8 +128,10 @@ tokio = { version = "1.42", features = ["full"] }
 tokio-stream = { version = "0.1.17", features = ["sync"] }
 tokio-util = "0.7.13"
 toml = "0.8.15"
-tonic = { version = "0.12.3", default-features = false }
-tonic-types = "0.12.3"
+tonic = { version = "0.13.1", default-features = false }
+tonic-health = "0.13.1"
+tonic-reflection = "0.13.1"
+tonic-types = "0.13.1"
 tower = "0.4.13"
 tracing = "0.1.41"
 tracing-appender = "0.2.3"

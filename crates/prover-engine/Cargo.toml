@@ -18,16 +18,17 @@ axum = { version = "0.8", features = [
     "ws",
 ] }
 anyhow.workspace = true
+bytes.workspace = true
+eyre.workspace = true
 http = "1.2.0"
-tonic.workspace = true
-tonic-health = "0.12.3"
-tonic-reflection = "0.12.3"
-
-tracing.workspace = true
-tower = { workspace = true, features = ["util"] }
+http-body-util.workspace = true
 tokio.workspace = true
 tokio-util = { workspace = true }
-http-body-util = "0.1.2"
+tonic.workspace = true
+tonic-health.workspace = true
+tonic-reflection.workspace = true
+tower = { workspace = true, features = ["util"] }
+tracing.workspace = true
 
 agglayer-telemetry.workspace = true
 
