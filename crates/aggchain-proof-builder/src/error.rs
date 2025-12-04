@@ -1,6 +1,6 @@
 use aggchain_proof_core::full_execution_proof::AggregationProofPublicValues;
-use aggkit_prover_types::vkey_hash::VKeyHash;
 use agglayer_interop::types::bincode;
+use agglayer_primitives::{vkey_hash::VKeyHash, Digest};
 
 use crate::WitnessGeneration;
 
@@ -19,7 +19,7 @@ pub enum Error {
     ProverServiceError(String),
 
     #[error("Prover failed to prove the transaction")]
-    ProverFailedToExecute(#[source] anyhow::Error),
+    ProverFailedToExecute(#[source] tower::BoxError),
 
     #[error("Generated proof is not Compressed one (STARK)")]
     GeneratedProofIsNotCompressed,
@@ -36,8 +36,23 @@ pub enum Error {
     #[error("Prover service is not ready")]
     ProverServiceReadyError(#[source] tower::BoxError),
 
-    #[error("Mismatch on the aggregation vkey. got: {got:?}, expected: {expected:?}")]
-    MismatchAggregationVkeyHash { got: VKeyHash, expected: VKeyHash },
+    #[error(
+        "Mismatch on the aggregation vkey hash derived from the elf aggregation vkey. got: \
+         {got:?}, expected: {expected:?}"
+    )]
+    MismatchAggregationElfVkeyHash { got: VKeyHash, expected: VKeyHash },
+
+    #[error(
+        "Mismatch on the aggregation vkey hash - got from op succinct contract config: {got:?}, \
+         expected from the elf: {expected:?}"
+    )]
+    MismatchAggregationVkeyHash { got: Digest, expected: Digest },
+
+    #[error(
+        "Mismatch on the range vkey commitment - got from op succinct config: {got:?}, expected \
+         from the elf: {expected:?}"
+    )]
+    MismatchRangeVkeyCommitment { got: Digest, expected: Digest },
 
     /// Mismatch on the aggregation proof public values between what we got from
     /// the contracts and what we expect from the proof public values.
@@ -51,4 +66,10 @@ pub enum Error {
     },
     #[error("Unable to fetch trusted sequencer address")]
     UnableToFetchTrustedSequencerAddress(#[source] aggchain_proof_contracts::Error),
+
+    #[error("Filtering values overflow {0}")]
+    FilteringValuesOverflow(usize),
+
+    #[error(transparent)]
+    Other(eyre::Report),
 }

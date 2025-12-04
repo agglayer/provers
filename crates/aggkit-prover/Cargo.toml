@@ -11,6 +11,7 @@ workspace = true
 anyhow.workspace = true
 clap = { workspace = true, features = ["derive", "env", "string"] }
 dotenvy.workspace = true
+eyre.workspace = true
 futures.workspace = true
 hex.workspace = true
 http = "1.2.0"
@@ -42,8 +43,11 @@ prover-logger.workspace = true
 hyper-util = "0.1.10"
 mockall.workspace = true
 tokio-stream = { workspace = true, features = ["sync"] }
+tonic = { workspace = true, features = ["channel", "server", "router"] }
 
 [build-dependencies]
+color-eyre.workspace = true
+eyre.workspace = true
 vergen-git2 = { version = "1.0.0", features = ["build"] }
 
 [features]

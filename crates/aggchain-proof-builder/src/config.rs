@@ -19,6 +19,7 @@ pub struct AggchainProofBuilderConfig {
 
     /// Aggchain proof generation timeout in seconds.
     #[serde(default = "default_aggchain_prover_timeout")]
+    #[serde(with = "prover_utils::with::HumanDuration")]
     pub proving_timeout: Duration,
 
     /// Contract configuration

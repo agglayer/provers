@@ -8,7 +8,7 @@ impl TryFrom<v1::ProvenInsertedGerWithBlockNumber> for InsertedGerWithBlockNumbe
     fn try_from(value: v1::ProvenInsertedGerWithBlockNumber) -> Result<Self, Self::Error> {
         Ok(Self {
             block_number: value.block_number,
-            block_index: value.block_index,
+            log_index: value.log_index,
             inserted_ger: value
                 .proven_inserted_ger
                 .ok_or_else(|| Error::MissingInsertedGer {
@@ -17,7 +17,7 @@ impl TryFrom<v1::ProvenInsertedGerWithBlockNumber> for InsertedGerWithBlockNumbe
                 .try_into()
                 .map_err(|error| Error::InvalidInsertedGer {
                     field_path: "proven_inserted_ger".to_string(),
-                    source: anyhow::Error::from(error),
+                    source: eyre::Error::from(error),
                 })?,
         })
     }
@@ -36,7 +36,7 @@ impl TryFrom<v1::ProvenInsertedGer> for InsertedGer {
                 .try_into()
                 .map_err(|error| Error::InvalidInsertedGer {
                     field_path: "proof_ger_l1root".to_string(),
-                    source: anyhow::Error::from(error),
+                    source: eyre::Error::from(error),
                 })?,
             l1_leaf: value
                 .l1_leaf
@@ -46,7 +46,7 @@ impl TryFrom<v1::ProvenInsertedGer> for InsertedGer {
                 .try_into()
                 .map_err(|error| Error::InvalidL1InfoTreeLeaf {
                     field_path: "l1_leaf".to_string(),
-                    source: anyhow::Error::from(error),
+                    source: eyre::Error::from(error),
                 })?,
         })
     }

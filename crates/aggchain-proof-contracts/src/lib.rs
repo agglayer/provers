@@ -5,29 +5,32 @@ mod error;
 #[cfg(test)]
 mod tests;
 
-use std::{str::FromStr, sync::Arc};
+use std::{panic::AssertUnwindSafe, str::FromStr, sync::Arc};
 
 use aggchain_proof_core::bridge::{
     static_call::{HashChainType, StaticCallStage},
     BridgeL2SovereignChain,
 };
 use agglayer_interop::types::Digest;
+use agglayer_primitives::Address;
 use alloy::{
-    eips::BlockNumberOrTag,
-    network::AnyNetwork,
-    primitives::{Address, B256},
-    providers::Provider,
+    eips::BlockNumberOrTag, network::AnyNetwork, primitives::B256, providers::Provider,
     sol_types::SolCall,
 };
 use contracts::{
     GetTrustedSequencerAddress, GlobalExitRootManagerL2SovereignChainRpcClient,
     L2EvmStateSketchFetcher,
 };
+use eyre::Context as _;
 use jsonrpsee::{core::client::ClientT, http_client::HttpClient, rpc_params};
 use prover_alloy::{build_alloy_fill_provider, AlloyFillProvider};
-use sp1_cc_client_executor::{io::EvmSketchInput, Genesis};
+use prover_executor::sp1_async;
+use sp1_cc_client_executor::{
+    io::{EvmSketchInput, Primitives},
+    ContractInput, Genesis,
+};
 use sp1_cc_host_executor::EvmSketch;
-use tracing::info;
+use tracing::{debug, info};
 use url::Url;
 
 pub use crate::error::Error;
@@ -35,8 +38,9 @@ use crate::{
     config::AggchainProofContractsConfig,
     contracts::{
         AggchainFep, AggchainFepRpcClient, GlobalExitRootManagerL2SovereignChain,
-        L1RollupConfigHashFetcher, L2LocalExitRootFetcher, L2OutputAtBlock, L2OutputAtBlockFetcher,
-        PolygonRollupManagerRpcClient, PolygonZkevmBridgeV2, ZkevmBridgeRpcClient,
+        L1OpSuccinctConfigFetcher, L2LocalExitRootFetcher, L2OutputAtBlock, L2OutputAtBlockFetcher,
+        OpSuccinctConfig, PolygonRollupManagerRpcClient, PolygonZkevmBridgeV2,
+        ZkevmBridgeRpcClient,
     },
 };
 
@@ -45,7 +49,7 @@ use crate::{
 pub trait AggchainContractsClient:
     L2LocalExitRootFetcher
     + L2OutputAtBlockFetcher
-    + L1RollupConfigHashFetcher
+    + L1OpSuccinctConfigFetcher
     + L2EvmStateSketchFetcher
 {
 }
@@ -77,14 +81,17 @@ pub struct AggchainContractsRpcClient<RpcProvider> {
 
     /// Evm sketch genesis configuration.
     evm_sketch_genesis: Genesis,
+
+    /// Aggchain FEP opSuccinctConfig name.
+    op_succinct_config_name: agglayer_primitives::alloy_primitives::FixedBytes<32>,
 }
 
-impl<T: alloy::providers::Provider> AggchainContractsClient for AggchainContractsRpcClient<T> {}
+impl<T: Provider> AggchainContractsClient for AggchainContractsRpcClient<T> {}
 
 #[async_trait::async_trait]
 impl<RpcProvider> L2LocalExitRootFetcher for AggchainContractsRpcClient<RpcProvider>
 where
-    RpcProvider: alloy::providers::Provider + Send + Sync,
+    RpcProvider: Provider + Send + Sync,
 {
     async fn get_l2_local_exit_root(&self, block_number: u64) -> Result<Digest, Error> {
         let response = self
@@ -117,19 +124,23 @@ where
 }
 
 #[async_trait::async_trait]
-impl<RpcProvider> L1RollupConfigHashFetcher for AggchainContractsRpcClient<RpcProvider>
+impl<RpcProvider> L1OpSuccinctConfigFetcher for AggchainContractsRpcClient<RpcProvider>
 where
-    RpcProvider: alloy::providers::Provider + Send + Sync,
+    RpcProvider: Provider + Send + Sync,
 {
-    async fn get_rollup_config_hash(&self) -> Result<Digest, Error> {
-        let response = self
+    async fn get_op_succinct_config(&self) -> Result<OpSuccinctConfig, Error> {
+        let op_succinct_config = self
             .aggchain_fep
-            .rollupConfigHash()
+            .opSuccinctConfigs(self.op_succinct_config_name)
             .call()
             .await
-            .map_err(Error::RollupConfigHashError)?;
+            .map_err(Error::OpSuccinctConfigRetrievalError)?;
 
-        Ok((response.0).into())
+        Ok(OpSuccinctConfig {
+            range_vkey_commitment: (op_succinct_config.rangeVkeyCommitment.0).into(),
+            aggregation_vkey_hash: (op_succinct_config.aggregationVkey.0).into(),
+            rollup_config_hash: (op_succinct_config.rollupConfigHash.0).into(),
+        })
     }
 }
 
@@ -152,162 +163,188 @@ where
         &self,
         prev_l2_block: BlockNumberOrTag,
     ) -> Result<EvmSketchInput, Error> {
-        let sketch = EvmSketch::builder()
-            .at_block(prev_l2_block)
-            .with_genesis(self.evm_sketch_genesis.clone())
-            .el_rpc_url(self.l2_root_provider_endpoint.clone())
-            .build()
-            .await
-            .map_err(Error::HostExecutorPreBlockInitialization)?;
+        // TODO: Figure out how to deal with interior mutability here — AssertUnwindSafe
+        // sounds suboptimal
+        sp1_async(AssertUnwindSafe(async move {
+            let sketch = EvmSketch::builder()
+                .optimism()
+                .at_block(prev_l2_block)
+                .with_genesis(self.evm_sketch_genesis.clone())
+                .el_rpc_url(self.l2_root_provider_endpoint.clone())
+                .build()
+                .await
+                .map_err(Error::HostExecutorPreBlockInitialization)?;
 
-        let caller_address = self.static_call_caller_address;
-        let ger_address = *self.global_exit_root_manager_l2.address();
-        let bridge_address = *self.polygon_zkevm_bridge_v2.address();
+            let caller_address = self.static_call_caller_address;
+            let ger_address = *self.global_exit_root_manager_l2.address();
+            let bridge_address = *self.polygon_zkevm_bridge_v2.address();
 
-        // Static calls on the hash chains
-        {
-            host_execute(
-                caller_address,
-                ger_address,
-                &sketch,
-                GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
-                StaticCallStage::PrevHashChain(HashChainType::InsertedGER),
-            )
-            .await?;
+            // Static calls on the hash chains
+            {
+                host_execute(
+                    caller_address,
+                    ger_address,
+                    &sketch,
+                    GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
+                    StaticCallStage::PrevHashChain(HashChainType::InsertedGER),
+                )
+                .await?;
 
-            host_execute(
-                caller_address,
-                ger_address,
-                &sketch,
-                GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
-                StaticCallStage::PrevHashChain(HashChainType::RemovedGER),
-            )
-            .await?;
+                host_execute(
+                    caller_address,
+                    ger_address,
+                    &sketch,
+                    GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
+                    StaticCallStage::PrevHashChain(HashChainType::RemovedGER),
+                )
+                .await?;
 
-            host_execute(
-                caller_address,
-                bridge_address,
-                &sketch,
-                BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
-                StaticCallStage::PrevHashChain(HashChainType::ClaimedGlobalIndex),
-            )
-            .await?;
+                host_execute(
+                    caller_address,
+                    bridge_address,
+                    &sketch,
+                    BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
+                    StaticCallStage::PrevHashChain(HashChainType::ClaimedGlobalIndex),
+                )
+                .await?;
 
-            host_execute(
-                caller_address,
-                bridge_address,
-                &sketch,
-                BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
-                StaticCallStage::PrevHashChain(HashChainType::UnsetGlobalIndex),
-            )
-            .await?;
-        }
+                host_execute(
+                    caller_address,
+                    bridge_address,
+                    &sketch,
+                    BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
+                    StaticCallStage::PrevHashChain(HashChainType::UnsetGlobalIndex),
+                )
+                .await?;
+            }
 
-        // Finalize to retrieve the EVMStateSketch
-        let prev_l2_block_sketch = sketch
-            .finalize()
-            .await
-            .map_err(Error::InvalidPreBlockSketchFinalization)?;
+            // Finalize to retrieve the EVMStateSketch
+            let prev_l2_block_sketch = sketch
+                .finalize()
+                .await
+                .map_err(Error::InvalidPreBlockSketchFinalization)?;
 
-        Ok(prev_l2_block_sketch)
+            Ok(prev_l2_block_sketch)
+        }))
+        .await
+        .context("Failed getting previous L2 block sketch")
+        .map_err(Error::Other)?
     }
 
     async fn get_new_l2_block_sketch(
         &self,
         new_l2_block: BlockNumberOrTag,
     ) -> Result<EvmSketchInput, Error> {
-        let sketch = EvmSketch::builder()
-            .at_block(new_l2_block)
-            .with_genesis(self.evm_sketch_genesis.clone())
-            .el_rpc_url(self.l2_root_provider_endpoint.clone())
-            .build()
-            .await
-            .map_err(Error::HostExecutorNewBlockInitialization)?;
+        // TODO: Figure out how to deal with interior mutability here — AssertUnwindSafe
+        // sounds suboptimal
+        sp1_async(AssertUnwindSafe(async move {
+            let sketch = EvmSketch::builder()
+                .optimism()
+                .at_block(new_l2_block)
+                .with_genesis(self.evm_sketch_genesis.clone())
+                .el_rpc_url(self.l2_root_provider_endpoint.clone())
+                .build()
+                .await
+                .map_err(Error::HostExecutorNewBlockInitialization)?;
 
-        let caller_address = self.static_call_caller_address;
-        let ger_address = *self.global_exit_root_manager_l2.address();
-        let bridge_address = *self.polygon_zkevm_bridge_v2.address();
+            let caller_address = self.static_call_caller_address;
+            let ger_address = *self.global_exit_root_manager_l2.address();
+            let bridge_address = *self.polygon_zkevm_bridge_v2.address();
 
-        // Static call on the bridge address
-        host_execute(
-            caller_address,
-            ger_address,
-            &sketch,
-            GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
-            StaticCallStage::BridgeAddress,
-        )
-        .await?;
-
-        // Static call on the new LER
-        host_execute(
-            caller_address,
-            bridge_address,
-            &sketch,
-            BridgeL2SovereignChain::getRootCall {},
-            StaticCallStage::NewLer,
-        )
-        .await?;
-
-        // Static calls on the hash chains
-        {
+            // Static call on the bridge address
             host_execute(
                 caller_address,
                 ger_address,
                 &sketch,
-                GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
-                StaticCallStage::NewHashChain(HashChainType::InsertedGER),
+                GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
+                StaticCallStage::BridgeAddress,
             )
             .await?;
 
-            host_execute(
-                caller_address,
-                ger_address,
-                &sketch,
-                GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
-                StaticCallStage::NewHashChain(HashChainType::RemovedGER),
-            )
-            .await?;
-
+            // Static call on the new LER
             host_execute(
                 caller_address,
                 bridge_address,
                 &sketch,
-                BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
-                StaticCallStage::NewHashChain(HashChainType::ClaimedGlobalIndex),
+                BridgeL2SovereignChain::getRootCall {},
+                StaticCallStage::NewLer,
             )
             .await?;
 
-            host_execute(
-                caller_address,
-                bridge_address,
-                &sketch,
-                BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
-                StaticCallStage::NewHashChain(HashChainType::UnsetGlobalIndex),
-            )
-            .await?;
-        }
+            // Static calls on the hash chains
+            {
+                host_execute(
+                    caller_address,
+                    ger_address,
+                    &sketch,
+                    GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
+                    StaticCallStage::NewHashChain(HashChainType::InsertedGER),
+                )
+                .await?;
 
-        // Finalize to retrieve the EVMStateSketch
-        let new_l2_block_sketch = sketch
-            .finalize()
-            .await
-            .map_err(Error::InvalidNewBlockSketchFinalization)?;
+                host_execute(
+                    caller_address,
+                    ger_address,
+                    &sketch,
+                    GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
+                    StaticCallStage::NewHashChain(HashChainType::RemovedGER),
+                )
+                .await?;
 
-        Ok(new_l2_block_sketch)
+                host_execute(
+                    caller_address,
+                    bridge_address,
+                    &sketch,
+                    BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
+                    StaticCallStage::NewHashChain(HashChainType::ClaimedGlobalIndex),
+                )
+                .await?;
+
+                host_execute(
+                    caller_address,
+                    bridge_address,
+                    &sketch,
+                    BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
+                    StaticCallStage::NewHashChain(HashChainType::UnsetGlobalIndex),
+                )
+                .await?;
+            }
+
+            // Finalize to retrieve the EVMStateSketch
+            let new_l2_block_sketch = sketch
+                .finalize()
+                .await
+                .map_err(Error::InvalidNewBlockSketchFinalization)?;
+
+            Ok(new_l2_block_sketch)
+        }))
+        .await
+        .context("Failed getting new L2 block sketch")
+        .map_err(Error::Other)?
     }
 }
 
-async fn host_execute<C: SolCall, P: Provider<AnyNetwork> + Clone>(
+async fn host_execute<
+    C: SolCall,
+    P: Provider<AnyNetwork> + Clone + std::fmt::Debug,
+    PT: Primitives,
+>(
     caller_address: Address,
-    contract_address: Address,
-    sketch: &EvmSketch<P>,
+    contract_address: alloy::primitives::Address,
+    sketch: &EvmSketch<P, PT>,
     calldata: C,
     stage: StaticCallStage,
 ) -> Result<(), Error> {
-    let _ = sketch
-        .call(contract_address, caller_address, calldata)
+    let output_bytes = sketch
+        .call_raw(&ContractInput::new_call(
+            contract_address,
+            caller_address.into(),
+            calldata,
+        ))
         .await
         .map_err(|source| Error::InvalidHostStaticCall { source, stage })?;
+
+    debug!("output bytes for static call at stage {stage:?}: {output_bytes:?}");
 
     Ok(())
 }
@@ -367,7 +404,7 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
 
         // Create client for global exit root manager smart contract.
         let global_exit_root_manager_l2 = GlobalExitRootManagerL2SovereignChain::new(
-            config.global_exit_root_manager_v2_sovereign_chain,
+            config.global_exit_root_manager_v2_sovereign_chain.into(),
             l2_el_client.clone(),
         );
 
@@ -384,8 +421,10 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             PolygonZkevmBridgeV2::new(polygon_zkevm_bridge_address, l2_el_client.clone());
 
         // Create client for Polygon rollup manager contract.
-        let polygon_rollup_manager =
-            PolygonRollupManagerRpcClient::new(config.polygon_rollup_manager, l1_client.clone());
+        let polygon_rollup_manager = PolygonRollupManagerRpcClient::new(
+            config.polygon_rollup_manager.into(),
+            l1_client.clone(),
+        );
 
         // Retrieve AggchainFep address from the Polygon rollup manager contract.
         let aggchain_fep_address = polygon_rollup_manager
@@ -402,7 +441,14 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             .trustedSequencer()
             .call()
             .await
-            .map_err(Error::UnableToRetrieveTrustedSequencerAddress)?;
+            .map_err(Error::UnableToRetrieveTrustedSequencerAddress)?
+            .into();
+
+        let op_succinct_config_name = aggchain_fep
+            .selectedOpSuccinctConfigName()
+            .call()
+            .await
+            .map_err(Error::SelectedOpSuccinctConfigRetrievalError)?;
 
         info!(global_exit_root_manager_l2=%config.global_exit_root_manager_v2_sovereign_chain,
             polygon_zkevm_bridge_v2=%polygon_zkevm_bridge_v2.address(),
@@ -419,6 +465,7 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             trusted_sequencer_addr,
             static_call_caller_address: config.static_call_caller_address,
             evm_sketch_genesis: config::parse_evm_sketch_genesis(&config.evm_sketch_genesis)?,
+            op_succinct_config_name,
         })
     }
 }

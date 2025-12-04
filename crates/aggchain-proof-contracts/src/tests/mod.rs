@@ -2,9 +2,10 @@ mod aggchain_contracts_rpc_client {
     use std::str::FromStr;
 
     use agglayer_interop::types::Digest;
+    use agglayer_primitives::{address, Address};
     use alloy::{
         hex::{self, FromHex},
-        primitives::{address, B256},
+        primitives::{keccak256, B256},
         sol_types::{SolCall, SolValue},
     };
     use mockito::ServerGuard;
@@ -15,8 +16,8 @@ mod aggchain_contracts_rpc_client {
     use crate::{
         config::AggchainProofContractsConfig,
         contracts::{
-            AggchainFep::trustedSequencerCall, L1RollupConfigHashFetcher, L2LocalExitRootFetcher,
-            L2OutputAtBlockFetcher,
+            AggchainFep::trustedSequencerCall, L1OpSuccinctConfigFetcher, L2LocalExitRootFetcher,
+            L2OutputAtBlockFetcher, OpSuccinctConfig,
         },
         AggchainContractsRpcClient,
     };
@@ -25,7 +26,7 @@ mod aggchain_contracts_rpc_client {
         Url::parse("http://0.0.0.0:0").unwrap()
     }
 
-    fn dummy_address() -> alloy::primitives::Address {
+    fn dummy_address() -> Address {
         address!("0x0000000000000000000000000000000000000000")
     }
 
@@ -99,6 +100,8 @@ mod aggchain_contracts_rpc_client {
             .create();
 
         let mock_l1_trusted_sequencer = mock_trusted_sequencer_call(&mut server_l1);
+        let mock_l1_selected_op_succinct_config_name =
+            mock_selected_op_succinct_config_name_call(&mut server_l1);
 
         let mock_server_l1_url = L1RpcEndpoint::from_str(&server_l1.url()).unwrap();
         let mock_server_l2_el_url = Url::parse(&server_l2_el.url()).unwrap();
@@ -120,6 +123,9 @@ mod aggchain_contracts_rpc_client {
         mock_l2.assert_async().await;
         mock_l1.assert_async().await;
         mock_l1_trusted_sequencer.assert_async().await;
+        mock_l1_selected_op_succinct_config_name
+            .assert_async()
+            .await;
         Ok((
             result?,
             TestServers {
@@ -128,37 +134,6 @@ mod aggchain_contracts_rpc_client {
                 server_l2_cl,
             },
         ))
-    }
-
-    fn mock_get_rollup_config_hash(server_l1: &mut ServerGuard) -> mockito::Mock {
-        let rollup_config_hash_expected_body = serde_json::json!(
-        {
-            "method":"eth_call",
-            "params":[
-                {
-                    "to": "0x8e80ffe6dc044f4a766afd6e5a8732fe0977a493",
-                    "input": format!("0x{}", hex::encode(crate::contracts::AggchainFep::rollupConfigHashCall{}.abi_encode())),
-                },
-                "latest"
-            ],
-            "id": 2,
-            "jsonrpc":"2.0",
-        });
-
-        let result = json!({
-                "jsonrpc":"2.0",
-                "id": 2,
-                "result": alloy::primitives::FixedBytes::<32>::from_hex("0xaaaeffa0811291c96c8cbddcc148bf48a6d68c7974b94356f53754ef617122dd").unwrap().abi_encode()
-            })
-            .to_string();
-
-        server_l1
-            .mock("POST", "/")
-            .with_status(200)
-            .with_header("content-type", "text/javascript")
-            .match_body(mockito::Matcher::Json(rollup_config_hash_expected_body))
-            .with_body(result)
-            .create()
     }
 
     fn mock_trusted_sequencer_call(server_l1: &mut ServerGuard) -> mockito::Mock {
@@ -188,6 +163,89 @@ mod aggchain_contracts_rpc_client {
             .with_status(200)
             .with_header("content-type", "text/javascript")
             .match_body(mockito::Matcher::Json(trusted_sequencer_expected_body))
+            .with_body(result)
+            .create()
+    }
+
+    fn mock_selected_op_succinct_config_name_call(server_l1: &mut ServerGuard) -> mockito::Mock {
+        // Function selector for selectedOpSuccinctConfigName() - first 4 bytes of
+        // keccak256 hash
+        let function_selector = &keccak256(b"selectedOpSuccinctConfigName()")[..4];
+
+        let expected_body = serde_json::json!({
+            "method": "eth_call",
+            "params": [{
+                "to": "0x8e80ffe6dc044f4a766afd6e5a8732fe0977a493",
+                "input": format!("0x{}", hex::encode(function_selector)),
+            }, "latest"],
+            "id": 2,
+            "jsonrpc": "2.0",
+        });
+
+        // Return the same config name that will be used by opSuccinctConfigs
+        let op_succinct_config_name = keccak256(b"opsuccinct_genesis");
+
+        let result = json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "result": format!("0x{}", hex::encode(op_succinct_config_name))
+        })
+        .to_string();
+
+        server_l1
+            .mock("POST", "/")
+            .with_status(200)
+            .with_header("content-type", "text/javascript")
+            .match_body(mockito::Matcher::Json(expected_body))
+            .with_body(result)
+            .create()
+    }
+
+    fn mock_op_succinct_configs(server_l1: &mut ServerGuard) -> mockito::Mock {
+        // opSuccinctConfigs takes a bytes32 parameter (the config name) and returns 3
+        // bytes32 values
+        let op_succinct_config_name = keccak256(b"opsuccinct_genesis");
+
+        // Function selector for opSuccinctConfigs(bytes32) - first 4 bytes of keccak256
+        // hash
+        let function_selector = &keccak256(b"opSuccinctConfigs(bytes32)")[..4];
+        let calldata = [function_selector, &op_succinct_config_name[..]].concat();
+
+        let expected_body = serde_json::json!({
+            "method": "eth_call",
+            "params": [{
+                "to": "0x8e80ffe6dc044f4a766afd6e5a8732fe0977a493",
+                "input": format!("0x{}", hex::encode(calldata)),
+            }, "latest"],
+            "id": 3,
+            "jsonrpc": "2.0",
+        });
+
+        // Return three bytes32 values (aggregationVkey, rangeVkeyCommitment,
+        // rollupConfigHash)
+        let aggregation_vkey =
+            B256::from_str("0x1111111111111111111111111111111111111111111111111111111111111111")
+                .unwrap();
+        let range_vkey_commitment =
+            B256::from_str("0x2222222222222222222222222222222222222222222222222222222222222222")
+                .unwrap();
+        let rollup_config_hash =
+            B256::from_str("0xaaaeffa0811291c96c8cbddcc148bf48a6d68c7974b94356f53754ef617122dd")
+                .unwrap();
+
+        // ABI encode the tuple of three bytes32 values
+        let result_tuple = (aggregation_vkey, range_vkey_commitment, rollup_config_hash);
+        let result = json!({
+            "jsonrpc": "2.0",
+            "id": 3,
+            "result": format!("0x{}", hex::encode(alloy::sol_types::SolValue::abi_encode(&result_tuple)))
+        }).to_string();
+
+        server_l1
+            .mock("POST", "/")
+            .with_status(200)
+            .with_header("content-type", "text/javascript")
+            .match_body(mockito::Matcher::Json(expected_body))
             .with_body(result)
             .create()
     }
@@ -371,24 +429,38 @@ mod aggchain_contracts_rpc_client {
     }
 
     #[test_log::test(tokio::test)]
-    async fn get_rollup_config_hash() -> Result<(), Box<dyn std::error::Error>> {
+    async fn get_op_succinct_config() -> Result<(), Box<dyn std::error::Error>> {
         let (contracts_client, test_servers) = aggchain_contracts_rpc_client().await?;
         let mut server_l1 = test_servers.server_l1;
 
-        let mock_l1 = mock_get_rollup_config_hash(&mut server_l1);
-        let result = contracts_client.get_rollup_config_hash().await;
+        let mock_l1 = mock_op_succinct_configs(&mut server_l1);
+        let result = contracts_client.get_op_succinct_config().await;
 
         mock_l1.assert_async().await;
 
-        let rollup_config_hash = result?;
+        let op_succinct_config = result?;
         assert_eq!(
-            rollup_config_hash,
-            Digest(
-                B256::from_str(
-                    "0xaaaeffa0811291c96c8cbddcc148bf48a6d68c7974b94356f53754ef617122dd"
-                )?
-                .0
-            )
+            op_succinct_config,
+            OpSuccinctConfig {
+                aggregation_vkey_hash: Digest(
+                    B256::from_str(
+                        "0x1111111111111111111111111111111111111111111111111111111111111111"
+                    )?
+                    .0
+                ),
+                range_vkey_commitment: Digest(
+                    B256::from_str(
+                        "0x2222222222222222222222222222222222222222222222222222222222222222"
+                    )?
+                    .0
+                ),
+                rollup_config_hash: Digest(
+                    B256::from_str(
+                        "0xaaaeffa0811291c96c8cbddcc148bf48a6d68c7974b94356f53754ef617122dd"
+                    )?
+                    .0
+                ),
+            }
         );
 
         Ok(())

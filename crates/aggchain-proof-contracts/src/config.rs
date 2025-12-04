@@ -1,4 +1,4 @@
-use alloy::primitives::{address, Address};
+use agglayer_primitives::{address, Address};
 use prover_alloy::L1RpcEndpoint;
 use prover_utils::from_env_or_default;
 use serde::{Deserialize, Serialize};
@@ -44,9 +44,9 @@ pub struct AggchainProofContractsConfig {
     #[serde(default = "default_static_call_caller_address")]
     pub static_call_caller_address: Address,
 
-    // EVM sketch genesis configuration
-    // Default is "mainnet", could be "sepolia", "opmainnet"
-    // or path to a custom genesis file.
+    /// EVM sketch genesis configuration
+    /// Default is "mainnet", could be "sepolia", "opmainnet"
+    /// or path to a custom genesis file.
     #[serde(default = "default_evm_sketch_genesis")]
     pub evm_sketch_genesis: String,
 }
@@ -109,19 +109,18 @@ pub(crate) fn parse_evm_sketch_genesis(evm_sketch_genesis: &str) -> Result<Genes
     // from a file. We parse it to a string.
     if !std::path::Path::new(evm_sketch_genesis).exists() {
         Err(crate::Error::InvalidEvmSketchGenesisInput(format!(
-            "custom genesis json file does not exist: {}",
-            evm_sketch_genesis
+            "custom genesis json file does not exist: {evm_sketch_genesis}",
         )))
     } else {
         let genesis_json_str = std::fs::read_to_string(evm_sketch_genesis)
             .map_err(|e| crate::Error::InvalidEvmSketchGenesisInput(e.to_string()))?;
 
         // Validate the JSON string.
-        let genesis_check = serde_json::from_str::<alloy::genesis::Genesis>(&genesis_json_str)
+        let parsed_genesis = serde_json::from_str::<alloy::genesis::Genesis>(&genesis_json_str)
             .map_err(|e| {
                 crate::Error::InvalidEvmSketchGenesisInput(format!("could not parse json str: {e}"))
             })?;
-        info!("Using evm sketch genesis: {genesis_check:?}");
-        Ok(Genesis::Custom(genesis_json_str))
+        info!("Using evm sketch genesis: {parsed_genesis:?}");
+        Ok(Genesis::Custom(parsed_genesis.config))
     }
 }

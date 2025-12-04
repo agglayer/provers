@@ -17,7 +17,7 @@ impl TryFrom<v1::GenerateAggchainProofRequest> for AggchainProofInputs {
                 .try_into()
                 .map_err(|error| Error::InvalidDigest {
                     field_path: "l1_info_tree_root_hash".to_string(),
-                    source: anyhow::Error::from(error),
+                    source: eyre::Error::from(error),
                 })?,
             l1_info_tree_leaf: value
                 .l1_info_tree_leaf
@@ -27,7 +27,7 @@ impl TryFrom<v1::GenerateAggchainProofRequest> for AggchainProofInputs {
                 .try_into()
                 .map_err(|error| Error::InvalidL1InfoTreeLeaf {
                     field_path: "l1_info_tree_leaf".to_string(),
-                    source: anyhow::Error::from(error),
+                    source: eyre::Error::from(error),
                 })?,
             l1_info_tree_merkle_proof: value
                 .l1_info_tree_merkle_proof
@@ -37,7 +37,7 @@ impl TryFrom<v1::GenerateAggchainProofRequest> for AggchainProofInputs {
                 .try_into()
                 .map_err(|source| Error::InvalidL1InfoTreeMerkleProof {
                     field_path: "l1_info_tree_merkle_proof".to_string(),
-                    source: anyhow::Error::from(source),
+                    source: eyre::Error::from(source),
                 })?,
             ger_leaves: value
                 .ger_leaves
@@ -48,7 +48,7 @@ impl TryFrom<v1::GenerateAggchainProofRequest> for AggchainProofInputs {
                         v.try_into().map_err(|error| {
                             Error::InvalidInsertedGerWithBlockNumberConversion {
                                 field_path: "ger_leaves".to_string(),
-                                source: anyhow::Error::from(error),
+                                source: eyre::Error::from(error),
                             }
                         })?,
                     ))
@@ -61,7 +61,25 @@ impl TryFrom<v1::GenerateAggchainProofRequest> for AggchainProofInputs {
                 .collect::<Result<_, _>>()
                 .map_err(|error| Error::InvalidImportedBridgeExit {
                     field_path: "imported_bridge_exits".to_string(),
-                    source: anyhow::Error::from(error),
+                    source: eyre::Error::from(error),
+                })?,
+            removed_gers: value
+                .removed_gers
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()
+                .map_err(|error| Error::InvalidRemovedGer {
+                    field_path: "removed_gers".to_string(),
+                    source: eyre::Error::from(error),
+                })?,
+            unclaims: value
+                .unclaims
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<_, _>>()
+                .map_err(|error| Error::InvalidUnclaim {
+                    field_path: "unclaims".to_string(),
+                    source: eyre::Error::from(error),
                 })?,
         })
     }

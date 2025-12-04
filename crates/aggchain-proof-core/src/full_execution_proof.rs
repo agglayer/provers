@@ -1,8 +1,8 @@
 use agglayer_primitives::{
     keccak::{keccak256, keccak256_combine},
-    Digest,
+    Address, Digest,
 };
-use alloy_primitives::{Address, FixedBytes, B256, U256};
+use alloy_primitives::{FixedBytes, B256, U256};
 use alloy_sol_types::{sol, SolValue};
 use p3_baby_bear::BabyBear;
 use p3_bn254_fr::Bn254Fr;
@@ -110,26 +110,26 @@ pub struct FepInputs {
 sol! {
     #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
     struct AggregationProofPublicValues {
-        bytes32 l1Head;
-        bytes32 l2PreRoot;
-        bytes32 l2PostRoot;
-        uint64 l2BlockNumber;
-        bytes32 rollupConfigHash;
-        bytes32 multiBlockVKey;
-        address proverAddress;
+        bytes32 l1_head;
+        bytes32 l2_pre_root;
+        bytes32 l2_post_root;
+        uint64 l2_block_number;
+        bytes32 rollup_config_hash;
+        bytes32 multi_block_vkey;
+        address prover_address;
     }
 }
 
 impl From<&FepInputs> for AggregationProofPublicValues {
     fn from(inputs: &FepInputs) -> Self {
         Self {
-            l1Head: inputs.l1_head.0.into(),
-            l2PreRoot: inputs.compute_l2_pre_root().into(),
-            l2PostRoot: inputs.compute_claim_root().into(),
-            l2BlockNumber: inputs.claim_block_num.into(),
-            rollupConfigHash: inputs.rollup_config_hash.0.into(),
-            multiBlockVKey: inputs.range_vkey_commitment.into(),
-            proverAddress: inputs.trusted_sequencer,
+            l1_head: inputs.l1_head.0.into(),
+            l2_pre_root: inputs.compute_l2_pre_root().into(),
+            l2_post_root: inputs.compute_claim_root().into(),
+            l2_block_number: inputs.claim_block_num.into(),
+            rollup_config_hash: inputs.rollup_config_hash.0.into(),
+            multi_block_vkey: inputs.range_vkey_commitment.into(),
+            prover_address: inputs.trusted_sequencer.into(),
         }
     }
 }
@@ -137,12 +137,12 @@ impl From<&FepInputs> for AggregationProofPublicValues {
 sol! {
     #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
     struct AggchainParamsValues {
-        bytes32 l2PreRoot;
-        bytes32 claimRoot;
-        uint256 claimBlockNum;
-        bytes32 rollupConfigHash;
-        bool optimisticMode;
-        address trustedSequencer;
+        bytes32 l2_pre_root;
+        bytes32 claim_root;
+        uint256 claim_block_num;
+        bytes32 rollup_config_hash;
+        bool optimistic_mode;
+        address trusted_sequencer;
         bytes32 range_vkey_commitment;
         bytes32 aggregation_vkey_hash;
     }
@@ -151,12 +151,12 @@ sol! {
 impl From<&FepInputs> for AggchainParamsValues {
     fn from(inputs: &FepInputs) -> Self {
         Self {
-            l2PreRoot: inputs.compute_l2_pre_root().into(),
-            claimRoot: inputs.compute_claim_root().into(),
-            claimBlockNum: U256::from(inputs.claim_block_num),
-            rollupConfigHash: inputs.rollup_config_hash.0.into(),
-            optimisticMode: inputs.optimistic_mode() == OptimisticMode::Ecdsa,
-            trustedSequencer: inputs.trusted_sequencer,
+            l2_pre_root: inputs.compute_l2_pre_root().into(),
+            claim_root: inputs.compute_claim_root().into(),
+            claim_block_num: U256::from(inputs.claim_block_num),
+            rollup_config_hash: inputs.rollup_config_hash.0.into(),
+            optimistic_mode: inputs.optimistic_mode() == OptimisticMode::Ecdsa,
+            trusted_sequencer: inputs.trusted_sequencer.into(),
             range_vkey_commitment: inputs.range_vkey_commitment.into(),
             aggregation_vkey_hash: inputs.aggregation_vkey_hash.to_hash_bn254().into(),
         }

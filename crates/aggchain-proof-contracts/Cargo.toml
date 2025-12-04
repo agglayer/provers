@@ -6,7 +6,6 @@ license.workspace = true
 
 [dependencies]
 alloy = { workspace = true, features = ["genesis"] }
-anyhow.workspace = true
 async-trait.workspace = true
 eyre.workspace = true
 jsonrpsee.workspace = true
@@ -22,6 +21,7 @@ agglayer-interop.workspace = true
 aggchain-proof-types.workspace = true
 aggchain-proof-core.workspace = true
 prover-alloy.workspace = true
+prover-executor.workspace = true
 prover-utils.workspace = true
 mockall = { workspace = true, optional = true }
 

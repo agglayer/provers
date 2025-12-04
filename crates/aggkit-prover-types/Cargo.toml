@@ -9,7 +9,7 @@ sp1 = ["dep:sp1-sdk", "dep:prover-elf-utils"]
 
 [dependencies]
 alloy-primitives.workspace = true
-anyhow.workspace = true
+eyre.workspace = true
 prost.workspace = true
 serde.workspace = true
 thiserror.workspace = true
@@ -23,11 +23,6 @@ sp1-sdk = { workspace = true, optional = true }
 
 aggchain-proof-types.workspace = true
 agglayer-interop = { workspace = true, features = ["grpc-compat"] }
+agglayer-primitives.workspace = true
 pbjson.workspace = true
 prover-elf-utils = { workspace = true, optional = true }
-
-[build-dependencies]
-tonic-build = { version = "0.12", default-features = false, features = [
-    "prost",
-    "transport",
-] }
