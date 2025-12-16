@@ -1,5 +1,6 @@
 use std::{str::FromStr, sync::Arc};
 
+use aggchain_proof_contracts::{config::AggchainProofContractsConfig, AggchainContractsRpcClient};
 use alloy_primitives::B256;
 use clap::Parser;
 use proposer_client::{config::ProposerClientConfig, FepProposerRequest, GrpcUri};
@@ -41,6 +42,10 @@ struct Cli {
     /// Run in mock mode?
     #[arg(long)]
     pub mock: bool,
+
+    /// Network ID for the rollup
+    #[arg(short, long, default_value = "1")]
+    pub network_id: u32,
 }
 
 #[tokio::main]
@@ -63,6 +68,17 @@ pub async fn main() -> eyre::Result<()> {
 
     info!("L1 RPC client initialized");
 
+    // Setup the contracts client
+    let contracts_config = AggchainProofContractsConfig {
+        l1_rpc_endpoint: cli.l1_rpc_endpoint.clone(),
+        ..Default::default()
+    };
+    let contracts_client = Arc::new(
+        AggchainContractsRpcClient::new(cli.network_id, &contracts_config)
+            .await?,
+    );
+    info!("Contracts client initialized");
+
     // Setup the proposer service
     let propser_service_config = ProposerServiceConfig {
         mock: cli.mock,
@@ -73,14 +89,16 @@ pub async fn main() -> eyre::Result<()> {
             proving_timeout: proposer_client::config::default_proving_timeout(),
         },
         l1_rpc_endpoint: cli.l1_rpc_endpoint,
+        l2_consensus_layer_rpc_endpoint: prover_alloy::default_l2_consensus_layer_url(),
+        database: None,
     };
     let mut proposer_service = if cli.mock {
         tower::ServiceBuilder::new()
-            .service(ProposerService::new_mock(&propser_service_config, l1_rpc_client).await?)
+            .service(ProposerService::new_mock(&propser_service_config, l1_rpc_client, contracts_client).await?)
             .boxed_clone()
     } else {
         tower::ServiceBuilder::new()
-            .service(ProposerService::new_network(&propser_service_config, l1_rpc_client).await?)
+            .service(ProposerService::new_network(&propser_service_config, l1_rpc_client, contracts_client).await?)
             .boxed_clone()
     };
     info!("ProposerService initialized");

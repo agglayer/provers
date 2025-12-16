@@ -2,7 +2,6 @@ use std::panic::UnwindSafe;
 
 use eyre::Context as _;
 use futures::{Future, FutureExt};
-use tracing::error;
 
 #[derive(Debug, thiserror::Error)]
 #[error("Panic occurred during SP1 call: {message}")]
