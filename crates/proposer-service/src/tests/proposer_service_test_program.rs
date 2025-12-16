@@ -73,6 +73,7 @@ pub async fn main() -> eyre::Result<()> {
             proving_timeout: proposer_client::config::default_proving_timeout(),
         },
         l1_rpc_endpoint: cli.l1_rpc_endpoint,
+        database: None,
     };
     let mut proposer_service = if cli.mock {
         tower::ServiceBuilder::new()

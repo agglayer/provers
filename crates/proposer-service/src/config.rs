@@ -1,4 +1,5 @@
 use proposer_client::config::ProposerClientConfig;
+use proposer_db_client::ProposerDBConfig;
 use prover_alloy::L1RpcEndpoint;
 use serde::{Deserialize, Serialize};
 
@@ -12,4 +13,8 @@ pub struct ProposerServiceConfig {
 
     /// JSON-RPC endpoint of the l1 node.
     pub l1_rpc_endpoint: L1RpcEndpoint,
+
+    /// Optional database configuration for persisting proof requests.
+    #[serde(default)]
+    pub database: Option<ProposerDBConfig>,
 }

@@ -49,6 +49,9 @@ pub struct ProposerService<L1Rpc, ProposerClient> {
 
     pub l1_rpc: Arc<L1Rpc>,
 
+    /// Optional database client for persisting proof requests.
+    pub db_client: Option<Arc<proposer_db_client::ProposerDBClient>>,
+
     /// Aggregated span proof verification key.
     aggregation_vkey: SP1VerifyingKey,
 }
@@ -76,6 +79,14 @@ where
             .context("Retrieving aggregation vkey")
             .map_err(Error::Other)?;
 
+        let db_client = if let Some(db_config) = &config.database {
+            let client = proposer_db_client::ProposerDBClient::new(db_config.database_url.as_str())
+                .await?;
+            Some(Arc::new(client))
+        } else {
+            None
+        };
+
         Ok(Self {
             l1_rpc,
             client: Arc::new(proposer_client::client::Client::new(
@@ -83,6 +94,7 @@ where
                 prover,
                 Some(config.client.proving_timeout),
             )?),
+            db_client,
             aggregation_vkey,
         })
     }
@@ -169,6 +181,7 @@ where
         let client = self.client.clone();
         let l1_rpc = self.l1_rpc.clone();
         let aggregation_vkey = self.aggregation_vkey.clone();
+        let db_client = self.db_client.clone();
 
         async move {
             info!(%last_proven_block, %requested_end_block, "Requesting fep aggregation proof");
@@ -216,6 +229,49 @@ where
                 .ok_or_else(|| Error::UnsupportedAggregationProofMode(proof_mode))?;
 
             info!(%last_proven_block, %end_block, %request_id, "Aggregation proof successfully acquired");
+
+            if let Some(db) = db_client {
+                use chrono::Utc;
+                use proposer_db_client::{OPSuccinctRequest, RequestStatus, RequestType, RequestMode};
+                use serde_json::json;
+                use sqlx::types::BigDecimal;
+
+                let request = OPSuccinctRequest {
+                    id: 0,
+                    status: RequestStatus::Complete,
+                    req_type: RequestType::Aggregation,
+                    mode: RequestMode::Real,
+                    start_block: last_proven_block as i64,
+                    end_block: end_block as i64,
+                    created_at: Utc::now().naive_utc(),
+                    updated_at: Utc::now().naive_utc(),
+                    proof_request_id: Some(request_id.0.to_vec()),
+                    proof_request_time: Some(Utc::now().naive_utc()),
+                    checkpointed_l1_block_number: Some(l1_block_number as i64),
+                    checkpointed_l1_block_hash: Some(l1_block_hash.0.to_vec()),
+                    execution_statistics: json!({}),
+                    witnessgen_duration: None,
+                    execution_duration: None,
+                    prove_duration: None,
+                    range_vkey_commitment: vec![],
+                    aggregation_vkey_hash: None,
+                    rollup_config_hash: vec![],
+                    relay_tx_hash: None,
+                    proof: Some(bincode::serialize(&aggregation_proof).map_err(|e| Error::Other(e.into()))?),
+                    total_nb_transactions: 0,
+                    total_eth_gas_used: 0,
+                    total_l1_fees: BigDecimal::from(0),
+                    total_tx_fees: BigDecimal::from(0),
+                    l1_chain_id: 0,
+                    l2_chain_id: 0,
+                    contract_address: None,
+                    prover_address: None,
+                    l1_head_block_number: Some(l1_block_number as i64),
+                };
+
+                db.insert_request(&request).await?;
+                debug!(%request_id, "Inserted aggregation proof request into database");
+            }
 
             Ok(ProposerResponse {
                 aggregation_proof,
