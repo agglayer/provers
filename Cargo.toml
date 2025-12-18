@@ -37,7 +37,7 @@ prover-logger = { path = "crates/prover-logger" }
 prover-utils = { path = "crates/prover-utils" }
 
 # TODO: this should probably move to interop
-agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", branch = "release/0.2.1" }
+agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", tag = "v0.4.4"}
 
 # Interop dependencies
 agglayer-elf-build = "0.12.0"
