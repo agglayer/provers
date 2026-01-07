@@ -5,6 +5,7 @@ use std::{
 
 use aggchain_proof_core::full_execution_proof::AggregationProofPublicValues;
 use agglayer_evm_client::GetBlockNumber;
+use alloy_primitives::hex;
 use alloy_sol_types::SolType;
 use educe::Educe;
 pub use error::Error;
@@ -54,6 +55,12 @@ pub struct ProposerService<L1Rpc, ProposerClient> {
 
     /// Aggregated span proof verification key.
     aggregation_vkey: SP1VerifyingKey,
+
+    /// Database polling interval in milliseconds
+    poll_interval_ms: u64,
+
+    /// Maximum polling retries before timeout
+    max_retries: u32,
 }
 
 impl<L1Rpc, Prover>
@@ -79,12 +86,16 @@ where
             .context("Retrieving aggregation vkey")
             .map_err(Error::Other)?;
 
-        let db_client = if let Some(db_config) = &config.database {
-            let client = proposer_db_client::ProposerDBClient::new(db_config.database_url.as_str())
-                .await?;
-            Some(Arc::new(client))
+        let (db_client, poll_interval_ms, max_retries) = if let Some(db_config) = &config.database
+        {
+            let client = proposer_db_client::ProposerDBClient::new(&db_config.database_url).await?;
+            (
+                Some(Arc::new(client)),
+                db_config.poll_interval_ms,
+                db_config.max_retries,
+            )
         } else {
-            None
+            (None, 5000, 720) // defaults if no database configured
         };
 
         Ok(Self {
@@ -96,6 +107,8 @@ where
             )?),
             db_client,
             aggregation_vkey,
+            poll_interval_ms,
+            max_retries,
         })
     }
 
@@ -182,6 +195,8 @@ where
         let l1_rpc = self.l1_rpc.clone();
         let aggregation_vkey = self.aggregation_vkey.clone();
         let db_client = self.db_client.clone();
+        let poll_interval_ms = self.poll_interval_ms;
+        let max_retries = self.max_retries;
 
         async move {
             info!(%last_proven_block, %requested_end_block, "Requesting fep aggregation proof");
@@ -195,58 +210,25 @@ where
                     )
                 })?;
 
-            // Request the AggregationProof generation from the proposer.
-            let response = client
-                .request_agg_proof(AggregationProofProposerRequest {
-                    last_proven_block,
-                    requested_end_block,
-                    l1_block_number,
-                    l1_block_hash,
-                })
-                .await?;
-            let request_id = response.request_id;
-            let end_block = response.end_block;
-            let last_proven_block = response.last_proven_block;
-            debug!(%last_proven_block, %end_block, %request_id, "Aggregation proof request submitted");
-
-            // Wait for the prover to finish aggregating span proofs
-            let proof_with_pv = client.wait_for_proof(request_id.clone()).await?;
-
-            let public_values =
-                AggregationProofPublicValues::abi_decode(proof_with_pv.public_values.as_slice())
-                    .map_err(Error::FepPublicValuesDeserializeFailure)?;
-
-            debug!(%last_proven_block, %end_block, %request_id, "Aggregation proof received from the proposer");
-
-            // Verify received proof
-            client.verify_agg_proof(request_id.clone(), &proof_with_pv, &aggregation_vkey)?;
-
-            debug!(%last_proven_block, %end_block, %request_id, "Aggregation proof verified successfully");
-
-            let proof_mode: sp1_sdk::SP1ProofMode = sp1_fast(|| (&proof_with_pv.proof).into()).map_err(Error::Other)?;
-            let aggregation_proof = sp1_fast(|| proof_with_pv.proof.clone().try_as_compressed())
-                .map_err(Error::Other)?
-                .ok_or_else(|| Error::UnsupportedAggregationProofMode(proof_mode))?;
-
-            info!(%last_proven_block, %end_block, %request_id, "Aggregation proof successfully acquired");
-
+            // Database-driven workflow if database is configured
             if let Some(db) = db_client {
                 use chrono::Utc;
                 use proposer_db_client::{OPSuccinctRequest, RequestStatus, RequestType, RequestMode};
                 use serde_json::json;
                 use sqlx::types::BigDecimal;
 
+                // Insert request with Unrequested status
                 let request = OPSuccinctRequest {
-                    id: 0,
-                    status: RequestStatus::Complete,
+                    id: 0, // Will be set by database
+                    status: RequestStatus::Unrequested,
                     req_type: RequestType::Aggregation,
                     mode: RequestMode::Real,
                     start_block: last_proven_block as i64,
-                    end_block: end_block as i64,
+                    end_block: requested_end_block as i64,
                     created_at: Utc::now().naive_utc(),
                     updated_at: Utc::now().naive_utc(),
-                    proof_request_id: Some(request_id.0.to_vec()),
-                    proof_request_time: Some(Utc::now().naive_utc()),
+                    proof_request_id: None,
+                    proof_request_time: None,
                     checkpointed_l1_block_number: Some(l1_block_number as i64),
                     checkpointed_l1_block_hash: Some(l1_block_hash.0.to_vec()),
                     execution_statistics: json!({}),
@@ -257,7 +239,7 @@ where
                     aggregation_vkey_hash: None,
                     rollup_config_hash: vec![],
                     relay_tx_hash: None,
-                    proof: Some(bincode::serialize(&aggregation_proof).map_err(|e| Error::Other(e.into()))?),
+                    proof: None,
                     total_nb_transactions: 0,
                     total_eth_gas_used: 0,
                     total_l1_fees: BigDecimal::from(0),
@@ -269,16 +251,101 @@ where
                     l1_head_block_number: Some(l1_block_number as i64),
                 };
 
-                db.insert_request(&request).await?;
-                debug!(%request_id, "Inserted aggregation proof request into database");
-            }
+                let request_id = db.insert_request(&request).await?;
+                info!(%request_id, %last_proven_block, %requested_end_block, "Inserted aggregation proof request into database");
 
-            Ok(ProposerResponse {
-                aggregation_proof,
-                last_proven_block: response.last_proven_block,
-                end_block: response.end_block,
-                public_values,
-            })
+                // Poll database until completion
+                debug!(%request_id, "Polling database for proof completion");
+                let completed_request = db
+                    .wait_for_request_completion(request_id, poll_interval_ms, max_retries)
+                    .await?;
+
+                let end_block = completed_request.end_block as u64;
+                info!(%request_id, %last_proven_block, %end_block, "Aggregation proof completed");
+
+                // Extract proof from database
+                let proof_bytes = completed_request.proof.ok_or_else(|| {
+                    Error::Other(eyre::eyre!("Proof field is None for completed request {request_id}"))
+                })?;
+
+                // Deserialize proof
+                let aggregation_proof: AggregationProof = bincode::deserialize(&proof_bytes)
+                    .map_err(|e| Error::Other(e.into()))?;
+
+                debug!(%request_id, "Deserialized aggregation proof from database");
+
+                // Extract public values from execution_statistics field
+                // The public values should be stored there by the proposer
+                let public_values_bytes = completed_request
+                    .execution_statistics
+                    .get("public_values")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| {
+                        Error::Other(eyre::eyre!(
+                            "public_values not found in execution_statistics for request {request_id}"
+                        ))
+                    })?;
+
+                let public_values_vec = hex::decode(public_values_bytes.trim_start_matches("0x"))
+                    .map_err(|e| Error::Other(e.into()))?;
+
+                let public_values = AggregationProofPublicValues::abi_decode(&public_values_vec)
+                    .map_err(Error::FepPublicValuesDeserializeFailure)?;
+
+                debug!(%request_id, "Extracted public values from execution_statistics");
+
+                Ok(ProposerResponse {
+                    aggregation_proof,
+                    last_proven_block,
+                    end_block,
+                    public_values,
+                })
+            } else {
+                // Fall back to RPC workflow when database is not configured
+                info!("Using RPC workflow (database not configured)");
+
+                // Request the AggregationProof generation from the proposer.
+                let response = client
+                    .request_agg_proof(AggregationProofProposerRequest {
+                        last_proven_block,
+                        requested_end_block,
+                        l1_block_number,
+                        l1_block_hash,
+                    })
+                    .await?;
+                let request_id = response.request_id;
+                let end_block = response.end_block;
+                let last_proven_block = response.last_proven_block;
+                debug!(%last_proven_block, %end_block, %request_id, "Aggregation proof request submitted");
+
+                // Wait for the prover to finish aggregating span proofs
+                let proof_with_pv = client.wait_for_proof(request_id.clone()).await?;
+
+                let public_values =
+                    AggregationProofPublicValues::abi_decode(proof_with_pv.public_values.as_slice())
+                        .map_err(Error::FepPublicValuesDeserializeFailure)?;
+
+                debug!(%last_proven_block, %end_block, %request_id, "Aggregation proof received from the proposer");
+
+                // Verify received proof
+                client.verify_agg_proof(request_id.clone(), &proof_with_pv, &aggregation_vkey)?;
+
+                debug!(%last_proven_block, %end_block, %request_id, "Aggregation proof verified successfully");
+
+                let proof_mode: sp1_sdk::SP1ProofMode = sp1_fast(|| (&proof_with_pv.proof).into()).map_err(Error::Other)?;
+                let aggregation_proof = sp1_fast(|| proof_with_pv.proof.clone().try_as_compressed())
+                    .map_err(Error::Other)?
+                    .ok_or_else(|| Error::UnsupportedAggregationProofMode(proof_mode))?;
+
+                info!(%last_proven_block, %end_block, %request_id, "Aggregation proof successfully acquired");
+
+                Ok(ProposerResponse {
+                    aggregation_proof,
+                    last_proven_block: response.last_proven_block,
+                    end_block: response.end_block,
+                    public_values,
+                })
+            }
         }
         .boxed()
     }

@@ -10,4 +10,13 @@ pub enum Error {
 
     #[error("No consecutive complete range proofs found")]
     NoRangeProofsFound,
+
+    #[error("Proof generation failed for request {0}")]
+    ProofGenerationFailed(i64),
+
+    #[error("Proof generation cancelled for request {0}")]
+    ProofGenerationCancelled(i64),
+
+    #[error("Proof generation timeout for request {0}")]
+    ProofGenerationTimeout(i64),
 }

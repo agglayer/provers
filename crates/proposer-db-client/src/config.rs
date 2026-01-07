@@ -16,6 +16,14 @@ pub struct ProposerDBConfig {
 
     #[serde(default = "default_min_connections")]
     pub min_connections: u32,
+
+    /// Polling interval in milliseconds for checking proof completion status
+    #[serde(default = "default_poll_interval_ms")]
+    pub poll_interval_ms: u64,
+
+    /// Maximum number of polling retries before timing out
+    #[serde(default = "default_max_retries")]
+    pub max_retries: u32,
 }
 
 impl Default for ProposerDBConfig {
@@ -24,6 +32,8 @@ impl Default for ProposerDBConfig {
             database_url: default_database_url(),
             max_connections: default_max_connections(),
             min_connections: default_min_connections(),
+            poll_interval_ms: default_poll_interval_ms(),
+            max_retries: default_max_retries(),
         }
     }
 }
@@ -41,4 +51,12 @@ const fn default_max_connections() -> u32 {
 
 const fn default_min_connections() -> u32 {
     DEFAULT_MIN_CONNECTIONS
+}
+
+const fn default_poll_interval_ms() -> u64 {
+    5000 // 5 seconds
+}
+
+const fn default_max_retries() -> u32 {
+    720 // 720 * 5s = 1 hour
 }

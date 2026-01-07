@@ -51,6 +51,7 @@ unified-bridge = "0.12.0"
 
 # Ecosystem dependencies
 op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v3.4.0-rc.1-agglayer" }
+op-succinct-validity = { git = "https://github.com/agglayer/op-succinct.git", tag = "v3.4.0-rc.1-agglayer" }
 
 # SP1 dependencies
 # Please check if the toolchain image at the top `scripts/make/Makefile.elf.toml` could also be

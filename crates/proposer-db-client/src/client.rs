@@ -11,8 +11,8 @@ pub struct ProposerDBClient {
 }
 
 impl ProposerDBClient {
-    pub async fn new(database_url: &str) -> Result<Self, Error> {
-        let pool = PgPool::connect(database_url).await?;
+    pub async fn new(database_url: &url::Url) -> Result<Self, Error> {
+        let pool = PgPool::connect(database_url.as_str()).await?;
         Ok(Self { pool })
     }
 
@@ -35,9 +35,9 @@ impl ProposerDBClient {
             RETURNING id
             "#,
         )
-        .bind(request.status as i32)
-        .bind(request.req_type as i32)
-        .bind(request.mode as i32)
+        .bind(request.status)
+        .bind(request.req_type)
+        .bind(request.mode)
         .bind(request.start_block)
         .bind(request.end_block)
         .bind(request.created_at)
@@ -96,8 +96,8 @@ impl ProposerDBClient {
         )
         .bind(range_vkey_commitment)
         .bind(rollup_config_hash)
-        .bind(RequestStatus::Complete as i32)
-        .bind(RequestType::Range as i32)
+        .bind(RequestStatus::Complete)
+        .bind(RequestType::Range)
         .bind(start_block)
         .bind(end_block)
         .bind(l1_chain_id)
@@ -124,5 +124,45 @@ impl ProposerDBClient {
 
         let proof: Option<Vec<u8>> = row.try_get("proof")?;
         proof.ok_or(Error::ProofNotFound)
+    }
+
+    pub async fn get_request_by_id(&self, id: i64) -> Result<OPSuccinctRequest, Error> {
+        let request = sqlx::query_as::<_, OPSuccinctRequest>(
+            r#"
+            SELECT * FROM requests WHERE id = $1
+            "#,
+        )
+        .bind(id)
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(request)
+    }
+
+    pub async fn wait_for_request_completion(
+        &self,
+        request_id: i64,
+        poll_interval_ms: u64,
+        max_retries: u32,
+    ) -> Result<OPSuccinctRequest, Error> {
+        let mut retries = 0;
+
+        loop {
+            let request = self.get_request_by_id(request_id).await?;
+
+            match request.status {
+                RequestStatus::Complete => return Ok(request),
+                RequestStatus::Failed => return Err(Error::ProofGenerationFailed(request_id)),
+                RequestStatus::Cancelled => return Err(Error::ProofGenerationCancelled(request_id)),
+                _ => {
+                    if retries >= max_retries {
+                        return Err(Error::ProofGenerationTimeout(request_id));
+                    }
+                    retries += 1;
+                    tokio::time::sleep(tokio::time::Duration::from_millis(poll_interval_ms))
+                        .await;
+                }
+            }
+        }
     }
 }

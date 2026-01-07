@@ -45,6 +45,8 @@ tower = { workspace = true, features = ["timeout"] }
 tracing.workspace = true
 url.workspace = true
 
+op-succinct-validity.workspace = true
+
 [dev-dependencies]
 agglayer-evm-client = { workspace = true, features = ["testutils"] }
 proposer-client = { workspace = true, features = ["testutils"] }
