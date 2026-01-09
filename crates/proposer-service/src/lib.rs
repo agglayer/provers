@@ -24,6 +24,7 @@ use sp1_sdk::NetworkProver;
 use tracing::{debug, info};
 
 use crate::config::ProposerServiceConfig;
+use crate::l2_rpc::{L2ConsensusLayerClient, L2SafeHeadFetcher};
 
 type AggregationProof = Box<sp1_core_executor::SP1ReduceProof<sp1_prover::InnerSC>>;
 
@@ -44,12 +45,18 @@ mod tests;
 
 pub const AGGREGATION_ELF: &[u8] = proposer_elfs::aggregation::ELF;
 
+/// Number of L1 blocks to look back when querying for the safe L2 head.
+const L1_SAFE_HEAD_LOOKBACK: u64 = 20;
+
 #[derive(Educe)]
 #[educe(Clone(bound()))]
-pub struct ProposerService<L1Rpc, ProposerClient> {
+pub struct ProposerService<L1Rpc, L2Rpc, ProposerClient> {
     pub client: Arc<ProposerClient>,
 
     pub l1_rpc: Arc<L1Rpc>,
+
+    /// Client for fetching L2 safe head information from the rollup node.
+    pub l2_rpc: Arc<L2Rpc>,
 
     /// Optional database client for persisting proof requests.
     pub db_client: Option<Arc<proposer_db_client::ProposerDBClient>>,
@@ -65,7 +72,11 @@ pub struct ProposerService<L1Rpc, ProposerClient> {
 }
 
 impl<L1Rpc, Prover>
-    ProposerService<L1Rpc, proposer_client::client::Client<ProposerRpcClient, Prover>>
+    ProposerService<
+        L1Rpc,
+        L2ConsensusLayerClient,
+        proposer_client::client::Client<ProposerRpcClient, Prover>,
+    >
 where
     Prover: AggregationProver,
 {
@@ -87,6 +98,10 @@ where
             .context("Retrieving aggregation vkey")
             .map_err(Error::Other)?;
 
+        let l2_rpc = Arc::new(L2ConsensusLayerClient::new(
+            &config.l2_consensus_layer_rpc_endpoint,
+        )?);
+
         let (db_client, poll_interval_ms, max_retries) = if let Some(db_config) = &config.database {
             let client = proposer_db_client::ProposerDBClient::new(&db_config.database_url).await?;
             (
@@ -100,6 +115,7 @@ where
 
         Ok(Self {
             l1_rpc,
+            l2_rpc,
             client: Arc::new(proposer_client::client::Client::new(
                 proposer_rpc_client,
                 prover,
@@ -122,7 +138,11 @@ where
 }
 
 impl<L1Rpc>
-    ProposerService<L1Rpc, proposer_client::client::Client<ProposerRpcClient, NetworkProver>>
+    ProposerService<
+        L1Rpc,
+        L2ConsensusLayerClient,
+        proposer_client::client::Client<ProposerRpcClient, NetworkProver>,
+    >
 {
     pub async fn new_network(
         config: &ProposerServiceConfig,
@@ -144,6 +164,7 @@ impl<L1Rpc>
 impl<L1Rpc>
     ProposerService<
         L1Rpc,
+        L2ConsensusLayerClient,
         proposer_client::client::Client<ProposerRpcClient, MockGrpcProver<ProposerRpcClient>>,
     >
 {
@@ -167,10 +188,11 @@ impl<L1Rpc>
     }
 }
 
-impl<L1Rpc, ProposerClient> tower::Service<FepProposerRequest>
-    for ProposerService<L1Rpc, ProposerClient>
+impl<L1Rpc, L2Rpc, ProposerClient> tower::Service<FepProposerRequest>
+    for ProposerService<L1Rpc, L2Rpc, ProposerClient>
 where
     L1Rpc: GetBlockNumber<Error: Into<eyre::Error>> + Send + Sync + 'static,
+    L2Rpc: L2SafeHeadFetcher + Send + Sync + 'static,
     ProposerClient: proposer_client::ProposerClient + Send + Sync + 'static,
 {
     type Response = ProposerResponse;
@@ -193,13 +215,13 @@ where
     ) -> Self::Future {
         let client = self.client.clone();
         let l1_rpc = self.l1_rpc.clone();
+        let l2_rpc = self.l2_rpc.clone();
         let aggregation_vkey = self.aggregation_vkey.clone();
         let db_client = self.db_client.clone();
         let poll_interval_ms = self.poll_interval_ms;
         let max_retries = self.max_retries;
 
         async move {
-            info!(%last_proven_block, %requested_end_block, "Requesting fep aggregation proof");
             let l1_block_number = l1_rpc
                 .get_block_number(l1_block_hash.into())
                 .await
@@ -209,6 +231,11 @@ where
                             .wrap_err(format!("Getting the block number for hash {l1_block_hash}")),
                     )
                 })?;
+
+            let l1_limited_end_block =
+                limit_end_block_to_safe_head(&l2_rpc, requested_end_block, l1_block_number).await?;
+
+            info!(%last_proven_block, %requested_end_block, "Requesting fep aggregation proof");
 
             // Database-driven workflow if database is configured
             if let Some(db) = db_client {
@@ -224,7 +251,7 @@ where
                     req_type: RequestType::Aggregation,
                     mode: RequestMode::Real,
                     start_block: last_proven_block as i64,
-                    end_block: requested_end_block as i64,
+                    end_block: l1_limited_end_block as i64,
                     created_at: Utc::now().naive_utc(),
                     updated_at: Utc::now().naive_utc(),
                     proof_request_id: None,
@@ -349,4 +376,31 @@ where
         }
         .boxed()
     }
+}
+
+/// Limits the requested end block to the safe L2 head derived from L1 data.
+///
+/// This ensures we don't request proofs for L2 blocks that haven't been safely
+/// derived from L1 yet. We look back `L1_SAFE_HEAD_LOOKBACK` blocks from the
+/// current L1 block to account for reorg safety.
+async fn limit_end_block_to_safe_head<L2Rpc: L2SafeHeadFetcher>(
+    l2_rpc: &L2Rpc,
+    requested_end_block: u64,
+    l1_block_number: u64,
+) -> Result<u64, Error> {
+    let safe_l1_block = l1_block_number.saturating_sub(L1_SAFE_HEAD_LOOKBACK);
+    let safe_head_response = l2_rpc.get_safe_head_at_l1_block(safe_l1_block).await?;
+    let safe_head: u64 = safe_head_response.safe_head_block_number.to();
+
+    if safe_head < requested_end_block {
+        debug!(
+            %requested_end_block,
+            %safe_head,
+            %l1_block_number,
+            "Limiting requested end block to safe head"
+        );
+        return Ok(safe_head);
+    }
+
+    Ok(requested_end_block)
 }

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use alloy_primitives::{B256, U64};
 use jsonrpsee::{core::client::ClientT, http_client::HttpClient, rpc_params};
 use serde::{Deserialize, Serialize};
@@ -63,6 +65,16 @@ impl L2SafeHeadFetcher for L2ConsensusLayerClient {
             .map_err(Error::L2SafeHeadFetch)?;
 
         Ok(response)
+    }
+}
+
+#[async_trait::async_trait]
+impl<T: L2SafeHeadFetcher> L2SafeHeadFetcher for Arc<T> {
+    async fn get_safe_head_at_l1_block(
+        &self,
+        l1_block_number: u64,
+    ) -> Result<SafeHeadAtL1Block, Error> {
+        (**self).get_safe_head_at_l1_block(l1_block_number).await
     }
 }
 

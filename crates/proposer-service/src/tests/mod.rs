@@ -1,13 +1,14 @@
 use std::sync::Arc;
 
 use agglayer_evm_client::MockRpc;
-use alloy_primitives::FixedBytes;
+use alloy_primitives::{FixedBytes, U64};
 use proposer_client::{
     rpc::AggregationProofProposerRequest, FepProposerRequest, MockProposerClient, RequestId,
 };
 use sp1_sdk::{Prover as _, SP1PublicValues, SP1_CIRCUIT_VERSION};
 use tower::Service as _;
 
+use crate::l2_rpc::{MockL2SafeHeadFetcher, SafeHeadAtL1Block};
 use crate::{Error, ProposerService};
 
 const ELF: &[u8] = include_bytes!("../../../prover-dummy-program/elf/riscv32im-succinct-zkvm-elf");
@@ -86,10 +87,26 @@ async fn test_proposer_service() {
 
     let client = Arc::new(client);
     let l1_rpc = Arc::new(l1_rpc);
+
+    let mut l2_rpc = MockL2SafeHeadFetcher::new();
+    l2_rpc.expect_get_safe_head_at_l1_block().returning(|_| {
+        Ok(SafeHeadAtL1Block {
+            l1_block_number: U64::from(10),
+            l1_block_hash: Default::default(),
+            safe_head_block_number: U64::from(100),
+            safe_head_block_hash: Default::default(),
+        })
+    });
+    let l2_rpc = Arc::new(l2_rpc);
+
     let mut proposer_service = ProposerService {
         client,
         l1_rpc,
+        l2_rpc,
+        db_client: None,
         aggregation_vkey: vkey,
+        poll_interval_ms: 5000,
+        max_retries: 720,
     };
 
     let request = FepProposerRequest {
@@ -116,10 +133,26 @@ async fn unable_to_fetch_block_hash() {
 
     let client = Arc::new(client);
     let l1_rpc = Arc::new(l1_rpc);
+
+    let mut l2_rpc = MockL2SafeHeadFetcher::new();
+    l2_rpc.expect_get_safe_head_at_l1_block().returning(|_| {
+        Ok(SafeHeadAtL1Block {
+            l1_block_number: U64::from(10),
+            l1_block_hash: Default::default(),
+            safe_head_block_number: U64::from(100),
+            safe_head_block_hash: Default::default(),
+        })
+    });
+    let l2_rpc = Arc::new(l2_rpc);
+
     let mut proposer_service = ProposerService {
         client,
         l1_rpc,
+        l2_rpc,
+        db_client: None,
         aggregation_vkey: vkey,
+        poll_interval_ms: 5000,
+        max_retries: 720,
     };
 
     let request = FepProposerRequest {
