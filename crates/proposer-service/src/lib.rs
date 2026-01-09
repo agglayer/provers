@@ -37,6 +37,7 @@ pub struct ProposerResponse {
 
 pub mod config;
 pub mod error;
+pub mod l2_rpc;
 
 #[cfg(test)]
 mod tests;
@@ -86,8 +87,7 @@ where
             .context("Retrieving aggregation vkey")
             .map_err(Error::Other)?;
 
-        let (db_client, poll_interval_ms, max_retries) = if let Some(db_config) = &config.database
-        {
+        let (db_client, poll_interval_ms, max_retries) = if let Some(db_config) = &config.database {
             let client = proposer_db_client::ProposerDBClient::new(&db_config.database_url).await?;
             (
                 Some(Arc::new(client)),
