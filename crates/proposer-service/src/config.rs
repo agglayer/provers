@@ -10,6 +10,7 @@ pub struct ProposerServiceConfig {
     #[serde(default)] // bool::default() is false
     pub mock: bool,
 
+    #[serde(default)]
     pub client: ProposerClientConfig,
 
     /// JSON-RPC endpoint of the l1 node.
@@ -23,4 +24,16 @@ pub struct ProposerServiceConfig {
     /// Optional database configuration for persisting proof requests.
     #[serde(default)]
     pub database: Option<ProposerDBConfig>,
+}
+
+impl Default for ProposerServiceConfig {
+    fn default() -> Self {
+        Self {
+            mock: false,
+            client: ProposerClientConfig::default(),
+            l1_rpc_endpoint: L1RpcEndpoint::default(),
+            l2_consensus_layer_rpc_endpoint: prover_alloy::default_l2_consensus_layer_url(),
+            database: None,
+        }
+    }
 }
