@@ -144,31 +144,43 @@ impl ProposerDBClient {
         Ok(request)
     }
 
-    pub async fn wait_for_request_completion(
+    /// Polls the database until the request reaches Execution status with a valid proof_request_id.
+    /// Returns the proof_request_id bytes once available.
+    pub async fn wait_for_proof_request_id(
         &self,
         request_id: i64,
         poll_interval_ms: u64,
         max_retries: u32,
-    ) -> Result<OPSuccinctRequest, Error> {
+    ) -> Result<Vec<u8>, Error> {
         let mut retries = 0;
 
         loop {
             let request = self.get_request_by_id(request_id).await?;
 
             match request.status {
-                RequestStatus::Complete => return Ok(request),
                 RequestStatus::Failed => return Err(Error::ProofGenerationFailed(request_id)),
                 RequestStatus::Cancelled => {
                     return Err(Error::ProofGenerationCancelled(request_id))
                 }
-                _ => {
-                    if retries >= max_retries {
-                        return Err(Error::ProofGenerationTimeout(request_id));
+                // Once we reach Execution (or beyond), proof_request_id should be set
+                RequestStatus::Execution
+                | RequestStatus::Prove
+                | RequestStatus::Complete
+                | RequestStatus::Relayed => {
+                    if let Some(proof_request_id) = request.proof_request_id {
+                        return Ok(proof_request_id);
                     }
-                    retries += 1;
-                    tokio::time::sleep(tokio::time::Duration::from_millis(poll_interval_ms)).await;
+                    // proof_request_id not yet set, keep waiting
                 }
+                // Still in earlier stages (Unrequested, WitnessGeneration)
+                _ => {}
             }
+
+            if retries >= max_retries {
+                return Err(Error::ProofGenerationTimeout(request_id));
+            }
+            retries += 1;
+            tokio::time::sleep(tokio::time::Duration::from_millis(poll_interval_ms)).await;
         }
     }
 }
