@@ -361,7 +361,7 @@ async fn limit_end_block_to_safe_head<L2Rpc: L2SafeHeadFetcher>(
 ) -> Result<u64, Error> {
     let safe_l1_block = l1_block_number.saturating_sub(L1_SAFE_HEAD_LOOKBACK);
     let safe_head_response = l2_rpc.get_safe_head_at_l1_block(safe_l1_block).await?;
-    let safe_head: u64 = safe_head_response.safe_head_block_number.to();
+    let safe_head: u64 = safe_head_response.safe_head.number.to();
 
     if safe_head < requested_end_block {
         debug!(

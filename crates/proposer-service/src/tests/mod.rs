@@ -8,7 +8,7 @@ use proposer_client::{
 use sp1_sdk::{Prover as _, SP1PublicValues, SP1_CIRCUIT_VERSION};
 use tower::Service as _;
 
-use crate::l2_rpc::{MockL2SafeHeadFetcher, SafeHeadAtL1Block};
+use crate::l2_rpc::{BlockId, MockL2SafeHeadFetcher, SafeHeadAtL1Block};
 use crate::{Error, ProposerService};
 
 const ELF: &[u8] = include_bytes!("../../../prover-dummy-program/elf/riscv32im-succinct-zkvm-elf");
@@ -91,10 +91,14 @@ async fn test_proposer_service() {
     let mut l2_rpc = MockL2SafeHeadFetcher::new();
     l2_rpc.expect_get_safe_head_at_l1_block().returning(|_| {
         Ok(SafeHeadAtL1Block {
-            l1_block_number: U64::from(10),
-            l1_block_hash: Default::default(),
-            safe_head_block_number: U64::from(100),
-            safe_head_block_hash: Default::default(),
+            l1_block: BlockId {
+                number: U64::from(10),
+                hash: Default::default(),
+            },
+            safe_head: BlockId {
+                number: U64::from(100),
+                hash: Default::default(),
+            },
         })
     });
     let l2_rpc = Arc::new(l2_rpc);
@@ -137,10 +141,14 @@ async fn unable_to_fetch_block_hash() {
     let mut l2_rpc = MockL2SafeHeadFetcher::new();
     l2_rpc.expect_get_safe_head_at_l1_block().returning(|_| {
         Ok(SafeHeadAtL1Block {
-            l1_block_number: U64::from(10),
-            l1_block_hash: Default::default(),
-            safe_head_block_number: U64::from(100),
-            safe_head_block_hash: Default::default(),
+            l1_block: BlockId {
+                number: U64::from(10),
+                hash: Default::default(),
+            },
+            safe_head: BlockId {
+                number: U64::from(100),
+                hash: Default::default(),
+            },
         })
     });
     let l2_rpc = Arc::new(l2_rpc);

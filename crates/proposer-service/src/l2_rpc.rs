@@ -7,6 +7,13 @@ use url::Url;
 
 use crate::error::Error;
 
+/// A block identifier containing hash and number.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BlockId {
+    pub hash: B256,
+    pub number: U64,
+}
+
 /// Response from the `optimism_safeHeadAtL1Block` RPC method.
 ///
 /// This method returns the safe L2 block that was derived from data up to and
@@ -14,14 +21,10 @@ use crate::error::Error;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SafeHeadAtL1Block {
-    /// The L1 block number that was queried.
-    pub l1_block_number: U64,
-    /// The L1 block hash.
-    pub l1_block_hash: B256,
-    /// The safe L2 block number at this L1 block.
-    pub safe_head_block_number: U64,
-    /// The safe L2 block hash.
-    pub safe_head_block_hash: B256,
+    /// The L1 block that was queried.
+    pub l1_block: BlockId,
+    /// The safe L2 head at this L1 block.
+    pub safe_head: BlockId,
 }
 
 /// Trait for fetching the safe L2 head at a given L1 block.
