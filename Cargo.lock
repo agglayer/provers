@@ -10635,6 +10635,7 @@ dependencies = [
 name = "proposer-service"
 version = "0.1.0"
 dependencies = [
+ "aggchain-proof-contracts",
  "aggchain-proof-core",
  "aggkit-prover-types",
  "agglayer-evm-client",

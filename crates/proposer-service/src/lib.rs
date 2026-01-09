@@ -49,7 +49,7 @@ const L1_SAFE_HEAD_LOOKBACK: u64 = 20;
 
 #[derive(Educe)]
 #[educe(Clone(bound()))]
-pub struct ProposerService<L1Rpc, L2Rpc, ProposerClient> {
+pub struct ProposerService<L1Rpc, L2Rpc, ProposerClient, ContractsClient> {
     pub client: Arc<ProposerClient>,
 
     pub l1_rpc: Arc<L1Rpc>,
@@ -59,6 +59,9 @@ pub struct ProposerService<L1Rpc, L2Rpc, ProposerClient> {
 
     /// Optional database client for persisting proof requests.
     pub db_client: Option<Arc<proposer_db_client::ProposerDBClient>>,
+
+    /// Contracts client for fetching L1 contract configuration.
+    pub contracts_client: Arc<ContractsClient>,
 
     /// Aggregated span proof verification key.
     aggregation_vkey: SP1VerifyingKey,
@@ -70,11 +73,12 @@ pub struct ProposerService<L1Rpc, L2Rpc, ProposerClient> {
     max_retries: u32,
 }
 
-impl<L1Rpc, Prover>
+impl<L1Rpc, Prover, ContractsClient>
     ProposerService<
         L1Rpc,
         L2ConsensusLayerClient,
         proposer_client::client::Client<ProposerRpcClient, Prover>,
+        ContractsClient,
     >
 where
     Prover: AggregationProver,
@@ -83,6 +87,7 @@ where
         prover: Prover,
         config: &ProposerServiceConfig,
         l1_rpc: Arc<L1Rpc>,
+        contracts_client: Arc<ContractsClient>,
     ) -> Result<Self, Error> {
         let proposer_rpc_client = Arc::new(
             ProposerRpcClient::new(
@@ -121,6 +126,7 @@ where
                 Some(config.client.proving_timeout),
             )?),
             db_client,
+            contracts_client,
             aggregation_vkey,
             poll_interval_ms,
             max_retries,
@@ -136,16 +142,18 @@ where
     }
 }
 
-impl<L1Rpc>
+impl<L1Rpc, ContractsClient>
     ProposerService<
         L1Rpc,
         L2ConsensusLayerClient,
         proposer_client::client::Client<ProposerRpcClient, NetworkProver>,
+        ContractsClient,
     >
 {
     pub async fn new_network(
         config: &ProposerServiceConfig,
         l1_rpc: Arc<L1Rpc>,
+        contracts_client: Arc<ContractsClient>,
     ) -> Result<Self, Error> {
         assert!(
             !config.mock,
@@ -155,21 +163,24 @@ impl<L1Rpc>
             new_network_prover(&config.client.sp1_cluster_endpoint).map_err(Error::Other)?,
             config,
             l1_rpc,
+            contracts_client,
         )
         .await
     }
 }
 
-impl<L1Rpc>
+impl<L1Rpc, ContractsClient>
     ProposerService<
         L1Rpc,
         L2ConsensusLayerClient,
         proposer_client::client::Client<ProposerRpcClient, MockGrpcProver<ProposerRpcClient>>,
+        ContractsClient,
     >
 {
     pub async fn new_mock(
         config: &ProposerServiceConfig,
         l1_rpc: Arc<L1Rpc>,
+        contracts_client: Arc<ContractsClient>,
     ) -> Result<Self, Error> {
         assert!(
             config.mock,
@@ -183,16 +194,17 @@ impl<L1Rpc>
             .await?,
         );
 
-        Self::new(MockGrpcProver::new(proposer_rpc_client), config, l1_rpc).await
+        Self::new(MockGrpcProver::new(proposer_rpc_client), config, l1_rpc, contracts_client).await
     }
 }
 
-impl<L1Rpc, L2Rpc, ProposerClient> tower::Service<FepProposerRequest>
-    for ProposerService<L1Rpc, L2Rpc, ProposerClient>
+impl<L1Rpc, L2Rpc, ProposerClient, ContractsClient> tower::Service<FepProposerRequest>
+    for ProposerService<L1Rpc, L2Rpc, ProposerClient, ContractsClient>
 where
     L1Rpc: GetBlockNumber<Error: Into<eyre::Error>> + Send + Sync + 'static,
     L2Rpc: L2SafeHeadFetcher + Send + Sync + 'static,
     ProposerClient: proposer_client::ProposerClient + Send + Sync + 'static,
+    ContractsClient: aggchain_proof_contracts::contracts::L1OpSuccinctConfigFetcher + Send + Sync + 'static,
 {
     type Response = ProposerResponse;
 
@@ -217,6 +229,7 @@ where
         let l2_rpc = self.l2_rpc.clone();
         let aggregation_vkey = self.aggregation_vkey.clone();
         let db_client = self.db_client.clone();
+        let contracts_client = self.contracts_client.clone();
         let poll_interval_ms = self.poll_interval_ms;
         let max_retries = self.max_retries;
 
@@ -250,6 +263,11 @@ where
                 use serde_json::json;
                 use sqlx::types::BigDecimal;
 
+                // Fetch rollup config hash from contracts
+                let op_succinct_config = contracts_client.get_op_succinct_config().await.map_err(|e| {
+                    Error::Other(eyre::eyre!("Failed to fetch op_succinct_config from contracts: {}", e))
+                })?;
+
                 // Insert request with Unrequested status
                 let request = OPSuccinctRequest {
                     id: 0, // Will be set by database
@@ -270,7 +288,7 @@ where
                     prove_duration: None,
                     range_vkey_commitment: proposer_elfs::range::VKEY_COMMITMENT.to_vec(),
                     aggregation_vkey_hash: Some(aggregation_vkey.hash_bytes().to_vec()),
-                    rollup_config_hash: vec![],
+                    rollup_config_hash: op_succinct_config.rollup_config_hash.0.to_vec(),
                     relay_tx_hash: None,
                     proof: None,
                     total_nb_transactions: 0,
