@@ -234,6 +234,13 @@ where
             let l1_limited_end_block =
                 limit_end_block_to_safe_head(&l2_rpc, requested_end_block, l1_block_number).await?;
 
+            // Check if the requested end block is less or equal than the requested start block
+            if l1_limited_end_block <= last_proven_block {
+                return Err(Error::Other(
+                    eyre::eyre!("Requested end block is less than or equal to the requested start block")
+                ));
+            }
+
             info!(%last_proven_block, %requested_end_block, "Requesting fep aggregation proof");
 
             // Obtain request_id either from database or RPC workflow
