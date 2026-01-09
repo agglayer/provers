@@ -45,7 +45,12 @@ impl ProposerDBClient {
         .bind(request.proof_request_id.as_ref().map(|v| v.as_slice()))
         .bind(request.proof_request_time)
         .bind(request.checkpointed_l1_block_number)
-        .bind(request.checkpointed_l1_block_hash.as_ref().map(|v| v.as_slice()))
+        .bind(
+            request
+                .checkpointed_l1_block_hash
+                .as_ref()
+                .map(|v| v.as_slice()),
+        )
         .bind(&request.execution_statistics)
         .bind(request.witnessgen_duration)
         .bind(request.execution_duration)
@@ -153,14 +158,15 @@ impl ProposerDBClient {
             match request.status {
                 RequestStatus::Complete => return Ok(request),
                 RequestStatus::Failed => return Err(Error::ProofGenerationFailed(request_id)),
-                RequestStatus::Cancelled => return Err(Error::ProofGenerationCancelled(request_id)),
+                RequestStatus::Cancelled => {
+                    return Err(Error::ProofGenerationCancelled(request_id))
+                }
                 _ => {
                     if retries >= max_retries {
                         return Err(Error::ProofGenerationTimeout(request_id));
                     }
                     retries += 1;
-                    tokio::time::sleep(tokio::time::Duration::from_millis(poll_interval_ms))
-                        .await;
+                    tokio::time::sleep(tokio::time::Duration::from_millis(poll_interval_ms)).await;
                 }
             }
         }

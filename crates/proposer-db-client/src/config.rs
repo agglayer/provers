@@ -39,7 +39,7 @@ impl Default for ProposerDBConfig {
 }
 
 fn default_database_url() -> Url {
-    std::env::var("PROPOSER_DATABASE_URL")
+    std::env::var("PROVER_DATABASE_URL")
         .ok()
         .and_then(|s| Url::parse(&s).ok())
         .unwrap_or_else(|| Url::parse(DEFAULT_DATABASE_URL).expect("Invalid default database URL"))
