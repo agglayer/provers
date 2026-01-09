@@ -19,7 +19,7 @@ use proposer_client::{
 };
 use prover_executor::sp1_fast;
 use sp1_prover::SP1VerifyingKey;
-use sp1_sdk::NetworkProver;
+use sp1_sdk::{HashableKey, NetworkProver};
 use tracing::{debug, info};
 
 use crate::config::ProposerServiceConfig;
@@ -268,8 +268,8 @@ where
                     witnessgen_duration: None,
                     execution_duration: None,
                     prove_duration: None,
-                    range_vkey_commitment: vec![],
-                    aggregation_vkey_hash: None,
+                    range_vkey_commitment: proposer_elfs::range::VKEY_COMMITMENT.to_vec(),
+                    aggregation_vkey_hash: Some(aggregation_vkey.hash_bytes().to_vec()),
                     rollup_config_hash: vec![],
                     relay_tx_hash: None,
                     proof: None,
