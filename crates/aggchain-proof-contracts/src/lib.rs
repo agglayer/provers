@@ -84,9 +84,25 @@ pub struct AggchainContractsRpcClient<RpcProvider> {
 
     /// Aggchain FEP opSuccinctConfig name.
     op_succinct_config_name: agglayer_primitives::alloy_primitives::FixedBytes<32>,
+
+    /// L1 chain ID fetched from the RPC provider.
+    l1_chain_id: u64,
+
+    /// L2 chain ID fetched from the RPC provider.
+    l2_chain_id: u64,
 }
 
 impl<T: Provider> AggchainContractsClient for AggchainContractsRpcClient<T> {}
+
+impl<T> contracts::ChainIdProvider for AggchainContractsRpcClient<T> {
+    fn l1_chain_id(&self) -> u64 {
+        self.l1_chain_id
+    }
+
+    fn l2_chain_id(&self) -> u64 {
+        self.l2_chain_id
+    }
+}
 
 #[async_trait::async_trait]
 impl<RpcProvider> L2LocalExitRootFetcher for AggchainContractsRpcClient<RpcProvider>
@@ -450,10 +466,23 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             .await
             .map_err(Error::SelectedOpSuccinctConfigRetrievalError)?;
 
+        // Fetch chain IDs from the L1 and L2 providers
+        let l1_chain_id = l1_client
+            .get_chain_id()
+            .await
+            .map_err(Error::ChainIdRetrievalError)?;
+
+        let l2_chain_id = l2_el_client
+            .get_chain_id()
+            .await
+            .map_err(Error::ChainIdRetrievalError)?;
+
         info!(global_exit_root_manager_l2=%config.global_exit_root_manager_v2_sovereign_chain,
             polygon_zkevm_bridge_v2=%polygon_zkevm_bridge_v2.address(),
             polygon_rollup_manager=%config.polygon_rollup_manager,
             aggchain_fep=%aggchain_fep.address(),
+            %l1_chain_id,
+            %l2_chain_id,
             "Aggchain proof contracts client created successfully");
 
         Ok(Self {
@@ -466,6 +495,8 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             static_call_caller_address: config.static_call_caller_address,
             evm_sketch_genesis: config::parse_evm_sketch_genesis(&config.evm_sketch_genesis)?,
             op_succinct_config_name,
+            l1_chain_id,
+            l2_chain_id,
         })
     }
 }

@@ -57,6 +57,7 @@ testutils = ["mockall"]
 
 [dev-dependencies]
 agglayer-evm-client = { workspace = true, features = ["testutils"] }
+agglayer-interop.workspace = true
 proposer-client = { workspace = true, features = ["testutils"] }
 prover-alloy = { workspace = true, features = ["testutils"] }
 

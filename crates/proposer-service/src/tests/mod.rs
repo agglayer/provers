@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
+use aggchain_proof_contracts::contracts::{ChainIdProvider, L1OpSuccinctConfigFetcher, OpSuccinctConfig};
 use agglayer_evm_client::MockRpc;
+use agglayer_interop::types::Digest;
 use alloy_primitives::{FixedBytes, U64};
+use mockall::mock;
 use proposer_client::{
     rpc::AggregationProofProposerRequest, FepProposerRequest, MockProposerClient, RequestId,
 };
@@ -10,6 +13,20 @@ use tower::Service as _;
 
 use crate::l2_rpc::{BlockId, MockL2SafeHeadFetcher, SafeHeadAtL1Block};
 use crate::{Error, ProposerService};
+
+mock! {
+    pub ContractsClient {}
+
+    #[async_trait::async_trait]
+    impl L1OpSuccinctConfigFetcher for ContractsClient {
+        async fn get_op_succinct_config(&self) -> Result<OpSuccinctConfig, aggchain_proof_contracts::Error>;
+    }
+
+    impl ChainIdProvider for ContractsClient {
+        fn l1_chain_id(&self) -> u64;
+        fn l2_chain_id(&self) -> u64;
+    }
+}
 
 const ELF: &[u8] = include_bytes!("../../../prover-dummy-program/elf/riscv32im-succinct-zkvm-elf");
 
@@ -103,14 +120,27 @@ async fn test_proposer_service() {
     });
     let l2_rpc = Arc::new(l2_rpc);
 
+    let mut contracts_client = MockContractsClient::new();
+    contracts_client.expect_get_op_succinct_config().returning(|| {
+        Ok(OpSuccinctConfig {
+            range_vkey_commitment: Digest::default(),
+            aggregation_vkey_hash: Digest::default(),
+            rollup_config_hash: Digest::default(),
+        })
+    });
+    let contracts_client = Arc::new(contracts_client);
+
     let mut proposer_service = ProposerService {
         client,
         l1_rpc,
         l2_rpc,
         db_client: None,
+        contracts_client,
         aggregation_vkey: vkey,
         poll_interval_ms: 5000,
         max_retries: 720,
+        l1_chain_id: 0,
+        l2_chain_id: 0,
     };
 
     let request = FepProposerRequest {
@@ -153,14 +183,27 @@ async fn unable_to_fetch_block_hash() {
     });
     let l2_rpc = Arc::new(l2_rpc);
 
+    let mut contracts_client = MockContractsClient::new();
+    contracts_client.expect_get_op_succinct_config().returning(|| {
+        Ok(OpSuccinctConfig {
+            range_vkey_commitment: Digest::default(),
+            aggregation_vkey_hash: Digest::default(),
+            rollup_config_hash: Digest::default(),
+        })
+    });
+    let contracts_client = Arc::new(contracts_client);
+
     let mut proposer_service = ProposerService {
         client,
         l1_rpc,
         l2_rpc,
         db_client: None,
+        contracts_client,
         aggregation_vkey: vkey,
         poll_interval_ms: 5000,
         max_retries: 720,
+        l1_chain_id: 0,
+        l2_chain_id: 0,
     };
 
     let request = FepProposerRequest {

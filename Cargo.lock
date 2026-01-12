@@ -10639,6 +10639,7 @@ dependencies = [
  "aggchain-proof-core",
  "aggkit-prover-types",
  "agglayer-evm-client",
+ "agglayer-interop",
  "alloy-primitives",
  "alloy-sol-types",
  "anyhow",

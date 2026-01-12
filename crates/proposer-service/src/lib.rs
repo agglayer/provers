@@ -71,6 +71,12 @@ pub struct ProposerService<L1Rpc, L2Rpc, ProposerClient, ContractsClient> {
 
     /// Maximum polling retries before timeout
     max_retries: u32,
+
+    /// L1 chain ID for filtering range proofs
+    l1_chain_id: i64,
+
+    /// L2 chain ID for filtering range proofs
+    l2_chain_id: i64,
 }
 
 impl<L1Rpc, Prover, ContractsClient>
@@ -82,6 +88,7 @@ impl<L1Rpc, Prover, ContractsClient>
     >
 where
     Prover: AggregationProver,
+    ContractsClient: aggchain_proof_contracts::contracts::ChainIdProvider,
 {
     pub async fn new(
         prover: Prover,
@@ -117,6 +124,10 @@ where
             (None, 5000, 720) // defaults if no database configured
         };
 
+        // Fetch chain IDs from the contracts client (which obtained them from RPC providers)
+        let l1_chain_id = contracts_client.l1_chain_id() as i64;
+        let l2_chain_id = contracts_client.l2_chain_id() as i64;
+
         Ok(Self {
             l1_rpc,
             l2_rpc,
@@ -130,6 +141,8 @@ where
             aggregation_vkey,
             poll_interval_ms,
             max_retries,
+            l1_chain_id,
+            l2_chain_id,
         })
     }
 
@@ -149,6 +162,8 @@ impl<L1Rpc, ContractsClient>
         proposer_client::client::Client<ProposerRpcClient, NetworkProver>,
         ContractsClient,
     >
+where
+    ContractsClient: aggchain_proof_contracts::contracts::ChainIdProvider,
 {
     pub async fn new_network(
         config: &ProposerServiceConfig,
@@ -176,6 +191,8 @@ impl<L1Rpc, ContractsClient>
         proposer_client::client::Client<ProposerRpcClient, MockGrpcProver<ProposerRpcClient>>,
         ContractsClient,
     >
+where
+    ContractsClient: aggchain_proof_contracts::contracts::ChainIdProvider,
 {
     pub async fn new_mock(
         config: &ProposerServiceConfig,
@@ -232,6 +249,8 @@ where
         let contracts_client = self.contracts_client.clone();
         let poll_interval_ms = self.poll_interval_ms;
         let max_retries = self.max_retries;
+        let l1_chain_id = self.l1_chain_id;
+        let l2_chain_id = self.l2_chain_id;
 
         async move {
             let l1_block_number = l1_rpc
@@ -254,7 +273,50 @@ where
                 ));
             }
 
-            info!(%last_proven_block, %requested_end_block, "Requesting fep aggregation proof");
+            // Fetch op_succinct_config from contracts (needed for rollup_config_hash)
+            let op_succinct_config = contracts_client.get_op_succinct_config().await.map_err(|e| {
+                Error::Other(eyre::eyre!("Failed to fetch op_succinct_config from contracts: {}", e))
+            })?;
+
+            // Limit according to the existing span proofs range (only when database is configured)
+            let limited_end_block = if let Some(ref db) = db_client {
+                let range_proofs = db
+                    .get_consecutive_complete_range_proofs(
+                        last_proven_block as i64,
+                        l1_limited_end_block as i64,
+                        &proposer_elfs::range::VKEY_COMMITMENT,
+                        &op_succinct_config.rollup_config_hash.0,
+                        l1_chain_id,
+                        l2_chain_id,
+                    )
+                    .await
+                    .map_err(|e| {
+                        Error::Other(eyre::eyre!("Failed to fetch range proofs: {}", e))
+                    })?;
+
+                // Limit end block to the last available range proof
+                if let Some(last_range_proof) = range_proofs.last() {
+                    let range_limited_end_block = last_range_proof.end_block as u64;
+                    if range_limited_end_block < l1_limited_end_block {
+                        debug!(
+                            %l1_limited_end_block,
+                            %range_limited_end_block,
+                            "Limiting end block to last available range proof"
+                        );
+                        range_limited_end_block
+                    } else {
+                        l1_limited_end_block
+                    }
+                } else {
+                    return Err(Error::Other(eyre::eyre!(
+                        "No range proofs found for the requested range"
+                    )));
+                }
+            } else {
+                l1_limited_end_block
+            };
+
+            info!(%last_proven_block, %limited_end_block, "Requesting fep aggregation proof");
 
             // Obtain request_id either from database or RPC workflow
             let request_id = if let Some(db) = db_client {
@@ -263,11 +325,6 @@ where
                 use serde_json::json;
                 use sqlx::types::BigDecimal;
 
-                // Fetch rollup config hash from contracts
-                let op_succinct_config = contracts_client.get_op_succinct_config().await.map_err(|e| {
-                    Error::Other(eyre::eyre!("Failed to fetch op_succinct_config from contracts: {}", e))
-                })?;
-
                 // Insert request with Unrequested status
                 let request = OPSuccinctRequest {
                     id: 0, // Will be set by database
@@ -275,7 +332,7 @@ where
                     req_type: RequestType::Aggregation,
                     mode: RequestMode::Real,
                     start_block: last_proven_block as i64,
-                    end_block: l1_limited_end_block as i64,
+                    end_block: limited_end_block as i64,
                     created_at: Utc::now().naive_utc(),
                     updated_at: Utc::now().naive_utc(),
                     proof_request_id: None,
@@ -295,8 +352,8 @@ where
                     total_eth_gas_used: 0,
                     total_l1_fees: BigDecimal::from(0),
                     total_tx_fees: BigDecimal::from(0),
-                    l1_chain_id: 0,
-                    l2_chain_id: 0,
+                    l1_chain_id,
+                    l2_chain_id,
                     contract_address: None,
                     prover_address: None,
                     l1_head_block_number: Some(l1_block_number as i64),
