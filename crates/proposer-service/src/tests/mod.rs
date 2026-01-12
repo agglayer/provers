@@ -141,6 +141,7 @@ async fn test_proposer_service() {
         max_retries: 720,
         l1_chain_id: 0,
         l2_chain_id: 0,
+        mock: false,
     };
 
     let request = FepProposerRequest {
@@ -204,6 +205,7 @@ async fn unable_to_fetch_block_hash() {
         max_retries: 720,
         l1_chain_id: 0,
         l2_chain_id: 0,
+        mock: false,
     };
 
     let request = FepProposerRequest {

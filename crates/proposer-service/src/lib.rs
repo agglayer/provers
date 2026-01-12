@@ -77,6 +77,9 @@ pub struct ProposerService<L1Rpc, L2Rpc, ProposerClient, ContractsClient> {
 
     /// L2 chain ID for filtering range proofs
     l2_chain_id: i64,
+
+    /// Whether the service is running in mock mode
+    mock: bool,
 }
 
 impl<L1Rpc, Prover, ContractsClient>
@@ -143,6 +146,7 @@ where
             max_retries,
             l1_chain_id,
             l2_chain_id,
+            mock: config.mock,
         })
     }
 
@@ -224,9 +228,7 @@ where
     ContractsClient: aggchain_proof_contracts::contracts::L1OpSuccinctConfigFetcher + Send + Sync + 'static,
 {
     type Response = ProposerResponse;
-
     type Error = Error;
-
     type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
 
     fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
@@ -251,6 +253,7 @@ where
         let max_retries = self.max_retries;
         let l1_chain_id = self.l1_chain_id;
         let l2_chain_id = self.l2_chain_id;
+        let mock = self.mock;
 
         async move {
             let l1_block_number = l1_rpc
@@ -330,7 +333,7 @@ where
                     id: 0, // Will be set by database
                     status: RequestStatus::Unrequested,
                     req_type: RequestType::Aggregation,
-                    mode: RequestMode::Real,
+                    mode: if mock { RequestMode::Mock } else { RequestMode::Real },
                     start_block: last_proven_block as i64,
                     end_block: limited_end_block as i64,
                     created_at: Utc::now().naive_utc(),
