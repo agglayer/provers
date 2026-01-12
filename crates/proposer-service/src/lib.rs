@@ -277,7 +277,10 @@ where
             }
 
             // Fetch op_succinct_config from contracts (needed for rollup_config_hash)
-            let op_succinct_config = contracts_client.get_op_succinct_config().await.map_err(|e| {
+            let op_succinct_config = contracts_client
+                .get_op_succinct_config()
+                .await
+                .map_err(|e| {
                 Error::Other(eyre::eyre!("Failed to fetch op_succinct_config from contracts: {}", e))
             })?;
 
@@ -346,8 +349,8 @@ where
                     witnessgen_duration: None,
                     execution_duration: None,
                     prove_duration: None,
-                    range_vkey_commitment: proposer_elfs::range::VKEY_COMMITMENT.to_vec(),
-                    aggregation_vkey_hash: Some(aggregation_vkey.hash_bytes().to_vec()),
+                    range_vkey_commitment: op_succinct_config.range_vkey_commitment.0.to_vec(),
+                    aggregation_vkey_hash: Some(op_succinct_config.aggregation_vkey_hash.0.to_vec()),
                     rollup_config_hash: op_succinct_config.rollup_config_hash.0.to_vec(),
                     relay_tx_hash: None,
                     proof: None,
