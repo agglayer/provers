@@ -1,6 +1,5 @@
 use std::{
-    sync::Arc,
-    task::{Context, Poll},
+    sync::Arc, task::{Context, Poll}
 };
 
 use aggchain_proof_core::full_execution_proof::AggregationProofPublicValues;
@@ -19,8 +18,9 @@ use proposer_client::{
 };
 use prover_executor::sp1_fast;
 use sp1_prover::SP1VerifyingKey;
-use sp1_sdk::{HashableKey, NetworkProver};
+use sp1_sdk::{NetworkProver};
 use tracing::{debug, info};
+use aggchain_proof_contracts::contracts::{L1OpSuccinctConfigFetcher, GetTrustedSequencerAddress};
 
 use crate::config::ProposerServiceConfig;
 use crate::l2_rpc::{L2ConsensusLayerClient, L2SafeHeadFetcher};
@@ -215,7 +215,13 @@ where
             .await?,
         );
 
-        Self::new(MockGrpcProver::new(proposer_rpc_client), config, l1_rpc, contracts_client).await
+        Self::new(
+            MockGrpcProver::new(proposer_rpc_client),
+            config,
+            l1_rpc,
+            contracts_client,
+        )
+        .await
     }
 }
 
@@ -225,7 +231,8 @@ where
     L1Rpc: GetBlockNumber<Error: Into<eyre::Error>> + Send + Sync + 'static,
     L2Rpc: L2SafeHeadFetcher + Send + Sync + 'static,
     ProposerClient: proposer_client::ProposerClient + Send + Sync + 'static,
-    ContractsClient: aggchain_proof_contracts::contracts::L1OpSuccinctConfigFetcher + Send + Sync + 'static,
+    ContractsClient:
+        L1OpSuccinctConfigFetcher + GetTrustedSequencerAddress + Send + Sync + 'static,
 {
     type Response = ProposerResponse;
     type Error = Error;
@@ -283,6 +290,13 @@ where
                 .map_err(|e| {
                 Error::Other(eyre::eyre!("Failed to fetch op_succinct_config from contracts: {}", e))
             })?;
+
+            let trusted_sequencer = contracts_client
+                .get_trusted_sequencer_address()
+                .await
+                .map_err(|e| {
+                    Error::Other(eyre::eyre!("Failed to fetch trusted sequencer address from contracts: {}", e))
+                })?;
 
             // Limit according to the existing span proofs range (only when database is configured)
             let limited_end_block = if let Some(ref db) = db_client {
@@ -361,7 +375,7 @@ where
                     l1_chain_id,
                     l2_chain_id,
                     contract_address: None,
-                    prover_address: None,
+                    prover_address: Some(trusted_sequencer.as_slice().to_vec()),
                     l1_head_block_number: Some(l1_block_number as i64),
                 };
 
