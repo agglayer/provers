@@ -140,7 +140,7 @@ async fn test_proposer_service() {
     let contracts_client = Arc::new(contracts_client);
 
     let mut proposer_service = ProposerService {
-        client,
+        client: Some(client),
         l1_rpc,
         l2_rpc,
         db_client: None,
@@ -207,7 +207,7 @@ async fn unable_to_fetch_block_hash() {
     let contracts_client = Arc::new(contracts_client);
 
     let mut proposer_service = ProposerService {
-        client,
+        client: Some(client),
         l1_rpc,
         l2_rpc,
         db_client: None,

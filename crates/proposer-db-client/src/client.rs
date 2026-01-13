@@ -178,4 +178,40 @@ impl ProposerDBClient {
             tokio::time::sleep(tokio::time::Duration::from_millis(poll_interval_ms)).await;
         }
     }
+
+    /// Polls the database until the request reaches Complete status.
+    /// Returns the proof bytes once available.
+    pub async fn wait_for_proof_completion(
+        &self,
+        request_id: i64,
+        poll_interval_ms: u64,
+        max_retries: u32,
+    ) -> Result<Vec<u8>, Error> {
+        let mut retries = 0;
+
+        loop {
+            let request = self.get_request_by_id(request_id).await?;
+
+            match request.status {
+                RequestStatus::Failed => return Err(Error::ProofGenerationFailed(request_id)),
+                RequestStatus::Cancelled => {
+                    return Err(Error::ProofGenerationCancelled(request_id))
+                }
+                RequestStatus::Complete | RequestStatus::Relayed => {
+                    if let Some(proof) = request.proof {
+                        return Ok(proof);
+                    }
+                    return Err(Error::ProofNotFound);
+                }
+                // Still in progress (Unrequested, WitnessGeneration, Execution, Prove)
+                _ => {}
+            }
+
+            if retries >= max_retries {
+                return Err(Error::ProofGenerationTimeout(request_id));
+            }
+            retries += 1;
+            tokio::time::sleep(tokio::time::Duration::from_millis(poll_interval_ms)).await;
+        }
+    }
 }

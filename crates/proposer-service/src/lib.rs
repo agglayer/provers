@@ -18,7 +18,7 @@ use proposer_client::{
 };
 use prover_executor::sp1_fast;
 use sp1_prover::SP1VerifyingKey;
-use sp1_sdk::{NetworkProver};
+use sp1_sdk::{NetworkProver, Prover as _};
 use tracing::{debug, info};
 use aggchain_proof_contracts::contracts::{L1OpSuccinctConfigFetcher, GetTrustedSequencerAddress};
 
@@ -50,7 +50,8 @@ const L1_SAFE_HEAD_LOOKBACK: u64 = 20;
 #[derive(Educe)]
 #[educe(Clone(bound()))]
 pub struct ProposerService<L1Rpc, L2Rpc, ProposerClient, ContractsClient> {
-    pub client: Arc<ProposerClient>,
+    /// RPC client for proof generation (only used when database is not configured).
+    pub client: Option<Arc<ProposerClient>>,
 
     pub l1_rpc: Arc<L1Rpc>,
 
@@ -99,6 +100,13 @@ where
         l1_rpc: Arc<L1Rpc>,
         contracts_client: Arc<ContractsClient>,
     ) -> Result<Self, Error> {
+        let l2_rpc = Arc::new(L2ConsensusLayerClient::new(
+            &config.l2_consensus_layer_rpc_endpoint,
+        )?);
+
+        let l1_chain_id = contracts_client.l1_chain_id() as i64;
+        let l2_chain_id = contracts_client.l2_chain_id() as i64;
+
         let proposer_rpc_client = Arc::new(
             ProposerRpcClient::new(
                 config.client.proposer_endpoint.clone(),
@@ -112,38 +120,19 @@ where
             .context("Retrieving aggregation vkey")
             .map_err(Error::Other)?;
 
-        let l2_rpc = Arc::new(L2ConsensusLayerClient::new(
-            &config.l2_consensus_layer_rpc_endpoint,
-        )?);
-
-        let (db_client, poll_interval_ms, max_retries) = if let Some(db_config) = &config.database {
-            let client = proposer_db_client::ProposerDBClient::new(&db_config.database_url).await?;
-            (
-                Some(Arc::new(client)),
-                db_config.poll_interval_ms,
-                db_config.max_retries,
-            )
-        } else {
-            (None, 5000, 720) // defaults if no database configured
-        };
-
-        // Fetch chain IDs from the contracts client (which obtained them from RPC providers)
-        let l1_chain_id = contracts_client.l1_chain_id() as i64;
-        let l2_chain_id = contracts_client.l2_chain_id() as i64;
-
         Ok(Self {
             l1_rpc,
             l2_rpc,
-            client: Arc::new(proposer_client::client::Client::new(
+            client: Some(Arc::new(proposer_client::client::Client::new(
                 proposer_rpc_client,
                 prover,
                 Some(config.client.proving_timeout),
-            )?),
-            db_client,
+            )?)),
+            db_client: None,
             contracts_client,
             aggregation_vkey,
-            poll_interval_ms,
-            max_retries,
+            poll_interval_ms: 5000,
+            max_retries: 720,
             l1_chain_id,
             l2_chain_id,
             mock: config.mock,
@@ -178,6 +167,12 @@ where
             !config.mock,
             "Building a network proposer service with a mock config"
         );
+
+        // If database is configured, skip network prover initialization
+        if config.database.is_some() {
+            return Self::new_with_database(config, l1_rpc, contracts_client).await;
+        }
+
         Self::new(
             new_network_prover(&config.client.sp1_cluster_endpoint).map_err(Error::Other)?,
             config,
@@ -185,6 +180,40 @@ where
             contracts_client,
         )
         .await
+    }
+
+    async fn new_with_database(
+        config: &ProposerServiceConfig,
+        l1_rpc: Arc<L1Rpc>,
+        contracts_client: Arc<ContractsClient>,
+    ) -> Result<Self, Error> {
+        let l2_rpc = Arc::new(L2ConsensusLayerClient::new(
+            &config.l2_consensus_layer_rpc_endpoint,
+        )?);
+
+        let l1_chain_id = contracts_client.l1_chain_id() as i64;
+        let l2_chain_id = contracts_client.l2_chain_id() as i64;
+
+        let db_config = config.database.as_ref().expect("database config required");
+        let db_client = proposer_db_client::ProposerDBClient::new(&db_config.database_url).await?;
+
+        let aggregation_vkey = compute_aggregation_vkey(AGGREGATION_ELF)
+            .context("Computing aggregation vkey")
+            .map_err(Error::Other)?;
+
+        Ok(Self {
+            l1_rpc,
+            l2_rpc,
+            client: None,
+            db_client: Some(Arc::new(db_client)),
+            contracts_client,
+            aggregation_vkey,
+            poll_interval_ms: db_config.poll_interval_ms,
+            max_retries: db_config.max_retries,
+            l1_chain_id,
+            l2_chain_id,
+            mock: config.mock,
+        })
     }
 }
 
@@ -207,6 +236,12 @@ where
             config.mock,
             "Building a mock proposer service with a non-mock config"
         );
+
+        // If database is configured, skip gRPC client initialization
+        if config.database.is_some() {
+            return Self::new_with_database(config, l1_rpc, contracts_client).await;
+        }
+
         let proposer_rpc_client = Arc::new(
             ProposerRpcClient::new(
                 config.client.proposer_endpoint.clone(),
@@ -222,6 +257,40 @@ where
             contracts_client,
         )
         .await
+    }
+
+    async fn new_with_database(
+        config: &ProposerServiceConfig,
+        l1_rpc: Arc<L1Rpc>,
+        contracts_client: Arc<ContractsClient>,
+    ) -> Result<Self, Error> {
+        let l2_rpc = Arc::new(L2ConsensusLayerClient::new(
+            &config.l2_consensus_layer_rpc_endpoint,
+        )?);
+
+        let l1_chain_id = contracts_client.l1_chain_id() as i64;
+        let l2_chain_id = contracts_client.l2_chain_id() as i64;
+
+        let db_config = config.database.as_ref().expect("database config required");
+        let db_client = proposer_db_client::ProposerDBClient::new(&db_config.database_url).await?;
+
+        let aggregation_vkey = compute_aggregation_vkey(AGGREGATION_ELF)
+            .context("Computing aggregation vkey")
+            .map_err(Error::Other)?;
+
+        Ok(Self {
+            l1_rpc,
+            l2_rpc,
+            client: None,
+            db_client: Some(Arc::new(db_client)),
+            contracts_client,
+            aggregation_vkey,
+            poll_interval_ms: db_config.poll_interval_ms,
+            max_retries: db_config.max_retries,
+            l1_chain_id,
+            l2_chain_id,
+            mock: config.mock,
+        })
     }
 }
 
@@ -338,8 +407,8 @@ where
 
             info!(%last_proven_block, %limited_end_block, "Requesting fep aggregation proof");
 
-            // Obtain request_id either from database or RPC workflow
-            let request_id = if let Some(db) = db_client {
+            // Get proof either from database or RPC workflow
+            let proof_with_pv: sp1_sdk::SP1ProofWithPublicValues = if let Some(db) = db_client {
                 use chrono::Utc;
                 use proposer_db_client::{OPSuccinctRequest, RequestStatus, RequestType, RequestMode};
                 use serde_json::json;
@@ -380,29 +449,28 @@ where
                 };
 
                 let db_request_id = db.insert_request(&request).await?;
-                info!(%db_request_id, %last_proven_block, %l1_limited_end_block, "Inserted aggregation proof request into database");
+                info!(%db_request_id, %last_proven_block, %limited_end_block, "Inserted aggregation proof request into database");
 
-                // Poll database until proof_request_id is available (status reaches Execution)
-                debug!(%db_request_id, "Polling database for proof_request_id");
-                let proof_request_id_bytes = db
-                    .wait_for_proof_request_id(db_request_id, poll_interval_ms, max_retries)
+                // Poll database until proof is complete
+                debug!(%db_request_id, "Polling database for proof completion");
+                let proof_bytes = db
+                    .wait_for_proof_completion(db_request_id, poll_interval_ms, max_retries)
                     .await?;
 
-                // Convert proof_request_id bytes to the expected type
-                let proof_request_id_array: [u8; 32] = proof_request_id_bytes
-                    .try_into()
-                    .map_err(|v: Vec<u8>| {
-                        Error::Other(eyre::eyre!(
-                            "Invalid proof_request_id length: expected 32, got {}",
-                            v.len()
-                        ))
-                    })?;
-                let request_id = proposer_client::RequestId(proof_request_id_array.into());
-                info!(%db_request_id, %request_id, "Got proof_request_id from database, waiting for proof via RPC");
-                request_id
+                // Deserialize proof using bincode
+                let proof_with_pv: sp1_sdk::SP1ProofWithPublicValues = bincode::deserialize(&proof_bytes)
+                    .map_err(|e| Error::Other(eyre::eyre!("Failed to deserialize proof from database: {}", e)))?;
+
+                info!(%db_request_id, "Proof retrieved and deserialized from database");
+                proof_with_pv
             } else {
                 // RPC workflow: request proof generation from proposer
                 info!("Using RPC workflow (database not configured)");
+
+                let client = client.as_ref().ok_or_else(|| {
+                    Error::Other(eyre::eyre!("RPC client not initialized (database workflow expected)"))
+                })?;
+
                 let response = client
                     .request_agg_proof(AggregationProofProposerRequest {
                         last_proven_block,
@@ -412,22 +480,23 @@ where
                     })
                     .await?;
                 debug!(%last_proven_block, end_block = %response.end_block, request_id = %response.request_id, "Aggregation proof request response received");
-                response.request_id
-            };
 
-            // Wait for the prover to finish aggregating span proofs
-            let proof_with_pv = client.wait_for_proof(request_id.clone()).await?;
+                // Wait for the prover to finish aggregating span proofs
+                let proof_with_pv = client.wait_for_proof(response.request_id.clone()).await?;
+                debug!(%response.request_id, "Aggregation proof received from the proposer");
+
+                // Verify received proof
+                client.verify_agg_proof(response.request_id.clone(), &proof_with_pv, &aggregation_vkey)?;
+                debug!(%response.request_id, "Aggregation proof verified successfully");
+
+                proof_with_pv
+            };
 
             let public_values =
                 AggregationProofPublicValues::abi_decode(proof_with_pv.public_values.as_slice())
                     .map_err(Error::FepPublicValuesDeserializeFailure)?;
 
-            debug!(%request_id, "Aggregation proof received from the proposer");
-
-            // Verify received proof
-            client.verify_agg_proof(request_id.clone(), &proof_with_pv, &aggregation_vkey)?;
-
-            debug!(%request_id, "Aggregation proof verified successfully");
+            debug!("Aggregation proof public values decoded successfully");
 
             let proof_mode: sp1_sdk::SP1ProofMode =
                 sp1_fast(|| (&proof_with_pv.proof).into()).map_err(Error::Other)?;
@@ -438,7 +507,7 @@ where
             // Get the actual end_block from the proof's public values
             let end_block = public_values.l2_block_number;
 
-            info!(%request_id, %last_proven_block, %end_block, "Aggregation proof successfully acquired");
+            info!(%last_proven_block, %end_block, "Aggregation proof successfully acquired");
 
             Ok(ProposerResponse {
                 aggregation_proof,
