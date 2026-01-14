@@ -108,7 +108,7 @@ pub async fn main() -> eyre::Result<()> {
     } else {
         tower::ServiceBuilder::new()
             .service(
-                ProposerService::new_network(
+                ProposerService::new_real(
                     &proposer_service_config,
                     l1_rpc_client,
                     contracts_client,

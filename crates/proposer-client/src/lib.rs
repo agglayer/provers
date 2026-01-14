@@ -9,9 +9,8 @@ pub use crate::error::Error;
 pub mod aggregation_prover;
 pub mod client;
 pub mod config;
+pub mod database_prover;
 pub mod error;
-pub mod mock_prover;
-pub mod network_prover;
 
 #[async_trait::async_trait]
 #[cfg_attr(feature = "testutils", mockall::automock)]

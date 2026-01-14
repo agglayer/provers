@@ -10,10 +10,9 @@ use educe::Educe;
 pub use error::Error;
 use eyre::Context as _;
 use futures::{future::BoxFuture, FutureExt};
-use proposer_client::{aggregation_prover::AggregationProver, network_prover::new_network_prover, FepProposerRequest};
+use proposer_client::{aggregation_prover::AggregationProver, database_prover::DatabaseProver, FepProposerRequest};
 use prover_executor::sp1_fast;
 use sp1_prover::SP1VerifyingKey;
-use sp1_sdk::NetworkProver;
 use tracing::{debug, info};
 use aggchain_proof_contracts::contracts::{L1OpSuccinctConfigFetcher, GetTrustedSequencerAddress};
 
@@ -92,6 +91,7 @@ where
         prover: Prover,
         config: &ProposerServiceConfig,
         l1_rpc: Arc<L1Rpc>,
+        db_client: Arc<proposer_db_client::ProposerDBClient>,
         contracts_client: Arc<ContractsClient>,
     ) -> Result<Self, Error> {
         let aggregation_vkey = Self::extract_aggregation_vkey(&prover, AGGREGATION_ELF)
@@ -107,9 +107,6 @@ where
             .database
             .as_ref()
             .ok_or_else(|| Error::Other(eyre::eyre!("Database configuration is required")))?;
-        let db_client = Arc::new(
-            proposer_db_client::ProposerDBClient::new(&db_config.database_url).await?,
-        );
         let poll_interval_ms = db_config.poll_interval_ms;
         let max_retries = db_config.max_retries;
 
@@ -148,46 +145,48 @@ impl<L1Rpc, ContractsClient>
     ProposerService<
         L1Rpc,
         L2ConsensusLayerClient,
-        proposer_client::client::Client<NetworkProver>,
+        proposer_client::client::Client<DatabaseProver>,
         ContractsClient,
     >
 where
     ContractsClient: aggchain_proof_contracts::contracts::ChainIdProvider,
 {
-    pub async fn new_network(
+    /// Create a new ProposerService with real SP1 verification.
+    ///
+    /// Use this for production where proofs are real proofs generated
+    /// by the SP1 proving network and stored in the database.
+    pub async fn new_real(
         config: &ProposerServiceConfig,
         l1_rpc: Arc<L1Rpc>,
         contracts_client: Arc<ContractsClient>,
     ) -> Result<Self, Error> {
         assert!(
             !config.mock,
-            "Building a network proposer service with a mock config"
+            "Building a real proposer service with a mock config"
         );
+
+        let db_config = config
+            .database
+            .as_ref()
+            .ok_or_else(|| Error::Other(eyre::eyre!("Database configuration is required")))?;
+        let db_client = Arc::new(
+            proposer_db_client::ProposerDBClient::new(&db_config.database_url).await?,
+        );
+
         Self::new(
-            new_network_prover(&config.client.sp1_cluster_endpoint).map_err(Error::Other)?,
+            DatabaseProver::new(db_client.clone()),
             config,
             l1_rpc,
+            db_client,
             contracts_client,
         )
         .await
     }
-}
 
-impl<L1Rpc, ContractsClient>
-    ProposerService<
-        L1Rpc,
-        L2ConsensusLayerClient,
-        proposer_client::client::Client<proposer_client::mock_prover::MockProver>,
-        ContractsClient,
-    >
-where
-    ContractsClient: aggchain_proof_contracts::contracts::ChainIdProvider,
-{
-    /// Create a new ProposerService in mock mode.
+    /// Create a new ProposerService with mock SP1 verification.
     ///
-    /// In mock mode, proofs are read from the database rather than from the SP1 network.
-    /// This requires another process (like op-succinct) to generate and store mock proofs
-    /// in the database.
+    /// Use this for testing where proofs are mock proofs generated
+    /// by a mock prover and stored in the database.
     pub async fn new_mock(
         config: &ProposerServiceConfig,
         l1_rpc: Arc<L1Rpc>,
@@ -207,9 +206,10 @@ where
         );
 
         Self::new(
-            proposer_client::mock_prover::MockProver::new(db_client),
+            DatabaseProver::new_mock(db_client.clone()),
             config,
             l1_rpc,
+            db_client,
             contracts_client,
         )
         .await
@@ -386,14 +386,14 @@ where
             let request_id = proposer_client::RequestId(proof_request_id_array.into());
             info!(%db_request_id, %request_id, "Got proof_request_id from database, waiting for proof");
 
-            // Wait for the prover to finish aggregating span proofs
+            // Wait for the proof (reads from database)
             let proof_with_pv = client.wait_for_proof(request_id.clone()).await?;
 
             let public_values =
                 AggregationProofPublicValues::abi_decode(proof_with_pv.public_values.as_slice())
                     .map_err(Error::FepPublicValuesDeserializeFailure)?;
 
-            debug!(%request_id, "Aggregation proof received from the proposer");
+            debug!(%request_id, "Aggregation proof received");
 
             // Verify received proof
             client.verify_agg_proof(request_id.clone(), &proof_with_pv, &aggregation_vkey)?;
