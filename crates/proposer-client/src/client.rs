@@ -3,41 +3,26 @@ use std::{sync::Arc, time::Duration};
 use educe::Educe;
 use sp1_sdk::{SP1ProofWithPublicValues, SP1VerifyingKey};
 
-use crate::{
-    aggregation_prover::AggregationProver,
-    error,
-    rpc::{
-        AggregationProofProposer, AggregationProofProposerRequest, AggregationProofProposerResponse,
-    },
-    Error, ProposerClient, RequestId,
-};
+use crate::{aggregation_prover::AggregationProver, error, Error, ProposerClient, RequestId};
 
 /// Implementation of the proposer client.
 /// The Proposer client is responsible for retrieval of the AggregationProof.
 /// AggregationProof is the aggregated proof of the multiple
 /// block span full execution proofs.
 ///
-/// The proposer client communicates with the proposer API to
-/// request creation of the AggregationProof (getting the proof ID in return),
-/// and directly communicates with the SP1 cluster using NetworkProver
-/// to retrieve the generated proof.
+/// The proposer client communicates directly with the SP1 cluster using NetworkProver
+/// to retrieve the generated proof. The proof request ID is obtained from the database.
 #[derive(Educe)]
 #[educe(Clone(bound()))]
-pub struct Client<Proposer, Prover> {
-    proposer_rpc: Arc<Proposer>,
+pub struct Client<Prover> {
     prover_rpc: Arc<Prover>,
     proving_timeout: Option<Duration>,
 }
 
-impl<Proposer, Prover> Client<Proposer, Prover> {
+impl<Prover> Client<Prover> {
     #[allow(clippy::result_large_err)]
-    pub fn new(
-        proposer: Arc<Proposer>,
-        prover: Prover,
-        proving_timeout: Option<Duration>,
-    ) -> Result<Self, error::Error> {
+    pub fn new(prover: Prover, proving_timeout: Option<Duration>) -> Result<Self, error::Error> {
         Ok(Self {
-            proposer_rpc: proposer,
             prover_rpc: Arc::new(prover),
             proving_timeout,
         })
@@ -45,18 +30,10 @@ impl<Proposer, Prover> Client<Proposer, Prover> {
 }
 
 #[async_trait::async_trait]
-impl<Proposer, Prover> ProposerClient for Client<Proposer, Prover>
+impl<Prover> ProposerClient for Client<Prover>
 where
-    Proposer: AggregationProofProposer + Sync + Send,
     Prover: AggregationProver + Sync + Send,
 {
-    async fn request_agg_proof(
-        &self,
-        request: AggregationProofProposerRequest,
-    ) -> Result<AggregationProofProposerResponse, Error> {
-        self.proposer_rpc.request_agg_proof(request).await
-    }
-
     async fn wait_for_proof(
         &self,
         request_id: RequestId,

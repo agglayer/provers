@@ -1,5 +1,6 @@
 use std::{
-    sync::Arc, task::{Context, Poll}
+    sync::Arc,
+    task::{Context, Poll},
 };
 
 use aggchain_proof_core::full_execution_proof::AggregationProofPublicValues;
@@ -9,16 +10,10 @@ use educe::Educe;
 pub use error::Error;
 use eyre::Context as _;
 use futures::{future::BoxFuture, FutureExt};
-use proposer_client::{
-    aggregation_prover::AggregationProver,
-    mock_grpc_prover::MockGrpcProver,
-    network_prover::new_network_prover,
-    rpc::{AggregationProofProposerRequest, ProposerRpcClient},
-    FepProposerRequest,
-};
+use proposer_client::{aggregation_prover::AggregationProver, network_prover::new_network_prover, FepProposerRequest};
 use prover_executor::sp1_fast;
 use sp1_prover::SP1VerifyingKey;
-use sp1_sdk::{NetworkProver};
+use sp1_sdk::NetworkProver;
 use tracing::{debug, info};
 use aggchain_proof_contracts::contracts::{L1OpSuccinctConfigFetcher, GetTrustedSequencerAddress};
 
@@ -57,8 +52,8 @@ pub struct ProposerService<L1Rpc, L2Rpc, ProposerClient, ContractsClient> {
     /// Client for fetching L2 safe head information from the rollup node.
     pub l2_rpc: Arc<L2Rpc>,
 
-    /// Optional database client for persisting proof requests.
-    pub db_client: Option<Arc<proposer_db_client::ProposerDBClient>>,
+    /// Database client for persisting proof requests.
+    pub db_client: Arc<proposer_db_client::ProposerDBClient>,
 
     /// Contracts client for fetching L1 contract configuration.
     pub contracts_client: Arc<ContractsClient>,
@@ -86,7 +81,7 @@ impl<L1Rpc, Prover, ContractsClient>
     ProposerService<
         L1Rpc,
         L2ConsensusLayerClient,
-        proposer_client::client::Client<ProposerRpcClient, Prover>,
+        proposer_client::client::Client<Prover>,
         ContractsClient,
     >
 where
@@ -99,14 +94,6 @@ where
         l1_rpc: Arc<L1Rpc>,
         contracts_client: Arc<ContractsClient>,
     ) -> Result<Self, Error> {
-        let proposer_rpc_client = Arc::new(
-            ProposerRpcClient::new(
-                config.client.proposer_endpoint.clone(),
-                config.client.request_timeout,
-            )
-            .await?,
-        );
-
         let aggregation_vkey = Self::extract_aggregation_vkey(&prover, AGGREGATION_ELF)
             .await
             .context("Retrieving aggregation vkey")
@@ -116,16 +103,15 @@ where
             &config.l2_consensus_layer_rpc_endpoint,
         )?);
 
-        let (db_client, poll_interval_ms, max_retries) = if let Some(db_config) = &config.database {
-            let client = proposer_db_client::ProposerDBClient::new(&db_config.database_url).await?;
-            (
-                Some(Arc::new(client)),
-                db_config.poll_interval_ms,
-                db_config.max_retries,
-            )
-        } else {
-            (None, 5000, 720) // defaults if no database configured
-        };
+        let db_config = config
+            .database
+            .as_ref()
+            .ok_or_else(|| Error::Other(eyre::eyre!("Database configuration is required")))?;
+        let db_client = Arc::new(
+            proposer_db_client::ProposerDBClient::new(&db_config.database_url).await?,
+        );
+        let poll_interval_ms = db_config.poll_interval_ms;
+        let max_retries = db_config.max_retries;
 
         // Fetch chain IDs from the contracts client (which obtained them from RPC providers)
         let l1_chain_id = contracts_client.l1_chain_id() as i64;
@@ -135,7 +121,6 @@ where
             l1_rpc,
             l2_rpc,
             client: Arc::new(proposer_client::client::Client::new(
-                proposer_rpc_client,
                 prover,
                 Some(config.client.proving_timeout),
             )?),
@@ -163,7 +148,7 @@ impl<L1Rpc, ContractsClient>
     ProposerService<
         L1Rpc,
         L2ConsensusLayerClient,
-        proposer_client::client::Client<ProposerRpcClient, NetworkProver>,
+        proposer_client::client::Client<NetworkProver>,
         ContractsClient,
     >
 where
@@ -192,12 +177,17 @@ impl<L1Rpc, ContractsClient>
     ProposerService<
         L1Rpc,
         L2ConsensusLayerClient,
-        proposer_client::client::Client<ProposerRpcClient, MockGrpcProver<ProposerRpcClient>>,
+        proposer_client::client::Client<proposer_client::mock_prover::MockProver>,
         ContractsClient,
     >
 where
     ContractsClient: aggchain_proof_contracts::contracts::ChainIdProvider,
 {
+    /// Create a new ProposerService in mock mode.
+    ///
+    /// In mock mode, proofs are read from the database rather than from the SP1 network.
+    /// This requires another process (like op-succinct) to generate and store mock proofs
+    /// in the database.
     pub async fn new_mock(
         config: &ProposerServiceConfig,
         l1_rpc: Arc<L1Rpc>,
@@ -207,16 +197,17 @@ where
             config.mock,
             "Building a mock proposer service with a non-mock config"
         );
-        let proposer_rpc_client = Arc::new(
-            ProposerRpcClient::new(
-                config.client.proposer_endpoint.clone(),
-                config.client.request_timeout,
-            )
-            .await?,
+
+        let db_config = config
+            .database
+            .as_ref()
+            .ok_or_else(|| Error::Other(eyre::eyre!("Database configuration is required")))?;
+        let db_client = Arc::new(
+            proposer_db_client::ProposerDBClient::new(&db_config.database_url).await?,
         );
 
         Self::new(
-            MockGrpcProver::new(proposer_rpc_client),
+            proposer_client::mock_prover::MockProver::new(db_client),
             config,
             l1_rpc,
             contracts_client,
@@ -298,122 +289,102 @@ where
                     Error::Other(eyre::eyre!("Failed to fetch trusted sequencer address from contracts: {}", e))
                 })?;
 
-            // Limit according to the existing span proofs range (only when database is configured)
-            let limited_end_block = if let Some(ref db) = db_client {
-                let range_proofs = db
-                    .get_consecutive_complete_range_proofs(
-                        last_proven_block as i64,
-                        l1_limited_end_block as i64,
-                        &proposer_elfs::range::VKEY_COMMITMENT,
-                        &op_succinct_config.rollup_config_hash.0,
-                        l1_chain_id,
-                        l2_chain_id,
-                    )
-                    .await
-                    .map_err(|e| {
-                        Error::Other(eyre::eyre!("Failed to fetch range proofs: {}", e))
-                    })?;
+            // Limit according to the existing span proofs range
+            let range_proofs = db_client
+                .get_consecutive_complete_range_proofs(
+                    last_proven_block as i64,
+                    l1_limited_end_block as i64,
+                    &proposer_elfs::range::VKEY_COMMITMENT,
+                    &op_succinct_config.rollup_config_hash.0,
+                    l1_chain_id,
+                    l2_chain_id,
+                )
+                .await
+                .map_err(|e| {
+                    Error::Other(eyre::eyre!("Failed to fetch range proofs: {}", e))
+                })?;
 
-                // Limit end block to the last available range proof
-                if let Some(last_range_proof) = range_proofs.last() {
-                    let range_limited_end_block = last_range_proof.end_block as u64;
-                    if range_limited_end_block < l1_limited_end_block {
-                        debug!(
-                            %l1_limited_end_block,
-                            %range_limited_end_block,
-                            "Limiting end block to last available range proof"
-                        );
-                        range_limited_end_block
-                    } else {
-                        l1_limited_end_block
-                    }
+            // Limit end block to the last available range proof
+            let limited_end_block = if let Some(last_range_proof) = range_proofs.last() {
+                let range_limited_end_block = last_range_proof.end_block as u64;
+                if range_limited_end_block < l1_limited_end_block {
+                    debug!(
+                        %l1_limited_end_block,
+                        %range_limited_end_block,
+                        "Limiting end block to last available range proof"
+                    );
+                    range_limited_end_block
                 } else {
-                    return Err(Error::Other(eyre::eyre!(
-                        "No range proofs found for the requested range"
-                    )));
+                    l1_limited_end_block
                 }
             } else {
-                l1_limited_end_block
+                return Err(Error::Other(eyre::eyre!(
+                    "No range proofs found for the requested range"
+                )));
             };
 
             info!(%last_proven_block, %limited_end_block, "Requesting fep aggregation proof");
 
-            // Obtain request_id either from database or RPC workflow
-            let request_id = if let Some(db) = db_client {
-                use chrono::Utc;
-                use proposer_db_client::{OPSuccinctRequest, RequestStatus, RequestType, RequestMode};
-                use serde_json::json;
-                use sqlx::types::BigDecimal;
+            // Database workflow: insert request and poll for proof_request_id
+            use chrono::Utc;
+            use proposer_db_client::{OPSuccinctRequest, RequestStatus, RequestType, RequestMode};
+            use serde_json::json;
+            use sqlx::types::BigDecimal;
 
-                // Insert request with Unrequested status
-                let request = OPSuccinctRequest {
-                    id: 0, // Will be set by database
-                    status: RequestStatus::Unrequested,
-                    req_type: RequestType::Aggregation,
-                    mode: if mock { RequestMode::Mock } else { RequestMode::Real },
-                    start_block: last_proven_block as i64,
-                    end_block: limited_end_block as i64,
-                    created_at: Utc::now().naive_utc(),
-                    updated_at: Utc::now().naive_utc(),
-                    proof_request_id: None,
-                    proof_request_time: None,
-                    checkpointed_l1_block_number: Some(l1_block_number as i64),
-                    checkpointed_l1_block_hash: Some(l1_block_hash.0.to_vec()),
-                    execution_statistics: json!({}),
-                    witnessgen_duration: None,
-                    execution_duration: None,
-                    prove_duration: None,
-                    range_vkey_commitment: op_succinct_config.range_vkey_commitment.0.to_vec(),
-                    aggregation_vkey_hash: Some(op_succinct_config.aggregation_vkey_hash.0.to_vec()),
-                    rollup_config_hash: op_succinct_config.rollup_config_hash.0.to_vec(),
-                    relay_tx_hash: None,
-                    proof: None,
-                    total_nb_transactions: 0,
-                    total_eth_gas_used: 0,
-                    total_l1_fees: BigDecimal::from(0),
-                    total_tx_fees: BigDecimal::from(0),
-                    l1_chain_id,
-                    l2_chain_id,
-                    contract_address: None,
-                    prover_address: Some(trusted_sequencer.as_slice().to_vec()),
-                    l1_head_block_number: Some(l1_block_number as i64),
-                };
-
-                let db_request_id = db.insert_request(&request).await?;
-                info!(%db_request_id, %last_proven_block, %l1_limited_end_block, "Inserted aggregation proof request into database");
-
-                // Poll database until proof_request_id is available (status reaches Execution)
-                debug!(%db_request_id, "Polling database for proof_request_id");
-                let proof_request_id_bytes = db
-                    .wait_for_proof_request_id(db_request_id, poll_interval_ms, max_retries)
-                    .await?;
-
-                // Convert proof_request_id bytes to the expected type
-                let proof_request_id_array: [u8; 32] = proof_request_id_bytes
-                    .try_into()
-                    .map_err(|v: Vec<u8>| {
-                        Error::Other(eyre::eyre!(
-                            "Invalid proof_request_id length: expected 32, got {}",
-                            v.len()
-                        ))
-                    })?;
-                let request_id = proposer_client::RequestId(proof_request_id_array.into());
-                info!(%db_request_id, %request_id, "Got proof_request_id from database, waiting for proof via RPC");
-                request_id
-            } else {
-                // RPC workflow: request proof generation from proposer
-                info!("Using RPC workflow (database not configured)");
-                let response = client
-                    .request_agg_proof(AggregationProofProposerRequest {
-                        last_proven_block,
-                        requested_end_block,
-                        l1_block_number,
-                        l1_block_hash,
-                    })
-                    .await?;
-                debug!(%last_proven_block, end_block = %response.end_block, request_id = %response.request_id, "Aggregation proof request response received");
-                response.request_id
+            // Insert request with Unrequested status
+            let request = OPSuccinctRequest {
+                id: 0, // Will be set by database
+                status: RequestStatus::Unrequested,
+                req_type: RequestType::Aggregation,
+                mode: if mock { RequestMode::Mock } else { RequestMode::Real },
+                start_block: last_proven_block as i64,
+                end_block: limited_end_block as i64,
+                created_at: Utc::now().naive_utc(),
+                updated_at: Utc::now().naive_utc(),
+                proof_request_id: None,
+                proof_request_time: None,
+                checkpointed_l1_block_number: Some(l1_block_number as i64),
+                checkpointed_l1_block_hash: Some(l1_block_hash.0.to_vec()),
+                execution_statistics: json!({}),
+                witnessgen_duration: None,
+                execution_duration: None,
+                prove_duration: None,
+                range_vkey_commitment: op_succinct_config.range_vkey_commitment.0.to_vec(),
+                aggregation_vkey_hash: Some(op_succinct_config.aggregation_vkey_hash.0.to_vec()),
+                rollup_config_hash: op_succinct_config.rollup_config_hash.0.to_vec(),
+                relay_tx_hash: None,
+                proof: None,
+                total_nb_transactions: 0,
+                total_eth_gas_used: 0,
+                total_l1_fees: BigDecimal::from(0),
+                total_tx_fees: BigDecimal::from(0),
+                l1_chain_id,
+                l2_chain_id,
+                contract_address: None,
+                prover_address: Some(trusted_sequencer.as_slice().to_vec()),
+                l1_head_block_number: Some(l1_block_number as i64),
             };
+
+            let db_request_id = db_client.insert_request(&request).await?;
+            info!(%db_request_id, %last_proven_block, %l1_limited_end_block, "Inserted aggregation proof request into database");
+
+            // Poll database until proof_request_id is available (status reaches Execution)
+            debug!(%db_request_id, "Polling database for proof_request_id");
+            let proof_request_id_bytes = db_client
+                .wait_for_proof_request_id(db_request_id, poll_interval_ms, max_retries)
+                .await?;
+
+            // Convert proof_request_id bytes to the expected type
+            let proof_request_id_array: [u8; 32] = proof_request_id_bytes
+                .try_into()
+                .map_err(|v: Vec<u8>| {
+                    Error::Other(eyre::eyre!(
+                        "Invalid proof_request_id length: expected 32, got {}",
+                        v.len()
+                    ))
+                })?;
+            let request_id = proposer_client::RequestId(proof_request_id_array.into());
+            info!(%db_request_id, %request_id, "Got proof_request_id from database, waiting for proof");
 
             // Wait for the prover to finish aggregating span proofs
             let proof_with_pv = client.wait_for_proof(request_id.clone()).await?;

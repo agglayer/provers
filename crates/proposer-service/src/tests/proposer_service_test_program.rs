@@ -3,7 +3,8 @@ use std::{str::FromStr, sync::Arc};
 use aggchain_proof_contracts::{config::AggchainProofContractsConfig, AggchainContractsRpcClient};
 use alloy_primitives::B256;
 use clap::Parser;
-use proposer_client::{config::ProposerClientConfig, FepProposerRequest, GrpcUri};
+use proposer_client::{config::ProposerClientConfig, FepProposerRequest};
+use proposer_db_client::ProposerDBConfig;
 use proposer_service::{config::ProposerServiceConfig, ProposerService};
 use prover_alloy::L1RpcEndpoint;
 use prover_logger::log::Log;
@@ -31,13 +32,13 @@ struct Cli {
     #[arg(short, long)]
     pub l1_rpc_endpoint: L1RpcEndpoint,
 
-    /// Proposer gRPC endpoint.
-    #[arg(short, long)]
-    pub proposer_endpoint: GrpcUri,
-
     /// Sp1 cluster endpoint
     #[arg(short, long)]
     pub sp1_cluster_endpoint: Url,
+
+    /// Database URL for the proposer database (required)
+    #[arg(long)]
+    pub database_url: Url,
 
     /// Run in mock mode?
     #[arg(long)]
@@ -74,31 +75,46 @@ pub async fn main() -> eyre::Result<()> {
         ..Default::default()
     };
     let contracts_client = Arc::new(
-        AggchainContractsRpcClient::new(cli.network_id, &contracts_config)
-            .await?,
+        AggchainContractsRpcClient::new(cli.network_id, &contracts_config).await?,
     );
     info!("Contracts client initialized");
 
     // Setup the proposer service
-    let propser_service_config = ProposerServiceConfig {
+    let proposer_service_config = ProposerServiceConfig {
         mock: cli.mock,
         client: ProposerClientConfig {
-            proposer_endpoint: cli.proposer_endpoint,
             sp1_cluster_endpoint: cli.sp1_cluster_endpoint,
-            request_timeout: proposer_client::config::default_request_timeout(),
             proving_timeout: proposer_client::config::default_proving_timeout(),
         },
         l1_rpc_endpoint: cli.l1_rpc_endpoint,
         l2_consensus_layer_rpc_endpoint: prover_alloy::default_l2_consensus_layer_url(),
-        database: None,
+        database: Some(ProposerDBConfig {
+            database_url: cli.database_url,
+            ..Default::default()
+        }),
     };
+
     let mut proposer_service = if cli.mock {
         tower::ServiceBuilder::new()
-            .service(ProposerService::new_mock(&propser_service_config, l1_rpc_client, contracts_client).await?)
+            .service(
+                ProposerService::new_mock(
+                    &proposer_service_config,
+                    l1_rpc_client,
+                    contracts_client,
+                )
+                .await?,
+            )
             .boxed_clone()
     } else {
         tower::ServiceBuilder::new()
-            .service(ProposerService::new_network(&propser_service_config, l1_rpc_client, contracts_client).await?)
+            .service(
+                ProposerService::new_network(
+                    &proposer_service_config,
+                    l1_rpc_client,
+                    contracts_client,
+                )
+                .await?,
+            )
             .boxed_clone()
     };
     info!("ProposerService initialized");
@@ -116,7 +132,7 @@ pub async fn main() -> eyre::Result<()> {
         }
         Err(e) => {
             eprintln!("Error: {e:?}");
-            eyre::bail!(e);
+            Err(e.into())
         }
     }
 }

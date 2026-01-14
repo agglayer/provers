@@ -7,7 +7,7 @@ use sp1_sdk::{NetworkProver, Prover, SP1ProofWithPublicValues, SP1ProvingKey, SP
 
 use crate::aggregation_prover::AggregationProver;
 
-#[tonic::async_trait]
+#[async_trait::async_trait]
 impl AggregationProver for NetworkProver {
     async fn compute_pkey_vkey(
         &self,

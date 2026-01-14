@@ -1,5 +1,0 @@
----
-source: crates/proposer-client/src/tests/proposer_rpc.rs
-expression: status.message()
----
-Service was not ready

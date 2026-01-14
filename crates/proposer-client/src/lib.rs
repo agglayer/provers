@@ -1,34 +1,21 @@
-use std::{fmt::Display, str::FromStr as _};
+use std::fmt::Display;
 
 use alloy_primitives::B256;
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use sp1_sdk::{SP1ProofWithPublicValues, SP1VerifyingKey};
-pub use tonic::transport::Uri as GrpcUri;
 
 pub use crate::error::Error;
-use crate::rpc::{AggregationProofProposerRequest, AggregationProofProposerResponse};
 
 pub mod aggregation_prover;
 pub mod client;
 pub mod config;
 pub mod error;
-pub mod mock_grpc_prover;
+pub mod mock_prover;
 pub mod network_prover;
-pub mod rpc;
-
-mod generated;
-
-#[cfg(test)]
-mod tests;
 
 #[async_trait::async_trait]
 #[cfg_attr(feature = "testutils", mockall::automock)]
 pub trait ProposerClient {
-    async fn request_agg_proof(
-        &self,
-        request: AggregationProofProposerRequest,
-    ) -> Result<AggregationProofProposerResponse, Error>;
-
     async fn wait_for_proof(
         &self,
         request_id: RequestId,
@@ -60,9 +47,6 @@ pub struct FepProposerResponse {
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct RequestId(pub B256);
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
-pub struct MockProofId(pub i64);
-
 impl Display for RequestId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", hex::encode(self.0))
@@ -74,24 +58,5 @@ impl TryFrom<&[u8]> for RequestId {
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         value.try_into().map(Self)
-    }
-}
-
-impl<'de> Deserialize<'de> for RequestId {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let value = String::deserialize(deserializer)?;
-        if let Ok(id) = B256::from_str(&value) {
-            Ok(RequestId(id))
-        } else if let Ok(id) = u64::from_str(&value) {
-            let mut encoding = [0; 32];
-            encoding[24..].copy_from_slice(&id.to_be_bytes());
-            debug_assert!(encoding[..24].iter().all(|v| *v == 0));
-            Ok(RequestId(B256::from(encoding)))
-        } else {
-            Err(D::Error::custom(format!("invalid request id: {value:?}")))
-        }
     }
 }

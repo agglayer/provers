@@ -21,8 +21,7 @@ pub struct ProposerServiceConfig {
     #[serde(default = "prover_alloy::default_l2_consensus_layer_url")]
     pub l2_consensus_layer_rpc_endpoint: Url,
 
-    /// Optional database configuration for persisting proof requests.
-    #[serde(default)]
+    /// Database configuration for persisting proof requests (required).
     pub database: Option<ProposerDBConfig>,
 }
 

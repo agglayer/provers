@@ -10,29 +10,4 @@ pub enum Error {
         request_id: RequestId,
         source: eyre::Report,
     },
-
-    #[error("Error requesting proof")]
-    Requesting(#[source] Box<ProofRequestError>),
-
-    #[error("Error initializing grpc connection")]
-    Connect(#[source] tonic::transport::Error),
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum ProofRequestError {
-    #[error("Cannot parse grpc response")]
-    ParsingResponse(#[source] GrpcConversionError),
-
-    #[error("Request failed: {0}")]
-    Failed(String),
-
-    #[error("Grpc request error")]
-    Grpc(#[source] tonic::Status),
-}
-
-#[derive(Debug, thiserror::Error)]
-#[error("Conversion of `{field}` failed")]
-pub struct GrpcConversionError {
-    pub field: &'static str,
-    pub source: eyre::Error,
 }
