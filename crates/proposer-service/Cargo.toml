@@ -52,6 +52,9 @@ mockall = { workspace = true, optional = true }
 
 op-succinct-validity.workspace = true
 
+# Ecosystem dependencies
+agglayer-interop-types.workspace = true
+
 [features]
 testutils = ["mockall"]
 

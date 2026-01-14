@@ -10640,6 +10640,7 @@ dependencies = [
  "aggkit-prover-types",
  "agglayer-evm-client",
  "agglayer-interop",
+ "agglayer-interop-types",
  "agglayer-primitives",
  "alloy-primitives",
  "alloy-sol-types",

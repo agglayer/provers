@@ -20,7 +20,7 @@ use proposer_client::{
 use prover_executor::sp1_fast;
 use sp1_prover::SP1VerifyingKey;
 use sp1_sdk::{CpuProver, NetworkProver, Prover as _};
-use tracing::{debug, field::debug, info};
+use tracing::{debug, error, info};
 
 use crate::config::ProposerServiceConfig;
 use crate::l2_rpc::{L2ConsensusLayerClient, L2SafeHeadFetcher};
@@ -334,47 +334,50 @@ where
                 .get_block_number(l1_block_hash.into())
                 .await
                 .map_err(|e| {
-                    Error::AlloyProviderError(
+                    let err = Error::AlloyProviderError(
                         e.into()
                             .wrap_err(format!("Getting the block number for hash {l1_block_hash}")),
-                    )
+                    );
+                    error!(%l1_block_hash, "Failed to get L1 block number: {}", err);
+                    err
                 })?;
 
             let l1_limited_end_block =
                 limit_end_block_to_safe_head(&l2_rpc, requested_end_block, l1_block_number).await?;
 
-            info!("pasa0 ************");
-
             // Check if the requested end block is less or equal than the requested start block
             if l1_limited_end_block <= last_proven_block {
+                error!(
+                    %l1_limited_end_block,
+                    %last_proven_block,
+                    "Requested end block is less than or equal to the last proven block"
+                );
                 return Err(Error::Other(
                     eyre::eyre!("Requested end block is less than or equal to the requested start block")
                 ));
             }
-
-            info!("pasa1 ************");
 
             // Fetch op_succinct_config from contracts (needed for rollup_config_hash)
             let op_succinct_config = contracts_client
                 .get_op_succinct_config()
                 .await
                 .map_err(|e| {
-                Error::Other(eyre::eyre!("Failed to fetch op_succinct_config from contracts: {}", e))
-            })?;
-
-            info!("pasa2 *************");
+                    let err = Error::Other(eyre::eyre!("Failed to fetch op_succinct_config from contracts: {}", e));
+                    error!("Failed to fetch op_succinct_config from contracts: {}", err);
+                    err
+                })?;
 
             let trusted_sequencer = contracts_client
                 .get_trusted_sequencer_address()
                 .await
                 .map_err(|e| {
-                    Error::Other(eyre::eyre!("Failed to fetch trusted sequencer address from contracts: {}", e))
+                    let err = Error::Other(eyre::eyre!("Failed to fetch trusted sequencer address from contracts: {}", e));
+                    error!("Failed to fetch trusted sequencer address from contracts: {}", err);
+                    err
                 })?;
 
-            info!("pasa3 *************");
-
             // Limit according to the existing span proofs range (only when database backend is configured)
-            let limited_end_block = if let ProofBackend::Database { ref db_client, .. } = backend {
+            let limited_end_block = if let ProofBackend::Database { db_client, .. } = backend.clone() {
                 info!("Fetching range proofs from database: start_block={}, end_block={}, l1_chain_id={}, l2_chain_id={}",
                       last_proven_block, l1_limited_end_block, l1_chain_id, l2_chain_id);
 
@@ -389,10 +392,17 @@ where
                     )
                     .await
                     .map_err(|e| {
-                        return Error::Other(eyre::eyre!("Failed to fetch range proofs: {}", e));
+                        let err = Error::Other(eyre::eyre!("Failed to fetch range proofs: {}", e));
+                        error!(
+                            %last_proven_block,
+                            %l1_limited_end_block,
+                            %l1_chain_id,
+                            %l2_chain_id,
+                            "Failed to fetch range proofs from database: {}", err
+                        );
+                        err
                     })?;
 
-                info!("pasa4 *************");
                 // Limit end block to the last available range proof
                 if let Some(last_range_proof) = range_proofs.last() {
                     let range_limited_end_block = last_range_proof.end_block as u64;
@@ -407,6 +417,13 @@ where
                         l1_limited_end_block
                     }
                 } else {
+                    error!(
+                        %last_proven_block,
+                        %l1_limited_end_block,
+                        %l1_chain_id,
+                        %l2_chain_id,
+                        "No range proofs found for the requested range"
+                    );
                     return Err(Error::Other(eyre::eyre!(
                         "No range proofs found for the requested range"
                     )));
@@ -459,18 +476,33 @@ where
                         l1_head_block_number: Some(l1_block_number as i64),
                     };
 
-                    let db_request_id = db_client.insert_request(&request).await?;
+                    let db_request_id = db_client.insert_request(&request).await.map_err(|e| {
+                        error!(%last_proven_block, %limited_end_block, "Failed to insert aggregation proof request into database: {}", e);
+                        e
+                    })?;
                     info!(%db_request_id, %last_proven_block, %limited_end_block, "Inserted aggregation proof request into database");
 
                     // Poll database until proof is complete
                     debug!(%db_request_id, "Polling database for proof completion");
                     let proof_bytes = db_client
                         .wait_for_proof_completion(db_request_id, poll_interval_ms, max_retries)
-                        .await?;
+                        .await
+                        .map_err(|e| {
+                            error!(%db_request_id, "Failed to wait for proof completion: {}", e);
+                            e
+                        })?;
 
                     // Deserialize proof using bincode
-                    let proof_with_pv: sp1_sdk::SP1ProofWithPublicValues = bincode::deserialize(&proof_bytes)
-                        .map_err(|e| Error::Other(eyre::eyre!("Failed to deserialize proof from database: {}", e)))?;
+                    let proof_with_pv: sp1_sdk::SP1ProofWithPublicValues =
+                        sp1_fast(|| agglayer_interop_types::bincode::default().deserialize(&proof_bytes))
+                            .map_err(|e| {
+                                error!(%db_request_id, "Failed during proof deserialization (panic): {}", e);
+                                Error::Other(e)
+                            })?
+                            .map_err(|e| {
+                                error!(%db_request_id, "Failed to deserialize proof from database: {}", e);
+                                Error::Other(eyre::eyre!("Failed to deserialize proof from database: {}", e))
+                            })?;
 
                     info!(%db_request_id, "Proof retrieved and deserialized from database");
 
@@ -479,7 +511,11 @@ where
                     let prover = sp1_sdk::ProverClient::builder().mock().build();
                     sp1_fast(AssertUnwindSafe(|| prover.verify(&proof_with_pv, &aggregation_vkey)))
                         .map_err(Error::Other)?
-                        .map_err(|e| Error::Other(eyre::eyre!("Failed to verify proof from database: {}", e)))?;
+                        .map_err(|e| {
+                            let err = Error::Other(eyre::eyre!("Failed to verify proof from database: {}", e));
+                            error!(%db_request_id, "Failed to verify proof from database: {}", err);
+                            err
+                        })?;
 
                     debug!(%db_request_id, "Aggregation proof verified successfully");
                     proof_with_pv
@@ -495,15 +531,25 @@ where
                             l1_block_number,
                             l1_block_hash,
                         })
-                        .await?;
+                        .await
+                        .map_err(|e| {
+                            error!(%last_proven_block, %requested_end_block, "Failed to request aggregation proof via gRPC: {}", e);
+                            e
+                        })?;
                     debug!(%last_proven_block, end_block = %response.end_block, request_id = %response.request_id, "Aggregation proof request response received");
 
                     // Wait for the prover to finish aggregating span proofs
-                    let proof_with_pv = client.wait_for_proof(response.request_id.clone()).await?;
+                    let proof_with_pv = client.wait_for_proof(response.request_id.clone()).await.map_err(|e| {
+                        error!(request_id = %response.request_id, "Failed to wait for proof via gRPC: {}", e);
+                        e
+                    })?;
                     debug!(%response.request_id, "Aggregation proof received from the proposer");
 
                     // Verify received proof
-                    client.verify_agg_proof(response.request_id.clone(), &proof_with_pv, &aggregation_vkey)?;
+                    client.verify_agg_proof(response.request_id.clone(), &proof_with_pv, &aggregation_vkey).map_err(|e| {
+                        error!(request_id = %response.request_id, "Failed to verify aggregation proof via gRPC: {}", e);
+                        e
+                    })?;
                     debug!(%response.request_id, "Aggregation proof verified successfully");
 
                     proof_with_pv
@@ -512,15 +558,27 @@ where
 
             let public_values =
                 AggregationProofPublicValues::abi_decode(proof_with_pv.public_values.as_slice())
-                    .map_err(Error::FepPublicValuesDeserializeFailure)?;
+                    .map_err(|e| {
+                        error!("Failed to decode aggregation proof public values: {}", e);
+                        Error::FepPublicValuesDeserializeFailure(e)
+                    })?;
 
             debug!("Aggregation proof public values decoded successfully");
 
             let proof_mode: sp1_sdk::SP1ProofMode =
-                sp1_fast(|| (&proof_with_pv.proof).into()).map_err(Error::Other)?;
+                sp1_fast(|| (&proof_with_pv.proof).into()).map_err(|e| {
+                    error!("Failed to get proof mode: {}", e);
+                    Error::Other(e)
+                })?;
             let aggregation_proof = sp1_fast(|| proof_with_pv.proof.clone().try_as_compressed())
-                .map_err(Error::Other)?
-                .ok_or_else(|| Error::UnsupportedAggregationProofMode(proof_mode))?;
+                .map_err(|e| {
+                    error!("Failed to convert proof to compressed format: {}", e);
+                    Error::Other(e)
+                })?
+                .ok_or_else(|| {
+                    error!(?proof_mode, "Unsupported aggregation proof mode");
+                    Error::UnsupportedAggregationProofMode(proof_mode)
+                })?;
 
             // Get the actual end_block from the proof's public values
             let end_block = public_values.l2_block_number;
@@ -549,7 +607,10 @@ async fn limit_end_block_to_safe_head<L2Rpc: L2SafeHeadFetcher>(
     l1_block_number: u64,
 ) -> Result<u64, Error> {
     let safe_l1_block = l1_block_number.saturating_sub(L1_SAFE_HEAD_LOOKBACK);
-    let safe_head_response = l2_rpc.get_safe_head_at_l1_block(safe_l1_block).await?;
+    let safe_head_response = l2_rpc.get_safe_head_at_l1_block(safe_l1_block).await.map_err(|e| {
+        error!(%safe_l1_block, %l1_block_number, "Failed to fetch safe head at L1 block: {}", e);
+        e
+    })?;
     let safe_head: u64 = safe_head_response.safe_head.number.to();
 
     if safe_head < requested_end_block {
