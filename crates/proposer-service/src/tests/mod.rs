@@ -13,7 +13,7 @@ use sp1_sdk::{Prover as _, SP1PublicValues, SP1_CIRCUIT_VERSION};
 use tower::Service as _;
 
 use crate::l2_rpc::{BlockId, MockL2SafeHeadFetcher, SafeHeadAtL1Block};
-use crate::{Error, ProposerService};
+use crate::{Error, ProofBackend, ProposerService};
 
 mock! {
     pub ContractsClient {}
@@ -139,19 +139,20 @@ async fn test_proposer_service() {
     });
     let contracts_client = Arc::new(contracts_client);
 
-    let mut proposer_service = ProposerService {
-        client: Some(client),
+    let mut proposer_service = ProposerService::new(
+        ProofBackend::Grpc {
+            client,
+            poll_interval_ms: 5000,
+            max_retries: 720,
+        },
         l1_rpc,
         l2_rpc,
-        db_client: None,
         contracts_client,
-        aggregation_vkey: vkey,
-        poll_interval_ms: 5000,
-        max_retries: 720,
-        l1_chain_id: 0,
-        l2_chain_id: 0,
-        mock: false,
-    };
+        vkey,
+        0,
+        0,
+        false,
+    );
 
     let request = FepProposerRequest {
         last_proven_block: 0,
@@ -206,19 +207,20 @@ async fn unable_to_fetch_block_hash() {
     });
     let contracts_client = Arc::new(contracts_client);
 
-    let mut proposer_service = ProposerService {
-        client: Some(client),
+    let mut proposer_service = ProposerService::new(
+        ProofBackend::Grpc {
+            client,
+            poll_interval_ms: 5000,
+            max_retries: 720,
+        },
         l1_rpc,
         l2_rpc,
-        db_client: None,
         contracts_client,
-        aggregation_vkey: vkey,
-        poll_interval_ms: 5000,
-        max_retries: 720,
-        l1_chain_id: 0,
-        l2_chain_id: 0,
-        mock: false,
-    };
+        vkey,
+        0,
+        0,
+        false,
+    );
 
     let request = FepProposerRequest {
         last_proven_block: 0,
