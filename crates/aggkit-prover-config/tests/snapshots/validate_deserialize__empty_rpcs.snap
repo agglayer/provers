@@ -1,6 +1,8 @@
 ---
 source: crates/aggkit-prover-config/tests/validate_deserialize.rs
+assertion_line: 13
 expression: config
+snapshot_kind: text
 ---
 grpc-endpoint = "127.0.0.1:8081"
 
@@ -35,6 +37,7 @@ evm-sketch-genesis = "mainnet"
 [aggchain-proof-service.proposer-service]
 mock = false
 l1-rpc-endpoint = "http://anvil-mock-l1-rpc:8545/"
+l2-consensus-layer-rpc-endpoint = "http://rollup-node-mock-l2-rpc:8545/"
 
 [aggchain-proof-service.proposer-service.client]
 proposer-endpoint = "http://proposer-mock-rpc:3000/"
