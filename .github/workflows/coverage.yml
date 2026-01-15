@@ -25,7 +25,6 @@ jobs:
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly-2025-04-24
           components: clippy rustfmt llvm-tools-preview
 
       - name: Set up rust cache
