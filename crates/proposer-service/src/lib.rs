@@ -98,6 +98,7 @@ impl<L1Rpc, L2Rpc, ProposerClient, ContractsClient>
     ProposerService<L1Rpc, L2Rpc, ProposerClient, ContractsClient>
 {
     /// Creates a new ProposerService with the specified backend.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         backend: ProofBackend<ProposerClient>,
         l1_rpc: Arc<L1Rpc>,
