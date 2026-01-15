@@ -23,9 +23,8 @@ jobs:
           fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
 
       - name: Install toolchain
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly-2025-04-24
           components: clippy rustfmt llvm-tools-preview
 
       - name: Set up rust cache

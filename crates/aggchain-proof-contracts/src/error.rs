@@ -78,6 +78,9 @@ pub enum Error {
     #[error("Invalid op succinct config name input: {0}")]
     InvalidOpSuccinctConfigName(String),
 
+    #[error("Unable to retrieve chain ID from RPC provider")]
+    ChainIdRetrievalError(#[source] alloy::transports::TransportError),
+
     #[error(transparent)]
     Other(eyre::Report),
 }

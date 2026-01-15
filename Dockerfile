@@ -24,7 +24,7 @@ FROM --platform=${BUILDPLATFORM} golang:1.22 AS go-builder
 FROM chef AS builder
 
 RUN apt-get update && \
-    apt-get --no-install-recommends install -y clang cmake curl libssl-dev tar pkg-config unzip && \
+    apt-get --no-install-recommends install -y make clang cmake curl libssl-dev tar pkg-config unzip && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
 RUN ARCHITECTURE=$(uname -m | sed -e "s/arm64/arm_64/g" | sed -e "s/aarch64/aarch_64/g") \

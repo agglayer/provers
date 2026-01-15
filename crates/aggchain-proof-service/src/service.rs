@@ -110,17 +110,25 @@ impl AggchainProofService {
         let proposer_service = if config.proposer_service.mock {
             tower::ServiceBuilder::new()
                 .service(
-                    ProposerService::new_mock(&config.proposer_service, l1_rpc_client)
-                        .await
-                        .map_err(Error::ProposerServiceInitFailed)?,
+                    ProposerService::new_mock(
+                        &config.proposer_service,
+                        l1_rpc_client,
+                        contract_l1_client.clone(),
+                    )
+                    .await
+                    .map_err(Error::ProposerServiceInitFailed)?,
                 )
                 .boxed_clone()
         } else {
             tower::ServiceBuilder::new()
                 .service(
-                    ProposerService::new_network(&config.proposer_service, l1_rpc_client)
-                        .await
-                        .map_err(Error::ProposerServiceInitFailed)?,
+                    ProposerService::new_network(
+                        &config.proposer_service,
+                        l1_rpc_client,
+                        contract_l1_client.clone(),
+                    )
+                    .await
+                    .map_err(Error::ProposerServiceInitFailed)?,
                 )
                 .boxed_clone()
         };

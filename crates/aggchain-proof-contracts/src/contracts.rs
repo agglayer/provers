@@ -67,6 +67,15 @@ pub trait L1OpSuccinctConfigFetcher {
     async fn get_op_succinct_config(&self) -> Result<OpSuccinctConfig, Error>;
 }
 
+/// Trait for fetching chain IDs from RPC providers.
+pub trait ChainIdProvider {
+    /// Returns the L1 chain ID.
+    fn l1_chain_id(&self) -> u64;
+
+    /// Returns the L2 chain ID.
+    fn l2_chain_id(&self) -> u64;
+}
+
 #[async_trait::async_trait]
 pub trait GetTrustedSequencerAddress {
     async fn get_trusted_sequencer_address(&self) -> Result<Address, Error>;

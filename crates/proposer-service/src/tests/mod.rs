@@ -1,14 +1,42 @@
 use std::sync::Arc;
 
+use aggchain_proof_contracts::contracts::{
+    ChainIdProvider, GetTrustedSequencerAddress, L1OpSuccinctConfigFetcher, OpSuccinctConfig,
+};
 use agglayer_evm_client::MockRpc;
-use alloy_primitives::FixedBytes;
+use agglayer_interop::types::Digest;
+use agglayer_primitives::Address;
+use alloy_primitives::{FixedBytes, U64};
+use mockall::mock;
 use proposer_client::{
     rpc::AggregationProofProposerRequest, FepProposerRequest, MockProposerClient, RequestId,
 };
 use sp1_sdk::{Prover as _, SP1PublicValues, SP1_CIRCUIT_VERSION};
 use tower::Service as _;
 
-use crate::{Error, ProposerService};
+use crate::{
+    l2_rpc::{BlockId, MockL2SafeHeadFetcher, SafeHeadAtL1Block},
+    Error, ProofBackend, ProposerService,
+};
+
+mock! {
+    pub ContractsClient {}
+
+    #[async_trait::async_trait]
+    impl L1OpSuccinctConfigFetcher for ContractsClient {
+        async fn get_op_succinct_config(&self) -> Result<OpSuccinctConfig, aggchain_proof_contracts::Error>;
+    }
+
+    #[async_trait::async_trait]
+    impl GetTrustedSequencerAddress for ContractsClient {
+        async fn get_trusted_sequencer_address(&self) -> Result<Address, aggchain_proof_contracts::Error>;
+    }
+
+    impl ChainIdProvider for ContractsClient {
+        fn l1_chain_id(&self) -> u64;
+        fn l2_chain_id(&self) -> u64;
+    }
+}
 
 const ELF: &[u8] = include_bytes!("../../../prover-dummy-program/elf/riscv32im-succinct-zkvm-elf");
 
@@ -86,11 +114,51 @@ async fn test_proposer_service() {
 
     let client = Arc::new(client);
     let l1_rpc = Arc::new(l1_rpc);
-    let mut proposer_service = ProposerService {
-        client,
+
+    let mut l2_rpc = MockL2SafeHeadFetcher::new();
+    l2_rpc.expect_get_safe_head_at_l1_block().returning(|_| {
+        Ok(SafeHeadAtL1Block {
+            l1_block: BlockId {
+                number: U64::from(10),
+                hash: Default::default(),
+            },
+            safe_head: BlockId {
+                number: U64::from(100),
+                hash: Default::default(),
+            },
+        })
+    });
+    let l2_rpc = Arc::new(l2_rpc);
+
+    let mut contracts_client = MockContractsClient::new();
+    contracts_client
+        .expect_get_op_succinct_config()
+        .returning(|| {
+            Ok(OpSuccinctConfig {
+                range_vkey_commitment: Digest::default(),
+                aggregation_vkey_hash: Digest::default(),
+                rollup_config_hash: Digest::default(),
+            })
+        });
+    contracts_client
+        .expect_get_trusted_sequencer_address()
+        .returning(|| Ok(Address::new([0u8; 20])));
+    let contracts_client = Arc::new(contracts_client);
+
+    let mut proposer_service = ProposerService::new(
+        ProofBackend::Grpc {
+            client,
+            poll_interval_ms: 5000,
+            max_retries: 720,
+        },
         l1_rpc,
-        aggregation_vkey: vkey,
-    };
+        l2_rpc,
+        contracts_client,
+        vkey,
+        0,
+        0,
+        false,
+    );
 
     let request = FepProposerRequest {
         last_proven_block: 0,
@@ -116,11 +184,51 @@ async fn unable_to_fetch_block_hash() {
 
     let client = Arc::new(client);
     let l1_rpc = Arc::new(l1_rpc);
-    let mut proposer_service = ProposerService {
-        client,
+
+    let mut l2_rpc = MockL2SafeHeadFetcher::new();
+    l2_rpc.expect_get_safe_head_at_l1_block().returning(|_| {
+        Ok(SafeHeadAtL1Block {
+            l1_block: BlockId {
+                number: U64::from(10),
+                hash: Default::default(),
+            },
+            safe_head: BlockId {
+                number: U64::from(100),
+                hash: Default::default(),
+            },
+        })
+    });
+    let l2_rpc = Arc::new(l2_rpc);
+
+    let mut contracts_client = MockContractsClient::new();
+    contracts_client
+        .expect_get_op_succinct_config()
+        .returning(|| {
+            Ok(OpSuccinctConfig {
+                range_vkey_commitment: Digest::default(),
+                aggregation_vkey_hash: Digest::default(),
+                rollup_config_hash: Digest::default(),
+            })
+        });
+    contracts_client
+        .expect_get_trusted_sequencer_address()
+        .returning(|| Ok(Address::new([0u8; 20])));
+    let contracts_client = Arc::new(contracts_client);
+
+    let mut proposer_service = ProposerService::new(
+        ProofBackend::Grpc {
+            client,
+            poll_interval_ms: 5000,
+            max_retries: 720,
+        },
         l1_rpc,
-        aggregation_vkey: vkey,
-    };
+        l2_rpc,
+        contracts_client,
+        vkey,
+        0,
+        0,
+        false,
+    );
 
     let request = FepProposerRequest {
         last_proven_block: 0,

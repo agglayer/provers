@@ -26,6 +26,7 @@ aggkit-prover = { path = "crates/aggkit-prover" }
 aggkit-prover-config = { path = "crates/aggkit-prover-config" }
 aggkit-prover-types = { path = "crates/aggkit-prover-types" }
 proposer-client = { path = "crates/proposer-client" }
+proposer-db-client = { path = "crates/proposer-db-client" }
 proposer-elfs = { path = "crates/proposer-elfs" }
 proposer-service = { path = "crates/proposer-service" }
 prover-alloy = { path = "crates/prover-alloy" }
@@ -50,6 +51,7 @@ unified-bridge = "0.13.0"
 
 # Ecosystem dependencies
 op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v3.4.0-rc.1-agglayer" }
+op-succinct-validity = { git = "https://github.com/agglayer/op-succinct.git", tag = "v3.4.0-rc.1-agglayer" }
 
 # SP1 dependencies
 # Please check if the toolchain image at the top `scripts/make/Makefile.elf.toml` could also be
@@ -80,6 +82,7 @@ alloy-primitives = { version = "1.5.2", features = ["serde", "k256"] }
 anyhow = "1.0"
 arc-swap = "1.7"
 async-trait = "0.1.82"
+chrono = { version = "0.4", features = ["serde"] }
 base64 = "0.22"
 buildstructor = "0.5.4"
 bytes = "1.10"
@@ -121,6 +124,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_with = "3.14"
 sha2 = "0.10.8"
+sqlx = { version = "0.8", features = ["runtime-tokio", "postgres", "chrono", "json", "bigdecimal"] }
 test-log = "0.2.16"
 thiserror = "2.0"
 tiny-keccak = { version = "2.0", features = ["keccak"] }

@@ -42,6 +42,11 @@ mod aggchain_contracts_rpc_client {
         let mut server_l2_el = mockito::Server::new_async().await;
         let server_l2_cl = mockito::Server::new_async().await;
 
+        // Mock eth_chainId for L1
+        let mock_l1_chain_id = mock_chain_id(&mut server_l1, 1);
+        // Mock eth_chainId for L2
+        let mock_l2_chain_id = mock_chain_id(&mut server_l2_el, 10);
+
         // We ask the global exit root manager contract for the PolygonZkEVMBridgeV2
         // contract address with the "bridgeAddress()" call
         let bridge_address_expected_body = serde_json::json!({
@@ -122,6 +127,8 @@ mod aggchain_contracts_rpc_client {
 
         mock_l2.assert_async().await;
         mock_l1.assert_async().await;
+        mock_l1_chain_id.assert_async().await;
+        mock_l2_chain_id.assert_async().await;
         mock_l1_trusted_sequencer.assert_async().await;
         mock_l1_selected_op_succinct_config_name
             .assert_async()
@@ -134,6 +141,25 @@ mod aggchain_contracts_rpc_client {
                 server_l2_cl,
             },
         ))
+    }
+
+    fn mock_chain_id(server: &mut ServerGuard, chain_id: u64) -> mockito::Mock {
+        server
+            .mock("POST", "/")
+            .with_status(200)
+            .with_header("content-type", "text/javascript")
+            .match_body(mockito::Matcher::PartialJson(json!({
+                "method": "eth_chainId"
+            })))
+            .with_body(
+                json!({
+                    "jsonrpc": "2.0",
+                    "id": 0,
+                    "result": format!("0x{:x}", chain_id)
+                })
+                .to_string(),
+            )
+            .create()
     }
 
     fn mock_trusted_sequencer_call(server_l1: &mut ServerGuard) -> mockito::Mock {
@@ -217,8 +243,6 @@ mod aggchain_contracts_rpc_client {
                 "to": "0x8e80ffe6dc044f4a766afd6e5a8732fe0977a493",
                 "input": format!("0x{}", hex::encode(calldata)),
             }, "latest"],
-            "id": 3,
-            "jsonrpc": "2.0",
         });
 
         // Return three bytes32 values (aggregationVkey, rangeVkeyCommitment,
@@ -237,7 +261,7 @@ mod aggchain_contracts_rpc_client {
         let result_tuple = (aggregation_vkey, range_vkey_commitment, rollup_config_hash);
         let result = json!({
             "jsonrpc": "2.0",
-            "id": 3,
+            "id": 0,
             "result": format!("0x{}", hex::encode(alloy::sol_types::SolValue::abi_encode(&result_tuple)))
         }).to_string();
 
@@ -245,7 +269,7 @@ mod aggchain_contracts_rpc_client {
             .mock("POST", "/")
             .with_status(200)
             .with_header("content-type", "text/javascript")
-            .match_body(mockito::Matcher::Json(expected_body))
+            .match_body(mockito::Matcher::PartialJson(expected_body))
             .with_body(result)
             .create()
     }
@@ -345,18 +369,16 @@ mod aggchain_contracts_rpc_client {
                 "input":"0x5ca1e165",
             },
             "0xa"],
-            "id": 1,
-            "jsonrpc": "2.0",
         });
 
         let mock_l2 = server_l2_el
             .mock("POST", "/")
             .with_status(200)
             .with_header("content-type", "text/javascript")
-            .match_body(mockito::Matcher::Json(get_local_exit_root_body))
+            .match_body(mockito::Matcher::PartialJson(get_local_exit_root_body))
             .with_body(
                 json!({
-                    "id": 1,
+                    "id": 0,
                     "jsonrpc": "2.0",
                     "result": "0x27ae5ba08d7291c96c8cbddcc148bf48a6d68c7974b94356f53754ef6171d757"
                 })
@@ -394,18 +416,16 @@ mod aggchain_contracts_rpc_client {
                 "input":"0x5ca1e165",
             },
             "0xa"],
-            "id": 1,
-            "jsonrpc": "2.0",
         });
 
         let mock_l2 = server_l2_el
             .mock("POST", "/")
             .with_status(200)
             .with_header("content-type", "text/javascript")
-            .match_body(mockito::Matcher::Json(get_local_exit_root_body))
+            .match_body(mockito::Matcher::PartialJson(get_local_exit_root_body))
             .with_body(
                 json!({
-                    "id": 1,
+                    "id": 0,
                     "jsonrpc": "2.0",
                     "result": "0x27ae5ba08d7291c96c8cbddcc"
                 })
