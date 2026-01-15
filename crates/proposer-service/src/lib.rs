@@ -22,8 +22,10 @@ use sp1_prover::SP1VerifyingKey;
 use sp1_sdk::{CpuProver, NetworkProver, Prover as _};
 use tracing::{debug, error, info};
 
-use crate::config::ProposerServiceConfig;
-use crate::l2_rpc::{L2ConsensusLayerClient, L2SafeHeadFetcher};
+use crate::{
+    config::ProposerServiceConfig,
+    l2_rpc::{L2ConsensusLayerClient, L2SafeHeadFetcher},
+};
 
 type AggregationProof = Box<sp1_core_executor::SP1ReduceProof<sp1_prover::InnerSC>>;
 

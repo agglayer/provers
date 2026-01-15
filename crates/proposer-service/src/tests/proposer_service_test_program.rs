@@ -73,10 +73,8 @@ pub async fn main() -> eyre::Result<()> {
         l1_rpc_endpoint: cli.l1_rpc_endpoint.clone(),
         ..Default::default()
     };
-    let contracts_client = Arc::new(
-        AggchainContractsRpcClient::new(cli.network_id, &contracts_config)
-            .await?,
-    );
+    let contracts_client =
+        Arc::new(AggchainContractsRpcClient::new(cli.network_id, &contracts_config).await?);
     info!("Contracts client initialized");
 
     // Setup the proposer service
@@ -94,11 +92,21 @@ pub async fn main() -> eyre::Result<()> {
     };
     let mut proposer_service = if cli.mock {
         tower::ServiceBuilder::new()
-            .service(ProposerService::new_mock(&propser_service_config, l1_rpc_client, contracts_client).await?)
+            .service(
+                ProposerService::new_mock(&propser_service_config, l1_rpc_client, contracts_client)
+                    .await?,
+            )
             .boxed_clone()
     } else {
         tower::ServiceBuilder::new()
-            .service(ProposerService::new_network(&propser_service_config, l1_rpc_client, contracts_client).await?)
+            .service(
+                ProposerService::new_network(
+                    &propser_service_config,
+                    l1_rpc_client,
+                    contracts_client,
+                )
+                .await?,
+            )
             .boxed_clone()
     };
     info!("ProposerService initialized");

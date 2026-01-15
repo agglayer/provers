@@ -139,8 +139,9 @@ impl ProposerDBClient {
         Ok(request)
     }
 
-    /// Polls the database until the request reaches Execution status with a valid proof_request_id.
-    /// Returns the proof_request_id bytes once available.
+    /// Polls the database until the request reaches Execution status with a
+    /// valid proof_request_id. Returns the proof_request_id bytes once
+    /// available.
     pub async fn wait_for_proof_request_id(
         &self,
         request_id: i64,

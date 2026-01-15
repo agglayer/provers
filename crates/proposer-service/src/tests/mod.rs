@@ -1,9 +1,11 @@
 use std::sync::Arc;
 
-use aggchain_proof_contracts::contracts::{ChainIdProvider, GetTrustedSequencerAddress, L1OpSuccinctConfigFetcher, OpSuccinctConfig};
-use agglayer_primitives::Address;
+use aggchain_proof_contracts::contracts::{
+    ChainIdProvider, GetTrustedSequencerAddress, L1OpSuccinctConfigFetcher, OpSuccinctConfig,
+};
 use agglayer_evm_client::MockRpc;
 use agglayer_interop::types::Digest;
+use agglayer_primitives::Address;
 use alloy_primitives::{FixedBytes, U64};
 use mockall::mock;
 use proposer_client::{
@@ -12,8 +14,10 @@ use proposer_client::{
 use sp1_sdk::{Prover as _, SP1PublicValues, SP1_CIRCUIT_VERSION};
 use tower::Service as _;
 
-use crate::l2_rpc::{BlockId, MockL2SafeHeadFetcher, SafeHeadAtL1Block};
-use crate::{Error, ProofBackend, ProposerService};
+use crate::{
+    l2_rpc::{BlockId, MockL2SafeHeadFetcher, SafeHeadAtL1Block},
+    Error, ProofBackend, ProposerService,
+};
 
 mock! {
     pub ContractsClient {}
@@ -127,16 +131,18 @@ async fn test_proposer_service() {
     let l2_rpc = Arc::new(l2_rpc);
 
     let mut contracts_client = MockContractsClient::new();
-    contracts_client.expect_get_op_succinct_config().returning(|| {
-        Ok(OpSuccinctConfig {
-            range_vkey_commitment: Digest::default(),
-            aggregation_vkey_hash: Digest::default(),
-            rollup_config_hash: Digest::default(),
-        })
-    });
-    contracts_client.expect_get_trusted_sequencer_address().returning(|| {
-        Ok(Address::new([0u8; 20]))
-    });
+    contracts_client
+        .expect_get_op_succinct_config()
+        .returning(|| {
+            Ok(OpSuccinctConfig {
+                range_vkey_commitment: Digest::default(),
+                aggregation_vkey_hash: Digest::default(),
+                rollup_config_hash: Digest::default(),
+            })
+        });
+    contracts_client
+        .expect_get_trusted_sequencer_address()
+        .returning(|| Ok(Address::new([0u8; 20])));
     let contracts_client = Arc::new(contracts_client);
 
     let mut proposer_service = ProposerService::new(
@@ -195,16 +201,18 @@ async fn unable_to_fetch_block_hash() {
     let l2_rpc = Arc::new(l2_rpc);
 
     let mut contracts_client = MockContractsClient::new();
-    contracts_client.expect_get_op_succinct_config().returning(|| {
-        Ok(OpSuccinctConfig {
-            range_vkey_commitment: Digest::default(),
-            aggregation_vkey_hash: Digest::default(),
-            rollup_config_hash: Digest::default(),
-        })
-    });
-    contracts_client.expect_get_trusted_sequencer_address().returning(|| {
-        Ok(Address::new([0u8; 20]))
-    });
+    contracts_client
+        .expect_get_op_succinct_config()
+        .returning(|| {
+            Ok(OpSuccinctConfig {
+                range_vkey_commitment: Digest::default(),
+                aggregation_vkey_hash: Digest::default(),
+                rollup_config_hash: Digest::default(),
+            })
+        });
+    contracts_client
+        .expect_get_trusted_sequencer_address()
+        .returning(|| Ok(Address::new([0u8; 20])));
     let contracts_client = Arc::new(contracts_client);
 
     let mut proposer_service = ProposerService::new(
