@@ -31,17 +31,22 @@ The <b>Agglayer</b> (<i>Aggregation layer</i>) provides a common language for se
 
 ## Table of Contents
 
+- [Table of Contents](#table-of-contents)
 - [Overview](#overview)
 - [Repository Structure](#repository-structure)
 - [Prerequisites](#prerequisites)
   - [Succinct Prover Network](#succinct-prover-network)
   - [Software Requirements](#software-requirements)
-  - [Hardware Requirements](#hardware-recommendations)
+  - [Hardware Recommendations](#hardware-recommendations)
 - [Installation](#installation)
+- [Running the Test Suite](#running-the-test-suite)
 - [Modifying and building the Aggchain Proof](#modifying-and-building-the-aggchain-proof)
+  - [Building Aggchain Proof one-off](#building-aggchain-proof-one-off)
+  - [Turning on automatic proof rebuild](#turning-on-automatic-proof-rebuild)
+  - [Check the vkey hash from the ELF binary](#check-the-vkey-hash-from-the-elf-binary)
+  - [Proof versioning policy](#proof-versioning-policy)
 - [Development](#development)
 - [Support](#support)
-- [Resources](#resources)
 - [License](#license)
 
 ## Overview
@@ -142,6 +147,28 @@ It is mostly useful for debugging, the `update` is more suitable for regular dev
 
 To get automatic rebuilds by default, set the variable in the shell init script.
 
+### Check the vkey hash from the ELF binary
+
+This command helps to retrieve the vkey hash from a given ELF binary:
+
+```
+cargo prove vkey --elf <path-to-elf-file>
+```
+
+Output example:
+
+```
+Verification Key Hash:
+0x0077f45ec2258cc98fa879d13a2773190bffb9cafb9f428ce3c5718dc768f03e
+```
+
+Which ELFs?
+
+- `aggchain proof` ELF binary
+  - lives in this present `provers` repository
+- `aggregation` and `range` ELF binaries for the op-succinct proofs
+  - live in the `op-succinct` dependency repository
+
 ### Proof versioning policy
 
 The proof binary to use is uniquely identified by a vkey selector on the L1.
@@ -156,8 +183,6 @@ Contributions are very welcomed, the guidelines are currently not available (WIP
 
 Feel free to [open an issue](https://github.com/agglayer/agglayer/issues/new) if you have any feature request or bug report.<br />
 
-## Resources
-  
 ## License
 Copyright (c) 2024 PT Services DMCC
 
@@ -166,6 +191,6 @@ Licensed under either of
 * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
 * MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
 
-at your option. 
+at your option.
 
 The SPDX license identifier for this project is `MIT OR Apache-2.0`.
