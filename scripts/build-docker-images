@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
 echo "Building the docker images. Note this script should be run from the repository root."
-docker build -t aggkit-prover:local .
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$SCRIPT_DIR/.."
+docker build -t aggkit-prover:local "$REPO_ROOT"
