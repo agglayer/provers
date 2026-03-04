@@ -52,7 +52,7 @@ impl From<SP1VerificationError> for ProofVerificationError {
             SP1VerificationError::InvalidPublicValues => {
                 ProofVerificationError::InvalidPublicValues
             }
-            SP1VerificationError::Other(error) => ProofVerificationError::Core(error.to_string()),
+            SP1VerificationError::Other(error) => ProofVerificationError::Other(error.to_string()),
         }
     }
 }
