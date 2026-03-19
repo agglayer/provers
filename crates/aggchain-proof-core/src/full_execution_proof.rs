@@ -321,7 +321,21 @@ pub(crate) fn compute_output_root(
 
 #[cfg(test)]
 mod tests {
+    use sp1_sdk::HashableKey as _;
+
     use crate::full_execution_proof::compute_output_root;
+
+    #[test]
+    fn test_babybear_digest_round_trip_with_aggregation_vkey() {
+        let aggregation_vkey = proposer_elfs::aggregation::VKEY.vkey();
+        let babybear_digest = super::BabyBearDigest(aggregation_vkey.hash_babybear());
+
+        assert_eq!(
+            aggregation_vkey.bytes32_raw(),
+            babybear_digest.to_hash_bn254()
+        );
+        assert_eq!(aggregation_vkey.hash_u32(), babybear_digest.to_hash_u32());
+    }
 
     #[test]
     fn test_compute_output_root_expected_value() {

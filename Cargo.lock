@@ -108,6 +108,7 @@ dependencies = [
  "p3-baby-bear",
  "p3-bn254-fr",
  "p3-field",
+ "proposer-elfs",
  "semver 1.0.27",
  "serde",
  "serde_json",
