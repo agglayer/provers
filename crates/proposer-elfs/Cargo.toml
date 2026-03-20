@@ -18,4 +18,4 @@ op-succinct-elfs.workspace = true
 alloy-primitives.workspace = true
 insta.workspace = true
 rstest.workspace = true
-sp1-sdk.workspace = true
+sp1-sdk = { workspace = true, features = ["blocking"] }

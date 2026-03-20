@@ -40,34 +40,33 @@ prover-utils = { path = "crates/prover-utils" }
 agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", tag = "v0.4.4" }
 
 # Interop dependencies
-agglayer-elf-build = "0.13.0"
-agglayer-evm-client = "0.13.0"
-agglayer-interop = "0.13.0"
-agglayer-interop-types = "0.13.0"
-agglayer-primitives = "0.13.0"
-agglayer-tries = "0.13.0"
-unified-bridge = "0.13.0"
+agglayer-elf-build = { git = "https://github.com/agglayer/interop.git", branch = "feat/interop-sp1-v6-migration-185" }
+agglayer-evm-client = { git = "https://github.com/agglayer/interop.git", branch = "feat/interop-sp1-v6-migration-185" }
+agglayer-interop = { git = "https://github.com/agglayer/interop.git", branch = "feat/interop-sp1-v6-migration-185" }
+agglayer-interop-types = { git = "https://github.com/agglayer/interop.git", branch = "feat/interop-sp1-v6-migration-185" }
+agglayer-primitives = { git = "https://github.com/agglayer/interop.git", branch = "feat/interop-sp1-v6-migration-185" }
+agglayer-tries = { git = "https://github.com/agglayer/interop.git", branch = "feat/interop-sp1-v6-migration-185" }
+unified-bridge = { git = "https://github.com/agglayer/interop.git", branch = "feat/interop-sp1-v6-migration-185" }
 
 # Ecosystem dependencies
-op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v3.5.0-rc.1-agglayer" }
+op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", branch = "release/3.7.x-agglayer" }
 
 # SP1 dependencies
 # Please check if the toolchain image at the top `scripts/make/Makefile.elf.toml` could also be
 # updated whenever updating the below dependencies; as well as updating the proof-program binary
 # crate dependencies.
-p3-baby-bear = "=0.2.3-succinct"
-p3-bn254-fr = "=0.2.3-succinct"
-p3-field = "=0.2.3-succinct"
-sp1-core-executor = "=5.2.4"
-sp1-core-machine = "=5.2.4"
-sp1-sdk = "=5.2.2"
-sp1-prover = "=5.2.4"
-sp1-zkvm = "=5.2.4"
+p3-bn254-fr = "=0.3.2-succinct"
+p3-field = "=0.3.2-succinct"
+sp1-core-executor = "=6.0.2"
+sp1-core-machine = "=6.0.2"
+sp1-sdk = "=6.0.2"
+sp1-prover = "=6.0.2"
+sp1-zkvm = "=6.0.2"
 
-sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", tag = "reth-1.9.1b", features = [
+sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "ec4767a28e7b41514a822c3f62f7d6bd4f4a596f", features = [
     "optimism",
 ] }
-sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", tag = "reth-1.9.1b", features = [
+sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "ec4767a28e7b41514a822c3f62f7d6bd4f4a596f", features = [
     "optimism",
 ] }
 

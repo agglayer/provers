@@ -26,8 +26,7 @@ prover-engine.workspace = true
 prover-logger.workspace = true
 
 
-sp1-sdk = { workspace = true, features = ["native-gnark"] }
-sp1-prover = { workspace = true, features = ["native-gnark"] }
+sp1-sdk = { workspace = true, features = ["native-gnark", "network", "reserved-capacity"] }
 
 [lints]
 workspace = true
@@ -37,3 +36,6 @@ default = ["config"]
 config = []
 testutils = []
 gpu = ["sp1-sdk/cuda"]
+
+[dev-dependencies]
+proposer-elfs.workspace = true

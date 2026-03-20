@@ -5,14 +5,14 @@ use alloy_primitives::FixedBytes;
 use proposer_client::{
     rpc::AggregationProofProposerRequest, FepProposerRequest, MockProposerClient, RequestId,
 };
-use sp1_sdk::{Prover as _, SP1PublicValues, SP1_CIRCUIT_VERSION};
+use sp1_sdk::{Prover as _, ProvingKey as _, SP1PublicValues, SP1_CIRCUIT_VERSION};
 use tower::Service as _;
 
 use crate::{Error, ProposerService};
 
-const ELF: &[u8] = include_bytes!("../../../prover-dummy-program/elf/riscv32im-succinct-zkvm-elf");
+const ELF: &[u8] = proposer_elfs::aggregation::ELF;
 
-fn generate_keys() -> (
+async fn generate_keys() -> (
     sp1_sdk::SP1ProvingKey,
     sp1_sdk::SP1VerifyingKey,
     SP1PublicValues,
@@ -20,8 +20,9 @@ fn generate_keys() -> (
     use alloy_primitives::B256;
     use serde::{Deserialize, Serialize};
 
-    let client = sp1_sdk::ProverClient::builder().mock().build();
-    let (pk, vk) = client.setup(ELF);
+    let client = sp1_sdk::ProverClient::builder().mock().build().await;
+    let pk = client.setup(ELF.into()).await.unwrap();
+    let vk = pk.verifying_key().clone();
 
     #[derive(Default, Serialize, Deserialize)]
     struct TestAggregationOutputs {
@@ -64,10 +65,10 @@ async fn test_proposer_service() {
         },
     );
 
-    let (pkey, vkey, public_values) = generate_keys();
+    let (_pkey, vkey, public_values) = generate_keys().await;
     {
         let mock_proof = sp1_sdk::SP1ProofWithPublicValues::create_mock_proof(
-            &pkey,
+            &vkey,
             public_values,
             sp1_sdk::SP1ProofMode::Compressed,
             SP1_CIRCUIT_VERSION,
@@ -112,7 +113,7 @@ async fn unable_to_fetch_block_hash() {
 
     let client = MockProposerClient::new();
 
-    let (_pkey, vkey, _public_values) = generate_keys();
+    let (_pkey, vkey, _public_values) = generate_keys().await;
 
     let client = Arc::new(client);
     let l1_rpc = Arc::new(l1_rpc);

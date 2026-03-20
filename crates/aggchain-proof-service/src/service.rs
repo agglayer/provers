@@ -171,7 +171,7 @@ impl AggchainProofService {
             let aggchain_proof_builder_request =
                 aggchain_proof_builder::AggchainProofBuilderRequest {
                     fep_verification: FepVerification::Proof {
-                        aggregation_proof: aggregation_proof_response.aggregation_proof,
+                        aggregation_proof: Box::new(aggregation_proof_response.aggregation_proof),
                         aggregation_proof_public_values: aggregation_proof_response.public_values,
                     },
                     end_block: aggregation_proof_response.end_block,

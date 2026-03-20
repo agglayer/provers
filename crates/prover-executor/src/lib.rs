@@ -11,8 +11,8 @@ use eyre::Context as _;
 use futures::{Future, TryFutureExt};
 use prover_config::{CpuProverConfig, ProverType};
 use sp1_sdk::{
-    network::{prover::NetworkProver, FulfillmentStrategy},
-    CpuProver, Prover, ProverClient, SP1ProofWithPublicValues, SP1ProvingKey, SP1Stdin,
+    network::FulfillmentStrategy, CpuProver, MockProver, NetworkProver, ProveRequest as _, Prover,
+    ProverClient, ProvingKey as _, SP1ProofWithPublicValues, SP1ProvingKey, SP1Stdin,
     SP1VerifyingKey,
 };
 use tower::{
@@ -101,70 +101,73 @@ impl Executor {
         match prover_type {
             ProverType::NetworkProver(network_prover_config) => {
                 debug!("Creating network prover executor...");
-                sp1_blocking(move || {
-                    let network_prover = ProverClient::builder()
-                        .network()
-                        .rpc_url(network_prover_config.sp1_cluster_endpoint.as_str())
-                        .build();
-                    let (proving_key, verification_key) = network_prover.setup(program);
-                    (
-                        verification_key.clone(),
-                        Self::build_network_service(
-                            network_prover_config.get_proving_request_timeout(),
-                            NetworkExecutor {
-                                prover: Arc::new(network_prover),
-                                proving_key,
-                                verification_key,
-                                timeout: network_prover_config.proving_timeout,
-                            },
-                        ),
-                    )
-                })
-                .await
+                let network_prover = ProverClient::builder()
+                    .network()
+                    .rpc_url(network_prover_config.sp1_cluster_endpoint.as_str())
+                    .build()
+                    .await;
+                let proving_key = network_prover
+                    .setup(program.into())
+                    .await
+                    .map_err(|error| eyre::eyre!(error.to_string()))?;
+                let verification_key = proving_key.verifying_key().clone();
+
+                Ok((
+                    verification_key.clone(),
+                    Self::build_network_service(
+                        network_prover_config.get_proving_request_timeout(),
+                        NetworkExecutor {
+                            prover: Arc::new(network_prover),
+                            proving_key,
+                            verification_key,
+                            timeout: network_prover_config.proving_timeout,
+                        },
+                    ),
+                ))
             }
             ProverType::CpuProver(cpu_prover_config) => {
                 debug!("Creating CPU prover executor...");
-                sp1_blocking(move || {
-                    let prover = CpuProver::new();
-                    let (proving_key, verification_key) = prover.setup(program);
+                let prover = CpuProver::new().await;
+                let proving_key = prover
+                    .setup(program.into())
+                    .await
+                    .map_err(|error| eyre::eyre!(error.to_string()))?;
+                let verification_key = proving_key.verifying_key().clone();
 
-                    (
-                        verification_key.clone(),
-                        Self::build_local_service(
-                            cpu_prover_config.get_proving_request_timeout(),
-                            cpu_prover_config.max_concurrency_limit,
-                            LocalExecutor {
-                                prover: Arc::new(prover),
-                                is_mock: false,
-                                proving_key,
-                                verification_key,
-                            },
-                        ),
-                    )
-                })
-                .await
+                Ok((
+                    verification_key.clone(),
+                    Self::build_local_service(
+                        cpu_prover_config.get_proving_request_timeout(),
+                        cpu_prover_config.max_concurrency_limit,
+                        LocalExecutor {
+                            prover: Arc::new(LocalProver::Cpu(prover)),
+                            proving_key,
+                            verification_key,
+                        },
+                    ),
+                ))
             }
             ProverType::MockProver(mock_prover_config) => {
                 debug!("Creating Mock prover executor...");
-                sp1_blocking(move || {
-                    let prover = CpuProver::mock();
-                    let (proving_key, verification_key) = prover.setup(program);
+                let prover = MockProver::new().await;
+                let proving_key = prover
+                    .setup(program.into())
+                    .await
+                    .map_err(|error| eyre::eyre!(error.to_string()))?;
+                let verification_key = proving_key.verifying_key().clone();
 
-                    (
-                        verification_key.clone(),
-                        Self::build_local_service(
-                            mock_prover_config.get_proving_request_timeout(),
-                            mock_prover_config.max_concurrency_limit,
-                            LocalExecutor {
-                                prover: Arc::new(prover),
-                                is_mock: true,
-                                proving_key,
-                                verification_key,
-                            },
-                        ),
-                    )
-                })
-                .await
+                Ok((
+                    verification_key.clone(),
+                    Self::build_local_service(
+                        mock_prover_config.get_proving_request_timeout(),
+                        mock_prover_config.max_concurrency_limit,
+                        LocalExecutor {
+                            prover: Arc::new(LocalProver::Mock(prover)),
+                            proving_key,
+                            verification_key,
+                        },
+                    ),
+                ))
             }
         }
     }
@@ -269,11 +272,50 @@ impl Service<Request> for Executor {
 }
 
 #[derive(Clone)]
+enum LocalProver {
+    Cpu(CpuProver),
+    Mock(MockProver),
+}
+
+#[derive(Clone)]
 struct LocalExecutor {
     proving_key: SP1ProvingKey,
     verification_key: SP1VerifyingKey,
-    is_mock: bool,
-    prover: Arc<CpuProver>,
+    prover: Arc<LocalProver>,
+}
+
+async fn prove_with_local_prover<P>(
+    prover: &P,
+    proving_key: &SP1ProvingKey,
+    verification_key: &SP1VerifyingKey,
+    stdin: SP1Stdin,
+    proof_type: ProofType,
+    disable_deferred_proof_verification: bool,
+) -> Result<SP1ProofWithPublicValues, Error>
+where
+    P: Prover<ProvingKey = SP1ProvingKey>,
+    P::Error: std::fmt::Display,
+{
+    let mut proof_request = prover.prove(proving_key, stdin);
+
+    proof_request = match proof_type {
+        ProofType::Plonk => proof_request.plonk(),
+        ProofType::Stark => proof_request.compressed(),
+    };
+
+    if disable_deferred_proof_verification {
+        proof_request = proof_request.deferred_proof_verification(false);
+    }
+
+    let proof = proof_request
+        .await
+        .map_err(|error| Error::ProverFailed(error.to_string()))?;
+
+    prover
+        .verify(&proof, verification_key, None)
+        .map_err(|error| Error::ProofVerificationFailed(error.into()))?;
+
+    Ok(proof)
 }
 
 impl Service<Request> for LocalExecutor {
@@ -289,43 +331,44 @@ impl Service<Request> for LocalExecutor {
 
     fn call(&mut self, req: Request) -> Self::Future {
         let prover = self.prover.clone();
-        let is_mock = self.is_mock;
         let stdin = req.stdin;
+        let proof_type = req.proof_type;
 
         let proving_key = self.proving_key.clone();
         let verification_key = self.verification_key.clone();
 
-        debug!("Proving with CPU prover");
-        Box::pin(
-            sp1_blocking(move || {
-                debug!("Starting the proving of the requested MultiBatchHeader");
-                let mut proof_request = prover.prove(&proving_key, &stdin);
+        debug!("Proving with local prover");
+        Box::pin(async move {
+            debug!("Starting the proving of the requested MultiBatchHeader");
 
-                proof_request = match req.proof_type {
-                    ProofType::Plonk => proof_request.plonk(),
-                    ProofType::Stark => proof_request.compressed(),
-                };
-
-                if is_mock {
-                    proof_request = proof_request.deferred_proof_verification(false);
+            let proof = match prover.as_ref() {
+                LocalProver::Cpu(prover) => {
+                    prove_with_local_prover(
+                        prover,
+                        &proving_key,
+                        &verification_key,
+                        stdin,
+                        proof_type,
+                        false,
+                    )
+                    .await
                 }
+                LocalProver::Mock(prover) => {
+                    prove_with_local_prover(
+                        prover,
+                        &proving_key,
+                        &verification_key,
+                        stdin,
+                        proof_type,
+                        true,
+                    )
+                    .await
+                }
+            }?;
 
-                let proof = proof_request
-                    .run()
-                    .map_err(|error| Error::ProverFailed(error.to_string()))?;
-
-                debug!("Proving completed. Verifying the proof...");
-                prover
-                    .verify(&proof, &verification_key)
-                    .map_err(|error| Error::ProofVerificationFailed(error.into()))?;
-
-                debug!("Proof verification completed successfully");
-
-                Ok(Response { proof })
-            })
-            .map_err(|_| Error::UnableToExecuteProver)
-            .and_then(|res| async { res }),
-        )
+            debug!("Proof verification completed successfully");
+            Ok(Response { proof })
+        })
     }
 }
 
@@ -363,7 +406,7 @@ impl Service<Request> for NetworkExecutor {
             // TODO: Figure out a way to kill only the NetworkExecutor service, marking it
             // as unhealthy and potentially restarting it automatically.
             debug!("Starting the proving of the requested MultiBatchHeader");
-            let proof_request = prover.prove(&proving_key, &stdin);
+            let proof_request = prover.prove(&proving_key, stdin);
 
             let proof_request = match req.proof_type {
                 ProofType::Plonk => proof_request.plonk(),
@@ -373,13 +416,12 @@ impl Service<Request> for NetworkExecutor {
             let proof = proof_request
                 .timeout(timeout)
                 .strategy(FulfillmentStrategy::Reserved)
-                .run_async()
                 .await
                 .map_err(|error| Error::ProverFailed(error.to_string()))?;
 
             debug!("Proving completed. Verifying the proof...");
             prover
-                .verify(&proof, &verification_key)
+                .verify(&proof, &verification_key, None)
                 .map_err(|error| Error::ProofVerificationFailed(error.into()))?;
 
             debug!("Proof verification completed successfully");

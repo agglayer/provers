@@ -21,7 +21,7 @@ prost.workspace = true
 prover-executor.workspace = true
 serde.workspace = true
 serde_with = { workspace = true, features = ["hex"] }
-sp1-sdk.workspace = true
+sp1-sdk = { workspace = true, features = ["network"] }
 thiserror.workspace = true
 tokio.workspace = true
 tonic = { workspace = true, features = ["channel"] }

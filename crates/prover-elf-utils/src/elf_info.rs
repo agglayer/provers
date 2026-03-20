@@ -1,7 +1,10 @@
 use std::{env, fs, io::Write, path::Path};
 
 use agglayer_interop_types::bincode;
-use sp1_prover::{HashableKey, SP1Prover, SP1VerifyingKey};
+use sp1_sdk::{
+    blocking::{CpuProver, Prover as _},
+    HashableKey, ProvingKey as _, SP1VerifyingKey,
+};
 
 pub fn bincode_codec() -> bincode::Codec<impl bincode::Options> {
     bincode::default()
@@ -10,7 +13,7 @@ pub fn bincode_codec() -> bincode::Codec<impl bincode::Options> {
 /// Build time tool to emit information about a zkvm ELF.
 pub struct ElfInfo {
     /// Lazily loaded SP1 prover client.
-    prover: Option<SP1Prover>,
+    prover: Option<CpuProver>,
 
     /// Target file.
     output: fs::File,
@@ -47,8 +50,8 @@ impl ElfInfo {
         self.module(module_name, elf_bytes)
     }
 
-    fn prover(&mut self) -> &SP1Prover {
-        self.prover.get_or_insert_with(SP1Prover::new)
+    fn prover(&mut self) -> &CpuProver {
+        self.prover.get_or_insert_with(CpuProver::new)
     }
 }
 
@@ -113,9 +116,12 @@ impl<ElfBytes: AsRef<[u8]>> Emitter<ElfBytes> {
 
     fn vkey(&mut self) -> &SP1VerifyingKey {
         self.vkey.get_or_insert_with(|| {
-            let (_sp1_pkey, _stark_pkey, _program, vkey) =
-                self.context.prover().setup(self.elf.as_ref());
-            vkey
+            let proving_key = self
+                .context
+                .prover()
+                .setup(self.elf.as_ref().into())
+                .expect("building proving key");
+            proving_key.verifying_key().clone()
         })
     }
 }
