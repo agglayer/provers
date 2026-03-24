@@ -13,9 +13,6 @@ tiny-keccak = { version = "2.0", features = ["keccak"] }
 aggchain-proof-core = { path = "../aggchain-proof-core", default-features = false }
 
 [patch.crates-io]
-agglayer-primitives = { git = "https://github.com/agglayer/interop.git", branch = "feat/interop-sp1-v6-migration-185" }
-agglayer-tries = { git = "https://github.com/agglayer/interop.git", branch = "feat/interop-sp1-v6-migration-185" }
-unified-bridge = { git = "https://github.com/agglayer/interop.git", branch = "feat/interop-sp1-v6-migration-185" }
 crypto-bigint = { git = "https://github.com/sp1-patches/RustCrypto-bigint", tag = "patch-0.5.5-sp1-6.0.0" }
 k256 = { git = "https://github.com/sp1-patches/elliptic-curves", tag = "patch-k256-13.4-sp1-6.0.0" }
 p256 = { git = "https://github.com/sp1-patches/elliptic-curves", tag = "patch-p256-13.2-sp1-6.0.0" }

@@ -67,8 +67,8 @@ dependencies = [
 
 [[package]]
 name = "agglayer-primitives"
-version = "0.13.0"
-source = "git+https://github.com/agglayer/interop.git?branch=feat%2Finterop-sp1-v6-migration-185#bbd536a32901f1ab0fd648dd18ed12427a4592e7"
+version = "0.14.0"
+source = "git+https://github.com/agglayer/interop.git?rev=3040067f91572d9a0e54f80a854dd70eb51242e8#3040067f91572d9a0e54f80a854dd70eb51242e8"
 dependencies = [
  "alloy-primitives",
  "byteorder",
@@ -81,8 +81,8 @@ dependencies = [
 
 [[package]]
 name = "agglayer-tries"
-version = "0.13.0"
-source = "git+https://github.com/agglayer/interop.git?branch=feat%2Finterop-sp1-v6-migration-185#bbd536a32901f1ab0fd648dd18ed12427a4592e7"
+version = "0.14.0"
+source = "git+https://github.com/agglayer/interop.git?rev=3040067f91572d9a0e54f80a854dd70eb51242e8#3040067f91572d9a0e54f80a854dd70eb51242e8"
 dependencies = [
  "agglayer-primitives",
  "hex",
@@ -5366,8 +5366,8 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 
 [[package]]
 name = "unified-bridge"
-version = "0.13.0"
-source = "git+https://github.com/agglayer/interop.git?branch=feat%2Finterop-sp1-v6-migration-185#bbd536a32901f1ab0fd648dd18ed12427a4592e7"
+version = "0.14.0"
+source = "git+https://github.com/agglayer/interop.git?rev=3040067f91572d9a0e54f80a854dd70eb51242e8#3040067f91572d9a0e54f80a854dd70eb51242e8"
 dependencies = [
  "agglayer-primitives",
  "agglayer-tries",

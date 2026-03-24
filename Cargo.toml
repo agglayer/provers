@@ -40,13 +40,13 @@ prover-utils = { path = "crates/prover-utils" }
 agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", tag = "v0.4.4" }
 
 # Interop dependencies
-agglayer-elf-build = { git = "https://github.com/agglayer/interop.git", branch = "feat/interop-sp1-v6-migration-185" }
-agglayer-evm-client = { git = "https://github.com/agglayer/interop.git", branch = "feat/interop-sp1-v6-migration-185" }
-agglayer-interop = { git = "https://github.com/agglayer/interop.git", branch = "feat/interop-sp1-v6-migration-185" }
-agglayer-interop-types = { git = "https://github.com/agglayer/interop.git", branch = "feat/interop-sp1-v6-migration-185" }
-agglayer-primitives = { git = "https://github.com/agglayer/interop.git", branch = "feat/interop-sp1-v6-migration-185" }
-agglayer-tries = { git = "https://github.com/agglayer/interop.git", branch = "feat/interop-sp1-v6-migration-185" }
-unified-bridge = { git = "https://github.com/agglayer/interop.git", branch = "feat/interop-sp1-v6-migration-185" }
+agglayer-elf-build = { git = "https://github.com/agglayer/interop.git", rev = "3040067f91572d9a0e54f80a854dd70eb51242e8" }
+agglayer-evm-client = { git = "https://github.com/agglayer/interop.git", rev = "3040067f91572d9a0e54f80a854dd70eb51242e8" }
+agglayer-interop = { git = "https://github.com/agglayer/interop.git", rev = "3040067f91572d9a0e54f80a854dd70eb51242e8" }
+agglayer-interop-types = { git = "https://github.com/agglayer/interop.git", rev = "3040067f91572d9a0e54f80a854dd70eb51242e8" }
+agglayer-primitives = { git = "https://github.com/agglayer/interop.git", rev = "3040067f91572d9a0e54f80a854dd70eb51242e8" }
+agglayer-tries = { git = "https://github.com/agglayer/interop.git", rev = "3040067f91572d9a0e54f80a854dd70eb51242e8" }
+unified-bridge = { git = "https://github.com/agglayer/interop.git", rev = "3040067f91572d9a0e54f80a854dd70eb51242e8" }
 
 # Ecosystem dependencies
 op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", branch = "release/3.7.x-agglayer" }
