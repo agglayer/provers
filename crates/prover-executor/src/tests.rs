@@ -2,8 +2,8 @@ use std::{sync::Arc, time::Duration};
 
 use prover_config::MockProverConfig;
 use sp1_sdk::{
-    CpuProver, MockProver, Prover, ProvingKey as _, SP1ProofMode, SP1ProofWithPublicValues,
-    SP1ProvingKey, SP1Stdin, SP1VerifyingKey, SP1_CIRCUIT_VERSION,
+    MockProver, Prover, ProvingKey as _, SP1ProofMode, SP1ProofWithPublicValues, SP1ProvingKey,
+    SP1Stdin, SP1VerifyingKey, SP1_CIRCUIT_VERSION,
 };
 use tokio::sync::OnceCell;
 use tower::{service_fn, timeout::TimeoutLayer, Service, ServiceBuilder, ServiceExt};
@@ -11,15 +11,15 @@ use tower::{service_fn, timeout::TimeoutLayer, Service, ServiceBuilder, ServiceE
 use crate::{Executor, LocalExecutor, LocalProver, ProofType, Request, Response};
 const ELF: &[u8] = proposer_elfs::aggregation::ELF;
 
-async fn cpu_prover() -> &'static CpuProver {
-    static RES: OnceCell<CpuProver> = OnceCell::const_new();
-    RES.get_or_init(|| async { CpuProver::new().await }).await
+async fn mock_prover() -> &'static MockProver {
+    static RES: OnceCell<MockProver> = OnceCell::const_new();
+    RES.get_or_init(|| async { MockProver::new().await }).await
 }
 
 async fn pkey_vkey() -> &'static (Arc<SP1ProvingKey>, Arc<SP1VerifyingKey>) {
     static RES: OnceCell<(Arc<SP1ProvingKey>, Arc<SP1VerifyingKey>)> = OnceCell::const_new();
     RES.get_or_init(|| async {
-        let pkey = cpu_prover()
+        let pkey = mock_prover()
             .await
             .setup(ELF.into())
             .await
@@ -40,7 +40,7 @@ async fn vkey() -> &'static Arc<SP1VerifyingKey> {
 
 async fn mock_proof(stdin: SP1Stdin) -> SP1ProofWithPublicValues {
     let proving_key = pkey().await;
-    let (public_values, _) = cpu_prover()
+    let (public_values, _) = mock_prover()
         .await
         .execute(proving_key.elf().clone(), stdin)
         .await
