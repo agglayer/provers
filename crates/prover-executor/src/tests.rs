@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Duration};
 use prover_config::MockProverConfig;
 use sp1_sdk::{
     MockProver, Prover, ProvingKey as _, SP1ProofMode, SP1ProofWithPublicValues, SP1ProvingKey,
-    SP1Stdin, SP1VerifyingKey, SP1_CIRCUIT_VERSION,
+    SP1PublicValues, SP1Stdin, SP1VerifyingKey, SP1_CIRCUIT_VERSION,
 };
 use tokio::sync::OnceCell;
 use tower::{service_fn, timeout::TimeoutLayer, Service, ServiceBuilder, ServiceExt};
@@ -57,13 +57,23 @@ async fn mock_proof(stdin: SP1Stdin) -> SP1ProofWithPublicValues {
 
 #[tokio::test]
 async fn executor_normal_behavior() {
+    let mut proof = SP1ProofWithPublicValues::create_mock_proof(
+        vkey().await.as_ref(),
+        SP1PublicValues::from(&[]),
+        SP1ProofMode::Plonk,
+        SP1_CIRCUIT_VERSION,
+    );
+    proof.sp1_version = "from_network".to_string();
+    let response = Response { proof };
+
     let network = Executor::build_network_service(
         Duration::from_secs(1),
-        service_fn(|r: Request| async move {
-            let mut proof = mock_proof(r.stdin).await;
-            proof.sp1_version = "from_network".to_string();
-
-            Ok(Response { proof })
+        service_fn({
+            let response = response.clone();
+            move |_r: Request| {
+                let response = response.clone();
+                async move { Ok(response) }
+            }
         }),
     );
 
@@ -81,19 +91,69 @@ async fn executor_normal_behavior() {
         })
         .await;
 
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{result:?}");
+    assert_eq!(result.unwrap().proof.sp1_version, "from_network");
+}
+
+#[tokio::test]
+async fn executor_normal_behavior_with_precomputed_network_response() {
+    let mut proof = SP1ProofWithPublicValues::create_mock_proof(
+        vkey().await.as_ref(),
+        SP1PublicValues::from(&[]),
+        SP1ProofMode::Plonk,
+        SP1_CIRCUIT_VERSION,
+    );
+    proof.sp1_version = "from_network".to_string();
+    let response = Response { proof };
+
+    let network = Executor::build_network_service(
+        Duration::from_secs(1),
+        service_fn({
+            let response = response.clone();
+            move |_r: Request| {
+                let response = response.clone();
+                async move { Ok(response) }
+            }
+        }),
+    );
+
+    let local = Executor::build_local_service(
+        Duration::from_secs(1),
+        1,
+        service_fn(|_: Request| async { panic!("Shouldn't be called") }),
+    );
+
+    let mut executor = Executor::new_with_services(vkey().await.clone(), network, Some(local));
+    let result = executor
+        .call(Request {
+            stdin: SP1Stdin::new(),
+            proof_type: ProofType::Plonk,
+        })
+        .await;
+
+    assert!(result.is_ok(), "{result:?}");
     assert_eq!(result.unwrap().proof.sp1_version, "from_network");
 }
 
 #[tokio::test]
 async fn executor_normal_behavior_only_network() {
+    let mut proof = SP1ProofWithPublicValues::create_mock_proof(
+        vkey().await.as_ref(),
+        SP1PublicValues::from(&[]),
+        SP1ProofMode::Plonk,
+        SP1_CIRCUIT_VERSION,
+    );
+    proof.sp1_version = "from_network".to_string();
+    let response = Response { proof };
+
     let network = Executor::build_network_service(
         Duration::from_secs(1),
-        service_fn(|r: Request| async move {
-            let mut proof = mock_proof(r.stdin).await;
-            proof.sp1_version = "from_network".to_string();
-
-            Ok(Response { proof })
+        service_fn({
+            let response = response.clone();
+            move |_r: Request| {
+                let response = response.clone();
+                async move { Ok(response) }
+            }
         }),
     );
 
@@ -105,7 +165,7 @@ async fn executor_normal_behavior_only_network() {
         })
         .await;
 
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{result:?}");
     assert_eq!(result.unwrap().proof.sp1_version, "from_network");
 }
 
@@ -116,14 +176,24 @@ async fn executor_fallback_behavior_cpu() {
         service_fn(|_: Request| async { Err(crate::Error::ProverFailed("failure".to_string())) }),
     );
 
+    let mut proof = SP1ProofWithPublicValues::create_mock_proof(
+        vkey().await.as_ref(),
+        SP1PublicValues::from(&[]),
+        SP1ProofMode::Plonk,
+        SP1_CIRCUIT_VERSION,
+    );
+    proof.sp1_version = "from_local".to_string();
+    let response = Response { proof };
+
     let local = Executor::build_local_service(
         Duration::from_secs(1),
         1,
-        service_fn(|r: Request| async move {
-            let mut proof = mock_proof(r.stdin).await;
-            proof.sp1_version = "from_local".to_string();
-
-            Ok(Response { proof })
+        service_fn({
+            let response = response.clone();
+            move |_r: Request| {
+                let response = response.clone();
+                async move { Ok(response) }
+            }
         }),
     );
 
@@ -135,7 +205,7 @@ async fn executor_fallback_behavior_cpu() {
         })
         .await;
 
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{result:?}");
     assert_eq!(result.unwrap().proof.sp1_version, "from_local");
 }
 
