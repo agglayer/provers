@@ -222,14 +222,24 @@ async fn executor_fallback_because_of_timeout_cpu() {
         }),
     );
 
+    let mut proof = SP1ProofWithPublicValues::create_mock_proof(
+        vkey().await.as_ref(),
+        SP1PublicValues::from(&[]),
+        SP1ProofMode::Plonk,
+        SP1_CIRCUIT_VERSION,
+    );
+    proof.sp1_version = "from_local".to_string();
+    let response = Response { proof };
+
     let local = Executor::build_local_service(
         Duration::from_secs(1),
         1,
-        service_fn(|r: Request| async {
-            let mut proof = mock_proof(r.stdin).await;
-            proof.sp1_version = "from_local".to_string();
-
-            Ok(Response { proof })
+        service_fn({
+            let response = response.clone();
+            move |_r: Request| {
+                let response = response.clone();
+                async move { Ok(response) }
+            }
         }),
     );
 
@@ -242,7 +252,7 @@ async fn executor_fallback_because_of_timeout_cpu() {
         })
         .await;
 
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{result:?}");
     assert_eq!(result.unwrap().proof.sp1_version, "from_local");
 }
 
