@@ -26,4 +26,12 @@ pub enum Error {
 
     #[error("Unable to resolve aggchain proof vkey")]
     AggchainProofVkeyResolveFailed(#[source] aggchain_proof_contracts::Error),
+
+    #[error("Proposer end_block {new_end_block} breaks import/unclaim pair: global_index={global_index}, import at block {import_block}, unclaim at block {unclaim_block}")]
+    BrokenImportUnclaimPair {
+        global_index: alloy_primitives::U256,
+        import_block: u64,
+        unclaim_block: u64,
+        new_end_block: u64,
+    },
 }
