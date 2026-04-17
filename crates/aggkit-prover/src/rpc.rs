@@ -158,7 +158,7 @@ impl AggchainProofGrpcService for GrpcService {
             }
             Err(error) => {
                 error!(%last_proven_block, %requested_end_block, ?error, "Unable to execute GenerateAggchainProof request");
-                Err(Status::internal(error.to_string()))
+                Err(Status::internal(format_error_chain(&error)))
             }
         }
     }
@@ -279,8 +279,20 @@ impl AggchainProofGrpcService for GrpcService {
             }
             Err(error) => {
                 error!(%last_proven_block, %requested_end_block, ?error, "Unable to execute GenerateOptimisticAggchainProof request");
-                Err(Status::internal(error.to_string()))
+                Err(Status::internal(format_error_chain(&error)))
             }
         }
     }
+}
+
+fn format_error_chain(error: &tower::BoxError) -> String {
+    use std::error::Error;
+    let mut message = error.to_string();
+    let mut source = (error.as_ref() as &dyn Error).source();
+    while let Some(cause) = source {
+        message.push_str(": ");
+        message.push_str(&cause.to_string());
+        source = cause.source();
+    }
+    message
 }

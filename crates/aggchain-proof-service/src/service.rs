@@ -18,9 +18,7 @@ use tracing::debug;
 use unified_bridge::AggchainProofPublicValues;
 
 use crate::{
-    config::AggchainProofServiceConfig,
-    custom_chain_data::compute_custom_chain_data,
-    error::Error,
+    config::AggchainProofServiceConfig, custom_chain_data::compute_custom_chain_data, error::Error,
     validation::validate_no_broken_pairs,
 };
 

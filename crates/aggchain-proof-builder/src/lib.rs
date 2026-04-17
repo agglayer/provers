@@ -39,7 +39,7 @@ use prover_executor::{sp1_async, sp1_fast, Executor, ProofType};
 use serde::{Deserialize, Serialize};
 use sp1_sdk::{HashableKey, SP1Stdin, SP1VerifyingKey};
 use tower::{buffer::Buffer, util::BoxService, ServiceExt as _};
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 use unified_bridge::AggchainProofPublicValues;
 
 use crate::config::AggchainProofBuilderConfig;
@@ -541,16 +541,25 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                 let retrieved_from_contracts = AggregationProofPublicValues::from(&fep_inputs);
 
                 if aggregation_proof_public_values != &retrieved_from_contracts {
-                    error!(
-                        "Mismatch between the aggregation proof public values - retrieved from \
-                         the contracts: {retrieved_from_contracts:?}, received with the proof: \
-                         {:?}",
-                        aggregation_proof_public_values
-                    );
-                    return Err(Error::MismatchAggregationProofPublicValues {
-                        expected_by_contract: Box::new(retrieved_from_contracts),
-                        expected_by_verifier: Box::new(aggregation_proof_public_values.clone()),
-                    });
+                    if std::env::var("IGNORE_VKEY_MISMATCH").is_ok() {
+                        warn!(
+                            "Mismatch between the aggregation proof public values - retrieved \
+                             from the contracts: {retrieved_from_contracts:?}, received with the \
+                             proof: {:?} (IGNORE_VKEY_MISMATCH is set)",
+                            aggregation_proof_public_values
+                        );
+                    } else {
+                        error!(
+                            "Mismatch between the aggregation proof public values - retrieved \
+                             from the contracts: {retrieved_from_contracts:?}, received with the \
+                             proof: {:?}",
+                            aggregation_proof_public_values
+                        );
+                        return Err(Error::MismatchAggregationProofPublicValues {
+                            expected_by_contract: Box::new(retrieved_from_contracts),
+                            expected_by_verifier: Box::new(aggregation_proof_public_values.clone()),
+                        });
+                    }
                 }
             }
 
@@ -623,30 +632,49 @@ fn validate_op_succinct_config_keys(
     aggregation_vkey: &SP1VerifyingKey,
     expected_range_vkey_commitment: &Digest,
 ) -> Result<(), Error> {
+    let ignore_mismatch = std::env::var("IGNORE_VKEY_MISMATCH").is_ok();
+
     // Check if retrieved op-succinct config aggregation vkey hash matches
     let expected_aggregation_vkey_hash = Digest(aggregation_vkey.bytes32_raw());
     if op_succinct_config.aggregation_vkey_hash != expected_aggregation_vkey_hash {
-        error!(
-            "Mismatch on the aggregation vkey hash - got from op succinct contract config: {}, \
-             expected from elf config: {}",
-            op_succinct_config.aggregation_vkey_hash, expected_aggregation_vkey_hash
-        );
-        return Err(Error::MismatchAggregationVkeyHash {
-            got: op_succinct_config.aggregation_vkey_hash,
-            expected: expected_aggregation_vkey_hash,
-        });
+        if ignore_mismatch {
+            warn!(
+                "Mismatch on the aggregation vkey hash - got from op succinct contract config: \
+                 {}, expected from elf config: {} (IGNORE_VKEY_MISMATCH is set)",
+                op_succinct_config.aggregation_vkey_hash, expected_aggregation_vkey_hash
+            );
+        } else {
+            error!(
+                "Mismatch on the aggregation vkey hash - got from op succinct contract config: \
+                 {}, expected from elf config: {}",
+                op_succinct_config.aggregation_vkey_hash, expected_aggregation_vkey_hash
+            );
+            return Err(Error::MismatchAggregationVkeyHash {
+                got: op_succinct_config.aggregation_vkey_hash,
+                expected: expected_aggregation_vkey_hash,
+            });
+        }
     }
 
     // Check if retrieved op-succinct config range_vkey_commitment matches
     if op_succinct_config.range_vkey_commitment != *expected_range_vkey_commitment {
-        error!(
-            "Mismatch on the range vkey commitment - got from op succinct config: {}, expected: {}",
-            op_succinct_config.range_vkey_commitment, expected_range_vkey_commitment
-        );
-        return Err(Error::MismatchRangeVkeyCommitment {
-            got: op_succinct_config.range_vkey_commitment,
-            expected: *expected_range_vkey_commitment,
-        });
+        if ignore_mismatch {
+            warn!(
+                "Mismatch on the range vkey commitment - got from op succinct config: {}, \
+                 expected: {} (IGNORE_VKEY_MISMATCH is set)",
+                op_succinct_config.range_vkey_commitment, expected_range_vkey_commitment
+            );
+        } else {
+            error!(
+                "Mismatch on the range vkey commitment - got from op succinct config: {}, \
+                 expected: {}",
+                op_succinct_config.range_vkey_commitment, expected_range_vkey_commitment
+            );
+            return Err(Error::MismatchRangeVkeyCommitment {
+                got: op_succinct_config.range_vkey_commitment,
+                expected: *expected_range_vkey_commitment,
+            });
+        }
     }
 
     Ok(())
