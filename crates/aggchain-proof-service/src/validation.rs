@@ -79,8 +79,10 @@ mod tests {
     use super::*;
     use crate::error::Error;
 
-    fn make_import(global_index: GlobalIndex, block_number: u64) -> ImportedBridgeExitWithBlockNumber
-    {
+    fn make_import(
+        global_index: GlobalIndex,
+        block_number: u64,
+    ) -> ImportedBridgeExitWithBlockNumber {
         use aggchain_proof_types::imported_bridge_exit::BridgeExitHash;
         use agglayer_interop::types::Digest;
         ImportedBridgeExitWithBlockNumber {
@@ -147,7 +149,15 @@ mod tests {
         let unclaims = [make_unclaim(gi(1), 75)];
         let result = validate_no_broken_pairs(&imports, &unclaims, 60);
         assert!(
-            matches!(result, Err(Error::BrokenImportUnclaimPair { import_block: 50, unclaim_block: 75, new_end_block: 60, .. })),
+            matches!(
+                result,
+                Err(Error::BrokenImportUnclaimPair {
+                    import_block: 50,
+                    unclaim_block: 75,
+                    new_end_block: 60,
+                    ..
+                })
+            ),
             "unexpected result: {result:?}"
         );
     }
@@ -162,7 +172,15 @@ mod tests {
         // not 130.
         let result = validate_no_broken_pairs(&imports, &unclaims, 120);
         assert!(
-            matches!(result, Err(Error::BrokenImportUnclaimPair { import_block: 100, unclaim_block: 130, new_end_block: 120, .. })),
+            matches!(
+                result,
+                Err(Error::BrokenImportUnclaimPair {
+                    import_block: 100,
+                    unclaim_block: 130,
+                    new_end_block: 120,
+                    ..
+                })
+            ),
             "unexpected result: {result:?}"
         );
     }
@@ -193,7 +211,15 @@ mod tests {
         ];
         let result = validate_no_broken_pairs(&imports, &unclaims, 55);
         assert!(
-            matches!(result, Err(Error::BrokenImportUnclaimPair { import_block: 50, unclaim_block: 75, new_end_block: 55, .. })),
+            matches!(
+                result,
+                Err(Error::BrokenImportUnclaimPair {
+                    import_block: 50,
+                    unclaim_block: 75,
+                    new_end_block: 55,
+                    ..
+                })
+            ),
             "unexpected result: {result:?}"
         );
     }
@@ -214,7 +240,14 @@ mod tests {
         // new_end_block=75: gi(1) pair OK, gi(2) pair broken (55 in range, 80 not).
         let result = validate_no_broken_pairs(&imports, &unclaims, 75);
         assert!(
-            matches!(result, Err(Error::BrokenImportUnclaimPair { unclaim_block: 80, new_end_block: 75, .. })),
+            matches!(
+                result,
+                Err(Error::BrokenImportUnclaimPair {
+                    unclaim_block: 80,
+                    new_end_block: 75,
+                    ..
+                })
+            ),
             "unexpected result: {result:?}"
         );
     }

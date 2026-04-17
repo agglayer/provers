@@ -30,7 +30,10 @@ pub enum Error {
     #[error("Unable to decode the configured op-succinct aggregation verification key")]
     OpSuccinctVkeyDecode(#[source] proposer_elfs::VKeyDecodeError),
 
-    #[error("Proposer end_block {new_end_block} breaks import/unclaim pair: global_index={global_index}, import at block {import_block}, unclaim at block {unclaim_block}")]
+    #[error(
+        "Proposer  breaks import/unclaim pair: end_block {new_end_block}, \
+         global_index={global_index}, claim_block={import_block}, unclaim_block={unclaim_block} "
+    )]
     BrokenImportUnclaimPair {
         global_index: alloy_primitives::U256,
         import_block: u64,
