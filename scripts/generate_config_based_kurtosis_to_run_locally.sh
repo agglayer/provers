@@ -11,6 +11,33 @@
 
 set -euo pipefail
 
+# Associative arrays require Bash 4.2+. macOS ships Bash 3.2 — install a newer
+# version with: brew install bash
+if (( BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 2) )); then
+    echo "ERROR: Bash 4.2+ required (found ${BASH_VERSION})."
+    echo "       On macOS: brew install bash"
+    exit 1
+fi
+
+# Portable sed -i: macOS requires an explicit backup extension (we use '').
+sedi() {
+    if [[ "$(uname)" == "Darwin" ]]; then
+        sed -i '' "$@"
+    else
+        sed -i "$@"
+    fi
+}
+
+# Portable realpath: resolve to an absolute path without GNU coreutils.
+portable_realpath() {
+    local path="$1"
+    if command -v realpath &>/dev/null; then
+        realpath "$path"
+    else
+        (cd "$path" && pwd)
+    fi
+}
+
 ENCLAVE="${1:-op}"
 CONFIG_ARTIFACT="aggkit-prover-config-001"
 EVM_GENESIS_ARTIFACT="evm-sketch-genesis-conf-artifact.json"
@@ -38,7 +65,7 @@ if [[ -z "$EVM_GENESIS_SRC" ]]; then
     echo "ERROR: no JSON file found in artifact '$EVM_GENESIS_ARTIFACT'"
     exit 1
 fi
-LOCAL_EVM_GENESIS="$(realpath "$TMP_DIR")/evm-sketch-genesis.json"
+LOCAL_EVM_GENESIS="$(portable_realpath "$TMP_DIR")/evm-sketch-genesis.json"
 cp "$EVM_GENESIS_SRC" "$LOCAL_EVM_GENESIS"
 echo "    saved to: $LOCAL_EVM_GENESIS"
 
@@ -83,7 +110,7 @@ while IFS= read -r internal_url; do
             public_host_port="${PORT_MAP[$key]#*://}"
             replacement="${orig_scheme}://${public_host_port}"
             echo "    $internal_url  ->  $replacement"
-            sed -i "s|${internal_url}|${replacement}|g" "$OUTPUT_CONFIG"
+            sedi "s|${internal_url}|${replacement}|g" "$OUTPUT_CONFIG"
         else
             echo "    WARNING: no public port found for '$internal_url' (key: $key)"
         fi
@@ -93,7 +120,7 @@ done < <(grep -oE '(https?|grpc)://[a-zA-Z][a-zA-Z0-9_-]+:[0-9]+' "$OUTPUT_CONFI
 # ── Replace evm-sketch-genesis container path with local file ─────────────────
 
 echo "==> Replacing evm-sketch-genesis path..."
-sed -i "s|/etc/aggkit-prover/evm-sketch-genesis.json|${LOCAL_EVM_GENESIS}|g" "$OUTPUT_CONFIG"
+sedi "s|/etc/aggkit-prover/evm-sketch-genesis.json|${LOCAL_EVM_GENESIS}|g" "$OUTPUT_CONFIG"
 
 # ── Replace grpc-endpoint with the kurtosis public port for aggkit-prover-001 ─
 # grpc-endpoint is the bind address of this service. Setting it to the same
@@ -105,14 +132,14 @@ if [[ -n "$PROVER_GRPC_PUBLIC" ]]; then
     # Extract just the port number from e.g. "grpc://127.0.0.1:32800"
     PROVER_GRPC_PORT="${PROVER_GRPC_PUBLIC##*:}"
     echo "==> Setting grpc-endpoint to kurtosis public port: 127.0.0.1:$PROVER_GRPC_PORT"
-    sed -i "s|grpc-endpoint = \"[^\"]*\"|grpc-endpoint = \"127.0.0.1:${PROVER_GRPC_PORT}\"|" "$OUTPUT_CONFIG"
+    sedi "s|grpc-endpoint = \"[^\"]*\"|grpc-endpoint = \"127.0.0.1:${PROVER_GRPC_PORT}\"|" "$OUTPUT_CONFIG"
 else
     echo "    WARNING: could not find public port for aggkit-prover-001:4446, keeping grpc-endpoint as-is"
 fi
 
 # ── Replace 0.0.0.0 listen addresses for local use ───────────────────────────
 
-sed -i 's|0\.0\.0\.0:|127.0.0.1:|g' "$OUTPUT_CONFIG"
+sedi 's|0\.0\.0\.0:|127.0.0.1:|g' "$OUTPUT_CONFIG"
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 
