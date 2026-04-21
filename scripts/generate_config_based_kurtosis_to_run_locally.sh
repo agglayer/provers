@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# scripts/generate_config_based_kurtosis.sh
+# scripts/generate_config_based_kurtosis_to_run_locally.sh
 #
 # Downloads the aggkit-prover config from the kurtosis enclave 'op' and
 # replaces internal kurtosis hostnames with the public ports exposed by
 # the enclave. Output is written to ./tmp/aggkit-prover-config.toml.
 #
 # Usage:
-#   ./scripts/generate_config_based_kurtosis.sh
-#   ./scripts/generate_config_based_kurtosis.sh my-enclave  # custom enclave name
+#   ./scripts/generate_config_based_kurtosis_to_run_locally.sh
+#   ./scripts/generate_config_based_kurtosis_to_run_locally.sh my-enclave  # custom enclave name
 
 set -euo pipefail
 
