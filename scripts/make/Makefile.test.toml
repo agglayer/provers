@@ -11,8 +11,8 @@ dependencies = ["dummy-elf-build"]
 cwd = "crates/prover-dummy-program"
 command = "cp"
 args = [
-    "target/riscv32im-succinct-zkvm-elf/release/prover-dummy-program",
-    "elf/riscv32im-succinct-zkvm-elf",
+    "target/riscv64im-succinct-zkvm-elf/release/prover-dummy-program",
+    "elf/riscv64im-succinct-zkvm-elf",
 ]
 
 [tasks.dummy-elf-build]
@@ -30,7 +30,7 @@ args = [
     "sp1:apbuild",
     "cargo",
     "build",
-    "--target=riscv32im-succinct-zkvm-elf",
+    "--target=riscv64im-succinct-zkvm-elf",
     "--release",
     "--locked",
     "-vv",
