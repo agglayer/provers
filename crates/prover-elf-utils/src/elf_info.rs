@@ -2,7 +2,7 @@ use std::{env, fs, io::Write, path::Path};
 
 use agglayer_interop_types::bincode;
 use sp1_sdk::{
-    blocking::{CpuProver, Prover as _},
+    blocking::{LightProver, Prover as _},
     HashableKey, ProvingKey as _, SP1VerifyingKey,
 };
 
@@ -13,7 +13,7 @@ pub fn bincode_codec() -> bincode::Codec<impl bincode::Options> {
 /// Build time tool to emit information about a zkvm ELF.
 pub struct ElfInfo {
     /// Lazily loaded SP1 prover client.
-    prover: Option<CpuProver>,
+    prover: Option<LightProver>,
 
     /// Target file.
     output: fs::File,
@@ -50,8 +50,8 @@ impl ElfInfo {
         self.module(module_name, elf_bytes)
     }
 
-    fn prover(&mut self) -> &CpuProver {
-        self.prover.get_or_insert_with(CpuProver::new)
+    fn prover(&mut self) -> &LightProver {
+        self.prover.get_or_insert_with(LightProver::new)
     }
 }
 
