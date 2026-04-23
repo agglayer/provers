@@ -127,7 +127,9 @@ impl Executor {
             }
             ProverType::CpuProver(cpu_prover_config) => {
                 debug!("Creating CPU prover executor...");
-                let prover = CpuProver::new().await;
+                let prover = sp1_async(AssertUnwindSafe(CpuProver::new()))
+                    .await
+                    .context("CpuProver initialization panicked")?;
                 let proving_key = prover
                     .setup(program.into())
                     .await
@@ -149,7 +151,9 @@ impl Executor {
             }
             ProverType::MockProver(mock_prover_config) => {
                 debug!("Creating Mock prover executor...");
-                let prover = MockProver::new().await;
+                let prover = sp1_async(AssertUnwindSafe(MockProver::new()))
+                    .await
+                    .context("MockProver initialization panicked")?;
                 let proving_key = prover
                     .setup(program.into())
                     .await
