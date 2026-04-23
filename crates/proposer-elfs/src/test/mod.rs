@@ -7,7 +7,7 @@ use super::*;
 #[case::agg(aggregation::ELF, &aggregation::VKEY, aggregation::VKEY_HASH)]
 #[case::range(range::ELF, &range::VKEY, range::VKEY_HASH)]
 fn consistency(#[case] elf: &[u8], #[case] vkey: &LazyVerifyingKey, #[case] vkey_hash: VKeyHash) {
-    let prover = sp1_sdk::blocking::CpuProver::new();
+    let prover = sp1_sdk::blocking::MockProver::new();
     let proving_key = prover.setup(elf.into()).expect("setting up proving key");
     let computed_vkey = proving_key.verifying_key().clone();
 
