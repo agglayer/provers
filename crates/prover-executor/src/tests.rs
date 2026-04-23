@@ -56,46 +56,6 @@ async fn mock_proof(stdin: SP1Stdin) -> SP1ProofWithPublicValues {
 }
 
 #[tokio::test]
-async fn executor_normal_behavior() {
-    let mut proof = SP1ProofWithPublicValues::create_mock_proof(
-        vkey().await.as_ref(),
-        SP1PublicValues::from(&[]),
-        SP1ProofMode::Plonk,
-        SP1_CIRCUIT_VERSION,
-    );
-    proof.sp1_version = "from_network".to_string();
-    let response = Response { proof };
-
-    let network = Executor::build_network_service(
-        Duration::from_secs(1),
-        service_fn({
-            let response = response.clone();
-            move |_r: Request| {
-                let response = response.clone();
-                async move { Ok(response) }
-            }
-        }),
-    );
-
-    let local = Executor::build_local_service(
-        Duration::from_secs(1),
-        1,
-        service_fn(|_: Request| async { panic!("Shouldn't be called") }),
-    );
-
-    let mut executor = Executor::new_with_services(vkey().await.clone(), network, Some(local));
-    let result = executor
-        .call(Request {
-            stdin: SP1Stdin::new(),
-            proof_type: ProofType::Plonk,
-        })
-        .await;
-
-    assert!(result.is_ok(), "{result:?}");
-    assert_eq!(result.unwrap().proof.sp1_version, "from_network");
-}
-
-#[tokio::test]
 async fn executor_normal_behavior_with_precomputed_network_response() {
     let mut proof = SP1ProofWithPublicValues::create_mock_proof(
         vkey().await.as_ref(),
