@@ -597,7 +597,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                         .clone()
                         .try_as_compressed()
                         .ok_or(Error::GeneratedProofIsNotCompressed)?;
-                    stdin.write_proof(*aggregation_proof, aggregation_vkey.vk);
+                    stdin.write_proof(*aggregation_proof, aggregation_vkey.vk.clone());
                 }
                 Ok::<_, Error>(stdin)
             })
