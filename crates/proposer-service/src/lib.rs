@@ -17,18 +17,14 @@ use proposer_client::{
     rpc::{AggregationProofProposerRequest, ProposerRpcClient},
     FepProposerRequest,
 };
-use prover_executor::sp1_fast;
-use sp1_prover::SP1VerifyingKey;
-use sp1_sdk::NetworkProver;
+use sp1_sdk::{NetworkProver, SP1ProofWithPublicValues, SP1VerifyingKey};
 use tracing::{debug, info};
 
 use crate::config::ProposerServiceConfig;
 
-type AggregationProof = Box<sp1_core_executor::SP1ReduceProof<sp1_prover::InnerSC>>;
-
 #[derive(Debug)]
 pub struct ProposerResponse {
-    pub aggregation_proof: AggregationProof,
+    pub aggregation_proof: SP1ProofWithPublicValues,
     pub last_proven_block: u64,
     pub end_block: u64,
     pub public_values: AggregationProofPublicValues,
@@ -108,7 +104,9 @@ impl<L1Rpc>
             "Building a network proposer service with a mock config"
         );
         Self::new(
-            new_network_prover(&config.client.sp1_cluster_endpoint).map_err(Error::Other)?,
+            new_network_prover(&config.client.sp1_cluster_endpoint)
+                .await
+                .map_err(Error::Other)?,
             config,
             l1_rpc,
         )
@@ -138,7 +136,12 @@ impl<L1Rpc>
             .await?,
         );
 
-        Self::new(MockGrpcProver::new(proposer_rpc_client), config, l1_rpc).await
+        Self::new(
+            MockGrpcProver::new(proposer_rpc_client).await,
+            config,
+            l1_rpc,
+        )
+        .await
     }
 }
 
@@ -210,15 +213,10 @@ where
 
             debug!(%last_proven_block, %end_block, %request_id, "Aggregation proof verified successfully");
 
-            let proof_mode: sp1_sdk::SP1ProofMode = sp1_fast(|| (&proof_with_pv.proof).into()).map_err(Error::Other)?;
-            let aggregation_proof = sp1_fast(|| proof_with_pv.proof.clone().try_as_compressed())
-                .map_err(Error::Other)?
-                .ok_or_else(|| Error::UnsupportedAggregationProofMode(proof_mode))?;
-
             info!(%last_proven_block, %end_block, %request_id, "Aggregation proof successfully acquired");
 
             Ok(ProposerResponse {
-                aggregation_proof,
+                aggregation_proof: proof_with_pv,
                 last_proven_block: response.last_proven_block,
                 end_block: response.end_block,
                 public_values,

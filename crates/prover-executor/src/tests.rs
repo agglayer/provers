@@ -1,45 +1,54 @@
-use std::{
-    sync::{Arc, OnceLock},
-    time::Duration,
-};
+use std::{sync::Arc, time::Duration};
 
 use prover_config::MockProverConfig;
 use sp1_sdk::{
-    CpuProver, Prover, SP1ProofMode, SP1ProofWithPublicValues, SP1ProvingKey, SP1Stdin,
-    SP1VerifyingKey, SP1_CIRCUIT_VERSION,
+    MockProver, Prover, ProvingKey as _, SP1ProofMode, SP1ProofWithPublicValues, SP1ProvingKey,
+    SP1PublicValues, SP1Stdin, SP1VerifyingKey, SP1_CIRCUIT_VERSION,
 };
+use tokio::sync::OnceCell;
 use tower::{service_fn, timeout::TimeoutLayer, Service, ServiceBuilder, ServiceExt};
 
-use crate::{Executor, LocalExecutor, ProofType, Request, Response};
-const ELF: &[u8] = include_bytes!("../../prover-dummy-program/elf/riscv32im-succinct-zkvm-elf");
+use crate::{Executor, LocalExecutor, LocalProver, ProofType, Request, Response};
+const ELF: &[u8] = proposer_elfs::aggregation::ELF;
 
-fn cpu_prover() -> &'static CpuProver {
-    static RES: OnceLock<CpuProver> = OnceLock::new();
-    RES.get_or_init(CpuProver::new)
+async fn mock_prover() -> &'static MockProver {
+    static RES: OnceCell<MockProver> = OnceCell::const_new();
+    RES.get_or_init(|| async { MockProver::new().await }).await
 }
 
-fn pkey_vkey() -> &'static (Arc<SP1ProvingKey>, Arc<SP1VerifyingKey>) {
-    static RES: OnceLock<(Arc<SP1ProvingKey>, Arc<SP1VerifyingKey>)> = OnceLock::new();
-    RES.get_or_init(|| {
-        let (pkey, vkey) = cpu_prover().setup(ELF);
+async fn pkey_vkey() -> &'static (Arc<SP1ProvingKey>, Arc<SP1VerifyingKey>) {
+    static RES: OnceCell<(Arc<SP1ProvingKey>, Arc<SP1VerifyingKey>)> = OnceCell::const_new();
+    RES.get_or_init(|| async {
+        let pkey = mock_prover()
+            .await
+            .setup(ELF.into())
+            .await
+            .expect("setting up proving key");
+        let vkey = pkey.verifying_key().clone();
         (Arc::new(pkey), Arc::new(vkey))
     })
+    .await
 }
 
-fn pkey() -> &'static Arc<SP1ProvingKey> {
-    &pkey_vkey().0
+async fn pkey() -> &'static Arc<SP1ProvingKey> {
+    &pkey_vkey().await.0
 }
 
-fn vkey() -> &'static Arc<SP1VerifyingKey> {
-    &pkey_vkey().1
+async fn vkey() -> &'static Arc<SP1VerifyingKey> {
+    &pkey_vkey().await.1
 }
 
-fn mock_proof(stdin: SP1Stdin) -> SP1ProofWithPublicValues {
-    let (public_values, _) = cpu_prover().execute(&pkey().elf, &stdin).run().unwrap();
+async fn mock_proof(stdin: SP1Stdin) -> SP1ProofWithPublicValues {
+    let proving_key = pkey().await;
+    let (public_values, _) = mock_prover()
+        .await
+        .execute(proving_key.elf().clone(), stdin)
+        .await
+        .expect("executing prover input");
 
     // Create a mock Plonk proof.
     SP1ProofWithPublicValues::create_mock_proof(
-        pkey(),
+        proving_key.verifying_key(),
         public_values,
         SP1ProofMode::Plonk,
         SP1_CIRCUIT_VERSION,
@@ -47,14 +56,24 @@ fn mock_proof(stdin: SP1Stdin) -> SP1ProofWithPublicValues {
 }
 
 #[tokio::test]
-async fn executor_normal_behavior() {
+async fn executor_normal_behavior_with_precomputed_network_response() {
+    let mut proof = SP1ProofWithPublicValues::create_mock_proof(
+        vkey().await.as_ref(),
+        SP1PublicValues::from(&[]),
+        SP1ProofMode::Plonk,
+        SP1_CIRCUIT_VERSION,
+    );
+    proof.sp1_version = "from_network".to_string();
+    let response = Response { proof };
+
     let network = Executor::build_network_service(
         Duration::from_secs(1),
-        service_fn(|r: Request| async move {
-            let mut proof = mock_proof(r.stdin);
-            proof.sp1_version = "from_network".to_string();
-
-            Ok(Response { proof })
+        service_fn({
+            let response = response.clone();
+            move |_r: Request| {
+                let response = response.clone();
+                async move { Ok(response) }
+            }
         }),
     );
 
@@ -64,7 +83,7 @@ async fn executor_normal_behavior() {
         service_fn(|_: Request| async { panic!("Shouldn't be called") }),
     );
 
-    let mut executor = Executor::new_with_services(vkey().clone(), network, Some(local));
+    let mut executor = Executor::new_with_services(vkey().await.clone(), network, Some(local));
     let result = executor
         .call(Request {
             stdin: SP1Stdin::new(),
@@ -72,23 +91,33 @@ async fn executor_normal_behavior() {
         })
         .await;
 
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{result:?}");
     assert_eq!(result.unwrap().proof.sp1_version, "from_network");
 }
 
 #[tokio::test]
 async fn executor_normal_behavior_only_network() {
+    let mut proof = SP1ProofWithPublicValues::create_mock_proof(
+        vkey().await.as_ref(),
+        SP1PublicValues::from(&[]),
+        SP1ProofMode::Plonk,
+        SP1_CIRCUIT_VERSION,
+    );
+    proof.sp1_version = "from_network".to_string();
+    let response = Response { proof };
+
     let network = Executor::build_network_service(
         Duration::from_secs(1),
-        service_fn(|r: Request| async move {
-            let mut proof = mock_proof(r.stdin);
-            proof.sp1_version = "from_network".to_string();
-
-            Ok(Response { proof })
+        service_fn({
+            let response = response.clone();
+            move |_r: Request| {
+                let response = response.clone();
+                async move { Ok(response) }
+            }
         }),
     );
 
-    let mut executor = Executor::new_with_services(vkey().clone(), network, None);
+    let mut executor = Executor::new_with_services(vkey().await.clone(), network, None);
     let result = executor
         .call(Request {
             stdin: SP1Stdin::new(),
@@ -96,7 +125,7 @@ async fn executor_normal_behavior_only_network() {
         })
         .await;
 
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{result:?}");
     assert_eq!(result.unwrap().proof.sp1_version, "from_network");
 }
 
@@ -107,18 +136,28 @@ async fn executor_fallback_behavior_cpu() {
         service_fn(|_: Request| async { Err(crate::Error::ProverFailed("failure".to_string())) }),
     );
 
+    let mut proof = SP1ProofWithPublicValues::create_mock_proof(
+        vkey().await.as_ref(),
+        SP1PublicValues::from(&[]),
+        SP1ProofMode::Plonk,
+        SP1_CIRCUIT_VERSION,
+    );
+    proof.sp1_version = "from_local".to_string();
+    let response = Response { proof };
+
     let local = Executor::build_local_service(
         Duration::from_secs(1),
         1,
-        service_fn(|r: Request| async move {
-            let mut proof = mock_proof(r.stdin);
-            proof.sp1_version = "from_local".to_string();
-
-            Ok(Response { proof })
+        service_fn({
+            let response = response.clone();
+            move |_r: Request| {
+                let response = response.clone();
+                async move { Ok(response) }
+            }
         }),
     );
 
-    let mut executor = Executor::new_with_services(vkey().clone(), network, Some(local));
+    let mut executor = Executor::new_with_services(vkey().await.clone(), network, Some(local));
     let result = executor
         .call(Request {
             stdin: SP1Stdin::new(),
@@ -126,7 +165,7 @@ async fn executor_fallback_behavior_cpu() {
         })
         .await;
 
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{result:?}");
     assert_eq!(result.unwrap().proof.sp1_version, "from_local");
 }
 
@@ -136,25 +175,35 @@ async fn executor_fallback_because_of_timeout_cpu() {
         Duration::from_millis(100),
         service_fn(|r: Request| async {
             tokio::time::sleep(Duration::from_secs(20)).await;
-            let mut proof = mock_proof(r.stdin);
+            let mut proof = mock_proof(r.stdin).await;
             proof.sp1_version = "from_network".to_string();
 
             Ok(Response { proof })
         }),
     );
 
+    let mut proof = SP1ProofWithPublicValues::create_mock_proof(
+        vkey().await.as_ref(),
+        SP1PublicValues::from(&[]),
+        SP1ProofMode::Plonk,
+        SP1_CIRCUIT_VERSION,
+    );
+    proof.sp1_version = "from_local".to_string();
+    let response = Response { proof };
+
     let local = Executor::build_local_service(
         Duration::from_secs(1),
         1,
-        service_fn(|r: Request| async {
-            let mut proof = mock_proof(r.stdin);
-            proof.sp1_version = "from_local".to_string();
-
-            Ok(Response { proof })
+        service_fn({
+            let response = response.clone();
+            move |_r: Request| {
+                let response = response.clone();
+                async move { Ok(response) }
+            }
         }),
     );
 
-    let mut executor = Executor::new_with_services(vkey().clone(), network, Some(local));
+    let mut executor = Executor::new_with_services(vkey().await.clone(), network, Some(local));
 
     let result = executor
         .call(Request {
@@ -163,7 +212,7 @@ async fn executor_fallback_because_of_timeout_cpu() {
         })
         .await;
 
-    assert!(result.is_ok());
+    assert!(result.is_ok(), "{result:?}");
     assert_eq!(result.unwrap().proof.sp1_version, "from_local");
 }
 
@@ -173,7 +222,7 @@ async fn executor_fails_because_of_timeout_cpu() {
         Duration::from_millis(100),
         service_fn(|r: Request| async move {
             tokio::time::sleep(Duration::from_secs(20)).await;
-            let mut proof = mock_proof(r.stdin);
+            let mut proof = mock_proof(r.stdin).await;
             proof.sp1_version = "from_network".to_string();
 
             Ok(Response { proof })
@@ -185,7 +234,7 @@ async fn executor_fails_because_of_timeout_cpu() {
         1,
         service_fn(|r: Request| async move {
             tokio::time::sleep(Duration::from_secs(20)).await;
-            let mut proof = mock_proof(r.stdin);
+            let mut proof = mock_proof(r.stdin).await;
             proof.sp1_version = "from_local".to_string();
 
             Ok(Response { proof })
@@ -195,7 +244,7 @@ async fn executor_fails_because_of_timeout_cpu() {
     let mut executor = ServiceBuilder::new()
         .layer(TimeoutLayer::new(Duration::from_millis(100)))
         .service(Executor::new_with_services(
-            vkey().clone(),
+            vkey().await.clone(),
             network,
             Some(local),
         ));
@@ -216,7 +265,7 @@ async fn executor_fails_because_of_concurrency_cpu() {
         Duration::from_millis(100),
         service_fn(|r: Request| async move {
             tokio::time::sleep(Duration::from_secs(20)).await;
-            let mut proof = mock_proof(r.stdin);
+            let mut proof = mock_proof(r.stdin).await;
             proof.sp1_version = "from_network".to_string();
 
             Ok(Response { proof })
@@ -228,7 +277,7 @@ async fn executor_fails_because_of_concurrency_cpu() {
         1,
         service_fn(|r: Request| async move {
             tokio::time::sleep(Duration::from_secs(20)).await;
-            let mut proof = mock_proof(r.stdin);
+            let mut proof = mock_proof(r.stdin).await;
             proof.sp1_version = "from_local".to_string();
 
             Ok(Response { proof })
@@ -238,7 +287,7 @@ async fn executor_fails_because_of_concurrency_cpu() {
     let mut executor = ServiceBuilder::new()
         .layer(TimeoutLayer::new(Duration::from_secs(1)))
         .service(Executor::new_with_services(
-            vkey().clone(),
+            vkey().await.clone(),
             network,
             Some(local),
         ));
@@ -271,16 +320,19 @@ async fn executor_fails_because_of_concurrency_cpu() {
 
 #[tokio::test]
 async fn executor_normal_behavior_mock_prover() {
-    let prover = Arc::new(CpuProver::mock());
-    let (proving_key, verification_key) = prover.setup(ELF);
+    let prover = MockProver::new().await;
+    let proving_key = prover
+        .setup(ELF.into())
+        .await
+        .expect("setting up proving key");
+    let verification_key = proving_key.verifying_key().clone();
 
     let mock_prover_config = MockProverConfig::default();
     let mut executor = Executor::build_local_service(
         mock_prover_config.proving_timeout,
         mock_prover_config.max_concurrency_limit,
         LocalExecutor {
-            prover: prover.clone(),
-            is_mock: true,
+            prover: Arc::new(LocalProver::Mock(prover.clone())),
             proving_key,
             verification_key: verification_key.clone(),
         },
@@ -296,6 +348,6 @@ async fn executor_normal_behavior_mock_prover() {
 
     assert!(result.is_ok());
     assert!(prover
-        .verify(&result.unwrap().proof, &verification_key)
+        .verify(&result.unwrap().proof, &verification_key, None)
         .is_ok());
 }

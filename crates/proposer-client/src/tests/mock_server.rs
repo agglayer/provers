@@ -1,3 +1,5 @@
+#![allow(clippy::result_large_err)]
+
 use std::time::Duration;
 
 pub use tonic::transport::Error as TransportError;

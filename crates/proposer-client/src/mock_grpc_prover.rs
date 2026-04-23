@@ -1,25 +1,27 @@
 use std::{panic::AssertUnwindSafe, sync::Arc, time::Duration};
 
 use alloy_primitives::B256;
-use eyre::Context;
-use prover_executor::{sp1_block_in_place, sp1_fast};
-use sp1_sdk::{CpuProver, Prover as _, SP1ProofWithPublicValues, SP1ProvingKey, SP1VerifyingKey};
+use eyre::{eyre, Context};
+use prover_executor::{sp1_async, sp1_fast};
+use sp1_sdk::{
+    MockProver, Prover as _, ProvingKey, SP1ProofWithPublicValues, SP1ProvingKey, SP1VerifyingKey,
+};
 
 use crate::{aggregation_prover::AggregationProver, rpc::MockProofProposerRequest};
 
 pub struct MockGrpcProver<Proposer> {
     proposer_rpc: Arc<Proposer>,
-    sp1_prover: CpuProver,
+    sp1_prover: MockProver,
 }
 
 impl<Proposer> MockGrpcProver<Proposer>
 where
     Proposer: crate::rpc::AggregationProofProposer + Sync + Send,
 {
-    pub fn new(proposer: Arc<Proposer>) -> MockGrpcProver<Proposer> {
+    pub async fn new(proposer: Arc<Proposer>) -> MockGrpcProver<Proposer> {
         MockGrpcProver {
             proposer_rpc: proposer,
-            sp1_prover: sp1_sdk::CpuProver::mock(),
+            sp1_prover: sp1_sdk::ProverClient::builder().mock().build().await,
         }
     }
 }
@@ -35,7 +37,13 @@ where
     ) -> eyre::Result<(SP1ProvingKey, SP1VerifyingKey)> {
         // TODO: Figure out a way to kill this struct if there's an unwind, and start
         // again with a fresh Prover
-        sp1_block_in_place(AssertUnwindSafe(|| self.sp1_prover.setup(program)))
+        let proving_key = sp1_async(AssertUnwindSafe(async {
+            self.sp1_prover.setup(program.into()).await
+        }))
+        .await?
+        .map_err(|error| eyre!(error.to_string()))?;
+        let verifying_key = proving_key.verifying_key().clone();
+        Ok((proving_key, verifying_key))
     }
 
     async fn wait_for_proof(
@@ -68,8 +76,10 @@ where
     ) -> eyre::Result<()> {
         // TODO: kill sp1 prover if there's a panic, to avoid any interior mutability on
         // panic issues?
-        sp1_fast(AssertUnwindSafe(|| self.sp1_prover.verify(proof, vkey)))
-            .context("Verifying aggregated proof")?
-            .context("Verifying aggregated proof")
+        sp1_fast(AssertUnwindSafe(|| {
+            self.sp1_prover.verify(proof, vkey, None)
+        }))
+        .context("Verifying aggregated proof")?
+        .context("Verifying aggregated proof")
     }
 }

@@ -6,4 +6,4 @@ license.workspace = true
 
 [dependencies]
 agglayer-interop-types.workspace = true
-sp1-prover.workspace = true
+sp1-sdk = { workspace = true, features = ["blocking"] }

@@ -110,11 +110,15 @@ impl AggregationProofProposer for ProposerRpcClient {
         let request = grpc::AggProofRequest::from(request);
 
         let mut client = self.client.clone();
-        let response: AggregationProofProposerResponse = client
+        let grpc_response = client
             .request_agg_proof(request)
             .await
             .map_err(ProofRequestError::Grpc)
-            .and_then(|resp| resp.into_inner().try_into())
+            .inspect_err(|e| error!("Aggregation proof request failed: {e:?}"))
+            .map_err(|e| Error::Requesting(Box::new(e)))?;
+        let response: AggregationProofProposerResponse = grpc_response
+            .into_inner()
+            .try_into()
             .inspect_err(|e| error!("Aggregation proof request failed: {e:?}"))
             .map_err(|e| Error::Requesting(Box::new(e)))?;
 
@@ -133,11 +137,15 @@ impl AggregationProofProposer for ProposerRpcClient {
         let request = grpc::GetMockProofRequest::from(request);
 
         let mut client = self.client.clone();
-        let response: MockProofProposerResponse = client
+        let grpc_response = client
             .get_mock_proof(request)
             .await
             .map_err(ProofRequestError::Grpc)
-            .and_then(|resp| resp.into_inner().try_into())
+            .inspect_err(|e| error!("Get mock proof request failed: {e:?}"))
+            .map_err(|e| Error::Requesting(Box::new(e)))?;
+        let response: MockProofProposerResponse = grpc_response
+            .into_inner()
+            .try_into()
             .inspect_err(|e| error!("Get mock proof request failed: {e:?}"))
             .map_err(|e| Error::Requesting(Box::new(e)))?;
 

@@ -21,7 +21,7 @@ use aggchain_proof_contracts::{
 use aggchain_proof_core::{
     bridge::{inserted_ger::InsertedGER, BridgeWitness},
     full_execution_proof::{
-        AggchainParamsValues, AggregationProofPublicValues, BabyBearDigest, ClaimRoot, FepInputs,
+        AggchainParamsValues, AggregationProofPublicValues, ClaimRoot, FepInputs, KoalaBearDigest,
     },
     proof::{AggchainProofWitness, IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION},
 };
@@ -72,7 +72,7 @@ pub enum FepVerification {
     Proof {
         /// Aggregated full execution proof for the number of aggregated block
         /// spans.
-        aggregation_proof: Box<sp1_core_executor::SP1ReduceProof<sp1_prover::InnerSC>>,
+        aggregation_proof: Box<sp1_sdk::SP1ProofWithPublicValues>,
 
         /// Aggregation proof's public values produced by the prover. Used to
         /// verify the proof.
@@ -528,7 +528,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             signature_optimistic_mode: request.fep_verification.optimistic_mode_signature(),
             l1_info_tree_leaf,
             l1_head_inclusion_proof: request.aggchain_proof_inputs.l1_info_tree_merkle_proof,
-            aggregation_vkey_hash: BabyBearDigest(aggregation_vkey.hash_babybear()),
+            aggregation_vkey_hash: KoalaBearDigest(aggregation_vkey.hash_u32()),
             range_vkey_commitment: RANGE_VKEY_COMMITMENT,
         };
 
@@ -592,12 +592,17 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                     aggregation_proof, ..
                 } = request.fep_verification
                 {
+                    let aggregation_proof = aggregation_proof
+                        .proof
+                        .clone()
+                        .try_as_compressed()
+                        .ok_or(Error::GeneratedProofIsNotCompressed)?;
                     stdin.write_proof(*aggregation_proof, aggregation_vkey.vk.clone());
                 }
-                stdin
+                Ok::<_, Error>(stdin)
             })
             .context("Failed to build SP1 stdin")
-            .map_err(Error::Other)?;
+            .map_err(Error::Other)??;
 
             info!(last_proven_block=%request.aggchain_proof_inputs.last_proven_block,
                 end_block=%request.end_block,

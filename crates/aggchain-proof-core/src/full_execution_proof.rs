@@ -4,9 +4,8 @@ use agglayer_primitives::{
 };
 use alloy_primitives::{FixedBytes, B256, U256};
 use alloy_sol_types::{sol, SolValue};
-use p3_baby_bear::BabyBear;
 use p3_bn254_fr::Bn254Fr;
-use p3_field::{AbstractField, PrimeField, PrimeField32};
+use p3_field::{AbstractField, PrimeField};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest as Sha256Digest, Sha256};
 use unified_bridge::{L1InfoTreeLeaf, MerkleProof};
@@ -49,22 +48,22 @@ impl From<ClaimRoot> for L2PreRoot {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct BabyBearDigest(pub [BabyBear; 8]);
+pub struct KoalaBearDigest(pub HashU32);
 
-impl BabyBearDigest {
+impl KoalaBearDigest {
     pub fn to_hash_u32(&self) -> HashU32 {
-        self.0.map(|n| n.as_canonical_u32())
+        self.0
     }
 
     pub fn to_hash_bn254(&self) -> [u8; 32] {
         let vkey_digest_bn254: Bn254Fr = {
             let mut result = Bn254Fr::zero();
-            for word in self.0.iter() {
-                // Since BabyBear prime is less than 2^31, we can shift by 31 bits each time and
-                // still be within the Bn254Fr field, so we don't have to
+            for word in self.0 {
+                // Since KoalaBear prime is less than 2^31, we can shift by 31 bits each time
+                // and still be within the Bn254Fr field, so we don't have to
                 // truncate the top 3 bits.
                 result *= Bn254Fr::from_canonical_u64(1 << 31);
-                result += Bn254Fr::from_canonical_u32(word.as_canonical_u32());
+                result += Bn254Fr::from_canonical_u32(word);
             }
             result
         };
@@ -91,8 +90,8 @@ pub struct FepInputs {
     pub new_withdrawal_storage_root: Digest,
     pub new_block_hash: Digest,
 
-    /// Aggregation vkey hash babybear.
-    pub aggregation_vkey_hash: BabyBearDigest,
+    /// Aggregation vkey hash koalabear.
+    pub aggregation_vkey_hash: KoalaBearDigest,
 
     /// Range vkey commitment.
     pub range_vkey_commitment: [u8; 32],
@@ -321,7 +320,21 @@ pub(crate) fn compute_output_root(
 
 #[cfg(test)]
 mod tests {
+    use sp1_sdk::HashableKey as _;
+
     use crate::full_execution_proof::compute_output_root;
+
+    #[test]
+    fn test_koalabear_digest_round_trip_with_aggregation_vkey() {
+        let aggregation_vkey = proposer_elfs::aggregation::VKEY.vkey();
+        let koalabear_digest = super::KoalaBearDigest(aggregation_vkey.hash_u32());
+
+        assert_eq!(
+            aggregation_vkey.bytes32_raw(),
+            koalabear_digest.to_hash_bn254()
+        );
+        assert_eq!(aggregation_vkey.hash_u32(), koalabear_digest.to_hash_u32());
+    }
 
     #[test]
     fn test_compute_output_root_expected_value() {
