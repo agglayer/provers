@@ -28,8 +28,8 @@ pub enum Error {
     AggchainProofVkeyResolveFailed(#[source] aggchain_proof_contracts::Error),
 
     #[error(
-        "Proposer  breaks import/unclaim pair: end_block {new_end_block}, \
-         global_index={global_index}, claim_block={import_block}, unclaim_block={unclaim_block} "
+        "Proposer breaks import/unclaim pair: end_block {new_end_block}, \
+         global_index={global_index}, claim_block={import_block}, unclaim_block={unclaim_block}"
     )]
     BrokenImportUnclaimPair {
         global_index: alloy_primitives::U256,
