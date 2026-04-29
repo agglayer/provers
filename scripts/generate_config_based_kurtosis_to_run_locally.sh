@@ -44,11 +44,22 @@ EVM_GENESIS_ARTIFACT="evm-sketch-genesis-conf-artifact.json"
 TMP_DIR="./tmp"
 DL_DIR="$TMP_DIR/_kurtosis_downloads"
 OUTPUT_CONFIG="$TMP_DIR/aggkit-prover-config.toml"
+INSPECT_OUT="$TMP_DIR/_enclave_inspect.txt"
 
 # ── Setup ─────────────────────────────────────────────────────────────────────
 
 mkdir -p "$TMP_DIR"
 rm -rf "$DL_DIR" && mkdir -p "$DL_DIR"
+
+# ── Inspect enclave ───────────────────────────────────────────────────────────
+
+echo "==> Inspecting kurtosis enclave '$ENCLAVE'..."
+_inspect_err="$TMP_DIR/_enclave_inspect_err.txt"
+if ! kurtosis enclave inspect "$ENCLAVE" > "$INSPECT_OUT" 2>"$_inspect_err"; then
+    echo "ERROR: kurtosis enclave inspect '$ENCLAVE' failed."
+    cat "$_inspect_err"
+    exit 1
+fi
 
 # ── Download config artifact ──────────────────────────────────────────────────
 
@@ -89,7 +100,7 @@ while IFS= read -r line; do
     elif [[ "$line" =~ ([0-9]+)/tcp[[:space:]]*-\>[[:space:]]*127\.0\.0\.1:([0-9]+) ]]; then
         PORT_MAP["${current_service}:${BASH_REMATCH[1]}"]="http://127.0.0.1:${BASH_REMATCH[2]}"
     fi
-done < <(kurtosis enclave inspect "$ENCLAVE" 2>/dev/null)
+done < "$INSPECT_OUT"
 
 # ── Replace kurtosis internal URLs with public ports ─────────────────────────
 # Finds every URL in the config matching a kurtosis internal hostname pattern
