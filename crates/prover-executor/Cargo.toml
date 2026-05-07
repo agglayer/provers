@@ -26,7 +26,7 @@ prover-engine.workspace = true
 prover-logger.workspace = true
 
 
-sp1-sdk = { workspace = true, features = ["native-gnark", "network", "reserved-capacity"] }
+sp1-sdk = { workspace = true, features = ["network", "reserved-capacity"] }
 
 [lints]
 workspace = true
