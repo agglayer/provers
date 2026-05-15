@@ -49,7 +49,7 @@ agglayer-tries = "0.15.0"
 unified-bridge = "0.15.0"
 
 # Ecosystem dependencies
-op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", branch = "release/3.9.x-agglayer" }
+op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v3.9.0-agglayer" }
 
 # SP1 dependencies
 # Please check if the toolchain image at the top `scripts/make/Makefile.elf.toml` could also be
