@@ -19,7 +19,6 @@ tracing.workspace = true
 aggchain-proof-contracts.workspace = true
 aggchain-proof-core.workspace = true
 aggchain-proof-types.workspace = true
-agglayer-elf-build.workspace = true
 agglayer-interop.workspace = true
 agglayer-primitives.workspace = true
 aggkit-prover-types = { workspace = true, features = ["sp1"] }
@@ -37,7 +36,9 @@ tokio.workspace = true
 color-eyre.workspace = true
 eyre.workspace = true
 
-agglayer-elf-build.workspace = true
+cargo_metadata.workspace = true
+clap.workspace = true
+sp1-build.workspace = true
 
 [lints]
 workspace = true
