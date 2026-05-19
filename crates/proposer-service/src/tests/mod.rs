@@ -36,7 +36,7 @@ async fn generate_keys() -> (
     }
     let data = TestAggregationOutputs::default();
     let public_values = SP1PublicValues::from(
-        &aggkit_prover_types::bincode::sp1v4()
+        &aggkit_prover_types::bincode::sp1_compatible()
             .serialize(&data)
             .unwrap(),
     );

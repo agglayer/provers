@@ -57,7 +57,9 @@ fn build_mode() -> eyre::Result<BuildMode> {
 
 fn cached_elf_path() -> eyre::Result<String> {
     let manifest_dir = env::var("CARGO_MANIFEST_DIR").context("Cannot obtain manifest dir")?;
-    Ok(Utf8Path::new(&manifest_dir).join(CACHED_ELF_PATH).to_string())
+    Ok(Utf8Path::new(&manifest_dir)
+        .join(CACHED_ELF_PATH)
+        .to_string())
 }
 
 fn build_program(extra_args: Vec<String>) -> eyre::Result<String> {

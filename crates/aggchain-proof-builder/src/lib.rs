@@ -713,7 +713,7 @@ where
                 .await
                 .map_err(Error::ProverFailedToExecute)?;
 
-            let public_input: AggchainProofPublicValues = bincode::sp1v4()
+            let public_input: AggchainProofPublicValues = bincode::sp1_compatible()
                 .deserialize(proof.public_values.as_slice())
                 .unwrap();
 
