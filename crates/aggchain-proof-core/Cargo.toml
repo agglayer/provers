@@ -41,3 +41,4 @@ sp1-sdk.workspace = true
 tokio.workspace = true
 tracing-subscriber.workspace = true
 url.workspace = true
+reqwest.workspace = true

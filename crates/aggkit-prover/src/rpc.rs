@@ -120,7 +120,7 @@ impl AggchainProofGrpcService for GrpcService {
                 context.insert(
                     "public_values".to_owned(),
                     Bytes::from(
-                        bincode::sp1v4()
+                        bincode::sp1_compatible()
                             .serialize(&response.public_values)
                             .unwrap_or_else(|_| b"bincode serialization failed".to_vec()),
                     ),
@@ -243,7 +243,7 @@ impl AggchainProofGrpcService for GrpcService {
                 context.insert(
                     "public_values".to_owned(),
                     Bytes::from(
-                        sp1_fast(|| bincode::sp1v4().serialize(&response.public_values))
+                        sp1_fast(|| bincode::sp1_compatible().serialize(&response.public_values))
                             .unwrap_or_else(|_| Ok(b"bincode serialization failed".to_vec()))
                             .unwrap_or_else(|_| b"bincode serialization failed".to_vec()),
                     ),

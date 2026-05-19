@@ -24,6 +24,7 @@ prover-alloy.workspace = true
 prover-executor.workspace = true
 prover-utils.workspace = true
 mockall = { workspace = true, optional = true }
+reqwest.workspace = true
 
 # SP1 dependencies
 sp1-cc-client-executor.workspace = true
