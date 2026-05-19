@@ -56,17 +56,17 @@ op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = 
 # crate dependencies.
 p3-bn254-fr = "=0.3.3-succinct"
 p3-field = "=0.3.3-succinct"
-sp1-core-executor = "=6.2.0"
-sp1-core-machine = "=6.2.0"
-sp1-sdk = "=6.2.0"
-sp1-prover = "=6.2.0"
-sp1-zkvm = "=6.2.0"
-sp1-build = "=6.2.0"
+sp1-core-executor = "=6.2.1"
+sp1-core-machine = "=6.2.1"
+sp1-sdk = "=6.2.1"
+sp1-prover = "=6.2.1"
+sp1-zkvm = "=6.2.1"
+sp1-build = "=6.2.1"
 
-sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "71741f32ac67c1e5066f42ee56ee6e6b64b349dd", features = [
+sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "8fd8c4e010a00d87d4442043c69697b2a2c4aeb3", features = [
     "optimism",
 ] }
-sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "71741f32ac67c1e5066f42ee56ee6e6b64b349dd", features = [
+sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "8fd8c4e010a00d87d4442043c69697b2a2c4aeb3", features = [
     "optimism",
 ] }
 

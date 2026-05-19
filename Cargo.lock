@@ -961,7 +961,7 @@ dependencies = [
  "alloy-rlp",
  "alloy-serde",
  "alloy-sol-types",
- "itertools 0.14.0",
+ "itertools 0.13.0",
  "serde",
  "serde_json",
  "serde_with",
@@ -1159,7 +1159,7 @@ checksum = "e8597d36d546e1dab822345ad563243ec3920e199322cb554ce56c8ef1a1e2e7"
 dependencies = [
  "alloy-json-rpc",
  "alloy-transport",
- "itertools 0.14.0",
+ "itertools 0.13.0",
  "reqwest 0.13.3",
  "serde_json",
  "tower 0.5.2",
@@ -6851,7 +6851,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be769465445e8c1474e9c5dac2018218498557af32d9ed057325ec9a41ae81bf"
 dependencies = [
  "heck",
- "itertools 0.14.0",
+ "itertools 0.10.5",
  "log",
  "multimap",
  "once_cell",
@@ -6871,7 +6871,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a56d757972c98b346a9b766e3f02746cde6dd1cd1d1d563472929fdd74bec4d"
 dependencies = [
  "anyhow",
- "itertools 0.14.0",
+ "itertools 0.10.5",
  "proc-macro2",
  "quote",
  "syn 2.0.117",
@@ -8191,7 +8191,7 @@ dependencies = [
 [[package]]
 name = "rsp-client-executor"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/rsp?tag=reth-1.9.3-sp1-6.2.0#9e805e0fb27f1f7b1107f34414b35048ee388678"
+source = "git+https://github.com/succinctlabs/rsp?tag=reth-1.9.3-sp1-6.2.1#2b532789f377f842ecc508bd6812e9e577ee5525"
 dependencies = [
  "alloy-consensus",
  "alloy-evm",
@@ -8224,7 +8224,7 @@ dependencies = [
 [[package]]
 name = "rsp-mpt"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/rsp?tag=reth-1.9.3-sp1-6.2.0#9e805e0fb27f1f7b1107f34414b35048ee388678"
+source = "git+https://github.com/succinctlabs/rsp?tag=reth-1.9.3-sp1-6.2.1#2b532789f377f842ecc508bd6812e9e577ee5525"
 dependencies = [
  "alloy-primitives",
  "alloy-rlp",
@@ -8239,7 +8239,7 @@ dependencies = [
 [[package]]
 name = "rsp-primitives"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/rsp?tag=reth-1.9.3-sp1-6.2.0#9e805e0fb27f1f7b1107f34414b35048ee388678"
+source = "git+https://github.com/succinctlabs/rsp?tag=reth-1.9.3-sp1-6.2.1#2b532789f377f842ecc508bd6812e9e577ee5525"
 dependencies = [
  "alloy-eips",
  "alloy-genesis",
@@ -8258,7 +8258,7 @@ dependencies = [
 [[package]]
 name = "rsp-rpc-db"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/rsp?tag=reth-1.9.3-sp1-6.2.0#9e805e0fb27f1f7b1107f34414b35048ee388678"
+source = "git+https://github.com/succinctlabs/rsp?tag=reth-1.9.3-sp1-6.2.1#2b532789f377f842ecc508bd6812e9e577ee5525"
 dependencies = [
  "alloy-consensus",
  "alloy-primitives",
@@ -8282,7 +8282,7 @@ dependencies = [
 [[package]]
 name = "rsp-witness-db"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/rsp?tag=reth-1.9.3-sp1-6.2.0#9e805e0fb27f1f7b1107f34414b35048ee388678"
+source = "git+https://github.com/succinctlabs/rsp?tag=reth-1.9.3-sp1-6.2.1#2b532789f377f842ecc508bd6812e9e577ee5525"
 dependencies = [
  "alloy-primitives",
  "reth-storage-errors",
@@ -9606,9 +9606,9 @@ dependencies = [
 
 [[package]]
 name = "sp1-build"
-version = "6.2.0"
+version = "6.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fcd431ddaa8d51f13c628457f96c95f95ab755cebd718646741cc9f49364abf0"
+checksum = "082381d1779d12762a5fb4efa150c2ebdede79a3500eb0a93bf875f7cd64efa0"
 dependencies = [
  "anyhow",
  "cargo_metadata",
@@ -9621,7 +9621,7 @@ dependencies = [
 [[package]]
 name = "sp1-cc-client-executor"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/sp1-contract-call/?rev=71741f32ac67c1e5066f42ee56ee6e6b64b349dd#71741f32ac67c1e5066f42ee56ee6e6b64b349dd"
+source = "git+https://github.com/succinctlabs/sp1-contract-call/?rev=8fd8c4e010a00d87d4442043c69697b2a2c4aeb3#8fd8c4e010a00d87d4442043c69697b2a2c4aeb3"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
@@ -9661,7 +9661,7 @@ dependencies = [
 [[package]]
 name = "sp1-cc-host-executor"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/sp1-contract-call/?rev=71741f32ac67c1e5066f42ee56ee6e6b64b349dd#71741f32ac67c1e5066f42ee56ee6e6b64b349dd"
+source = "git+https://github.com/succinctlabs/sp1-contract-call/?rev=8fd8c4e010a00d87d4442043c69697b2a2c4aeb3#8fd8c4e010a00d87d4442043c69697b2a2c4aeb3"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
@@ -10198,9 +10198,9 @@ dependencies = [
 
 [[package]]
 name = "sp1-sdk"
-version = "6.2.0"
+version = "6.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d9b6bcda66f0186918b115014a8eb7ad6f264f27ddbc64e5a5b3d425b9e368c6"
+checksum = "f4c15071380f43c33b3dbe5650cd5acf54a8e0af4b80a833075a56309256a383"
 dependencies = [
  "alloy-primitives",
  "alloy-signer",
@@ -10277,9 +10277,9 @@ dependencies = [
 
 [[package]]
 name = "sp1-zkvm"
-version = "6.2.0"
+version = "6.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3e476bb1645d2d0a7fc79bdf561b410024a6c54d70b677a1f49ad65a7d1b015"
+checksum = "fa10f689c4384daf7ece04176c727e6f2e56193e10a406406aa7c9c6c8f8f478"
 dependencies = [
  "cfg-if",
  "critical-section",

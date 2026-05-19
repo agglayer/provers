@@ -4,8 +4,10 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 
+[workspace]
+
 [dependencies]
-sp1-zkvm.workspace = true
+sp1-zkvm = "=6.2.1"
 
 [build-dependencies]
-sp1-cli.workspace = true
+sp1-cli = "=6.2.1"
