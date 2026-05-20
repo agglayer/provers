@@ -36,12 +36,11 @@ dependencies = [
  "aggchain-proof-core",
  "aggchain-proof-types",
  "aggkit-prover-types",
+ "agglayer-elf-build",
  "agglayer-interop",
  "agglayer-primitives",
  "alloy",
  "alloy-primitives",
- "cargo_metadata",
- "clap",
  "color-eyre",
  "eyre",
  "futures",
@@ -51,7 +50,6 @@ dependencies = [
  "prover-utils",
  "serde",
  "serde_json",
- "sp1-build",
  "sp1-sdk",
  "thiserror 2.0.17",
  "tokio",
@@ -241,19 +239,31 @@ dependencies = [
 
 [[package]]
 name = "agglayer-bincode"
-version = "0.16.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37fe2051b6e4d86e40b02154cde071c3e0849a109628b85fe4042a5f894dbc6a"
+checksum = "60f2e9e223804347e186c1cfbe66b8e51025c71dfa6733bc19726efd1d2073e3"
 dependencies = [
  "bincode",
  "serde",
 ]
 
 [[package]]
-name = "agglayer-evm-client"
-version = "0.16.0"
+name = "agglayer-elf-build"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1408b5cb04d619f612cb9955ad4190ff2834ef44fddf89e7d772b990331dfaa7"
+checksum = "50fd6ee051b8fe0865ce070adbd925914acf2a3d06a9731d2926e81ffb0f18ff"
+dependencies = [
+ "cargo_metadata",
+ "clap",
+ "eyre",
+ "sp1-build",
+]
+
+[[package]]
+name = "agglayer-evm-client"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6090eb015374e2d109e3aa5fa249c8078d36a521ffc3b4a400809f0eeaea020c"
 dependencies = [
  "agglayer-primitives",
  "alloy",
@@ -265,9 +275,9 @@ dependencies = [
 
 [[package]]
 name = "agglayer-interop"
-version = "0.16.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d414bc4d75a2168cb013a4817b96652e717453d1f03e1e4f38e85ffccab7809c"
+checksum = "a08fc1a387c45e000211216d7f0a3d4d65eb961572fd80bd43216c1e07a4eda2"
 dependencies = [
  "agglayer-interop-grpc-types",
  "agglayer-interop-types",
@@ -275,9 +285,9 @@ dependencies = [
 
 [[package]]
 name = "agglayer-interop-grpc-types"
-version = "0.16.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b75950557ae80ad5134f28188f575d7e8077dedbb817c435591814275dc0d87"
+checksum = "784940d93445de81f798d5a9f7c9c5087abe023c4d237ae051bc57c50dcf57cd"
 dependencies = [
  "agglayer-bincode",
  "agglayer-interop-types",
@@ -291,9 +301,9 @@ dependencies = [
 
 [[package]]
 name = "agglayer-interop-types"
-version = "0.16.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4fabea7d4bb05efd43edb47d304668c6658318fc3337a1ac0cdcd9263f7b19b0"
+checksum = "4168bb076f59a4d873750883189bf34f98f575ca80c57a8cdd15cfe60aaf079d"
 dependencies = [
  "agglayer-bincode",
  "agglayer-primitives",
@@ -306,9 +316,9 @@ dependencies = [
 
 [[package]]
 name = "agglayer-primitives"
-version = "0.16.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "777c4ac25d8dde9b8a352cba6637b1149c7407a9b4778db310bec0dfdeadb84d"
+checksum = "53e36b4a312720b61ee85852251558e9992848248d59543584c67edc9b94e22d"
 dependencies = [
  "alloy-primitives",
  "byteorder",
@@ -340,9 +350,9 @@ dependencies = [
 
 [[package]]
 name = "agglayer-tries"
-version = "0.16.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca3adfde4f9d910ceb30e270c3273d72b10d283ec4eee4fb2cf1d4a3aa6f52a4"
+checksum = "e7ffd1be0f1f23175c31eaae4ac960c42de923d7c1518ec66aa89ff9d5d34f37"
 dependencies = [
  "agglayer-primitives",
  "hex",
@@ -963,7 +973,7 @@ dependencies = [
  "alloy-rlp",
  "alloy-serde",
  "alloy-sol-types",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "serde",
  "serde_json",
  "serde_with",
@@ -1161,7 +1171,7 @@ checksum = "e8597d36d546e1dab822345ad563243ec3920e199322cb554ce56c8ef1a1e2e7"
 dependencies = [
  "alloy-json-rpc",
  "alloy-transport",
- "itertools 0.13.0",
+ "itertools 0.14.0",
  "reqwest 0.13.3",
  "serde_json",
  "tower 0.5.2",
@@ -3727,7 +3737,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -4526,7 +4536,7 @@ dependencies = [
  "libc",
  "percent-encoding",
  "pin-project-lite",
- "socket2 0.6.1",
+ "socket2 0.5.10",
  "system-configuration",
  "tokio",
  "tower-service",
@@ -5745,7 +5755,7 @@ version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff32365de1b6743cb203b710788263c44a03de03802daf96092f2da4fe6ba4d7"
 dependencies = [
- "proc-macro-crate 3.4.0",
+ "proc-macro-crate 1.1.3",
  "proc-macro2",
  "quote",
  "syn 2.0.117",
@@ -6853,7 +6863,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be769465445e8c1474e9c5dac2018218498557af32d9ed057325ec9a41ae81bf"
 dependencies = [
  "heck",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "log",
  "multimap",
  "once_cell",
@@ -6873,7 +6883,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a56d757972c98b346a9b766e3f02746cde6dd1cd1d1d563472929fdd74bec4d"
 dependencies = [
  "anyhow",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "proc-macro2",
  "quote",
  "syn 2.0.117",
@@ -7032,7 +7042,7 @@ dependencies = [
  "quinn-udp",
  "rustc-hash",
  "rustls",
- "socket2 0.6.1",
+ "socket2 0.5.10",
  "thiserror 2.0.17",
  "tokio",
  "tracing",
@@ -7070,9 +7080,9 @@ dependencies = [
  "cfg_aliases",
  "libc",
  "once_cell",
- "socket2 0.6.1",
+ "socket2 0.5.10",
  "tracing",
- "windows-sys 0.60.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -8416,7 +8426,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -8505,7 +8515,7 @@ dependencies = [
  "security-framework 3.5.1",
  "security-framework-sys",
  "webpki-root-certs 1.0.4",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -10613,7 +10623,7 @@ dependencies = [
  "getrandom 0.3.4",
  "once_cell",
  "rustix",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -11407,9 +11417,9 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 
 [[package]]
 name = "unified-bridge"
-version = "0.16.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4534e900db62afa30ccc694ea9a3f029c89c9fc9fec2bb153a0f0bbe81b3f123"
+checksum = "6d2947115b96ff8c1bd4a0dbc04bc307f4434929888973e422837a73d62f0a27"
 dependencies = [
  "agglayer-primitives",
  "agglayer-tries",
