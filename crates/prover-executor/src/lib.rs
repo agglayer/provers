@@ -9,11 +9,11 @@ use std::{
 pub use error::Error;
 use eyre::Context as _;
 use futures::{Future, TryFutureExt};
-use prover_config::{CpuProverConfig, ProverType};
+use prover_config::ProverType;
 use sp1_sdk::{
-    network::FulfillmentStrategy, CpuProver, MockProver, NetworkProver, ProveRequest as _, Prover,
-    ProverClient, ProvingKey as _, SP1ProofWithPublicValues, SP1ProvingKey, SP1Stdin,
-    SP1VerifyingKey,
+    network::FulfillmentStrategy, CpuProver, LightProver, MockProver, NetworkProver,
+    ProveRequest as _, Prover, ProverClient, ProvingKey as _, SP1ProofWithPublicValues,
+    SP1ProvingKey, SP1Stdin, SP1VerifyingKey,
 };
 use tower::{
     limit::ConcurrencyLimitLayer, timeout::TimeoutLayer, util::BoxCloneService, Service,
@@ -202,14 +202,15 @@ impl Executor {
     }
 
     pub async fn compute_program_vkey(program: &'static [u8]) -> eyre::Result<SP1VerifyingKey> {
-        let executor = Executor::new(
-            ProverType::CpuProver(CpuProverConfig::default()),
-            None,
-            program,
-        )
+        let proving_key = sp1_async(AssertUnwindSafe(async move {
+            let prover = LightProver::new().await;
+            prover.setup(program.into()).await
+        }))
         .await
-        .context("Failed creating fake prover to compute program vkey")?;
-        Ok(SP1VerifyingKey::clone(executor.get_vkey()))
+        .context("LightProver setup panicked")?
+        .map_err(|error| eyre::eyre!(error.to_string()))?;
+
+        Ok(proving_key.verifying_key().clone())
     }
 }
 
