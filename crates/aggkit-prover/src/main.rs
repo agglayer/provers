@@ -2,7 +2,6 @@ use aggchain_proof_service::AGGCHAIN_VKEY_SELECTOR;
 use aggkit_prover::version;
 use clap::Parser as _;
 use eyre::Context as _;
-use prover_config::{CpuProverConfig, ProverType};
 use sp1_sdk::HashableKey as _;
 
 fn main() -> eyre::Result<()> {
@@ -36,13 +35,11 @@ fn main() -> eyre::Result<()> {
                 .enable_all()
                 .build()?
                 .block_on(async move {
-                    let executor = prover_executor::Executor::new(
-                        ProverType::CpuProver(CpuProverConfig::default()),
-                        None,
+                    let vkey = prover_executor::Executor::compute_program_vkey(
                         aggchain_proof_service::AGGCHAIN_PROOF_ELF,
                     )
                     .await?;
-                    let vkey = executor.get_vkey();
+
                     let vkey_hex = hex::encode(vkey.hash_bytes());
                     println!("0x{vkey_hex}");
                     Ok::<(), eyre::Report>(())
