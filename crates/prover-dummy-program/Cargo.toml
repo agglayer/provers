@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 [workspace]
 
 [dependencies]
-sp1-zkvm = "=6.2.1"
+sp1-zkvm = "=6.2.2"
 
 [build-dependencies]
-sp1-cli = "=6.2.1"
+sp1-cli = "=6.2.2"
