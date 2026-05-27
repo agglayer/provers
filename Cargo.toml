@@ -55,8 +55,8 @@ op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = 
 # Please check if the toolchain image at the top `scripts/make/Makefile.elf.toml` could also be
 # updated whenever updating the below dependencies; as well as updating the proof-program binary
 # crate dependencies.
-p3-bn254-fr = "=0.3.3-succinct"
-p3-field = "=0.3.3-succinct"
+p3-bn254-fr = "=0.4.3-succinct"
+p3-field = "=0.4.3-succinct"
 sp1-core-executor = "=6.2.2"
 sp1-core-machine = "=6.2.2"
 sp1-sdk = "=6.2.2"
