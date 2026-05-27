@@ -40,13 +40,13 @@ prover-utils = { path = "crates/prover-utils" }
 agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", tag = "v0.4.4" }
 
 # Interop dependencies
-agglayer-elf-build = "0.17.0"
-agglayer-evm-client = "0.17.0"
-agglayer-interop = "0.17.0"
-agglayer-interop-types = "0.17.0"
-agglayer-primitives = "0.17.0"
-agglayer-tries = "0.17.0"
-unified-bridge = "0.17.0"
+agglayer-elf-build = "0.18.0"
+agglayer-evm-client = "0.18.0"
+agglayer-interop = "0.18.0"
+agglayer-interop-types = "0.18.0"
+agglayer-primitives = "0.18.0"
+agglayer-tries = "0.18.0"
+unified-bridge = "0.18.0"
 
 # Ecosystem dependencies
 op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v3.9.0-agglayer" }
@@ -55,19 +55,19 @@ op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = 
 # Please check if the toolchain image at the top `scripts/make/Makefile.elf.toml` could also be
 # updated whenever updating the below dependencies; as well as updating the proof-program binary
 # crate dependencies.
-p3-bn254-fr = "=0.3.3-succinct"
-p3-field = "=0.3.3-succinct"
-sp1-core-executor = "=6.2.1"
-sp1-core-machine = "=6.2.1"
-sp1-sdk = "=6.2.1"
-sp1-prover = "=6.2.1"
-sp1-zkvm = "=6.2.1"
-sp1-build = "=6.2.1"
+p3-bn254-fr = "=0.4.3-succinct"
+p3-field = "=0.4.3-succinct"
+sp1-core-executor = "=6.2.2"
+sp1-core-machine = "=6.2.2"
+sp1-sdk = "=6.2.2"
+sp1-prover = "=6.2.2"
+sp1-zkvm = "=6.2.2"
+sp1-build = "=6.2.2"
 
-sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "8fd8c4e010a00d87d4442043c69697b2a2c4aeb3", features = [
+sp1-cc-host-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", tag = "reth-1.9.3-sp1-6.2.2", features = [
     "optimism",
 ] }
-sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", rev = "8fd8c4e010a00d87d4442043c69697b2a2c4aeb3", features = [
+sp1-cc-client-executor = { git = "https://github.com/succinctlabs/sp1-contract-call/", tag = "reth-1.9.3-sp1-6.2.2", features = [
     "optimism",
 ] }
 
