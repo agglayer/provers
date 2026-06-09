@@ -72,12 +72,11 @@ pub fn install_overrides(
     aggregation_vkey: Option<&[u8]>,
     range_vkey_commitment: Option<[u8; 32]>,
 ) -> Result<(), VKeyDecodeError> {
+    // An `Err` from `set` means the value was already installed, which is
+    // expected on repeated startup-time calls (e.g. multiple service
+    // constructions in tests); the first installed value is kept.
     if let Some(bytes) = aggregation_vkey {
-        let vkey = decode_verifying_key(bytes)?;
-        // An `Err` here means it was already installed, which is expected on
-        // repeated startup-time calls (e.g. multiple service constructions in
-        // tests); the first installed value is kept.
-        let _ = aggregation::VKEY_OVERRIDE.set(vkey);
+        let _ = aggregation::VKEY_OVERRIDE.set(decode_verifying_key(bytes)?);
     }
     if let Some(commitment) = range_vkey_commitment {
         let _ = range::VKEY_COMMITMENT_OVERRIDE.set(commitment);

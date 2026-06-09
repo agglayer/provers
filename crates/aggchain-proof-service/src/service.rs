@@ -99,7 +99,7 @@ impl AggchainProofService {
                 .op_succinct
                 .aggregation_vkey
                 .as_ref()
-                .map(|bytes| bytes.as_ref()),
+                .map(|vkey| vkey.as_ref()),
             config
                 .op_succinct
                 .range_vkey_commitment

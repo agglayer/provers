@@ -1,5 +1,3 @@
-use std::fmt::Debug;
-
 use aggchain_proof_builder::config::AggchainProofBuilderConfig;
 use proposer_service::config::ProposerServiceConfig;
 use serde::{Deserialize, Serialize};
@@ -23,12 +21,16 @@ pub struct AggchainProofServiceConfig {
 /// Optional overrides of the op-succinct verification key material derived from
 /// a given op-succinct release. Each field independently falls back to the
 /// value embedded from `op-succinct-elfs` when absent.
+///
+/// Both values are hex strings handled by their types' existing serde; the
+/// aggregation vkey bytes are turned into a real `SP1VerifyingKey` with the
+/// same bincode codec the prover uses elsewhere. Produce them with the
+/// `op-succinct-vkey` CLI subcommand.
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 #[serde(rename_all = "kebab-case")]
 pub struct OpSuccinctVkeyConfig {
     /// Bincode-serialized aggregation `SP1VerifyingKey`, hex-encoded (`0x`
-    /// prefix optional). Produce it with the `op-succinct-vkey` CLI subcommand,
-    /// which emits a value in exactly this format.
+    /// prefix optional).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub aggregation_vkey: Option<alloy_primitives::Bytes>,
 
@@ -47,26 +49,26 @@ impl OpSuccinctVkeyConfig {
 
 #[cfg(test)]
 mod tests {
+    use proposer_elfs::{Sp1VKeyHash as _, VKeyHash};
+
     use super::*;
 
     #[test]
-    fn op_succinct_overrides_parse_from_hex() {
-        let config: OpSuccinctVkeyConfig = serde_json::from_str(
-            r#"{
-                "aggregation-vkey": "0xdeadbeef",
-                "range-vkey-commitment":
-                    "0x0000000000000000000000000000000000000000000000000000000000000001"
-            }"#,
-        )
-        .expect("parsing op-succinct overrides");
+    fn op_succinct_aggregation_vkey_round_trips_through_config() {
+        // `Bytes` carries the hex value through serde, and the existing bincode
+        // codec turns it back into the real verifying key. Use a real serialized
+        // vkey: the one embedded from op-succinct-elfs.
+        let encoded = alloy_primitives::hex::encode(proposer_elfs::aggregation::VKEY.as_bytes());
+        let config: OpSuccinctVkeyConfig =
+            serde_json::from_str(&format!(r#"{{ "aggregation-vkey": "0x{encoded}" }}"#))
+                .expect("parsing aggregation vkey");
 
+        let bytes = config.aggregation_vkey.expect("aggregation vkey present");
+        let vkey = proposer_elfs::decode_verifying_key(bytes.as_ref()).expect("decodes");
         assert_eq!(
-            config.aggregation_vkey,
-            Some(alloy_primitives::Bytes::from_static(&[
-                0xde, 0xad, 0xbe, 0xef
-            ]))
+            VKeyHash::from_vkey(&vkey),
+            VKeyHash::from_vkey(proposer_elfs::aggregation::VKEY.vkey()),
         );
-        assert_eq!(config.range_vkey_commitment.expect("commitment").0[31], 1);
     }
 
     #[test]
