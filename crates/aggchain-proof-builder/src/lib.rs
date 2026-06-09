@@ -325,6 +325,8 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     pub async fn new(
         config: &AggchainProofBuilderConfig,
         contracts_client: Arc<ContractsClient>,
+        aggregation_vkey_override: Option<Arc<SP1VerifyingKey>>,
+        range_vkey_commitment_override: Option<Digest>,
     ) -> eyre::Result<Self>
     where
         ContractsClient: L1OpSuccinctConfigFetcher,
@@ -342,14 +344,21 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
 
         let prover = Buffer::new(executor, MAX_CONCURRENT_REQUESTS);
 
-        // Retrieve the entire aggregation vkey and the range vkey commitment from the
-        // ELF
-        let aggregation_vkey = proposer_elfs::aggregation::VKEY.vkey().clone();
-        let range_vkey_commitment = Digest(proposer_elfs::range::VKEY_COMMITMENT);
+        // Resolve the aggregation vkey and range vkey commitment, preferring the
+        // configured overrides and falling back to the values embedded from
+        // op-succinct-elfs at build time.
+        let override_active = aggregation_vkey_override.is_some();
+        let aggregation_vkey = aggregation_vkey_override
+            .unwrap_or_else(|| Arc::new(proposer_elfs::aggregation::VKEY.vkey().clone()));
+        let range_vkey_commitment =
+            range_vkey_commitment_override.unwrap_or(Digest(RANGE_VKEY_COMMITMENT));
 
-        // Check mismatch on aggregation vkey
-        {
-            let retrieved = sp1_fast(|| VKeyHash::from_vkey(&aggregation_vkey))
+        // Check mismatch on the aggregation vkey embedded from op-succinct-elfs.
+        // Skipped when an override is supplied: the override is intentionally a
+        // different (newer) key, and is instead validated against the on-chain
+        // op-succinct config below.
+        if !override_active {
+            let retrieved = sp1_fast(|| VKeyHash::from_vkey(aggregation_vkey.as_ref()))
                 .context("Computing VKey hash")?;
             let expected = AGGREGATION_VKEY_HASH;
 
@@ -371,7 +380,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         // Validate that the OpSuccinct config keys match expected values
         validate_op_succinct_config_keys(
             &op_succinct_config,
-            &aggregation_vkey,
+            aggregation_vkey.as_ref(),
             &range_vkey_commitment,
         )?;
 
@@ -380,7 +389,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             contracts_client,
             prover,
             network_id: config.network_id,
-            aggregation_vkey: Arc::new(aggregation_vkey),
+            aggregation_vkey,
             range_vkey_commitment,
             static_call_caller_address: config.contracts.static_call_caller_address,
         })
@@ -529,7 +538,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             l1_info_tree_leaf,
             l1_head_inclusion_proof: request.aggchain_proof_inputs.l1_info_tree_merkle_proof,
             aggregation_vkey_hash: KoalaBearDigest(aggregation_vkey.hash_u32()),
-            range_vkey_commitment: RANGE_VKEY_COMMITMENT,
+            range_vkey_commitment: range_vkey_commitment.0,
         };
 
         {

@@ -134,6 +134,7 @@ dependencies = [
  "aggchain-proof-contracts",
  "aggchain-proof-core",
  "aggchain-proof-types",
+ "aggkit-prover-types",
  "agglayer-interop",
  "alloy-primitives",
  "alloy-sol-types",

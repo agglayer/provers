@@ -76,11 +76,13 @@ pub async fn main() -> eyre::Result<()> {
     };
     let mut proposer_service = if cli.mock {
         tower::ServiceBuilder::new()
-            .service(ProposerService::new_mock(&propser_service_config, l1_rpc_client).await?)
+            .service(ProposerService::new_mock(&propser_service_config, l1_rpc_client, None).await?)
             .boxed_clone()
     } else {
         tower::ServiceBuilder::new()
-            .service(ProposerService::new_network(&propser_service_config, l1_rpc_client).await?)
+            .service(
+                ProposerService::new_network(&propser_service_config, l1_rpc_client, None).await?,
+            )
             .boxed_clone()
     };
     info!("ProposerService initialized");

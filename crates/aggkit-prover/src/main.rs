@@ -50,6 +50,50 @@ fn main() -> eyre::Result<()> {
             let vkey_selector_hex = hex::encode(AGGCHAIN_VKEY_SELECTOR.to_be_bytes());
             println!("0x{vkey_selector_hex}");
         }
+
+        aggkit_prover::cli::Commands::OpSuccinctVkey { elf_dir } => {
+            tokio::runtime::Builder::new_multi_thread()
+                .enable_all()
+                .build()?
+                .block_on(async move {
+                    // The CLI is short-lived, so leaking the ELF bytes to satisfy the
+                    // `'static` bound of `compute_program_vkey` is acceptable.
+                    let read_elf = |name: &str| -> eyre::Result<&'static [u8]> {
+                        let path = elf_dir.join(name);
+                        let bytes = std::fs::read(&path)
+                            .with_context(|| format!("Reading ELF {}", path.display()))?;
+                        let leaked: &'static [u8] = Box::leak(bytes.into_boxed_slice());
+                        Ok(leaked)
+                    };
+
+                    let aggregation_vkey = prover_executor::Executor::compute_program_vkey(
+                        read_elf("aggregation-elf")?,
+                    )
+                    .await?;
+                    let range_vkey = prover_executor::Executor::compute_program_vkey(read_elf(
+                        "range-elf-embedded",
+                    )?)
+                    .await?;
+
+                    let aggregation_vkey_bytes =
+                        aggkit_prover_types::vkey::encode_verifying_key(&aggregation_vkey)?;
+
+                    println!("[aggchain-proof-service.op-succinct]");
+                    println!(
+                        "aggregation-vkey = \"0x{}\"",
+                        hex::encode(&aggregation_vkey_bytes)
+                    );
+                    println!(
+                        "range-vkey-commitment = \"0x{}\"",
+                        hex::encode(range_vkey.hash_bytes())
+                    );
+                    println!(
+                        "# aggregation on-chain vkey hash (bytes32): 0x{}",
+                        hex::encode(aggregation_vkey.bytes32_raw())
+                    );
+                    Ok::<(), eyre::Report>(())
+                })?;
+        }
     }
 
     Ok(())

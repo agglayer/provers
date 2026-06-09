@@ -58,6 +58,7 @@ where
         prover: Prover,
         config: &ProposerServiceConfig,
         l1_rpc: Arc<L1Rpc>,
+        aggregation_vkey_override: Option<Arc<SP1VerifyingKey>>,
     ) -> Result<Self, Error> {
         let proposer_rpc_client = Arc::new(
             ProposerRpcClient::new(
@@ -67,10 +68,15 @@ where
             .await?,
         );
 
-        let aggregation_vkey = Self::extract_aggregation_vkey(&prover, AGGREGATION_ELF)
-            .await
-            .context("Retrieving aggregation vkey")
-            .map_err(Error::Other)?;
+        // Prefer the configured aggregation vkey override; otherwise derive it from
+        // the embedded op-succinct ELF (the backward-compatible default).
+        let aggregation_vkey = match aggregation_vkey_override {
+            Some(vkey) => (*vkey).clone(),
+            None => Self::extract_aggregation_vkey(&prover, AGGREGATION_ELF)
+                .await
+                .context("Retrieving aggregation vkey")
+                .map_err(Error::Other)?,
+        };
 
         Ok(Self {
             l1_rpc,
@@ -98,6 +104,7 @@ impl<L1Rpc>
     pub async fn new_network(
         config: &ProposerServiceConfig,
         l1_rpc: Arc<L1Rpc>,
+        aggregation_vkey_override: Option<Arc<SP1VerifyingKey>>,
     ) -> Result<Self, Error> {
         assert!(
             !config.mock,
@@ -109,6 +116,7 @@ impl<L1Rpc>
                 .map_err(Error::Other)?,
             config,
             l1_rpc,
+            aggregation_vkey_override,
         )
         .await
     }
@@ -123,6 +131,7 @@ impl<L1Rpc>
     pub async fn new_mock(
         config: &ProposerServiceConfig,
         l1_rpc: Arc<L1Rpc>,
+        aggregation_vkey_override: Option<Arc<SP1VerifyingKey>>,
     ) -> Result<Self, Error> {
         assert!(
             config.mock,
@@ -140,6 +149,7 @@ impl<L1Rpc>
             MockGrpcProver::new(proposer_rpc_client).await,
             config,
             l1_rpc,
+            aggregation_vkey_override,
         )
         .await
     }
