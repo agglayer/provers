@@ -28,5 +28,5 @@ pub enum Error {
     AggchainProofVkeyResolveFailed(#[source] aggchain_proof_contracts::Error),
 
     #[error("Unable to decode the configured op-succinct aggregation verification key")]
-    OpSuccinctVkeyDecode(#[source] aggkit_prover_types::vkey::VKeyDecodeError),
+    OpSuccinctVkeyDecode(#[source] proposer_elfs::VKeyDecodeError),
 }

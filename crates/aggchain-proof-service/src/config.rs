@@ -27,10 +27,8 @@ pub struct AggchainProofServiceConfig {
 #[serde(rename_all = "kebab-case")]
 pub struct OpSuccinctVkeyConfig {
     /// Bincode-serialized aggregation `SP1VerifyingKey`, hex-encoded (`0x`
-    /// prefix optional). Must be produced with the same codec the prover uses
-    /// to decode it (see
-    /// `aggkit_prover_types::vkey::decode_verifying_key`); the
-    /// `op-succinct-vkey` CLI subcommand emits a value in this format.
+    /// prefix optional). Produce it with the `op-succinct-vkey` CLI subcommand,
+    /// which emits a value in exactly this format.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub aggregation_vkey: Option<alloy_primitives::Bytes>,
 

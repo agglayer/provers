@@ -325,8 +325,6 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     pub async fn new(
         config: &AggchainProofBuilderConfig,
         contracts_client: Arc<ContractsClient>,
-        aggregation_vkey_override: Option<Arc<SP1VerifyingKey>>,
-        range_vkey_commitment_override: Option<Digest>,
     ) -> eyre::Result<Self>
     where
         ContractsClient: L1OpSuccinctConfigFetcher,
@@ -344,28 +342,25 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
 
         let prover = Buffer::new(executor, MAX_CONCURRENT_REQUESTS);
 
-        // Resolve the aggregation vkey and range vkey commitment, preferring the
-        // configured overrides and falling back to the values embedded from
+        // Resolve the aggregation vkey and range vkey commitment. These use the
+        // configured op-succinct override when one was installed at startup (see
+        // `proposer_elfs::install_overrides`), otherwise the values embedded from
         // op-succinct-elfs at build time.
-        let override_active = aggregation_vkey_override.is_some();
-        let aggregation_vkey = aggregation_vkey_override
-            .unwrap_or_else(|| Arc::new(proposer_elfs::aggregation::VKEY.vkey().clone()));
-        let range_vkey_commitment =
-            range_vkey_commitment_override.unwrap_or(Digest(RANGE_VKEY_COMMITMENT));
+        let aggregation_vkey = Arc::new(proposer_elfs::aggregation::vkey().clone());
+        let range_vkey_commitment = Digest(proposer_elfs::range::commitment());
 
-        // Check mismatch on the aggregation vkey embedded from op-succinct-elfs.
-        // Skipped when an override is supplied: the override is intentionally a
-        // different (newer) key, and is instead validated against the on-chain
-        // op-succinct config below.
-        if !override_active {
-            let retrieved = sp1_fast(|| VKeyHash::from_vkey(aggregation_vkey.as_ref()))
-                .context("Computing VKey hash")?;
-            let expected = AGGREGATION_VKEY_HASH;
+        // Sanity-check that the embedded op-succinct-elfs vkey constants are
+        // internally consistent. The resolved (possibly overridden) key is
+        // validated against the on-chain op-succinct config below instead.
+        {
+            let retrieved =
+                sp1_fast(|| VKeyHash::from_vkey(proposer_elfs::aggregation::VKEY.vkey()))
+                    .context("Computing VKey hash")?;
 
-            if retrieved != expected {
+            if retrieved != AGGREGATION_VKEY_HASH {
                 return Err(eyre::Report::from(Error::MismatchAggregationElfVkeyHash {
                     got: retrieved,
-                    expected,
+                    expected: AGGREGATION_VKEY_HASH,
                 }));
             }
         }

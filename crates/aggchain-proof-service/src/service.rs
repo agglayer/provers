@@ -89,18 +89,23 @@ impl AggchainProofService {
     pub async fn new(config: &AggchainProofServiceConfig) -> Result<Self, Error> {
         debug!("Initializing AggchainProofService");
 
-        // Decode the optional op-succinct aggregation vkey override exactly once so
-        // the proposer service (host-side verification) and the proof builder
-        // (recursive verification) are guaranteed to use the identical key. When
-        // absent, each consumer falls back to the embedded op-succinct-elfs value.
-        let aggregation_vkey_override: Option<Arc<sp1_sdk::SP1VerifyingKey>> = config
-            .op_succinct
-            .aggregation_vkey
-            .as_ref()
-            .map(|bytes| aggkit_prover_types::vkey::decode_verifying_key(bytes))
-            .transpose()
-            .map_err(Error::OpSuccinctVkeyDecode)?
-            .map(Arc::new);
+        // Install the optional op-succinct vkey overrides from configuration before
+        // constructing the services, so the proposer service (host-side
+        // verification) and the proof builder (recursive verification) both read
+        // the same in-effect values via `proposer_elfs`. When absent, the values
+        // embedded from op-succinct-elfs are used.
+        proposer_elfs::install_overrides(
+            config
+                .op_succinct
+                .aggregation_vkey
+                .as_ref()
+                .map(|bytes| bytes.as_ref()),
+            config
+                .op_succinct
+                .range_vkey_commitment
+                .map(|digest| digest.0),
+        )
+        .map_err(Error::OpSuccinctVkeyDecode)?;
 
         let client = prover_alloy::AlloyProvider::new(
             &config.proposer_service.l1_rpc_endpoint.url,
@@ -124,25 +129,17 @@ impl AggchainProofService {
         let proposer_service = if config.proposer_service.mock {
             tower::ServiceBuilder::new()
                 .service(
-                    ProposerService::new_mock(
-                        &config.proposer_service,
-                        l1_rpc_client,
-                        aggregation_vkey_override.clone(),
-                    )
-                    .await
-                    .map_err(Error::ProposerServiceInitFailed)?,
+                    ProposerService::new_mock(&config.proposer_service, l1_rpc_client)
+                        .await
+                        .map_err(Error::ProposerServiceInitFailed)?,
                 )
                 .boxed_clone()
         } else {
             tower::ServiceBuilder::new()
                 .service(
-                    ProposerService::new_network(
-                        &config.proposer_service,
-                        l1_rpc_client,
-                        aggregation_vkey_override.clone(),
-                    )
-                    .await
-                    .map_err(Error::ProposerServiceInitFailed)?,
+                    ProposerService::new_network(&config.proposer_service, l1_rpc_client)
+                        .await
+                        .map_err(Error::ProposerServiceInitFailed)?,
                 )
                 .boxed_clone()
         };
@@ -153,8 +150,6 @@ impl AggchainProofService {
                 AggchainProofBuilder::new(
                     &config.aggchain_proof_builder,
                     contract_l1_client.clone(),
-                    aggregation_vkey_override,
-                    config.op_succinct.range_vkey_commitment,
                 )
                 .await
                 .map_err(Error::AggchainProofBuilderInitFailed)?,
