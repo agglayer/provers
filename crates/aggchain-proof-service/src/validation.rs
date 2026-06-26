@@ -7,70 +7,93 @@ use alloy_primitives::U256;
 
 use crate::error::Error;
 
+/// A matched (import, unclaim) pair for the same `global_index`.
+#[derive(Debug)]
+struct ImportUnclaimPair {
+    global_index: U256,
+    import_block: u64,
+    unclaim_block: u64,
+}
+
 /// Validates that a proposer's reduced `new_end_block` does not split any
 /// (imported_bridge_exit, unclaim) pair.
 ///
-/// The k-th unclaim for a given `global_index` (sorted by `(block_number,
-/// log_index)`) is matched to the k-th import with the same `global_index`
-/// (also sorted by `(block_number, log_index)`). A pair is broken when the
-/// import falls within the new block range but its matching unclaim does not,
-/// meaning the import would appear as valid in the proof even though it was
-/// intended to be cancelled.
+/// A pair is broken when the import falls within the new block range but its
+/// matching unclaim does not, meaning the import would appear as valid in the
+/// proof even though it was intended to be cancelled.
 pub(crate) fn validate_no_broken_pairs(
     imported_bridge_exits: &[ImportedBridgeExitWithBlockNumber],
     unclaims: &[UnclaimWithBlockNumber],
     new_end_block: u64,
 ) -> Result<(), Error> {
-    // Collect (block_number, log_index) per global_index for imports.
-    let mut imports_by_global_index: HashMap<U256, Vec<(u64, u64)>> = HashMap::new();
-    for import in imported_bridge_exits {
-        let global_index: U256 = import.global_index.into();
-        imports_by_global_index
-            .entry(global_index)
-            .or_default()
-            .push((import.block_number, import.log_index));
-    }
-    for events in imports_by_global_index.values_mut() {
-        events.sort_unstable();
-    }
-
-    // Collect (block_number, log_index) per global_index for unclaims.
-    let mut unclaims_by_global_index: HashMap<U256, Vec<(u64, u64)>> = HashMap::new();
-    for unclaim in unclaims {
-        unclaims_by_global_index
-            .entry(unclaim.global_index)
-            .or_default()
-            .push((unclaim.block_number, unclaim.log_index));
-    }
-    for events in unclaims_by_global_index.values_mut() {
-        events.sort_unstable();
-    }
-
-    // Check each (import_k, unclaim_k) pair for the same global_index.
-    for (global_index, unclaim_events) in &unclaims_by_global_index {
-        let import_events = imports_by_global_index
-            .get(global_index)
-            .map(Vec::as_slice)
-            .unwrap_or(&[]);
-
-        for (k, &(unclaim_block, _)) in unclaim_events.iter().enumerate() {
-            let Some(&(import_block, _)) = import_events.get(k) else {
-                // No matching import for this unclaim position; not a split.
-                continue;
-            };
-
-            if import_block <= new_end_block && unclaim_block > new_end_block {
-                return Err(Error::BrokenImportUnclaimPair {
-                    global_index: *global_index,
-                    import_block,
-                    unclaim_block,
-                    new_end_block,
-                });
-            }
+    for ImportUnclaimPair {
+        global_index,
+        import_block,
+        unclaim_block,
+    } in pair_imports_with_unclaims(imported_bridge_exits, unclaims)
+    {
+        if import_block <= new_end_block && unclaim_block > new_end_block {
+            return Err(Error::BrokenImportUnclaimPair {
+                global_index,
+                import_block,
+                unclaim_block,
+                new_end_block,
+            });
         }
     }
 
     Ok(())
+}
+
+/// Pairs the k-th import for each `global_index` with the k-th unclaim for the
+/// same `global_index`, both ordered by `(block_number, log_index)`.
+///
+/// Excess events on either side are dropped: they correspond to imports that
+/// were not cancelled, or to unclaims targeting imports claimed outside the
+/// block range covered by these inputs (e.g. in an already-proven range).
+fn pair_imports_with_unclaims(
+    imported_bridge_exits: &[ImportedBridgeExitWithBlockNumber],
+    unclaims: &[UnclaimWithBlockNumber],
+) -> Vec<ImportUnclaimPair> {
+    #[derive(Default)]
+    struct EventLists {
+        imports: Vec<(u64, u64)>,
+        unclaims: Vec<(u64, u64)>,
+    }
+
+    let mut events_by_global_index: HashMap<U256, EventLists> = HashMap::new();
+
+    for import in imported_bridge_exits {
+        events_by_global_index
+            .entry(import.global_index.into())
+            .or_default()
+            .imports
+            .push((import.block_number, import.log_index));
+    }
+
+    for unclaim in unclaims {
+        events_by_global_index
+            .entry(unclaim.global_index)
+            .or_default()
+            .unclaims
+            .push((unclaim.block_number, unclaim.log_index));
+    }
+
+    events_by_global_index
+        .into_iter()
+        .flat_map(|(global_index, mut events)| {
+            events.imports.sort_unstable();
+            events.unclaims.sort_unstable();
+
+            events.imports.into_iter().zip(events.unclaims).map(
+                move |((import_block, _), (unclaim_block, _))| ImportUnclaimPair {
+                    global_index,
+                    import_block,
+                    unclaim_block,
+                },
+            )
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -312,10 +335,7 @@ mod tests {
     // Same scenario but new_end_block covers both unclaims → OK.
     #[test]
     fn same_block_imports_log_index_ordering_ok() {
-        let imports = [
-            make_import_at(gi(1), 50, 5),
-            make_import_at(gi(1), 50, 2),
-        ];
+        let imports = [make_import_at(gi(1), 50, 5), make_import_at(gi(1), 50, 2)];
         let unclaims = [
             make_unclaim_at(gi(1), 60, 0),
             make_unclaim_at(gi(1), 120, 0),
