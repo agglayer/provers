@@ -344,7 +344,7 @@ impl Service<Request> for LocalExecutor {
 
         debug!("Proving with local prover");
         Box::pin(async move {
-            debug!("Starting the proving of the requested MultiBatchHeader");
+            debug!("Starting the requested proving");
 
             let proof = match prover.as_ref() {
                 LocalProver::Cpu(prover) => {
@@ -410,17 +410,30 @@ impl Service<Request> for NetworkExecutor {
             // crashing the whole system and hoping for the best.
             // TODO: Figure out a way to kill only the NetworkExecutor service, marking it
             // as unhealthy and potentially restarting it automatically.
-            debug!("Starting the proving of the requested MultiBatchHeader");
-            let proof_request = prover.prove(&proving_key, stdin);
+            debug!("Starting the requested proving");
+
+            // The network SDK runs this same execution internally before proving, but
+            // flattens any failure to the opaque `Error::SimulationFailed` ("Program
+            // simulation failed"), discarding the real `ExecutionError` (guest panic
+            // message, failing cycle, ...). Run it ourselves to surface that error,
+            // then `skip_simulation(true)` so the SDK doesn't re-run it (it falls back
+            // to its default cycle/gas limits, which are well above this program's
+            // usage).
+            prover
+                .execute(proving_key.elf().clone(), stdin.clone())
+                .calculate_gas(false)
+                .await
+                .map_err(|error| Error::ProverFailed(format!("program execution failed: {error:?}")))?;
 
             let proof_request = match req.proof_type {
-                ProofType::Plonk => proof_request.plonk(),
-                ProofType::Stark => proof_request.compressed(),
-            };
+                ProofType::Plonk => prover.prove(&proving_key, stdin).plonk(),
+                ProofType::Stark => prover.prove(&proving_key, stdin).compressed(),
+            }
+            .skip_simulation(true)
+            .timeout(timeout)
+            .strategy(FulfillmentStrategy::Reserved);
 
             let proof = proof_request
-                .timeout(timeout)
-                .strategy(FulfillmentStrategy::Reserved)
                 .await
                 .map_err(|error| Error::ProverFailed(error.to_string()))?;
 
