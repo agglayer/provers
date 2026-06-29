@@ -27,7 +27,7 @@ pub enum ProofRequestError {
     Failed(String),
 
     #[error("Grpc request error")]
-    Grpc(#[source] tonic::Status),
+    Grpc(#[source] Box<tonic::Status>),
 }
 
 #[derive(Debug, thiserror::Error)]

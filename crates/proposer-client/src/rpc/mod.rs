@@ -113,7 +113,7 @@ impl AggregationProofProposer for ProposerRpcClient {
         let grpc_response = client
             .request_agg_proof(request)
             .await
-            .map_err(ProofRequestError::Grpc)
+            .map_err(|e| ProofRequestError::Grpc(Box::new(e)))
             .inspect_err(|e| error!("Aggregation proof request failed: {e:?}"))
             .map_err(|e| Error::Requesting(Box::new(e)))?;
         let response: AggregationProofProposerResponse = grpc_response
@@ -140,7 +140,7 @@ impl AggregationProofProposer for ProposerRpcClient {
         let grpc_response = client
             .get_mock_proof(request)
             .await
-            .map_err(ProofRequestError::Grpc)
+            .map_err(|e| ProofRequestError::Grpc(Box::new(e)))
             .inspect_err(|e| error!("Get mock proof request failed: {e:?}"))
             .map_err(|e| Error::Requesting(Box::new(e)))?;
         let response: MockProofProposerResponse = grpc_response

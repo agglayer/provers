@@ -19,6 +19,7 @@ use unified_bridge::AggchainProofPublicValues;
 
 use crate::{
     config::AggchainProofServiceConfig, custom_chain_data::compute_custom_chain_data, error::Error,
+    validation::validate_no_broken_pairs,
 };
 
 /// A request for the AggchainProofService to generate the
@@ -167,6 +168,14 @@ impl AggchainProofService {
                 .call(proposer_request)
                 .await
                 .map_err(Error::ProposerServiceError)?;
+
+            if aggregation_proof_response.end_block != aggchain_proof_inputs.requested_end_block {
+                validate_no_broken_pairs(
+                    &aggchain_proof_inputs.imported_bridge_exits,
+                    &aggchain_proof_inputs.unclaims,
+                    aggregation_proof_response.end_block,
+                )?;
+            }
 
             let aggchain_proof_builder_request =
                 aggchain_proof_builder::AggchainProofBuilderRequest {
