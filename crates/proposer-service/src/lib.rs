@@ -8,7 +8,6 @@ use agglayer_evm_client::GetBlockNumber;
 use alloy_sol_types::SolType;
 use educe::Educe;
 pub use error::Error;
-use eyre::Context as _;
 use futures::{future::BoxFuture, FutureExt};
 use proposer_client::{
     aggregation_prover::AggregationProver,
@@ -35,8 +34,6 @@ pub mod error;
 
 #[cfg(test)]
 mod tests;
-
-pub const AGGREGATION_ELF: &[u8] = proposer_elfs::aggregation::ELF;
 
 #[derive(Educe)]
 #[educe(Clone(bound()))]
@@ -67,10 +64,10 @@ where
             .await?,
         );
 
-        let aggregation_vkey = Self::extract_aggregation_vkey(&prover, AGGREGATION_ELF)
-            .await
-            .context("Retrieving aggregation vkey")
-            .map_err(Error::Other)?;
+        // Use the op-succinct aggregation vkey in effect: the configured override
+        // when installed at startup (see `proposer_elfs::install_overrides`),
+        // otherwise the value embedded from op-succinct-elfs.
+        let aggregation_vkey = proposer_elfs::aggregation::vkey().clone();
 
         Ok(Self {
             l1_rpc,
@@ -81,14 +78,6 @@ where
             )?),
             aggregation_vkey,
         })
-    }
-
-    async fn extract_aggregation_vkey(
-        prover: &Prover,
-        elf: &[u8],
-    ) -> eyre::Result<SP1VerifyingKey> {
-        let (_pkey, vkey) = prover.compute_pkey_vkey(elf).await?;
-        Ok(vkey)
     }
 }
 

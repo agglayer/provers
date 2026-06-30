@@ -34,4 +34,14 @@ pub enum Commands {
 
     /// Proof verification key selector.
     VkeySelector,
+
+    /// Derive the op-succinct vkey override config values from a directory
+    /// containing the op-succinct ELFs (`aggregation-elf` and
+    /// `range-elf-embedded`). Prints a ready-to-paste
+    /// `[aggchain-proof-service.op-succinct]` section.
+    OpSuccinctVkey {
+        /// Path to the directory holding the op-succinct ELF binaries.
+        #[arg(long, value_hint = ValueHint::DirPath)]
+        elf_dir: PathBuf,
+    },
 }

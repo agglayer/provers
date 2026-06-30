@@ -61,6 +61,37 @@ impl UpperHex for LazyVerifyingKey {
     }
 }
 
+/// Error returned when a configured verifying key cannot be decoded.
+#[derive(Debug, thiserror::Error)]
+#[error("failed to decode SP1 verifying key from the configured bytes: {0}")]
+pub struct VKeyDecodeError(String);
+
+/// Error returned when a verifying key cannot be encoded.
+#[derive(Debug, thiserror::Error)]
+#[error("failed to encode SP1 verifying key: {0}")]
+pub struct VKeyEncodeError(String);
+
+/// Decode a bincode-encoded [`SP1VerifyingKey`], as produced by the build-time
+/// `prover_elf_utils::ElfInfo::emit_vkey_bytes` /
+/// [`LazyVerifyingKey::as_bytes`].
+///
+/// This must use the exact same codec as [`LazyVerifyingKey::vkey`] so that a
+/// configured override and the embedded fallback decode identically.
+pub fn decode_verifying_key(bytes: &[u8]) -> Result<SP1VerifyingKey, VKeyDecodeError> {
+    prover_elf_utils::elf_info::bincode_codec()
+        .deserialize(bytes)
+        .map_err(|error| VKeyDecodeError(error.to_string()))
+}
+
+/// Encode an [`SP1VerifyingKey`] into the bincode representation accepted by
+/// [`decode_verifying_key`]. Uses the same codec as [`decode_verifying_key`],
+/// so the two are guaranteed to round-trip.
+pub fn encode_verifying_key(vkey: &SP1VerifyingKey) -> Result<Vec<u8>, VKeyEncodeError> {
+    prover_elf_utils::elf_info::bincode_codec()
+        .serialize(vkey)
+        .map_err(|error| VKeyEncodeError(error.to_string()))
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

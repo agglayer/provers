@@ -140,6 +140,7 @@ dependencies = [
  "eyre",
  "futures",
  "proposer-client",
+ "proposer-elfs",
  "proposer-service",
  "prover-alloy",
  "serde",
