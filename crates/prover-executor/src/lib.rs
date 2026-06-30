@@ -423,7 +423,9 @@ impl Service<Request> for NetworkExecutor {
                 .execute(proving_key.elf().clone(), stdin.clone())
                 .calculate_gas(false)
                 .await
-                .map_err(|error| Error::ProverFailed(format!("program execution failed: {error:?}")))?;
+                .map_err(|error| {
+                    Error::ProverFailed(format!("program execution failed: {error:?}"))
+                })?;
 
             let proof_request = match req.proof_type {
                 ProofType::Plonk => prover.prove(&proving_key, stdin).plonk(),
