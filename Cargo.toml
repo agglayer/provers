@@ -100,9 +100,7 @@ futures = "0.3.31"
 hex = "0.4.3"
 http-body-util = "0.1.2"
 hyper = "1.5"
-# Temporary until https://github.com/mitsuhiko/insta/pull/672 or similar lands
-insta = { git = "https://github.com/freyskeyd/insta", branch = "chore/updating-deps-to-avoid-serialize-error", features = [
-    "toml",
+insta = { version = "1.48", features = [
     "yaml",
 ] }
 itertools = "0.14.0"
