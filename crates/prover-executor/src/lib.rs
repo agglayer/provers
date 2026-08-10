@@ -406,6 +406,27 @@ impl Service<Request> for NetworkExecutor {
 
         debug!("Proving with network prover with timeout: {:?}", timeout);
         let fut = sp1_async(AssertUnwindSafe(async move {
+            // === DEBUG: pre-flight execute ===
+            // Run the program through the SP1 core executor first. This surfaces the
+            // actual ExecutionError (panic message, syscall failure, etc.) that the
+            // network's "Program simulation failed" is hiding.
+            info!("[debug-preflight] running execute() locally before network submit");
+            let elf = proving_key.elf().clone();
+            let stdin_for_execute = stdin.clone();
+            match prover.execute(elf, stdin_for_execute).await {
+                Ok((_pv, _report)) => {
+                    info!("[debug-preflight] execute() returned Ok");
+                }
+                Err(e) => {
+                    error!("[debug-preflight] execute() FAILED with full chain: {e:?}");
+                    error!("[debug-preflight] execute() Display: {e}");
+                    return Err(Error::ProverFailed(format!(
+                        "pre-flight execute failed: {e:?}"
+                    )));
+                }
+            }
+            // === end DEBUG ===
+
             // AssertUnwindSafe might be a lie, but we currently have a choice between
             // crashing the whole system and hoping for the best.
             // TODO: Figure out a way to kill only the NetworkExecutor service, marking it
@@ -422,7 +443,10 @@ impl Service<Request> for NetworkExecutor {
                 .timeout(timeout)
                 .strategy(FulfillmentStrategy::Reserved)
                 .await
-                .map_err(|error| Error::ProverFailed(error.to_string()))?;
+                .map_err(|error| {
+                    error!("[debug-preflight] network prove failed full chain: {error:?}");
+                    Error::ProverFailed(format!("{error:?}"))
+                })?;
 
             debug!("Proving completed. Verifying the proof...");
             prover

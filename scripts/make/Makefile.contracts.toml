@@ -1,6 +1,8 @@
 [env]
-CONTRACT_VERSION = "feature/ongoing-v0.3.0"
-CONTRACT_REPO = "https://api.github.com/repos/0xPolygonHermez/zkevm-contracts"
+# Pinned to the agglayer-contracts ref that the prover targets.
+# Override via env when needed (e.g. CONTRACT_VERSION=v12.2.3 cargo make contracts).
+CONTRACT_VERSION = "feature/sp1-v6.1"
+CONTRACT_REPO = "https://api.github.com/repos/agglayer/agglayer-contracts"
 
 [tasks.contracts]
 description = "Download and update the contracts of the aggchain-proof-contracts library"
@@ -8,39 +10,44 @@ dependencies = ["contracts-downloader"]
 
 [tasks.contracts-downloader]
 dependencies = [
-    { name = "contracts-download-PolygonRollupManager" },
-    { name = "contracts-download-PolygonZkEVM" },
-    { name = "contracts-download-PolygonZkEVMGlobalExitRootV2" },
+    { name = "contracts-download-AgglayerManager" },
+    { name = "contracts-download-AgglayerBridge" },
+    { name = "contracts-download-AgglayerGERL2" },
     { name = "contracts-download-AggchainFEP" },
 ]
 
+# v12 rename: PolygonRollupManager.sol -> AgglayerManager.sol
+# Output filename preserved so sol!(PolygonRollupManager, "contracts/PolygonRollupManager.json") still resolves.
+[tasks.contracts-download-AgglayerManager]
+env = { "CONTRACT_SOURCE" = "AgglayerManager.json", "CONTRACT_OUTPUT" = "PolygonRollupManager.json" }
+run_task = "contracts-download"
+
+# v12 rename: PolygonZkEVMBridgeV2.sol -> AgglayerBridge.sol
+[tasks.contracts-download-AgglayerBridge]
+env = { "CONTRACT_SOURCE" = "AgglayerBridge.json", "CONTRACT_OUTPUT" = "PolygonZkEVMBridgeV2.json" }
+run_task = "contracts-download"
+
+# v12 rename (L2): GlobalExitRootManagerL2SovereignChain.sol -> AgglayerGERL2.sol
+[tasks.contracts-download-AgglayerGERL2]
+env = { "CONTRACT_SOURCE" = "AgglayerGERL2.json", "CONTRACT_OUTPUT" = "GlobalExitRootManagerL2SovereignChain.json" }
+run_task = "contracts-download"
+
+# AggchainFEP — name unchanged in v12.
 [tasks.contracts-download-AggchainFEP]
-env = { "CONTRACT" = "AggchainFEP.json" }
-run_task = "contracts-download"
-
-[tasks.contracts-download-PolygonRollupManager]
-env = { "CONTRACT" = "PolygonRollupManager.json" }
-run_task = "contracts-download"
-
-[tasks.contracts-download-PolygonZkEVM]
-env = { "CONTRACT" = "PolygonZkEVMBridgeV2.json" }
-run_task = "contracts-download"
-
-[tasks.contracts-download-PolygonZkEVMGlobalExitRootV2]
-env = { "CONTRACT" = "GlobalExitRootManagerL2SovereignChain.json" }
+env = { "CONTRACT_SOURCE" = "AggchainFEP.json", "CONTRACT_OUTPUT" = "AggchainFEP.json" }
 run_task = "contracts-download"
 
 [tasks.contracts-download]
-condition = { env_set = ["CONTRACT", "GITHUB_TOKEN"] }
-description = "Download the contracts of the aggchain-proof-contracts library"
+condition = { env_set = ["CONTRACT_SOURCE", "CONTRACT_OUTPUT", "GITHUB_TOKEN"] }
+description = "Download a contract JSON from agglayer-contracts compiled-contracts/"
 cwd = "crates/aggchain-proof-contracts/contracts"
 command = "curl"
 args = [
     "-HAuthorization: token ${GITHUB_TOKEN}",
     "-HAccept: application/vnd.github.v4.raw",
     "-Ls",
-    "--output", "./${CONTRACT}",
+    "--output", "./${CONTRACT_OUTPUT}",
     "--proto",
     "=https",
-    "${CONTRACT_REPO}/contents/compiled-contracts/${CONTRACT}?ref=${CONTRACT_VERSION}",
+    "${CONTRACT_REPO}/contents/compiled-contracts/${CONTRACT_SOURCE}?ref=${CONTRACT_VERSION}",
 ]
