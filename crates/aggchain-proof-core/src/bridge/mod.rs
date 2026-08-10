@@ -382,7 +382,7 @@ impl BridgeConstraintsInput {
             .bridge_witness
             .inserted_gers
             .iter()
-            .find(|ger| !ger.verify(self.l1_info_root));
+            .find(|ger| ger.verify(self.l1_info_root).is_err());
 
         if let Some(wrong_ger) = maybe_wrong_inserted_ger {
             return Err(BridgeConstraintsError::InvalidMerklePathGERToL1Root {
