@@ -2,8 +2,8 @@ use std::{sync::Arc, time::Duration};
 
 use prover_config::MockProverConfig;
 use sp1_sdk::{
-    MockProver, Prover, ProvingKey as _, SP1ProofMode, SP1ProofWithPublicValues, SP1ProvingKey,
-    SP1PublicValues, SP1Stdin, SP1VerifyingKey, SP1_CIRCUIT_VERSION,
+    MockProver, Prover, ProvingKey as _, SP1Proof, SP1ProofMode, SP1ProofWithPublicValues,
+    SP1ProvingKey, SP1PublicValues, SP1Stdin, SP1VerifyingKey, SP1_CIRCUIT_VERSION,
 };
 use tokio::sync::OnceCell;
 use tower::{service_fn, timeout::TimeoutLayer, Service, ServiceBuilder, ServiceExt};
@@ -350,4 +350,38 @@ async fn executor_normal_behavior_mock_prover() {
     assert!(prover
         .verify(&result.unwrap().proof, &verification_key, None)
         .is_ok());
+}
+
+#[tokio::test]
+async fn executor_normal_behavior_mock_prover_groth16() {
+    let prover = MockProver::new().await;
+    let proving_key = prover
+        .setup(ELF.into())
+        .await
+        .expect("setting up proving key");
+    let verification_key = proving_key.verifying_key().clone();
+
+    let mock_prover_config = MockProverConfig::default();
+    let mut executor = Executor::build_local_service(
+        mock_prover_config.proving_timeout,
+        mock_prover_config.max_concurrency_limit,
+        LocalExecutor {
+            prover: Arc::new(LocalProver::Mock(prover.clone())),
+            proving_key,
+            verification_key: verification_key.clone(),
+        },
+    );
+    let executor = executor.ready().await.expect("valid executor");
+
+    let result = executor
+        .call(Request {
+            stdin: SP1Stdin::new(),
+            proof_type: ProofType::Groth16,
+        })
+        .await;
+
+    assert!(result.is_ok());
+    let proof = result.unwrap().proof;
+    assert!(matches!(proof.proof, SP1Proof::Groth16(_)));
+    assert!(prover.verify(&proof, &verification_key, None).is_ok());
 }
