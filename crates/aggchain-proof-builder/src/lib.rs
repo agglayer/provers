@@ -21,7 +21,7 @@ use aggchain_proof_contracts::{
 use aggchain_proof_core::{
     bridge::{inserted_ger::InsertedGER, BridgeWitness},
     full_execution_proof::{
-        AggchainParamsValues, AggregationProofPublicValues, ClaimRoot, FepInputs, KoalaBearDigest,
+        AggchainParamsValues, AggregationProofPublicValues, ClaimRoot, FepInputs,
     },
     proof::{AggchainProofWitness, IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION},
 };
@@ -533,7 +533,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             signature_optimistic_mode: request.fep_verification.optimistic_mode_signature(),
             l1_info_tree_leaf,
             l1_head_inclusion_proof: request.aggchain_proof_inputs.l1_info_tree_merkle_proof,
-            aggregation_vkey_hash: KoalaBearDigest(aggregation_vkey.hash_u32()),
+            aggregation_vkey_hash: aggregation_vkey.hash_u32(),
             range_vkey_commitment: range_vkey_commitment.0,
         };
 
