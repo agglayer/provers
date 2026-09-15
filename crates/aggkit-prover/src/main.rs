@@ -1,4 +1,6 @@
-use aggchain_proof_service::AGGCHAIN_VKEY_SELECTOR;
+use aggchain_proof_service::{
+    AGGCHAIN_PROOF_ELF, AGGCHAIN_PROOF_MOCK_ELF, AGGCHAIN_VKEY_SELECTOR, MOCK_SELECTOR,
+};
 use aggkit_prover::version;
 use clap::Parser as _;
 use eyre::Context as _;
@@ -30,15 +32,17 @@ fn main() -> eyre::Result<()> {
                 Err(error) => eprintln!("{error}"),
             }
         }
-        aggkit_prover::cli::Commands::Vkey => {
+        aggkit_prover::cli::Commands::Vkey { mock } => {
             tokio::runtime::Builder::new_multi_thread()
                 .enable_all()
                 .build()?
                 .block_on(async move {
-                    let vkey = prover_executor::Executor::compute_program_vkey(
-                        aggchain_proof_service::AGGCHAIN_PROOF_ELF,
-                    )
-                    .await?;
+                    let elf = if mock {
+                        AGGCHAIN_PROOF_MOCK_ELF
+                    } else {
+                        AGGCHAIN_PROOF_ELF
+                    };
+                    let vkey = prover_executor::Executor::compute_program_vkey(elf).await?;
 
                     let vkey_hex = hex::encode(vkey.hash_bytes());
                     println!("0x{vkey_hex}");
@@ -46,8 +50,13 @@ fn main() -> eyre::Result<()> {
                 })?;
         }
 
-        aggkit_prover::cli::Commands::VkeySelector => {
-            let vkey_selector_hex = hex::encode(AGGCHAIN_VKEY_SELECTOR.to_be_bytes());
+        aggkit_prover::cli::Commands::VkeySelector { mock } => {
+            let selector = if mock {
+                MOCK_SELECTOR
+            } else {
+                AGGCHAIN_VKEY_SELECTOR
+            };
+            let vkey_selector_hex = hex::encode(selector.to_be_bytes());
             println!("0x{vkey_selector_hex}");
         }
 

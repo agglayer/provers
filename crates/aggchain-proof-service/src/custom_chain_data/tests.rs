@@ -55,9 +55,16 @@ fn aggchain_pattern() {
     );
 }
 
+#[test]
+fn test_mock_selector() {
+    assert_eq!(MOCK_SELECTOR.to_be_bytes(), [0xFF, 0xFF, 0, 1]);
+    assert_ne!(MOCK_SELECTOR, AGGCHAIN_VKEY_SELECTOR);
+}
+
 #[tokio::test]
 async fn test_custom_chain_data_builder_service() {
-    let response = compute_custom_chain_data(ClaimRoot(Digest([1u8; 32])), 10u64);
+    let response =
+        compute_custom_chain_data(AGGCHAIN_VKEY_SELECTOR, ClaimRoot(Digest([1u8; 32])), 10u64);
 
     let mut expected = [0u8; 96];
     // program selector

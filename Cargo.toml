@@ -2,7 +2,11 @@
 resolver = "2"
 default-members = ["crates/aggkit-prover"]
 members = ["crates/*"]
-exclude = ["crates/prover-dummy-program", "crates/aggchain-proof-program"]
+exclude = [
+    "crates/prover-dummy-program",
+    "crates/aggchain-proof-program",
+    "crates/aggchain-proof-mock-program",
+]
 
 [workspace.package]
 version = "0.1.0"

@@ -30,10 +30,20 @@ pub enum Commands {
     },
 
     /// Proof verification key.
-    Vkey,
+    Vkey {
+        /// Use the mock aggchain proof program (the always-true program used
+        /// with the mock prover) instead of the real one.
+        #[arg(long)]
+        mock: bool,
+    },
 
     /// Proof verification key selector.
-    VkeySelector,
+    VkeySelector {
+        /// Use the mock aggchain proof selector (`0xFFFF0001`) instead of the
+        /// real one.
+        #[arg(long)]
+        mock: bool,
+    },
 
     /// Derive the op-succinct vkey override config values from a directory
     /// containing the op-succinct ELFs (`aggregation-elf` and

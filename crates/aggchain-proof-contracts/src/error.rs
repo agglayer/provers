@@ -39,6 +39,14 @@ pub enum Error {
     #[error("Invalid L2 output at block, field {0}")]
     L2OutputAtBlockInvalidValue(String, #[source] alloy::hex::FromHexError),
 
+    #[error("Error retrieving the L2 safe block")]
+    L2SafeBlockRetrievalError(
+        #[source] alloy::transports::RpcError<alloy::transports::TransportErrorKind>,
+    ),
+
+    #[error("L2 node returned no block for the `safe` tag")]
+    L2SafeBlockMissing,
+
     #[error("Error performing rollup manager rollup id to rollup data call")]
     InvalidRollupIdToRollupData(#[source] alloy::contract::Error),
 

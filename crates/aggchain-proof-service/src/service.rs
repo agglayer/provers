@@ -19,7 +19,11 @@ use tracing::{debug, info};
 use unified_bridge::AggchainProofPublicValues;
 
 use crate::{
-    config::AggchainProofServiceConfig, custom_chain_data::compute_custom_chain_data, error::Error,
+    config::AggchainProofServiceConfig,
+    custom_chain_data::{
+        compute_custom_chain_data, VKeySelector, AGGCHAIN_VKEY_SELECTOR, MOCK_SELECTOR,
+    },
+    error::Error,
 };
 
 /// A request for the AggchainProofService to generate the
@@ -84,6 +88,9 @@ pub struct AggchainProofService {
         aggchain_proof_builder::AggchainProofBuilderResponse,
         aggchain_proof_builder::Error,
     >,
+    /// Selector embedded in the custom chain data, matching the aggchain proof
+    /// program the builder was configured with.
+    pub(crate) vkey_selector: VKeySelector,
 }
 
 impl AggchainProofService {
@@ -184,9 +191,20 @@ impl AggchainProofService {
             .boxed_clone();
         debug!("AggchainProofBuilder initialized");
 
+        let vkey_selector = if config.aggchain_proof_builder.is_mock_prover() {
+            MOCK_SELECTOR
+        } else {
+            AGGCHAIN_VKEY_SELECTOR
+        };
+        info!(
+            vkey_selector = %alloy_primitives::hex::encode_prefixed(vkey_selector.to_be_bytes()),
+            "Aggchain vkey selector in effect"
+        );
+
         Ok(AggchainProofService {
             proposer_service,
             aggchain_proof_builder,
+            vkey_selector,
         })
     }
 
@@ -204,6 +222,7 @@ impl AggchainProofService {
 
         let mut proposer_service = self.proposer_service.clone();
         let mut proof_builder = self.aggchain_proof_builder.clone();
+        let vkey_selector = self.vkey_selector;
 
         async move {
             let last_proven_block = aggchain_proof_inputs.last_proven_block;
@@ -231,8 +250,11 @@ impl AggchainProofService {
                 .await
                 .map_err(Error::AggchainProofBuilderRequestFailed)?;
 
-            let custom_chain_data =
-                compute_custom_chain_data(aggchain_proof_response.output_root, end_block);
+            let custom_chain_data = compute_custom_chain_data(
+                vkey_selector,
+                aggchain_proof_response.output_root,
+                end_block,
+            );
 
             Ok(AggchainProofServiceResponse {
                 proof: aggchain_proof_response.proof,
@@ -256,6 +278,7 @@ impl AggchainProofService {
         }: OptimisticAggchainProofInputs,
     ) -> AggchainProofServiceFuture {
         let mut proof_builder = self.aggchain_proof_builder.clone();
+        let vkey_selector = self.vkey_selector;
 
         async move {
             let last_proven_block = aggchain_proof_inputs.last_proven_block;
@@ -277,8 +300,11 @@ impl AggchainProofService {
                 .await
                 .map_err(Error::AggchainProofBuilderRequestFailed)?;
 
-            let custom_chain_data =
-                compute_custom_chain_data(aggchain_proof_response.output_root, end_block);
+            let custom_chain_data = compute_custom_chain_data(
+                vkey_selector,
+                aggchain_proof_response.output_root,
+                end_block,
+            );
 
             Ok(AggchainProofServiceResponse {
                 proof: aggchain_proof_response.proof,

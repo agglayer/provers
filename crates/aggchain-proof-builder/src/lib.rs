@@ -14,7 +14,7 @@ use std::{
 use aggchain_proof_contracts::{
     contracts::{
         GetTrustedSequencerAddress, L1OpSuccinctConfigFetcher, L2EvmStateSketchFetcher,
-        L2LocalExitRootFetcher, L2OutputAtBlockFetcher, OpSuccinctConfig,
+        L2LocalExitRootFetcher, L2OutputAtBlockFetcher, L2SafeBlockFetcher, OpSuccinctConfig,
     },
     AggchainContractsClient,
 };
@@ -47,6 +47,16 @@ use crate::config::AggchainProofBuilderConfig;
 const MAX_CONCURRENT_REQUESTS: usize = 100;
 
 pub const AGGCHAIN_PROOF_ELF: &[u8] = include_bytes!(env!("AGGLAYER_ELF_PATH"));
+
+/// Aggchain proof program that commits the public values without verifying
+/// anything. Only used when the primary prover is the mock prover.
+pub const AGGCHAIN_PROOF_MOCK_ELF: &[u8] = include_bytes!(env!("AGGLAYER_MOCK_ELF_PATH"));
+
+/// Hardcoded vkey (`bytes32_raw()`) of `AGGCHAIN_PROOF_MOCK_ELF`. This is the
+/// value to register in the aggchain contract `ownedAggchainVKeys` under the
+/// mock selector.
+pub const MOCK_VKEY: [u8; 32] =
+    alloy_primitives::hex!("008249786c3e3ba764e849a0e8a5b238808af951ea98a37f52f97ba62a23f38c");
 
 /// Hardcoded hash of the "aggregation vkey".
 /// NOTE: Format being `hash_u32()` of the `SP1StarkVerifyingKey`.
@@ -329,15 +339,35 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     where
         ContractsClient: L1OpSuccinctConfigFetcher,
     {
+        let program = if config.is_mock_prover() {
+            AGGCHAIN_PROOF_MOCK_ELF
+        } else {
+            AGGCHAIN_PROOF_ELF
+        };
+
         let executor = Executor::new(
             config.primary_prover.clone(),
             config.fallback_prover.clone(),
-            AGGCHAIN_PROOF_ELF,
+            program,
         )
         .await
         .context("Failed creating executor for AggchainProofBuilder")?;
 
         let aggchain_vkey = executor.get_vkey().clone();
+
+        if config.is_mock_prover() {
+            let got = aggchain_vkey.bytes32_raw();
+            if got != MOCK_VKEY {
+                return Err(eyre::Report::from(Error::MismatchMockVkey {
+                    got: Digest(got),
+                    expected: Digest(MOCK_VKEY),
+                }));
+            }
+            info!(
+                mock_vkey = %Digest(MOCK_VKEY),
+                "Mock prover selected, using the mock aggchain proof program"
+            );
+        }
         let executor = tower::ServiceBuilder::new().service(executor).boxed();
 
         let prover = Buffer::new(executor, MAX_CONCURRENT_REQUESTS);
@@ -404,12 +434,33 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         ContractsClient: L2LocalExitRootFetcher
             + L2OutputAtBlockFetcher
             + L2EvmStateSketchFetcher
+            + L2SafeBlockFetcher
             + GetTrustedSequencerAddress
             + L1OpSuccinctConfigFetcher,
     {
         info!(last_proven_block=%request.aggchain_proof_inputs.last_proven_block,
             end_block=%request.end_block,
             "Retrieving chain data for aggchain proof generation");
+
+        // In optimistic mode nothing but the trusted sequencer signature binds the
+        // claimed state, so refuse to attest a block the L2 could still reorg.
+        if let FepVerification::Optimistic { .. } = request.fep_verification {
+            let safe_block_number = contracts_client
+                .get_l2_safe_block_number()
+                .await
+                .map_err(Error::L2ChainDataRetrievalError)?;
+
+            if request.end_block > safe_block_number {
+                return Err(Error::OptimisticEndBlockNotSafe {
+                    end_block: request.end_block,
+                    safe_block_number,
+                });
+            }
+
+            info!(end_block=%request.end_block, %safe_block_number,
+                "Optimistic mode: end block is within the L2 safe head");
+        }
+
         let new_blocks_range =
             (request.aggchain_proof_inputs.last_proven_block + 1)..=request.end_block;
 

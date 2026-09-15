@@ -27,6 +27,14 @@ pub struct AggchainProofBuilderConfig {
     pub contracts: AggchainProofContractsConfig,
 }
 
+impl AggchainProofBuilderConfig {
+    /// Whether the aggchain proof is generated with the mock prover, in which
+    /// case the mock aggchain proof program, vkey and selector are used.
+    pub fn is_mock_prover(&self) -> bool {
+        matches!(self.primary_prover, ProverType::MockProver(_))
+    }
+}
+
 impl Default for AggchainProofBuilderConfig {
     fn default() -> Self {
         AggchainProofBuilderConfig {

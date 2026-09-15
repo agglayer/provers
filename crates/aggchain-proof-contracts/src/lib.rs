@@ -19,7 +19,7 @@ use alloy::{
 };
 use contracts::{
     GetTrustedSequencerAddress, GlobalExitRootManagerL2SovereignChainRpcClient,
-    L2EvmStateSketchFetcher,
+    L2EvmStateSketchFetcher, L2SafeBlockFetcher,
 };
 use eyre::Context as _;
 use jsonrpsee::{core::client::ClientT, http_client::HttpClient, rpc_params};
@@ -51,6 +51,7 @@ pub trait AggchainContractsClient:
     + L2OutputAtBlockFetcher
     + L1OpSuccinctConfigFetcher
     + L2EvmStateSketchFetcher
+    + L2SafeBlockFetcher
 {
 }
 
@@ -151,6 +152,24 @@ where
 {
     async fn get_trusted_sequencer_address(&self) -> Result<Address, Error> {
         Ok(self.trusted_sequencer_addr)
+    }
+}
+
+#[async_trait::async_trait]
+impl<RpcProvider> L2SafeBlockFetcher for AggchainContractsRpcClient<RpcProvider>
+where
+    RpcProvider: Provider + Send + Sync,
+{
+    async fn get_l2_safe_block_number(&self) -> Result<u64, Error> {
+        let safe_block = self
+            .polygon_zkevm_bridge_v2
+            .provider()
+            .get_block_by_number(BlockNumberOrTag::Safe)
+            .await
+            .map_err(Error::L2SafeBlockRetrievalError)?
+            .ok_or(Error::L2SafeBlockMissing)?;
+
+        Ok(safe_block.header.number)
     }
 }
 
