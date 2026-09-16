@@ -44,6 +44,9 @@ fn main() -> eyre::Result<()> {
                     };
                     let vkey = prover_executor::Executor::compute_program_vkey(elf).await?;
 
+                    // `hash_bytes()` is the encoding registered on-chain as the
+                    // aggchain `ownedAggchainVKey`; for `--mock` this equals
+                    // the hardcoded `MOCK_VKEY`.
                     let vkey_hex = hex::encode(vkey.hash_bytes());
                     println!("0x{vkey_hex}");
                     Ok::<(), eyre::Report>(())
@@ -65,8 +68,9 @@ fn main() -> eyre::Result<()> {
                 .enable_all()
                 .build()?
                 .block_on(async move {
-                    // The CLI is short-lived, so leaking the ELF bytes to satisfy the
-                    // `'static` bound of `compute_program_vkey` is acceptable.
+                    // The CLI is short-lived, so leaking the ELF bytes to
+                    // satisfy the `'static` bound of
+                    // `compute_program_vkey` is acceptable.
                     let read_elf = |name: &str| -> eyre::Result<&'static [u8]> {
                         let path = elf_dir.join(name);
                         let bytes = std::fs::read(&path)

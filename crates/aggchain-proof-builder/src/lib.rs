@@ -52,11 +52,12 @@ pub const AGGCHAIN_PROOF_ELF: &[u8] = include_bytes!(env!("AGGLAYER_ELF_PATH"));
 /// anything. Only used when the primary prover is the mock prover.
 pub const AGGCHAIN_PROOF_MOCK_ELF: &[u8] = include_bytes!(env!("AGGLAYER_MOCK_ELF_PATH"));
 
-/// Hardcoded vkey (`bytes32_raw()`) of `AGGCHAIN_PROOF_MOCK_ELF`. This is the
-/// value to register in the aggchain contract `ownedAggchainVKeys` under the
-/// mock selector.
+/// Hardcoded `HashableKey::hash_bytes()` of `AGGCHAIN_PROOF_MOCK_ELF`. This is
+/// the same encoding the `aggkit-prover vkey` command prints and the value that
+/// gets registered in the aggchain contract's `ownedAggchainVKeys` under the
+/// mock selector (see `aggkit-prover vkey --mock`).
 pub const MOCK_VKEY: [u8; 32] =
-    alloy_primitives::hex!("008249786c3e3ba764e849a0e8a5b238808af951ea98a37f52f97ba62a23f38c");
+    alloy_primitives::hex!("4124bc360f8ee9d91d09341d0a5b23880457ca8f2a628dfd25f2f74c2a23f38c");
 
 /// Hardcoded hash of the "aggregation vkey".
 /// NOTE: Format being `hash_u32()` of the `SP1StarkVerifyingKey`.
@@ -356,7 +357,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         let aggchain_vkey = executor.get_vkey().clone();
 
         if config.is_mock_prover() {
-            let got = aggchain_vkey.bytes32_raw();
+            let got = aggchain_vkey.hash_bytes();
             if got != MOCK_VKEY {
                 return Err(eyre::Report::from(Error::MismatchMockVkey {
                     got: Digest(got),
@@ -373,9 +374,9 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         let prover = Buffer::new(executor, MAX_CONCURRENT_REQUESTS);
 
         // Resolve the aggregation vkey and range vkey commitment. These use the
-        // configured op-succinct override when one was installed at startup (see
-        // `proposer_elfs::install_overrides`), otherwise the values embedded from
-        // op-succinct-elfs at build time.
+        // configured op-succinct override when one was installed at startup
+        // (see `proposer_elfs::install_overrides`), otherwise the
+        // values embedded from op-succinct-elfs at build time.
         let aggregation_vkey = Arc::new(proposer_elfs::aggregation::vkey().clone());
         let range_vkey_commitment = Digest(proposer_elfs::range::commitment());
 
@@ -395,8 +396,8 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             }
         }
 
-        // Check the mismatch of the keys from the op-succinct configuration in the
-        // contract
+        // Check the mismatch of the keys from the op-succinct configuration in
+        // the contract
         let op_succinct_config = contracts_client
             .get_op_succinct_config()
             .await
@@ -442,8 +443,9 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             end_block=%request.end_block,
             "Retrieving chain data for aggchain proof generation");
 
-        // In optimistic mode nothing but the trusted sequencer signature binds the
-        // claimed state, so refuse to attest a block the L2 could still reorg.
+        // In optimistic mode nothing but the trusted sequencer signature binds
+        // the claimed state, so refuse to attest a block the L2 could
+        // still reorg.
         if let FepVerification::Optimistic { .. } = request.fep_verification {
             let safe_block_number = contracts_client
                 .get_l2_safe_block_number()
@@ -520,7 +522,8 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .aggchain_proof_inputs
             .sorted_inserted_gers(&new_blocks_range);
 
-        // All the bridge exits in the new blocks range, also those that are unclaimed.
+        // All the bridge exits in the new blocks range, also those that are
+        // unclaimed.
         let all_imported_bridge_exits: Vec<GlobalIndexWithLeafHash> = filter_sort_map(
             request.aggchain_proof_inputs.imported_bridge_exits,
             &new_blocks_range,
@@ -737,9 +740,10 @@ where
         let static_call_caller_address = self.static_call_caller_address;
         let range_vkey_commitment = self.range_vkey_commitment;
 
-        // TODO: figure out a way to stop only this service upon an sp1 panic, and not
-        // the entire system. For now, just ignore the panic, even though some
-        // internal mutability inside sp1 might end up unhappy.
+        // TODO: figure out a way to stop only this service upon an sp1 panic,
+        // and not the entire system. For now, just ignore the panic,
+        // even though some internal mutability inside sp1 might end up
+        // unhappy.
         sp1_async(AssertUnwindSafe(async move {
             let last_proven_block = req.aggchain_proof_inputs.last_proven_block;
             let end_block = req.end_block;

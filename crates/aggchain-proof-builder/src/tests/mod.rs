@@ -27,7 +27,7 @@ async fn mock_vkey_matches_mock_elf() -> eyre::Result<()> {
 
     let vkey =
         prover_executor::Executor::compute_program_vkey(crate::AGGCHAIN_PROOF_MOCK_ELF).await?;
-    let derived = vkey.bytes32_raw();
+    let derived = vkey.hash_bytes();
     assert_eq!(
         derived,
         crate::MOCK_VKEY,

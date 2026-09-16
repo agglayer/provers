@@ -17,7 +17,7 @@ mod aggchain_contracts_rpc_client {
         config::AggchainProofContractsConfig,
         contracts::{
             AggchainFep::trustedSequencerCall, L1OpSuccinctConfigFetcher, L2LocalExitRootFetcher,
-            L2OutputAtBlockFetcher, OpSuccinctConfig,
+            L2OutputAtBlockFetcher, L2SafeBlockFetcher, OpSuccinctConfig,
         },
         AggchainContractsRpcClient,
     };
@@ -42,8 +42,9 @@ mod aggchain_contracts_rpc_client {
         let mut server_l2_el = mockito::Server::new_async().await;
         let server_l2_cl = mockito::Server::new_async().await;
 
-        // We ask the global exit root manager contract for the PolygonZkEVMBridgeV2
-        // contract address with the "bridgeAddress()" call
+        // We ask the global exit root manager contract for the
+        // PolygonZkEVMBridgeV2 contract address with the
+        // "bridgeAddress()" call
         let bridge_address_expected_body = serde_json::json!({
             "method": "eth_call",
             "params": [{
@@ -168,8 +169,8 @@ mod aggchain_contracts_rpc_client {
     }
 
     fn mock_selected_op_succinct_config_name_call(server_l1: &mut ServerGuard) -> mockito::Mock {
-        // Function selector for selectedOpSuccinctConfigName() - first 4 bytes of
-        // keccak256 hash
+        // Function selector for selectedOpSuccinctConfigName() - first 4 bytes
+        // of keccak256 hash
         let function_selector = &keccak256(b"selectedOpSuccinctConfigName()")[..4];
 
         let expected_body = serde_json::json!({
@@ -202,12 +203,12 @@ mod aggchain_contracts_rpc_client {
     }
 
     fn mock_op_succinct_configs(server_l1: &mut ServerGuard) -> mockito::Mock {
-        // opSuccinctConfigs takes a bytes32 parameter (the config name) and returns 3
-        // bytes32 values
+        // opSuccinctConfigs takes a bytes32 parameter (the config name) and
+        // returns 3 bytes32 values
         let op_succinct_config_name = keccak256(b"opsuccinct_genesis");
 
-        // Function selector for opSuccinctConfigs(bytes32) - first 4 bytes of keccak256
-        // hash
+        // Function selector for opSuccinctConfigs(bytes32) - first 4 bytes of
+        // keccak256 hash
         let function_selector = &keccak256(b"opSuccinctConfigs(bytes32)")[..4];
         let calldata = [function_selector, &op_succinct_config_name[..]].concat();
 
@@ -283,8 +284,9 @@ mod aggchain_contracts_rpc_client {
     {
         let mut server_l2 = mockito::Server::new_async().await;
 
-        // We ask the global exit root manager contract for the PolygonZkEVMBridgeV2
-        // contract address with the "bridgeAddress()" call
+        // We ask the global exit root manager contract for the
+        // PolygonZkEVMBridgeV2 contract address with the
+        // "bridgeAddress()" call
         let bridge_address_expected_body = serde_json::json!({
             "method": "eth_call",
             "params": [{
@@ -337,7 +339,8 @@ mod aggchain_contracts_rpc_client {
         let (contracts_client, test_servers) = aggchain_contracts_rpc_client().await?;
         let mut server_l2_el = test_servers.server_l2_el;
 
-        // We ask the PolygonZkEVMBridgeV2 for the local exit root with `getRoot()`
+        // We ask the PolygonZkEVMBridgeV2 for the local exit root with
+        // `getRoot()`
         let get_local_exit_root_body = serde_json::json!({
             "method": "eth_call",
             "params": [{
@@ -386,7 +389,8 @@ mod aggchain_contracts_rpc_client {
         let (contracts_client, test_servers) = aggchain_contracts_rpc_client().await?;
         let mut server_l2_el = test_servers.server_l2_el;
 
-        // We ask the PolygonZkEVMBridgeV2 for the local exit root with `getRoot()`
+        // We ask the PolygonZkEVMBridgeV2 for the local exit root with
+        // `getRoot()`
         let get_local_exit_root_body = serde_json::json!({
             "method": "eth_call",
             "params": [{
@@ -471,7 +475,8 @@ mod aggchain_contracts_rpc_client {
         let (contracts_client, test_servers) = aggchain_contracts_rpc_client().await?;
         let mut server_l2_cl = test_servers.server_l2_cl;
 
-        // We ask the PolygonZkEVMBridgeV2 for the local exit root with `getRoot()`
+        // We ask the PolygonZkEVMBridgeV2 for the local exit root with
+        // `getRoot()`
         let get_rollup_config_hash = serde_json::json!({
             "method": "optimism_outputAtBlock",
             "params":["0x10"],
@@ -513,6 +518,105 @@ mod aggchain_contracts_rpc_client {
             output.version.to_string(),
             "0x0000000000000000000000000000000000000000000000000000000000000000"
         );
+        Ok(())
+    }
+
+    /// Response body for `eth_getBlockByNumber` with a `safe` tag block whose
+    /// number is `0x64` (100).
+    fn safe_block_response(id: u64) -> String {
+        let h32 = "0x1111111111111111111111111111111111111111111111111111111111111111";
+        let empty_root = "0x56e81f171bcadc17924d90eda4f45c1e6f4d5b8e0a0a3e9a0a3e9a0a3e9a0a3e";
+        json!({
+            "id": id,
+            "jsonrpc": "2.0",
+            "result": {
+                "number": "0x64",
+                "hash": h32,
+                "parentHash": h32,
+                "nonce": "0x0000000000000000",
+                "sha3Uncles": h32,
+                "logsBloom": format!("0x{}", "0".repeat(512)),
+                "transactionsRoot": empty_root,
+                "stateRoot": h32,
+                "receiptsRoot": empty_root,
+                "miner": "0x0000000000000000000000000000000000000000",
+                "difficulty": "0x0",
+                "totalDifficulty": "0x0",
+                "extraData": "0x",
+                "size": "0x220",
+                "gasLimit": "0x1c9c380",
+                "gasUsed": "0x0",
+                "timestamp": "0x64",
+                "mixHash": h32,
+                "baseFeePerGas": "0x7",
+                "withdrawalsRoot": empty_root,
+                "blobGasUsed": "0x0",
+                "excessBlobGas": "0x0",
+                "parentBeaconBlockRoot": h32,
+                "uncles": [],
+                "transactions": [],
+                "withdrawals": []
+            }
+        })
+        .to_string()
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_get_l2_safe_block_number() -> Result<(), Box<dyn std::error::Error>> {
+        let (contracts_client, test_servers) = aggchain_contracts_rpc_client().await?;
+        let mut server_l2_el = test_servers.server_l2_el;
+
+        // `get_l2_safe_block_number` issues `eth_getBlockByNumber("safe",
+        // false)` on the L2 execution-layer provider (id 1, after the
+        // bridgeAddress call performed while constructing the client).
+        let expected_body = serde_json::json!({
+            "method": "eth_getBlockByNumber",
+            "params": ["safe", false],
+            "id": 1,
+            "jsonrpc": "2.0",
+        });
+
+        let mock_safe_block = server_l2_el
+            .mock("POST", "/")
+            .with_status(200)
+            .with_header("content-type", "text/javascript")
+            .match_body(mockito::Matcher::Json(expected_body))
+            .with_body(safe_block_response(1))
+            .create();
+
+        let result = contracts_client.get_l2_safe_block_number().await;
+
+        mock_safe_block.assert_async().await;
+        assert_eq!(result?, 0x64);
+        Ok(())
+    }
+
+    #[test_log::test(tokio::test)]
+    async fn test_get_l2_safe_block_number_missing() -> Result<(), Box<dyn std::error::Error>> {
+        let (contracts_client, test_servers) = aggchain_contracts_rpc_client().await?;
+        let mut server_l2_el = test_servers.server_l2_el;
+
+        // The L2 node has no `safe` head yet -> null result ->
+        // L2SafeBlockMissing.
+        let expected_body = serde_json::json!({
+            "method": "eth_getBlockByNumber",
+            "params": ["safe", false],
+            "id": 1,
+            "jsonrpc": "2.0",
+        });
+
+        let mock_safe_block = server_l2_el
+            .mock("POST", "/")
+            .with_status(200)
+            .with_header("content-type", "text/javascript")
+            .match_body(mockito::Matcher::Json(expected_body))
+            .with_body(json!({ "id": 1, "jsonrpc": "2.0", "result": null }).to_string())
+            .create();
+
+        let result = contracts_client.get_l2_safe_block_number().await;
+
+        mock_safe_block.assert_async().await;
+        assert!(matches!(result, Err(crate::Error::L2SafeBlockMissing)));
         Ok(())
     }
 }
