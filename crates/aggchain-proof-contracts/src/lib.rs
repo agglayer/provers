@@ -182,8 +182,8 @@ where
         &self,
         prev_l2_block: BlockNumberOrTag,
     ) -> Result<EvmSketchInput, Error> {
-        // TODO: Figure out how to deal with interior mutability here — AssertUnwindSafe
-        // sounds suboptimal
+        // TODO: Figure out how to deal with interior mutability here —
+        // AssertUnwindSafe sounds suboptimal
         sp1_async(AssertUnwindSafe(async move {
             let sketch = EvmSketch::builder()
                 .optimism()
@@ -254,8 +254,8 @@ where
         &self,
         new_l2_block: BlockNumberOrTag,
     ) -> Result<EvmSketchInput, Error> {
-        // TODO: Figure out how to deal with interior mutability here — AssertUnwindSafe
-        // sounds suboptimal
+        // TODO: Figure out how to deal with interior mutability here —
+        // AssertUnwindSafe sounds suboptimal
         sp1_async(AssertUnwindSafe(async move {
             let sketch = EvmSketch::builder()
                 .optimism()
@@ -427,8 +427,8 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             l2_el_client.clone(),
         );
 
-        // Retrieve PolygonZkEVMBridgeV2 contract address from the global exit root
-        // manager contract.
+        // Retrieve PolygonZkEVMBridgeV2 contract address from the global exit
+        // root manager contract.
         let polygon_zkevm_bridge_address = global_exit_root_manager_l2
             .bridgeAddress()
             .call()
@@ -445,7 +445,8 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             l1_client.clone(),
         );
 
-        // Retrieve AggchainFep address from the Polygon rollup manager contract.
+        // Retrieve AggchainFep address from the Polygon rollup manager
+        // contract.
         let aggchain_fep_address = polygon_rollup_manager
             .rollupIDToRollupData(network_id)
             .call()
