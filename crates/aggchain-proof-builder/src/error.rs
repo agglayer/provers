@@ -49,12 +49,6 @@ pub enum Error {
     MismatchAggregationVkeyHash { got: Digest, expected: Digest },
 
     #[error(
-        "Mismatch on the mock aggchain vkey - derived from the mock elf: {got:?}, hardcoded \
-         MOCK_VKEY: {expected:?}"
-    )]
-    MismatchMockVkey { got: Digest, expected: Digest },
-
-    #[error(
         "Mismatch on the range vkey commitment - got from op succinct config: {got:?}, expected \
          from the elf: {expected:?}"
     )]
@@ -71,11 +65,12 @@ pub enum Error {
         expected_by_verifier: Box<AggregationProofPublicValues>,
     },
     #[error(
-        "Optimistic mode: end block {end_block} is beyond the L2 safe head {safe_block_number}"
+        "Noop program: request anchored at block {last_proven_block} but the latest L1 output is \
+         at block {l1_latest_output_block:?}"
     )]
-    OptimisticEndBlockNotSafe {
-        end_block: u64,
-        safe_block_number: u64,
+    NoopAnchorMismatch {
+        last_proven_block: u64,
+        l1_latest_output_block: Option<u64>,
     },
 
     #[error("Unable to fetch trusted sequencer address")]

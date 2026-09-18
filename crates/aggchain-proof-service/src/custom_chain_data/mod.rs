@@ -25,12 +25,12 @@ impl VKeySelector {
 pub const AGGCHAIN_VKEY_SELECTOR: VKeySelector =
     VKeySelector::new(AGGCHAIN_PROOF_PROGRAM_VERSION, AGGCHAIN_TYPE);
 
-/// Program version reserved for the mock aggchain proof program, so its
+/// Program version reserved for the noop aggchain proof program, so its
 /// selector (`0xFFFF0001`) can never collide with a real program version.
-pub const MOCK_PROGRAM_VERSION: u16 = 0xFFFF;
+pub const NOOP_PROGRAM_VERSION: u16 = 0xFFFF;
 
-/// Selector used when the aggchain proof is generated with the mock prover.
-pub const MOCK_SELECTOR: VKeySelector = VKeySelector::new(MOCK_PROGRAM_VERSION, AGGCHAIN_TYPE);
+/// Selector of the noop aggchain proof program, used by the recovery path.
+pub const NOOP_SELECTOR: VKeySelector = VKeySelector::new(NOOP_PROGRAM_VERSION, AGGCHAIN_TYPE);
 
 sol! {
     struct CustomChainData {

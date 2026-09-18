@@ -175,6 +175,24 @@ The proof binary to use is uniquely identified by a vkey selector on the L1.
 The selector is derived from the major version of the `aggchain-proof-program` package.
 This version must be bumped between releases / deployments.
 
+### Recovering a halted FEP chain (noop program)
+
+When the L2 reorgs past an output already settled on L1, the `AggchainFEP` contract keeps hashing the orphaned output root as the pre-root while the prover proves from the live L2 pre-root, and every certificate fails on the agglayer with `Aggchain hash mismatch`.
+Settled outputs cannot be rewritten, so the way out is one certificate whose pre-root is the L1 one, proven with `aggchain-proof-noop-program`: a program that commits its public values without verifying them.
+It is a real SP1 proof of an empty program, unrelated to the SP1 mock prover (`mock-prover`), which produces fake proofs the agglayer rejects.
+The contract only accepts it under the selector `0xFFFF0001`, with its vkey registered in the rollup's own `ownedAggchainVKeys`.
+Never register it on the `AgglayerGateway`.
+Bridge constraints are not verified by this program, so this is for non-production chains only.
+
+1. Print the vkey and the selector: `aggkit-prover vkey --noop` and `aggkit-prover vkey-selector --noop`.
+2. Check that the local exit root on L2 at the last settled block matches the one on L1. If not, reconcile it first with the bridge `BackwardLET` / `ForwardLET` tooling.
+3. As aggchain manager: `addOwnedAggchainVKey(0xFFFF0001, <vkey>)`, then `disableUseDefaultVkeysFlag()`.
+4. Set `program = "noop"` in `[aggchain-proof-service.aggchain-proof-builder]`, keep the regular prover type (`network-prover` or `cpu-prover`, never `mock-prover`), restart the prover.
+5. Make sure the aggsender asks the prover again: it reuses the aggchain proof cached with an InError certificate, so drop that proof (resync the aggsender database) if needed.
+6. Once the certificate is settled: `enableUseDefaultVkeysFlag()` (the regular selector is rejected while it is disabled), set `program = "standard"` back, restart.
+
+`program` and `primary-prover` are independent: the program is what gets proven, the prover is how (`mock-prover` gives an SP1 mock proof, for local stacks with mock verifiers only). With `program = "noop"` the prover refuses a request that is not anchored at the latest L1 output.
+
 ## Development
 
 Contributions are very welcomed, the guidelines are currently not available (WIP)

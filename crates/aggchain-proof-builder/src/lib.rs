@@ -13,8 +13,8 @@ use std::{
 
 use aggchain_proof_contracts::{
     contracts::{
-        GetTrustedSequencerAddress, L1OpSuccinctConfigFetcher, L2EvmStateSketchFetcher,
-        L2LocalExitRootFetcher, L2OutputAtBlockFetcher, L2SafeBlockFetcher, OpSuccinctConfig,
+        GetTrustedSequencerAddress, L1LatestL2OutputFetcher, L1OpSuccinctConfigFetcher,
+        L2EvmStateSketchFetcher, L2LocalExitRootFetcher, L2OutputAtBlockFetcher, OpSuccinctConfig,
     },
     AggchainContractsClient,
 };
@@ -30,8 +30,8 @@ use aggkit_prover_types::vkey_hash::{Sp1VKeyHash, VKeyHash};
 use agglayer_interop::types::{
     bincode, GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues,
 };
-use agglayer_primitives::{Address, Digest, U256};
-use alloy::eips::BlockNumberOrTag;
+use agglayer_primitives::{keccak::keccak256, Address, Digest, U256};
+use alloy::{eips::BlockNumberOrTag, sol_types::SolValue as _};
 pub use error::Error;
 use eyre::Context as _;
 use futures::{future::BoxFuture, FutureExt, TryFutureExt as _};
@@ -39,25 +39,19 @@ use prover_executor::{sp1_async, sp1_fast, Executor, ProofType};
 use serde::{Deserialize, Serialize};
 use sp1_sdk::{HashableKey, SP1Stdin, SP1VerifyingKey};
 use tower::{buffer::Buffer, util::BoxService, ServiceExt as _};
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 use unified_bridge::AggchainProofPublicValues;
 
-use crate::config::AggchainProofBuilderConfig;
+use crate::config::{AggchainProgram, AggchainProofBuilderConfig};
 
 const MAX_CONCURRENT_REQUESTS: usize = 100;
 
 pub const AGGCHAIN_PROOF_ELF: &[u8] = include_bytes!(env!("AGGLAYER_ELF_PATH"));
 
-/// Aggchain proof program that commits the public values without verifying
-/// anything. Only used when the primary prover is the mock prover.
-pub const AGGCHAIN_PROOF_MOCK_ELF: &[u8] = include_bytes!(env!("AGGLAYER_MOCK_ELF_PATH"));
-
-/// Hardcoded `HashableKey::hash_bytes()` of `AGGCHAIN_PROOF_MOCK_ELF`. This is
-/// the same encoding the `aggkit-prover vkey` command prints and the value that
-/// gets registered in the aggchain contract's `ownedAggchainVKeys` under the
-/// mock selector (see `aggkit-prover vkey --mock`).
-pub const MOCK_VKEY: [u8; 32] =
-    alloy_primitives::hex!("4124bc360f8ee9d91d09341d0a5b23880457ca8f2a628dfd25f2f74c2a23f38c");
+/// Aggchain proof program that commits the public values it is given without
+/// verifying anything, see [`AggchainProgram::Noop`]. Proven like the regular
+/// program: an SP1 mock proof of it is rejected by the pessimistic proof.
+pub const AGGCHAIN_PROOF_NOOP_ELF: &[u8] = include_bytes!(env!("AGGLAYER_NOOP_ELF_PATH"));
 
 /// Hardcoded hash of the "aggregation vkey".
 /// NOTE: Format being `hash_u32()` of the `SP1StarkVerifyingKey`.
@@ -324,12 +318,49 @@ pub struct AggchainProofBuilder<ContractsClient> {
 
     /// Static call caller address.
     static_call_caller_address: Address,
+
+    /// Aggchain proof program in use.
+    program: AggchainProgram,
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum WitnessGeneration {
     #[error("Invalid inserted GER.")]
     InvalidInsertedGer,
+}
+
+/// Aggchain params as the `AggchainFEP` contract computes them, with the given
+/// pre-root instead of the one derived from the L2 output components.
+pub fn aggchain_params_with_pre_root(fep_inputs: &FepInputs, l2_pre_root: Digest) -> Digest {
+    let values = AggchainParamsValues {
+        l2_pre_root: l2_pre_root.0.into(),
+        ..AggchainParamsValues::from(fep_inputs)
+    };
+
+    keccak256(values.abi_encode_packed().as_slice())
+}
+
+/// Root of the latest L1 output, the pre-root the contract hashes for the next
+/// one. The request must be anchored at that output.
+async fn latest_l1_pre_root<ContractsClient>(
+    contracts_client: &ContractsClient,
+    last_proven_block: u64,
+) -> Result<Digest, Error>
+where
+    ContractsClient: L1LatestL2OutputFetcher + Sync,
+{
+    let l1_output = contracts_client
+        .get_latest_l2_output()
+        .await
+        .map_err(Error::L1ChainDataRetrievalError)?;
+
+    match l1_output {
+        Some(output) if output.l2_block_number == last_proven_block => Ok(output.output_root),
+        _ => Err(Error::NoopAnchorMismatch {
+            last_proven_block,
+            l1_latest_output_block: l1_output.map(|output| output.l2_block_number),
+        }),
+    }
 }
 
 impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
@@ -340,10 +371,9 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     where
         ContractsClient: L1OpSuccinctConfigFetcher,
     {
-        let program = if config.is_mock_prover() {
-            AGGCHAIN_PROOF_MOCK_ELF
-        } else {
-            AGGCHAIN_PROOF_ELF
+        let program = match config.program {
+            AggchainProgram::Standard => AGGCHAIN_PROOF_ELF,
+            AggchainProgram::Noop => AGGCHAIN_PROOF_NOOP_ELF,
         };
 
         let executor = Executor::new(
@@ -356,17 +386,11 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
 
         let aggchain_vkey = executor.get_vkey().clone();
 
-        if config.is_mock_prover() {
-            let got = aggchain_vkey.hash_bytes();
-            if got != MOCK_VKEY {
-                return Err(eyre::Report::from(Error::MismatchMockVkey {
-                    got: Digest(got),
-                    expected: Digest(MOCK_VKEY),
-                }));
-            }
-            info!(
-                mock_vkey = %Digest(MOCK_VKEY),
-                "Mock prover selected, using the mock aggchain proof program"
+        if config.program == AggchainProgram::Noop {
+            warn!(
+                noop_vkey = %Digest(aggchain_vkey.hash_bytes()),
+                "Noop aggchain proof program selected: nothing is verified, the pre-root is taken \
+                 from the latest L1 output"
             );
         }
         let executor = tower::ServiceBuilder::new().service(executor).boxed();
@@ -418,6 +442,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             aggregation_vkey,
             range_vkey_commitment,
             static_call_caller_address: config.contracts.static_call_caller_address,
+            program: config.program,
         })
     }
 
@@ -430,38 +455,18 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         aggregation_vkey: Arc<SP1VerifyingKey>,
         static_call_caller_address: Address,
         range_vkey_commitment: Digest,
+        noop_pre_root: Option<Digest>,
     ) -> Result<AggchainProverInputs, Error>
     where
         ContractsClient: L2LocalExitRootFetcher
             + L2OutputAtBlockFetcher
             + L2EvmStateSketchFetcher
-            + L2SafeBlockFetcher
             + GetTrustedSequencerAddress
             + L1OpSuccinctConfigFetcher,
     {
         info!(last_proven_block=%request.aggchain_proof_inputs.last_proven_block,
             end_block=%request.end_block,
             "Retrieving chain data for aggchain proof generation");
-
-        // In optimistic mode nothing but the trusted sequencer signature binds
-        // the claimed state, so refuse to attest a block the L2 could
-        // still reorg.
-        if let FepVerification::Optimistic { .. } = request.fep_verification {
-            let safe_block_number = contracts_client
-                .get_l2_safe_block_number()
-                .await
-                .map_err(Error::L2ChainDataRetrievalError)?;
-
-            if request.end_block > safe_block_number {
-                return Err(Error::OptimisticEndBlockNotSafe {
-                    end_block: request.end_block,
-                    safe_block_number,
-                });
-            }
-
-            info!(end_block=%request.end_block, %safe_block_number,
-                "Optimistic mode: end block is within the L2 safe head");
-        }
 
         let new_blocks_range =
             (request.aggchain_proof_inputs.last_proven_block + 1)..=request.end_block;
@@ -644,18 +649,33 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
 
             let sp1_stdin = sp1_fast(|| {
                 let mut stdin = SP1Stdin::new();
-                stdin.write(&prover_witness);
+                match noop_pre_root {
+                    // The noop program commits the public values as given, so
+                    // the pre-root can be the one the contract hashes, which
+                    // the L2 no longer has after the reorg.
+                    Some(l1_pre_root) => {
+                        let mut public_values = prover_witness.public_values();
+                        public_values.aggchain_params =
+                            aggchain_params_with_pre_root(&prover_witness.fep, l1_pre_root);
+                        info!(%l1_pre_root, aggchain_params = %public_values.aggchain_params,
+                            "Noop program: aggchain params computed with the L1 pre-root");
+                        stdin.write(&public_values);
+                    }
+                    None => {
+                        stdin.write(&prover_witness);
 
-                if let FepVerification::Proof {
-                    aggregation_proof, ..
-                } = request.fep_verification
-                {
-                    let aggregation_proof = aggregation_proof
-                        .proof
-                        .clone()
-                        .try_as_compressed()
-                        .ok_or(Error::GeneratedProofIsNotCompressed)?;
-                    stdin.write_proof(*aggregation_proof, aggregation_vkey.vk.clone());
+                        if let FepVerification::Proof {
+                            aggregation_proof, ..
+                        } = request.fep_verification
+                        {
+                            let aggregation_proof = aggregation_proof
+                                .proof
+                                .clone()
+                                .try_as_compressed()
+                                .ok_or(Error::GeneratedProofIsNotCompressed)?;
+                            stdin.write_proof(*aggregation_proof, aggregation_vkey.vk.clone());
+                        }
+                    }
                 }
                 Ok::<_, Error>(stdin)
             })
@@ -739,6 +759,7 @@ where
         let aggchain_vkey = self.aggchain_vkey.clone();
         let static_call_caller_address = self.static_call_caller_address;
         let range_vkey_commitment = self.range_vkey_commitment;
+        let program = self.program;
 
         // TODO: figure out a way to stop only this service upon an sp1 panic,
         // and not the entire system. For now, just ignore the panic,
@@ -748,6 +769,12 @@ where
             let last_proven_block = req.aggchain_proof_inputs.last_proven_block;
             let end_block = req.end_block;
             info!(%last_proven_block, %end_block, "Starting generation of the aggchain proof");
+            let noop_pre_root = match program {
+                AggchainProgram::Standard => None,
+                AggchainProgram::Noop => {
+                    Some(latest_l1_pre_root(contracts_client.as_ref(), last_proven_block).await?)
+                }
+            };
             // Retrieve all the necessary public inputs. Combine with
             // the data provided by the agg-sender in the request.
             let aggchain_prover_inputs = Self::retrieve_chain_data(
@@ -757,6 +784,7 @@ where
                 aggregation_vkey,
                 static_call_caller_address,
                 range_vkey_commitment,
+                noop_pre_root,
             )
             .await?;
 

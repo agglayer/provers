@@ -56,9 +56,9 @@ fn aggchain_pattern() {
 }
 
 #[test]
-fn test_mock_selector() {
-    assert_eq!(MOCK_SELECTOR.to_be_bytes(), [0xFF, 0xFF, 0, 1]);
-    assert_ne!(MOCK_SELECTOR, AGGCHAIN_VKEY_SELECTOR);
+fn test_noop_selector() {
+    assert_eq!(NOOP_SELECTOR.to_be_bytes(), [0xFF, 0xFF, 0, 1]);
+    assert_ne!(NOOP_SELECTOR, AGGCHAIN_VKEY_SELECTOR);
 }
 
 #[tokio::test]

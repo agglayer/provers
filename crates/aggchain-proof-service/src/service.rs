@@ -5,7 +5,7 @@ use std::{
     task::{Context, Poll},
 };
 
-use aggchain_proof_builder::{AggchainProofBuilder, FepVerification};
+use aggchain_proof_builder::{config::AggchainProgram, AggchainProofBuilder, FepVerification};
 use aggchain_proof_contracts::AggchainContractsRpcClient;
 use aggchain_proof_types::{AggchainProofInputs, OptimisticAggchainProofInputs};
 use agglayer_interop::types::Digest;
@@ -21,7 +21,7 @@ use unified_bridge::AggchainProofPublicValues;
 use crate::{
     config::AggchainProofServiceConfig,
     custom_chain_data::{
-        compute_custom_chain_data, VKeySelector, AGGCHAIN_VKEY_SELECTOR, MOCK_SELECTOR,
+        compute_custom_chain_data, VKeySelector, AGGCHAIN_VKEY_SELECTOR, NOOP_SELECTOR,
     },
     error::Error,
 };
@@ -192,10 +192,9 @@ impl AggchainProofService {
             .boxed_clone();
         debug!("AggchainProofBuilder initialized");
 
-        let vkey_selector = if config.aggchain_proof_builder.is_mock_prover() {
-            MOCK_SELECTOR
-        } else {
-            AGGCHAIN_VKEY_SELECTOR
+        let vkey_selector = match config.aggchain_proof_builder.program {
+            AggchainProgram::Standard => AGGCHAIN_VKEY_SELECTOR,
+            AggchainProgram::Noop => NOOP_SELECTOR,
         };
         info!(
             vkey_selector = %alloy_primitives::hex::encode_prefixed(vkey_selector.to_be_bytes()),
