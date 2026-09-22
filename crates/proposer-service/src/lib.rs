@@ -64,9 +64,10 @@ where
             .await?,
         );
 
-        // Use the op-succinct aggregation vkey in effect: the configured override
-        // when installed at startup (see `proposer_elfs::install_overrides`),
-        // otherwise the value embedded from op-succinct-elfs.
+        // Use the op-succinct aggregation vkey in effect: the configured
+        // override when installed at startup (see
+        // `proposer_elfs::install_overrides`), otherwise the value
+        // embedded from op-succinct-elfs.
         let aggregation_vkey = proposer_elfs::aggregation::vkey().clone();
 
         Ok(Self {

@@ -59,8 +59,9 @@ impl KoalaBearDigest {
         let vkey_digest_bn254: Bn254Fr = {
             let mut result = Bn254Fr::zero();
             for word in self.0 {
-                // Since KoalaBear prime is less than 2^31, we can shift by 31 bits each time
-                // and still be within the Bn254Fr field, so we don't have to
+                // Since KoalaBear prime is less than 2^31, we can shift by 31
+                // bits each time and still be within the
+                // Bn254Fr field, so we don't have to
                 // truncate the top 3 bits.
                 result *= Bn254Fr::from_canonical_u64(1 << 31);
                 result += Bn254Fr::from_canonical_u32(word);

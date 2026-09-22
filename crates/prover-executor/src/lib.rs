@@ -406,10 +406,11 @@ impl Service<Request> for NetworkExecutor {
 
         debug!("Proving with network prover with timeout: {:?}", timeout);
         let fut = sp1_async(AssertUnwindSafe(async move {
-            // AssertUnwindSafe might be a lie, but we currently have a choice between
-            // crashing the whole system and hoping for the best.
-            // TODO: Figure out a way to kill only the NetworkExecutor service, marking it
-            // as unhealthy and potentially restarting it automatically.
+            // AssertUnwindSafe might be a lie, but we currently have a choice
+            // between crashing the whole system and hoping for the
+            // best. TODO: Figure out a way to kill only the
+            // NetworkExecutor service, marking it as unhealthy and
+            // potentially restarting it automatically.
             debug!("Starting the proving of the requested MultiBatchHeader");
             let proof_request = prover.prove(&proving_key, stdin);
 
@@ -421,6 +422,7 @@ impl Service<Request> for NetworkExecutor {
             let proof = proof_request
                 .timeout(timeout)
                 .strategy(FulfillmentStrategy::Reserved)
+                .private_stdin(true)
                 .await
                 .map_err(|error| Error::ProverFailed(error.to_string()))?;
 
