@@ -105,8 +105,8 @@ pub(crate) fn parse_evm_sketch_genesis(evm_sketch_genesis: &str) -> Result<Genes
         _ => {}
     };
 
-    // We consider the `evm_sketch_genesis` to be file path to the custom genesis
-    // from a file. We parse it to a string.
+    // We consider the `evm_sketch_genesis` to be file path to the custom
+    // genesis from a file. We parse it to a string.
     if !std::path::Path::new(evm_sketch_genesis).exists() {
         Err(crate::Error::InvalidEvmSketchGenesisInput(format!(
             "custom genesis json file does not exist: {evm_sketch_genesis}",
