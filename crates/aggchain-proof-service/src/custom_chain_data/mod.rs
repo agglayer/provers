@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(test)]
 mod tests;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct VKeySelector([u8; 4]);
 
 impl VKeySelector {
@@ -25,6 +25,13 @@ impl VKeySelector {
 pub const AGGCHAIN_VKEY_SELECTOR: VKeySelector =
     VKeySelector::new(AGGCHAIN_PROOF_PROGRAM_VERSION, AGGCHAIN_TYPE);
 
+/// Program version reserved for the mock aggchain proof program, so its
+/// selector (`0xFFFF0001`) can never collide with a real program version.
+pub const MOCK_PROGRAM_VERSION: u16 = 0xFFFF;
+
+/// Selector used when the aggchain proof is generated with the mock prover.
+pub const MOCK_SELECTOR: VKeySelector = VKeySelector::new(MOCK_PROGRAM_VERSION, AGGCHAIN_TYPE);
+
 sol! {
     struct CustomChainData {
         bytes4 selector;
@@ -33,9 +40,13 @@ sol! {
     }
 }
 
-pub fn compute_custom_chain_data(output_root: ClaimRoot, l2_block_number: u64) -> Vec<u8> {
+pub fn compute_custom_chain_data(
+    selector: VKeySelector,
+    output_root: ClaimRoot,
+    l2_block_number: u64,
+) -> Vec<u8> {
     CustomChainData {
-        selector: AGGCHAIN_VKEY_SELECTOR.to_be_bytes().into(),
+        selector: selector.to_be_bytes().into(),
         output_root: output_root.into(),
         l2_block_number: U256::from(l2_block_number).to_be_bytes().into(),
     }

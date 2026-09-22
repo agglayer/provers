@@ -30,6 +30,8 @@ serde_json.workspace = true
 unified-bridge.workspace = true
 
 [dev-dependencies]
+async-trait.workspace = true
+sp1-cc-client-executor.workspace = true
 tokio.workspace = true
 
 [build-dependencies]

@@ -73,6 +73,12 @@ pub trait GetTrustedSequencerAddress {
 }
 
 #[async_trait::async_trait]
+pub trait L2SafeBlockFetcher {
+    /// Block number of the L2 execution layer `safe` head.
+    async fn get_l2_safe_block_number(&self) -> Result<u64, Error>;
+}
+
+#[async_trait::async_trait]
 pub trait L2EvmStateSketchFetcher {
     async fn get_prev_l2_block_sketch(
         &self,
