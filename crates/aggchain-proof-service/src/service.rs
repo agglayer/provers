@@ -91,6 +91,8 @@ pub struct AggchainProofService {
     /// Selector embedded in the custom chain data, matching the aggchain proof
     /// program the builder was configured with.
     pub(crate) vkey_selector: VKeySelector,
+    /// Aggchain proof program the builder was configured with.
+    pub(crate) program: AggchainProgram,
 }
 
 impl AggchainProofService {
@@ -205,6 +207,7 @@ impl AggchainProofService {
             proposer_service,
             aggchain_proof_builder,
             vkey_selector,
+            program: config.aggchain_proof_builder.program,
         })
     }
 
@@ -223,25 +226,39 @@ impl AggchainProofService {
         let mut proposer_service = self.proposer_service.clone();
         let mut proof_builder = self.aggchain_proof_builder.clone();
         let vkey_selector = self.vkey_selector;
+        let program = self.program;
 
         async move {
             let last_proven_block = aggchain_proof_inputs.last_proven_block;
-            // The ProposerResponse contains the start and end block number
-            // It also contains the generated proof.
-            let aggregation_proof_response = proposer_service
-                .call(proposer_request)
-                .await
-                .map_err(Error::ProposerServiceError)?;
-
-            let aggchain_proof_builder_request =
-                aggchain_proof_builder::AggchainProofBuilderRequest {
-                    fep_verification: FepVerification::Proof {
-                        aggregation_proof: Box::new(aggregation_proof_response.aggregation_proof),
-                        aggregation_proof_public_values: aggregation_proof_response.public_values,
-                    },
-                    end_block: aggregation_proof_response.end_block,
+            let aggchain_proof_builder_request = match program {
+                // The noop program verifies no FEP, so no aggregation proof is
+                // requested from the proposer.
+                AggchainProgram::Noop => aggchain_proof_builder::AggchainProofBuilderRequest {
+                    fep_verification: FepVerification::Noop,
+                    end_block: aggchain_proof_inputs.requested_end_block,
                     aggchain_proof_inputs,
-                };
+                },
+                AggchainProgram::Standard => {
+                    // The ProposerResponse contains the start and end block
+                    // number. It also contains the generated proof.
+                    let aggregation_proof_response = proposer_service
+                        .call(proposer_request)
+                        .await
+                        .map_err(Error::ProposerServiceError)?;
+
+                    aggchain_proof_builder::AggchainProofBuilderRequest {
+                        fep_verification: FepVerification::Proof {
+                            aggregation_proof: Box::new(
+                                aggregation_proof_response.aggregation_proof,
+                            ),
+                            aggregation_proof_public_values: aggregation_proof_response
+                                .public_values,
+                        },
+                        end_block: aggregation_proof_response.end_block,
+                        aggchain_proof_inputs,
+                    }
+                }
+            };
 
             let end_block = aggchain_proof_builder_request.end_block;
 

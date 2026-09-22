@@ -192,6 +192,7 @@ Bridge constraints are not verified by this program, so this is for non-producti
 6. Once the certificate is settled: `enableUseDefaultVkeysFlag()` (the regular selector is rejected while it is disabled), set `program = "standard"` back, restart.
 
 `program` and `primary-prover` are independent: the program is what gets proven, the prover is how (`mock-prover` gives an SP1 mock proof, for local stacks with mock verifiers only). With `program = "noop"` the prover refuses a request that is not anchored at the latest L1 output.
+In that mode it asks nothing from op-succinct-proposer and fetches no L2 state proofs: only the L2 bridge root at both ends of the range, the L2 output at the end block and the L1 contract values, so an L2 node that cannot serve `eth_getProof` at the reorged anchor is not a blocker.
 
 ## Development
 

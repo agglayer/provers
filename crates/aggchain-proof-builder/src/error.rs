@@ -73,6 +73,9 @@ pub enum Error {
         l1_latest_output_block: Option<u64>,
     },
 
+    #[error("Noop FEP verification requested, only valid with the noop aggchain proof program")]
+    NoopVerificationRequiresNoopProgram,
+
     #[error("Unable to fetch trusted sequencer address")]
     UnableToFetchTrustedSequencerAddress(#[source] aggchain_proof_contracts::Error),
 

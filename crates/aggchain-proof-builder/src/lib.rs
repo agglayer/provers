@@ -35,6 +35,7 @@ use alloy::{eips::BlockNumberOrTag, sol_types::SolValue as _};
 pub use error::Error;
 use eyre::Context as _;
 use futures::{future::BoxFuture, FutureExt, TryFutureExt as _};
+use prover_config::ProverType;
 use prover_executor::{sp1_async, sp1_fast, Executor, ProofType};
 use serde::{Deserialize, Serialize};
 use sp1_sdk::{HashableKey, SP1Stdin, SP1VerifyingKey};
@@ -87,15 +88,27 @@ pub enum FepVerification {
     Optimistic {
         signature: agglayer_primitives::Signature,
     },
+
+    /// Noop program, normal (non-optimistic) request: nothing is verified, so
+    /// no aggregation proof is requested from the proposer. An optimistic
+    /// request keeps its `Optimistic` variant, the noop program ignores the
+    /// signature.
+    Noop,
 }
 
 impl FepVerification {
     /// Returns the optimistic mode signature if any.
     pub fn optimistic_mode_signature(&self) -> Option<agglayer_primitives::Signature> {
         match &self {
-            FepVerification::Proof { .. } => None,
+            FepVerification::Proof { .. } | FepVerification::Noop => None,
             FepVerification::Optimistic { signature } => Some(*signature),
         }
+    }
+
+    /// Whether the certificate is an optimistic one: the flag the contract
+    /// hashes into the aggchain params.
+    fn is_optimistic(&self) -> bool {
+        matches!(self, FepVerification::Optimistic { .. })
     }
 }
 
@@ -329,15 +342,87 @@ pub enum WitnessGeneration {
     InvalidInsertedGer,
 }
 
-/// Aggchain params as the `AggchainFEP` contract computes them, with the given
-/// pre-root instead of the one derived from the L2 output components.
-pub fn aggchain_params_with_pre_root(fep_inputs: &FepInputs, l2_pre_root: Digest) -> Digest {
-    let values = AggchainParamsValues {
-        l2_pre_root: l2_pre_root.0.into(),
-        ..AggchainParamsValues::from(fep_inputs)
-    };
+/// Aggchain params exactly as `AggchainFEP.getVKeyAndAggchainParams` packs
+/// them, built from the values the contract itself uses rather than from a
+/// witness. Used by the noop program.
+#[derive(Clone, Debug)]
+pub struct NoopAggchainParams {
+    /// `l2Outputs[latestOutputIndex()].outputRoot` on L1.
+    pub l2_pre_root: Digest,
+    /// `optimism_outputAtBlock(claim_block_num).outputRoot` on L2.
+    pub claim_root: Digest,
+    pub claim_block_num: u64,
+    pub rollup_config_hash: Digest,
+    pub optimistic_mode: bool,
+    pub trusted_sequencer: Address,
+    pub range_vkey_commitment: Digest,
+    /// `aggregationVkey` of the op-succinct config, already in its on-chain
+    /// form.
+    pub aggregation_vkey_hash: Digest,
+}
 
-    keccak256(values.abi_encode_packed().as_slice())
+impl NoopAggchainParams {
+    pub fn hash(&self) -> Digest {
+        let values = AggchainParamsValues {
+            l2_pre_root: self.l2_pre_root.0.into(),
+            claim_root: self.claim_root.0.into(),
+            claim_block_num: U256::from(self.claim_block_num),
+            rollup_config_hash: self.rollup_config_hash.0.into(),
+            optimistic_mode: self.optimistic_mode,
+            trusted_sequencer: self.trusted_sequencer.into(),
+            range_vkey_commitment: self.range_vkey_commitment.0.into(),
+            aggregation_vkey_hash: self.aggregation_vkey_hash.0.into(),
+        };
+
+        keccak256(values.abi_encode_packed().as_slice())
+    }
+}
+
+/// Imported bridge exits of the new blocks range, as the aggchain proof sees
+/// them.
+struct ImportedBridgeExits {
+    /// All of them, also the unclaimed ones.
+    all: Vec<GlobalIndexWithLeafHash>,
+
+    /// Global indexes of the claims unset in the range.
+    unset_claims: Vec<U256>,
+
+    /// Commitment on the ones still claimed, as committed by the proof.
+    commitment: Digest,
+}
+
+fn collect_imported_bridge_exits(
+    inputs: &AggchainProofInputs,
+    new_blocks_range: &std::ops::RangeInclusive<u64>,
+) -> Result<ImportedBridgeExits, Error> {
+    let all: Vec<GlobalIndexWithLeafHash> = filter_sort_map(
+        inputs.imported_bridge_exits.clone(),
+        new_blocks_range,
+        |ib| ib.block_number,
+        |ib| GlobalIndexWithLeafHash {
+            global_index: ib.global_index.into(),
+            bridge_exit_hash: ib.bridge_exit_hash.0,
+        },
+    )
+    .collect();
+
+    let unset_claims: Vec<U256> = filter_sort_map(
+        inputs.unclaims.clone(),
+        new_blocks_range,
+        |unclaim| unclaim.block_number,
+        |unclaim| unclaim.global_index,
+    )
+    .collect();
+
+    // Filter out the unset claims from the all imported bridge exits list.
+    let claimed = filter_values(&unset_claims, &all, |value| value.global_index)?;
+
+    Ok(ImportedBridgeExits {
+        all,
+        unset_claims,
+        commitment: ImportedBridgeExitCommitmentValues { claims: claimed }
+            .commitment(IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION),
+    })
 }
 
 /// Root of the latest L1 output, the pre-root the contract hashes for the next
@@ -392,6 +477,20 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                 "Noop aggchain proof program selected: nothing is verified, the pre-root is taken \
                  from the latest L1 output"
             );
+
+            let mock_prover = [
+                Some(&config.primary_prover),
+                config.fallback_prover.as_ref(),
+            ]
+            .into_iter()
+            .flatten()
+            .any(|prover| matches!(prover, ProverType::MockProver(_)));
+            if mock_prover {
+                warn!(
+                    "The noop program is proven by the SP1 mock prover: only a mock verifier \
+                     accepts that proof, a real agglayer rejects it"
+                );
+            }
         }
         let executor = tower::ServiceBuilder::new().service(executor).boxed();
 
@@ -446,6 +545,98 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         })
     }
 
+    /// Inputs of the noop program: the public values assembled from the L1
+    /// contract values, the L2 bridge root at both ends of the range, the L2
+    /// output at the end block and the aggsender request. No proposer call, no
+    /// witness, no state sketch: the pre-block sketch at the reorged anchor is
+    /// the call that fails during the reorg being recovered from.
+    pub(crate) async fn retrieve_noop_data(
+        contracts_client: Arc<ContractsClient>,
+        request: AggchainProofBuilderRequest,
+        network_id: u32,
+        l1_pre_root: Digest,
+    ) -> Result<AggchainProverInputs, Error>
+    where
+        ContractsClient: L2LocalExitRootFetcher
+            + L2OutputAtBlockFetcher
+            + GetTrustedSequencerAddress
+            + L1OpSuccinctConfigFetcher,
+    {
+        let last_proven_block = request.aggchain_proof_inputs.last_proven_block;
+        let end_block = request.end_block;
+        info!(%last_proven_block, %end_block, %l1_pre_root,
+            "Retrieving chain data for the noop aggchain proof");
+
+        let new_blocks_range = (last_proven_block + 1)..=end_block;
+
+        let prev_local_exit_root = contracts_client
+            .get_l2_local_exit_root(last_proven_block)
+            .await
+            .map_err(Error::L2ChainDataRetrievalError)?;
+
+        let new_local_exit_root = contracts_client
+            .get_l2_local_exit_root(end_block)
+            .await
+            .map_err(Error::L2ChainDataRetrievalError)?;
+
+        let claim_output = contracts_client
+            .get_l2_output_at_block(end_block)
+            .await
+            .map_err(Error::L2ChainDataRetrievalError)?;
+
+        // Taken from L1 as-is: these are the values the contract hashes.
+        let op_succinct_config = contracts_client
+            .get_op_succinct_config()
+            .await
+            .map_err(Error::L1ChainDataRetrievalError)?;
+
+        let trusted_sequencer = contracts_client
+            .get_trusted_sequencer_address()
+            .await
+            .map_err(Error::UnableToFetchTrustedSequencerAddress)?;
+
+        let imported_bridge_exits =
+            collect_imported_bridge_exits(&request.aggchain_proof_inputs, &new_blocks_range)?;
+
+        let aggchain_params = NoopAggchainParams {
+            l2_pre_root: l1_pre_root,
+            claim_root: claim_output.output_root,
+            claim_block_num: end_block,
+            rollup_config_hash: op_succinct_config.rollup_config_hash,
+            optimistic_mode: request.fep_verification.is_optimistic(),
+            trusted_sequencer,
+            range_vkey_commitment: op_succinct_config.range_vkey_commitment,
+            aggregation_vkey_hash: op_succinct_config.aggregation_vkey_hash,
+        };
+
+        let public_values = AggchainProofPublicValues {
+            prev_local_exit_root,
+            new_local_exit_root,
+            l1_info_root: request.aggchain_proof_inputs.l1_info_tree_root_hash,
+            origin_network: network_id.into(),
+            commit_imported_bridge_exits: imported_bridge_exits.commitment,
+            aggchain_params: aggchain_params.hash(),
+        };
+
+        info!(
+            "Noop aggchain-params unrolled values: {aggchain_params:?}; keccak-hashed: {}",
+            public_values.aggchain_params
+        );
+
+        let stdin = sp1_fast(|| {
+            let mut stdin = SP1Stdin::new();
+            stdin.write(&public_values);
+            stdin
+        })
+        .context("Failed to build SP1 stdin")
+        .map_err(Error::Other)?;
+
+        Ok(AggchainProverInputs {
+            output_root: ClaimRoot(claim_output.output_root),
+            stdin,
+        })
+    }
+
     /// Retrieve l1 and l2 public data needed for aggchain proof generation.
     /// Combine with the rest of the inputs to form an `AggchainProverInputs`.
     pub(crate) async fn retrieve_chain_data(
@@ -455,7 +646,6 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         aggregation_vkey: Arc<SP1VerifyingKey>,
         static_call_caller_address: Address,
         range_vkey_commitment: Digest,
-        noop_pre_root: Option<Digest>,
     ) -> Result<AggchainProverInputs, Error>
     where
         ContractsClient: L2LocalExitRootFetcher
@@ -527,18 +717,8 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .aggchain_proof_inputs
             .sorted_inserted_gers(&new_blocks_range);
 
-        // All the bridge exits in the new blocks range, also those that are
-        // unclaimed.
-        let all_imported_bridge_exits: Vec<GlobalIndexWithLeafHash> = filter_sort_map(
-            request.aggchain_proof_inputs.imported_bridge_exits,
-            &new_blocks_range,
-            |ib| ib.block_number,
-            |ib| GlobalIndexWithLeafHash {
-                global_index: ib.global_index.into(),
-                bridge_exit_hash: ib.bridge_exit_hash.0,
-            },
-        )
-        .collect();
+        let imported_bridge_exits =
+            collect_imported_bridge_exits(&request.aggchain_proof_inputs, &new_blocks_range)?;
 
         // Prepare removed GERS for the proof.
         let removed_gers: Vec<Digest> = filter_sort_map(
@@ -560,21 +740,6 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .into_iter()
             .map(|inserted_ger| inserted_ger.l1_info_tree_leaf.inner.global_exit_root)
             .collect();
-
-        // Prepare unset claims input for the proof.
-        let unset_claims: Vec<U256> = filter_sort_map(
-            request.aggchain_proof_inputs.unclaims,
-            &new_blocks_range,
-            |unclaim| unclaim.block_number,
-            |unclaim| unclaim.global_index,
-        )
-        .collect();
-
-        // Filter out the unset claims from the all imported bridge exits list.
-        let filtered_claimed_imported_bridge_exits =
-            filter_values(&unset_claims, &all_imported_bridge_exits, |value| {
-                value.global_index
-            })?;
 
         let l1_info_tree_leaf = request.aggchain_proof_inputs.l1_info_tree_leaf;
         let fep_inputs = FepInputs {
@@ -629,16 +794,13 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                 l1_info_root: request.aggchain_proof_inputs.l1_info_tree_root_hash,
                 origin_network: network_id,
                 fep: fep_inputs,
-                commit_imported_bridge_exits: ImportedBridgeExitCommitmentValues {
-                    claims: filtered_claimed_imported_bridge_exits,
-                }
-                .commitment(IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION),
+                commit_imported_bridge_exits: imported_bridge_exits.commitment,
                 bridge_witness: BridgeWitness {
                     inserted_gers,
-                    imported_bridge_exits: all_imported_bridge_exits,
+                    imported_bridge_exits: imported_bridge_exits.all,
                     removed_gers,
                     raw_inserted_gers,
-                    unset_claims,
+                    unset_claims: imported_bridge_exits.unset_claims,
                     prev_l2_block_sketch,
                     new_l2_block_sketch,
                     caller_address: static_call_caller_address,
@@ -649,33 +811,18 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
 
             let sp1_stdin = sp1_fast(|| {
                 let mut stdin = SP1Stdin::new();
-                match noop_pre_root {
-                    // The noop program commits the public values as given, so
-                    // the pre-root can be the one the contract hashes, which
-                    // the L2 no longer has after the reorg.
-                    Some(l1_pre_root) => {
-                        let mut public_values = prover_witness.public_values();
-                        public_values.aggchain_params =
-                            aggchain_params_with_pre_root(&prover_witness.fep, l1_pre_root);
-                        info!(%l1_pre_root, aggchain_params = %public_values.aggchain_params,
-                            "Noop program: aggchain params computed with the L1 pre-root");
-                        stdin.write(&public_values);
-                    }
-                    None => {
-                        stdin.write(&prover_witness);
+                stdin.write(&prover_witness);
 
-                        if let FepVerification::Proof {
-                            aggregation_proof, ..
-                        } = request.fep_verification
-                        {
-                            let aggregation_proof = aggregation_proof
-                                .proof
-                                .clone()
-                                .try_as_compressed()
-                                .ok_or(Error::GeneratedProofIsNotCompressed)?;
-                            stdin.write_proof(*aggregation_proof, aggregation_vkey.vk.clone());
-                        }
-                    }
+                if let FepVerification::Proof {
+                    aggregation_proof, ..
+                } = request.fep_verification
+                {
+                    let aggregation_proof = aggregation_proof
+                        .proof
+                        .clone()
+                        .try_as_compressed()
+                        .ok_or(Error::GeneratedProofIsNotCompressed)?;
+                    stdin.write_proof(*aggregation_proof, aggregation_vkey.vk.clone());
                 }
                 Ok::<_, Error>(stdin)
             })
@@ -769,24 +916,29 @@ where
             let last_proven_block = req.aggchain_proof_inputs.last_proven_block;
             let end_block = req.end_block;
             info!(%last_proven_block, %end_block, "Starting generation of the aggchain proof");
-            let noop_pre_root = match program {
-                AggchainProgram::Standard => None,
-                AggchainProgram::Noop => {
-                    Some(latest_l1_pre_root(contracts_client.as_ref(), last_proven_block).await?)
-                }
-            };
             // Retrieve all the necessary public inputs. Combine with
             // the data provided by the agg-sender in the request.
-            let aggchain_prover_inputs = Self::retrieve_chain_data(
-                contracts_client,
-                req,
-                network_id,
-                aggregation_vkey,
-                static_call_caller_address,
-                range_vkey_commitment,
-                noop_pre_root,
-            )
-            .await?;
+            let aggchain_prover_inputs = match program {
+                AggchainProgram::Standard => {
+                    if matches!(req.fep_verification, FepVerification::Noop) {
+                        return Err(Error::NoopVerificationRequiresNoopProgram);
+                    }
+                    Self::retrieve_chain_data(
+                        contracts_client,
+                        req,
+                        network_id,
+                        aggregation_vkey,
+                        static_call_caller_address,
+                        range_vkey_commitment,
+                    )
+                    .await?
+                }
+                AggchainProgram::Noop => {
+                    let l1_pre_root =
+                        latest_l1_pre_root(contracts_client.as_ref(), last_proven_block).await?;
+                    Self::retrieve_noop_data(contracts_client, req, network_id, l1_pre_root).await?
+                }
+            };
 
             let output_root = aggchain_prover_inputs.output_root;
             let prover_executor::Response { proof } = prover

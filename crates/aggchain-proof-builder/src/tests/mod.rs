@@ -24,17 +24,17 @@ pub fn load_aggchain_prover_inputs_json(file_name: &str) -> eyre::Result<Aggchai
 mod noop {
     use aggchain_proof_core::full_execution_proof::{FepInputs, KoalaBearDigest};
     use agglayer_interop::types::{bincode, L1InfoTreeLeaf, L1InfoTreeLeafInner, MerkleProof};
-    use agglayer_primitives::{address, Digest, Signature, U256};
+    use agglayer_primitives::{address, keccak::keccak256, Address, Digest, Signature, U256};
     use sp1_sdk::{HashableKey as _, LightProver, Prover as _, SP1Stdin};
     use unified_bridge::AggchainProofPublicValues;
 
-    use crate::aggchain_params_with_pre_root;
+    use crate::NoopAggchainParams;
 
-    /// With the program's own pre-root the override reproduces the params the
-    /// program commits: in a recovery only the pre-root differs.
-    #[test]
-    fn params_with_the_same_pre_root_match_the_program_encoding() {
-        let fep_inputs = FepInputs {
+    const TRUSTED_SEQUENCER: Address = address!("0x1111111111111111111111111111111111111111");
+    const L1_PRE_ROOT: Digest = Digest([0xAAu8; 32]);
+
+    fn fep_inputs() -> FepInputs {
+        FepInputs {
             l1_head: Digest([1u8; 32]),
             claim_block_num: 42,
             rollup_config_hash: Digest([2u8; 32]),
@@ -46,7 +46,7 @@ mod noop {
             new_block_hash: Digest([8u8; 32]),
             aggregation_vkey_hash: KoalaBearDigest(proposer_elfs::aggregation::vkey().hash_u32()),
             range_vkey_commitment: [10u8; 32],
-            trusted_sequencer: address!("0x1111111111111111111111111111111111111111"),
+            trusted_sequencer: TRUSTED_SEQUENCER,
             signature_optimistic_mode: Some(Signature::new(U256::ZERO, U256::ZERO, false)),
             l1_info_tree_leaf: L1InfoTreeLeaf {
                 l1_info_tree_index: 0,
@@ -59,12 +59,37 @@ mod noop {
                 },
             },
             l1_head_inclusion_proof: MerkleProof::new(Digest::ZERO, [Digest::ZERO; 32]),
-        };
+        }
+    }
 
-        assert_eq!(
-            aggchain_params_with_pre_root(&fep_inputs, fep_inputs.compute_l2_pre_root().0),
-            fep_inputs.aggchain_params()
-        );
+    /// The noop params built from the same values as the program's inputs,
+    /// with the given pre-root.
+    fn noop_params(fep_inputs: &FepInputs, l2_pre_root: Digest) -> NoopAggchainParams {
+        NoopAggchainParams {
+            l2_pre_root,
+            claim_root: fep_inputs.compute_claim_root().0,
+            claim_block_num: fep_inputs.claim_block_num.into(),
+            rollup_config_hash: fep_inputs.rollup_config_hash,
+            optimistic_mode: fep_inputs.signature_optimistic_mode.is_some(),
+            trusted_sequencer: fep_inputs.trusted_sequencer,
+            range_vkey_commitment: Digest(fep_inputs.range_vkey_commitment),
+            aggregation_vkey_hash: Digest(fep_inputs.aggregation_vkey_hash.to_hash_bn254()),
+        }
+    }
+
+    /// The noop params pack like the program's own encoding, with the L1
+    /// pre-root in the first field and nothing else changed.
+    #[test]
+    fn params_with_the_l1_pre_root_replace_only_the_pre_root() {
+        let fep_inputs = fep_inputs();
+        let params = noop_params(&fep_inputs, L1_PRE_ROOT);
+
+        let mut packed = fep_inputs.encoded_aggchain_params();
+        packed[..32].copy_from_slice(&L1_PRE_ROOT.0);
+        let expected = keccak256(&packed);
+
+        assert_eq!(params.hash(), expected);
+        assert_ne!(params.hash(), fep_inputs.aggchain_params());
     }
 
     /// The committed noop ELF commits exactly the public values it reads, so a
