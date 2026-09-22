@@ -14,12 +14,15 @@ use aggchain_proof_core::bridge::{
 use agglayer_interop::types::Digest;
 use agglayer_primitives::Address;
 use alloy::{
-    eips::BlockNumberOrTag, network::AnyNetwork, primitives::B256, providers::Provider,
+    eips::BlockNumberOrTag,
+    network::AnyNetwork,
+    primitives::{B256, U256},
+    providers::Provider,
     sol_types::SolCall,
 };
 use contracts::{
-    GetTrustedSequencerAddress, GlobalExitRootManagerL2SovereignChainRpcClient,
-    L2EvmStateSketchFetcher, L2SafeBlockFetcher,
+    GetTrustedSequencerAddress, GlobalExitRootManagerL2SovereignChainRpcClient, L1L2Output,
+    L1LatestL2OutputFetcher, L2EvmStateSketchFetcher,
 };
 use eyre::Context as _;
 use jsonrpsee::{core::client::ClientT, http_client::HttpClient, rpc_params};
@@ -50,8 +53,8 @@ pub trait AggchainContractsClient:
     L2LocalExitRootFetcher
     + L2OutputAtBlockFetcher
     + L1OpSuccinctConfigFetcher
+    + L1LatestL2OutputFetcher
     + L2EvmStateSketchFetcher
-    + L2SafeBlockFetcher
 {
 }
 
@@ -156,20 +159,37 @@ where
 }
 
 #[async_trait::async_trait]
-impl<RpcProvider> L2SafeBlockFetcher for AggchainContractsRpcClient<RpcProvider>
+impl<RpcProvider> L1LatestL2OutputFetcher for AggchainContractsRpcClient<RpcProvider>
 where
     RpcProvider: Provider + Send + Sync,
 {
-    async fn get_l2_safe_block_number(&self) -> Result<u64, Error> {
-        let safe_block = self
-            .polygon_zkevm_bridge_v2
-            .provider()
-            .get_block_by_number(BlockNumberOrTag::Safe)
+    async fn get_latest_l2_output(&self) -> Result<Option<L1L2Output>, Error> {
+        // `latestOutputIndex()` reverts while there is no output, so the count
+        // is read first.
+        let output_count = self
+            .aggchain_fep
+            .nextOutputIndex()
+            .call()
             .await
-            .map_err(Error::L2SafeBlockRetrievalError)?
-            .ok_or(Error::L2SafeBlockMissing)?;
+            .map_err(Error::LatestL2OutputRetrievalError)?;
+        if output_count.is_zero() {
+            return Ok(None);
+        }
 
-        Ok(safe_block.header.number)
+        let output = self
+            .aggchain_fep
+            .getL2Output(output_count - U256::from(1))
+            .call()
+            .await
+            .map_err(Error::LatestL2OutputRetrievalError)?;
+
+        let l2_block_number = u64::try_from(output.l2BlockNumber)
+            .map_err(|_| Error::InvalidL1BlockNumber(output.l2BlockNumber.to_string()))?;
+
+        Ok(Some(L1L2Output {
+            output_root: output.outputRoot.0.into(),
+            l2_block_number,
+        }))
     }
 }
 

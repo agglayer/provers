@@ -1,6 +1,6 @@
 ---
 source: crates/aggkit-prover-config/tests/validate_deserialize.rs
-expression: config
+expression: toml_snapshot_string(&config)
 ---
 grpc-endpoint = "127.0.0.1:8081"
 
@@ -17,6 +17,7 @@ runtime-timeout = "30s"
 
 [aggchain-proof-service.aggchain-proof-builder]
 network-id = 0
+program = "standard"
 proving-timeout = "1h"
 
 [aggchain-proof-service.aggchain-proof-builder.primary-prover.network-prover]

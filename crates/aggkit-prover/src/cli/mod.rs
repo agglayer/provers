@@ -31,18 +31,18 @@ pub enum Commands {
 
     /// Proof verification key.
     Vkey {
-        /// Use the mock aggchain proof program (the always-true program used
-        /// with the mock prover) instead of the real one.
+        /// Use the noop aggchain proof program (recovery path, verifies
+        /// nothing) instead of the regular one.
         #[arg(long)]
-        mock: bool,
+        noop: bool,
     },
 
     /// Proof verification key selector.
     VkeySelector {
-        /// Use the mock aggchain proof selector (`0xFFFF0001`) instead of the
-        /// real one.
+        /// Use the noop aggchain proof selector (`0xFFFF0001`) instead of the
+        /// regular one.
         #[arg(long)]
-        mock: bool,
+        noop: bool,
     },
 
     /// Derive the op-succinct vkey override config values from a directory

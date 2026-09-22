@@ -5,7 +5,7 @@ members = ["crates/*"]
 exclude = [
     "crates/prover-dummy-program",
     "crates/aggchain-proof-program",
-    "crates/aggchain-proof-mock-program",
+    "crates/aggchain-proof-noop-program",
 ]
 
 [workspace.package]

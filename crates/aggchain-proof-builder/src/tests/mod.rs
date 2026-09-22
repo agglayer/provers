@@ -21,164 +21,103 @@ pub fn load_aggchain_prover_inputs_json(file_name: &str) -> eyre::Result<Aggchai
     Ok(aggchain_prover_inputs)
 }
 
-#[tokio::test]
-async fn mock_vkey_matches_mock_elf() -> eyre::Result<()> {
-    use sp1_sdk::HashableKey as _;
+mod noop {
+    use aggchain_proof_core::full_execution_proof::{FepInputs, KoalaBearDigest};
+    use agglayer_interop::types::{bincode, L1InfoTreeLeaf, L1InfoTreeLeafInner, MerkleProof};
+    use agglayer_primitives::{address, keccak::keccak256, Address, Digest, Signature, U256};
+    use sp1_sdk::{HashableKey as _, LightProver, Prover as _, SP1Stdin};
+    use unified_bridge::AggchainProofPublicValues;
 
-    let vkey =
-        prover_executor::Executor::compute_program_vkey(crate::AGGCHAIN_PROOF_MOCK_ELF).await?;
-    let derived = vkey.hash_bytes();
-    assert_eq!(
-        derived,
-        crate::MOCK_VKEY,
-        "MOCK_VKEY is stale, mock elf vkey is 0x{}",
-        alloy_primitives::hex::encode(derived)
-    );
-    Ok(())
-}
+    use crate::NoopAggchainParams;
 
-mod optimistic_safe_block {
-    use std::{collections::HashMap, sync::Arc};
+    const TRUSTED_SEQUENCER: Address = address!("0x1111111111111111111111111111111111111111");
+    const L1_PRE_ROOT: Digest = Digest([0xAAu8; 32]);
 
-    use aggchain_proof_contracts::{
-        contracts::{
-            GetTrustedSequencerAddress, L1OpSuccinctConfigFetcher, L2EvmStateSketchFetcher,
-            L2LocalExitRootFetcher, L2OutputAtBlock, L2OutputAtBlockFetcher, L2SafeBlockFetcher,
-            OpSuccinctConfig,
-        },
-        Error as ContractsError,
-    };
-    use aggchain_proof_types::AggchainProofInputs;
-    use agglayer_interop::types::{L1InfoTreeLeaf, L1InfoTreeLeafInner, MerkleProof};
-    use agglayer_primitives::{Address, Digest, Signature, U256};
-    use alloy::eips::BlockNumberOrTag;
-    use sp1_cc_client_executor::io::EvmSketchInput;
-
-    use crate::{AggchainProofBuilder, AggchainProofBuilderRequest, Error, FepVerification};
-
-    /// Contracts client that only answers the safe block query. The first call
-    /// after the safe block check fails with a recognizable error so the test
-    /// can tell the check passed without going through the rest of the flow.
-    struct StubContractsClient {
-        safe_block_number: u64,
-    }
-
-    #[async_trait::async_trait]
-    impl L2SafeBlockFetcher for StubContractsClient {
-        async fn get_l2_safe_block_number(&self) -> Result<u64, ContractsError> {
-            Ok(self.safe_block_number)
-        }
-    }
-
-    #[async_trait::async_trait]
-    impl L2LocalExitRootFetcher for StubContractsClient {
-        async fn get_l2_local_exit_root(&self, _: u64) -> Result<Digest, ContractsError> {
-            Err(ContractsError::Other(eyre::eyre!(
-                "stop after the safe block check"
-            )))
-        }
-    }
-
-    #[async_trait::async_trait]
-    impl L2OutputAtBlockFetcher for StubContractsClient {
-        async fn get_l2_output_at_block(&self, _: u64) -> Result<L2OutputAtBlock, ContractsError> {
-            unreachable!("not reached after the local exit root failure")
-        }
-    }
-
-    #[async_trait::async_trait]
-    impl L1OpSuccinctConfigFetcher for StubContractsClient {
-        async fn get_op_succinct_config(&self) -> Result<OpSuccinctConfig, ContractsError> {
-            unreachable!("not reached after the local exit root failure")
-        }
-    }
-
-    #[async_trait::async_trait]
-    impl GetTrustedSequencerAddress for StubContractsClient {
-        async fn get_trusted_sequencer_address(&self) -> Result<Address, ContractsError> {
-            unreachable!("not reached after the local exit root failure")
-        }
-    }
-
-    #[async_trait::async_trait]
-    impl L2EvmStateSketchFetcher for StubContractsClient {
-        async fn get_prev_l2_block_sketch(
-            &self,
-            _: BlockNumberOrTag,
-        ) -> Result<EvmSketchInput, ContractsError> {
-            unreachable!("not reached after the local exit root failure")
-        }
-
-        async fn get_new_l2_block_sketch(
-            &self,
-            _: BlockNumberOrTag,
-        ) -> Result<EvmSketchInput, ContractsError> {
-            unreachable!("not reached after the local exit root failure")
-        }
-    }
-
-    fn optimistic_request(end_block: u64) -> AggchainProofBuilderRequest {
-        AggchainProofBuilderRequest {
-            fep_verification: FepVerification::Optimistic {
-                signature: Signature::new(U256::ZERO, U256::ZERO, false),
-            },
-            end_block,
-            aggchain_proof_inputs: AggchainProofInputs {
-                last_proven_block: 0,
-                requested_end_block: end_block,
-                l1_info_tree_root_hash: Digest::ZERO,
-                l1_info_tree_leaf: L1InfoTreeLeaf {
-                    l1_info_tree_index: 0,
-                    rer: Digest::ZERO,
-                    mer: Digest::ZERO,
-                    inner: L1InfoTreeLeafInner {
-                        global_exit_root: Digest::ZERO,
-                        block_hash: Digest::ZERO,
-                        timestamp: 0,
-                    },
+    fn fep_inputs() -> FepInputs {
+        FepInputs {
+            l1_head: Digest([1u8; 32]),
+            claim_block_num: 42,
+            rollup_config_hash: Digest([2u8; 32]),
+            prev_state_root: Digest([3u8; 32]),
+            prev_withdrawal_storage_root: Digest([4u8; 32]),
+            prev_block_hash: Digest([5u8; 32]),
+            new_state_root: Digest([6u8; 32]),
+            new_withdrawal_storage_root: Digest([7u8; 32]),
+            new_block_hash: Digest([8u8; 32]),
+            aggregation_vkey_hash: KoalaBearDigest(proposer_elfs::aggregation::vkey().hash_u32()),
+            range_vkey_commitment: [10u8; 32],
+            trusted_sequencer: TRUSTED_SEQUENCER,
+            signature_optimistic_mode: Some(Signature::new(U256::ZERO, U256::ZERO, false)),
+            l1_info_tree_leaf: L1InfoTreeLeaf {
+                l1_info_tree_index: 0,
+                rer: Digest::ZERO,
+                mer: Digest::ZERO,
+                inner: L1InfoTreeLeafInner {
+                    global_exit_root: Digest::ZERO,
+                    block_hash: Digest::ZERO,
+                    timestamp: 0,
                 },
-                l1_info_tree_merkle_proof: MerkleProof::new(Digest::ZERO, [Digest::ZERO; 32]),
-                ger_leaves: HashMap::new(),
-                imported_bridge_exits: vec![],
-                removed_gers: vec![],
-                unclaims: vec![],
             },
+            l1_head_inclusion_proof: MerkleProof::new(Digest::ZERO, [Digest::ZERO; 32]),
         }
     }
 
-    async fn retrieve_chain_data(
-        safe_block_number: u64,
-        end_block: u64,
-    ) -> Result<crate::AggchainProverInputs, Error> {
-        AggchainProofBuilder::<StubContractsClient>::retrieve_chain_data(
-            Arc::new(StubContractsClient { safe_block_number }),
-            optimistic_request(end_block),
-            1,
-            Arc::new(proposer_elfs::aggregation::vkey().clone()),
-            Address::ZERO,
-            Digest::ZERO,
-        )
-        .await
+    /// The noop params built from the same values as the program's inputs,
+    /// with the given pre-root.
+    fn noop_params(fep_inputs: &FepInputs, l2_pre_root: Digest) -> NoopAggchainParams {
+        NoopAggchainParams {
+            l2_pre_root,
+            claim_root: fep_inputs.compute_claim_root().0,
+            claim_block_num: fep_inputs.claim_block_num.into(),
+            rollup_config_hash: fep_inputs.rollup_config_hash,
+            optimistic_mode: fep_inputs.signature_optimistic_mode.is_some(),
+            trusted_sequencer: fep_inputs.trusted_sequencer,
+            range_vkey_commitment: Digest(fep_inputs.range_vkey_commitment),
+            aggregation_vkey_hash: Digest(fep_inputs.aggregation_vkey_hash.to_hash_bn254()),
+        }
     }
 
-    #[tokio::test]
-    async fn rejects_end_block_beyond_safe_head() {
-        let result = retrieve_chain_data(100, 101).await;
+    /// The noop params pack like the program's own encoding, with the L1
+    /// pre-root in the first field and nothing else changed.
+    #[test]
+    fn params_with_the_l1_pre_root_replace_only_the_pre_root() {
+        let fep_inputs = fep_inputs();
+        let params = noop_params(&fep_inputs, L1_PRE_ROOT);
 
-        assert!(matches!(
-            result,
-            Err(Error::OptimisticEndBlockNotSafe {
-                end_block: 101,
-                safe_block_number: 100,
-            })
-        ));
+        let mut packed = fep_inputs.encoded_aggchain_params();
+        packed[..32].copy_from_slice(&L1_PRE_ROOT.0);
+        let expected = keccak256(&packed);
+
+        assert_eq!(params.hash(), expected);
+        assert_ne!(params.hash(), fep_inputs.aggchain_params());
     }
 
+    /// The committed noop ELF commits exactly the public values it reads, so a
+    /// stale ELF (program changed without `AGGLAYER_ELF_BUILD=update`) fails
+    /// here rather than at recovery time.
     #[tokio::test]
-    async fn accepts_end_block_at_safe_head() {
-        let result = retrieve_chain_data(100, 100).await;
+    async fn noop_elf_commits_the_given_public_values() {
+        let public_values = AggchainProofPublicValues {
+            prev_local_exit_root: Digest([1u8; 32]),
+            new_local_exit_root: Digest([2u8; 32]),
+            l1_info_root: Digest([3u8; 32]),
+            origin_network: 7.into(),
+            commit_imported_bridge_exits: Digest([4u8; 32]),
+            aggchain_params: Digest([5u8; 32]),
+        };
+        let mut stdin = SP1Stdin::new();
+        stdin.write(&public_values);
 
-        assert!(matches!(result, Err(Error::L2ChainDataRetrievalError(_))));
+        let prover = LightProver::new().await;
+        let (committed, _) = prover
+            .execute(crate::AGGCHAIN_PROOF_NOOP_ELF.into(), stdin)
+            .await
+            .unwrap();
+        let committed: AggchainProofPublicValues = bincode::sp1_compatible()
+            .deserialize(committed.as_slice())
+            .unwrap();
+
+        assert_eq!(committed, public_values);
     }
 }
 
