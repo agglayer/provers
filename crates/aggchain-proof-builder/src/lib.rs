@@ -43,15 +43,15 @@ use tower::{buffer::Buffer, util::BoxService, ServiceExt as _};
 use tracing::{debug, error, info, warn};
 use unified_bridge::AggchainProofPublicValues;
 
-use crate::config::{AggchainProgram, AggchainProofBuilderConfig};
+use crate::config::{AggchainProofBuilderConfig, AggchainProofMode};
 
 const MAX_CONCURRENT_REQUESTS: usize = 100;
 
 pub const AGGCHAIN_PROOF_ELF: &[u8] = include_bytes!(env!("AGGLAYER_ELF_PATH"));
 
 /// Aggchain proof program that commits the public values it is given without
-/// verifying anything, see [`AggchainProgram::Noop`]. Proven like the regular
-/// program: an SP1 mock proof of it is rejected by the pessimistic proof.
+/// verifying anything. Proven like the regular program: an SP1 mock proof of it
+/// is rejected by the pessimistic proof.
 pub const AGGCHAIN_PROOF_NOOP_ELF: &[u8] = include_bytes!(env!("AGGLAYER_NOOP_ELF_PATH"));
 
 /// Hardcoded hash of the "aggregation vkey".
@@ -89,18 +89,18 @@ pub enum FepVerification {
         signature: agglayer_primitives::Signature,
     },
 
-    /// Noop program, normal (non-optimistic) request: nothing is verified, so
+    /// Recovery mode, normal (non-optimistic) request: nothing is verified, so
     /// no aggregation proof is requested from the proposer. An optimistic
-    /// request keeps its `Optimistic` variant, the noop program ignores the
+    /// request keeps its `Optimistic` variant, the recovery mode ignores the
     /// signature.
-    Noop,
+    Recovery,
 }
 
 impl FepVerification {
     /// Returns the optimistic mode signature if any.
     pub fn optimistic_mode_signature(&self) -> Option<agglayer_primitives::Signature> {
         match &self {
-            FepVerification::Proof { .. } | FepVerification::Noop => None,
+            FepVerification::Proof { .. } | FepVerification::Recovery => None,
             FepVerification::Optimistic { signature } => Some(*signature),
         }
     }
@@ -332,8 +332,8 @@ pub struct AggchainProofBuilder<ContractsClient> {
     /// Static call caller address.
     static_call_caller_address: Address,
 
-    /// Aggchain proof program in use.
-    program: AggchainProgram,
+    /// Execution path, see [`AggchainProofMode`].
+    mode: AggchainProofMode,
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
@@ -344,9 +344,9 @@ pub enum WitnessGeneration {
 
 /// Aggchain params exactly as `AggchainFEP.getVKeyAndAggchainParams` packs
 /// them, built from the values the contract itself uses rather than from a
-/// witness. Used by the noop program.
+/// witness. Used by the recovery mode.
 #[derive(Clone, Debug)]
-pub struct NoopAggchainParams {
+pub struct RecoveryAggchainParams {
     /// `l2Outputs[latestOutputIndex()].outputRoot` on L1.
     pub l2_pre_root: Digest,
     /// `optimism_outputAtBlock(claim_block_num).outputRoot` on L2.
@@ -361,7 +361,7 @@ pub struct NoopAggchainParams {
     pub aggregation_vkey_hash: Digest,
 }
 
-impl NoopAggchainParams {
+impl RecoveryAggchainParams {
     pub fn hash(&self) -> Digest {
         let values = AggchainParamsValues {
             l2_pre_root: self.l2_pre_root.0.into(),
@@ -441,7 +441,7 @@ where
 
     match l1_output {
         Some(output) if output.l2_block_number == last_proven_block => Ok(output.output_root),
-        _ => Err(Error::NoopAnchorMismatch {
+        _ => Err(Error::RecoveryAnchorMismatch {
             last_proven_block,
             l1_latest_output_block: l1_output.map(|output| output.l2_block_number),
         }),
@@ -456,9 +456,9 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     where
         ContractsClient: L1OpSuccinctConfigFetcher,
     {
-        let program = match config.program {
-            AggchainProgram::Standard => AGGCHAIN_PROOF_ELF,
-            AggchainProgram::Noop => AGGCHAIN_PROOF_NOOP_ELF,
+        let program = match config.mode {
+            AggchainProofMode::Standard => AGGCHAIN_PROOF_ELF,
+            AggchainProofMode::Recovery => AGGCHAIN_PROOF_NOOP_ELF,
         };
 
         let executor = Executor::new(
@@ -471,13 +471,14 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
 
         let aggchain_vkey = executor.get_vkey().clone();
 
-        if config.program == AggchainProgram::Noop {
+        if config.mode == AggchainProofMode::Recovery {
             warn!(
                 noop_vkey = %Digest(aggchain_vkey.hash_bytes()),
-                "Noop aggchain proof program selected: nothing is verified, the pre-root is taken \
-                 from the latest L1 output"
+                "Recovery mode: nothing is verified, the pre-root is taken from the latest L1 output"
             );
+        }
 
+        if config.mode != AggchainProofMode::Standard {
             let mock_prover = [
                 Some(&config.primary_prover),
                 config.fallback_prover.as_ref(),
@@ -521,17 +522,19 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
 
         // Check the mismatch of the keys from the op-succinct configuration in
         // the contract
-        let op_succinct_config = contracts_client
-            .get_op_succinct_config()
-            .await
-            .map_err(Error::L1ChainDataRetrievalError)?;
+        if config.mode != AggchainProofMode::Recovery {
+            let op_succinct_config = contracts_client
+                .get_op_succinct_config()
+                .await
+                .map_err(Error::L1ChainDataRetrievalError)?;
 
-        // Validate that the OpSuccinct config keys match expected values
-        validate_op_succinct_config_keys(
-            &op_succinct_config,
-            aggregation_vkey.as_ref(),
-            &range_vkey_commitment,
-        )?;
+            // Validate that the OpSuccinct config keys match expected values
+            validate_op_succinct_config_keys(
+                &op_succinct_config,
+                aggregation_vkey.as_ref(),
+                &range_vkey_commitment,
+            )?;
+        }
 
         Ok(AggchainProofBuilder {
             aggchain_vkey,
@@ -541,16 +544,16 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             aggregation_vkey,
             range_vkey_commitment,
             static_call_caller_address: config.contracts.static_call_caller_address,
-            program: config.program,
+            mode: config.mode,
         })
     }
 
-    /// Inputs of the noop program: the public values assembled from the L1
+    /// Inputs of the recovery mode: the public values assembled from the L1
     /// contract values, the L2 bridge root at both ends of the range, the L2
     /// output at the end block and the aggsender request. No proposer call, no
     /// witness, no state sketch: the pre-block sketch at the reorged anchor is
     /// the call that fails during the reorg being recovered from.
-    pub(crate) async fn retrieve_noop_data(
+    pub(crate) async fn retrieve_recovery_data(
         contracts_client: Arc<ContractsClient>,
         request: AggchainProofBuilderRequest,
         network_id: u32,
@@ -565,7 +568,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         let last_proven_block = request.aggchain_proof_inputs.last_proven_block;
         let end_block = request.end_block;
         info!(%last_proven_block, %end_block, %l1_pre_root,
-            "Retrieving chain data for the noop aggchain proof");
+            "Retrieving chain data for the recovery aggchain proof");
 
         let new_blocks_range = (last_proven_block + 1)..=end_block;
 
@@ -598,7 +601,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         let imported_bridge_exits =
             collect_imported_bridge_exits(&request.aggchain_proof_inputs, &new_blocks_range)?;
 
-        let aggchain_params = NoopAggchainParams {
+        let aggchain_params = RecoveryAggchainParams {
             l2_pre_root: l1_pre_root,
             claim_root: claim_output.output_root,
             claim_block_num: end_block,
@@ -619,7 +622,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         };
 
         info!(
-            "Noop aggchain-params unrolled values: {aggchain_params:?}; keccak-hashed: {}",
+            "Recovery aggchain-params unrolled values: {aggchain_params:?}; keccak-hashed: {}",
             public_values.aggchain_params
         );
 
@@ -906,7 +909,7 @@ where
         let aggchain_vkey = self.aggchain_vkey.clone();
         let static_call_caller_address = self.static_call_caller_address;
         let range_vkey_commitment = self.range_vkey_commitment;
-        let program = self.program;
+        let mode = self.mode;
 
         // TODO: figure out a way to stop only this service upon an sp1 panic,
         // and not the entire system. For now, just ignore the panic,
@@ -918,10 +921,10 @@ where
             info!(%last_proven_block, %end_block, "Starting generation of the aggchain proof");
             // Retrieve all the necessary public inputs. Combine with
             // the data provided by the agg-sender in the request.
-            let aggchain_prover_inputs = match program {
-                AggchainProgram::Standard => {
-                    if matches!(req.fep_verification, FepVerification::Noop) {
-                        return Err(Error::NoopVerificationRequiresNoopProgram);
+            let aggchain_prover_inputs = match mode {
+                AggchainProofMode::Standard => {
+                    if matches!(req.fep_verification, FepVerification::Recovery) {
+                        return Err(Error::RecoveryVerificationOutsideRecoveryMode);
                     }
                     Self::retrieve_chain_data(
                         contracts_client,
@@ -933,10 +936,11 @@ where
                     )
                     .await?
                 }
-                AggchainProgram::Noop => {
+                AggchainProofMode::Recovery => {
                     let l1_pre_root =
                         latest_l1_pre_root(contracts_client.as_ref(), last_proven_block).await?;
-                    Self::retrieve_noop_data(contracts_client, req, network_id, l1_pre_root).await?
+                    Self::retrieve_recovery_data(contracts_client, req, network_id, l1_pre_root)
+                        .await?
                 }
             };
 

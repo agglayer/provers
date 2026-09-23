@@ -65,16 +65,16 @@ pub enum Error {
         expected_by_verifier: Box<AggregationProofPublicValues>,
     },
     #[error(
-        "Noop program: request anchored at block {last_proven_block} but the latest L1 output is \
+        "Recovery mode: request anchored at block {last_proven_block} but the latest L1 output is \
          at block {l1_latest_output_block:?}"
     )]
-    NoopAnchorMismatch {
+    RecoveryAnchorMismatch {
         last_proven_block: u64,
         l1_latest_output_block: Option<u64>,
     },
 
-    #[error("Noop FEP verification requested, only valid with the noop aggchain proof program")]
-    NoopVerificationRequiresNoopProgram,
+    #[error("Recovery FEP verification requested outside the recovery mode")]
+    RecoveryVerificationOutsideRecoveryMode,
 
     #[error("Unable to fetch trusted sequencer address")]
     UnableToFetchTrustedSequencerAddress(#[source] aggchain_proof_contracts::Error),

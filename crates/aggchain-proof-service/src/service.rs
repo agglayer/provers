@@ -5,7 +5,7 @@ use std::{
     task::{Context, Poll},
 };
 
-use aggchain_proof_builder::{config::AggchainProgram, AggchainProofBuilder, FepVerification};
+use aggchain_proof_builder::{config::AggchainProofMode, AggchainProofBuilder, FepVerification};
 use aggchain_proof_contracts::AggchainContractsRpcClient;
 use aggchain_proof_types::{AggchainProofInputs, OptimisticAggchainProofInputs};
 use agglayer_interop::types::Digest;
@@ -78,10 +78,12 @@ pub struct AggchainProofServiceResponse {
 /// Aggchain proof.
 #[derive(Clone)]
 pub struct AggchainProofService {
-    pub(crate) proposer_service: BoxCloneService<
-        proposer_client::FepProposerRequest,
-        proposer_service::ProposerResponse,
-        proposer_service::Error,
+    pub(crate) proposer_service: Option<
+        BoxCloneService<
+            proposer_client::FepProposerRequest,
+            proposer_service::ProposerResponse,
+            proposer_service::Error,
+        >,
     >,
     pub(crate) aggchain_proof_builder: BoxCloneService<
         aggchain_proof_builder::AggchainProofBuilderRequest,
@@ -91,8 +93,6 @@ pub struct AggchainProofService {
     /// Selector embedded in the custom chain data, matching the aggchain proof
     /// program the builder was configured with.
     pub(crate) vkey_selector: VKeySelector,
-    /// Aggchain proof program the builder was configured with.
-    pub(crate) program: AggchainProgram,
 }
 
 impl AggchainProofService {
@@ -163,22 +163,29 @@ impl AggchainProofService {
         );
         debug!("Contract L1 client initialized");
 
-        let proposer_service = if config.proposer_service.mock {
-            tower::ServiceBuilder::new()
-                .service(
-                    ProposerService::new_mock(&config.proposer_service, l1_rpc_client)
-                        .await
-                        .map_err(Error::ProposerServiceInitFailed)?,
-                )
-                .boxed_clone()
-        } else {
-            tower::ServiceBuilder::new()
-                .service(
-                    ProposerService::new_network(&config.proposer_service, l1_rpc_client)
-                        .await
-                        .map_err(Error::ProposerServiceInitFailed)?,
-                )
-                .boxed_clone()
+        let proposer_service = match config.aggchain_proof_builder.mode {
+            AggchainProofMode::Recovery => {
+                info!("Recovery mode: op-succinct-proposer is not used");
+                None
+            }
+            AggchainProofMode::Standard if !config.proposer_service.mock => Some(
+                tower::ServiceBuilder::new()
+                    .service(
+                        ProposerService::new_network(&config.proposer_service, l1_rpc_client)
+                            .await
+                            .map_err(Error::ProposerServiceInitFailed)?,
+                    )
+                    .boxed_clone(),
+            ),
+            AggchainProofMode::Standard => Some(
+                tower::ServiceBuilder::new()
+                    .service(
+                        ProposerService::new_mock(&config.proposer_service, l1_rpc_client)
+                            .await
+                            .map_err(Error::ProposerServiceInitFailed)?,
+                    )
+                    .boxed_clone(),
+            ),
         };
         debug!("ProposerService initialized");
 
@@ -194,9 +201,9 @@ impl AggchainProofService {
             .boxed_clone();
         debug!("AggchainProofBuilder initialized");
 
-        let vkey_selector = match config.aggchain_proof_builder.program {
-            AggchainProgram::Standard => AGGCHAIN_VKEY_SELECTOR,
-            AggchainProgram::Noop => NOOP_SELECTOR,
+        let vkey_selector = match config.aggchain_proof_builder.mode {
+            AggchainProofMode::Standard => AGGCHAIN_VKEY_SELECTOR,
+            AggchainProofMode::Recovery => NOOP_SELECTOR,
         };
         info!(
             vkey_selector = %alloy_primitives::hex::encode_prefixed(vkey_selector.to_be_bytes()),
@@ -207,7 +214,6 @@ impl AggchainProofService {
             proposer_service,
             aggchain_proof_builder,
             vkey_selector,
-            program: config.aggchain_proof_builder.program,
         })
     }
 
@@ -223,22 +229,19 @@ impl AggchainProofService {
             l1_block_hash: B256::from(l1_block_hash.0),
         };
 
-        let mut proposer_service = self.proposer_service.clone();
+        let proposer_service = self.proposer_service.clone();
         let mut proof_builder = self.aggchain_proof_builder.clone();
         let vkey_selector = self.vkey_selector;
-        let program = self.program;
 
         async move {
             let last_proven_block = aggchain_proof_inputs.last_proven_block;
-            let aggchain_proof_builder_request = match program {
-                // The noop program verifies no FEP, so no aggregation proof is
-                // requested from the proposer.
-                AggchainProgram::Noop => aggchain_proof_builder::AggchainProofBuilderRequest {
-                    fep_verification: FepVerification::Noop,
+            let aggchain_proof_builder_request = match proposer_service {
+                None => aggchain_proof_builder::AggchainProofBuilderRequest {
+                    fep_verification: FepVerification::Recovery,
                     end_block: aggchain_proof_inputs.requested_end_block,
                     aggchain_proof_inputs,
                 },
-                AggchainProgram::Standard => {
+                Some(mut proposer_service) => {
                     // The ProposerResponse contains the start and end block
                     // number. It also contains the generated proof.
                     let aggregation_proof_response = proposer_service
@@ -347,10 +350,11 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
     type Future = AggchainProofServiceFuture;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        std::task::ready!(self
-            .proposer_service
-            .poll_ready(cx)
-            .map_err(Error::ProposerServiceError)?);
+        if let Some(proposer_service) = &mut self.proposer_service {
+            std::task::ready!(proposer_service
+                .poll_ready(cx)
+                .map_err(Error::ProposerServiceError)?);
+        }
 
         self.aggchain_proof_builder
             .poll_ready(cx)

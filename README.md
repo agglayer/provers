@@ -175,24 +175,50 @@ The proof binary to use is uniquely identified by a vkey selector on the L1.
 The selector is derived from the major version of the `aggchain-proof-program` package.
 This version must be bumped between releases / deployments.
 
-### Recovering a halted FEP chain (noop program)
+### Aggchain proof modes
+
+`mode` in `[aggchain-proof-service.aggchain-proof-builder]` selects what the prover does with a request:
+
+- `standard` (default): the standard aggchain program is proven. It verifies the FEP (for an optimistic certificate, the trusted sequencer signature) and the bridge constraints.
+- `recovery`: after an L2 reorg past a settled output. Nothing is executed: the public values are built from L1 (pre-root of the latest L1 output), the L2 bridge roots and the request, and the noop program is proven over them. op-succinct-proposer is not used.
+
+`primary-prover` says how the program of the mode is proven: `network-prover` or `cpu-prover` give a real SP1 proof, `mock-prover` an SP1 mock proof that only a mock verifier accepts.
+The setups in use:
+
+| setup | `mode` | `primary-prover` | `proposer-service.mock` | op-succinct-proposer |
+|---|---|---|---|---|
+| production | `standard` (default) | `network-prover` | `false` | real proofs |
+| kurtosis | `standard` (default) | `mock-prover` | `true` | `OP_SUCCINCT_MOCK=true` |
+| recovery | `recovery` | `network-prover` or `cpu-prover` | not read | may be stopped |
+
+A chain in `optimisticMode` needs no mode of its own: the aggsender sends optimistic requests, which every mode serves without calling op-succinct-proposer.
+
+#### Switching to the noop program
+
+`recovery` proves `aggchain-proof-noop-program`, a program that commits its public values without verifying them.
+It is a real SP1 proof of an empty program, unrelated to the SP1 mock prover.
+The certificate carries the selector `0xFFFF0001` instead of the standard one, and the contract only accepts it with the noop vkey registered in the rollup's own `ownedAggchainVKeys`.
+Never register it on the `AgglayerGateway`.
+
+1. Print the vkeys and selectors: `aggkit-prover vkey --noop`, `aggkit-prover vkey-selector --noop`, `aggkit-prover vkey`, `aggkit-prover vkey-selector`.
+2. As aggchain manager: `addOwnedAggchainVKey(0xFFFF0001, <noop vkey>)` and `addOwnedAggchainVKey(<standard selector>, <standard vkey>)`, then `disableUseDefaultVkeysFlag()`. Owning the standard vkey keeps in-flight certificates and the way back working.
+3. Set `mode`, restart the prover.
+4. A certificate already InError keeps the aggchain proof the aggsender cached for it: drop that proof (resync the aggsender database) if needed.
+
+To switch back, set `mode = "standard"` and restart the prover. `enableUseDefaultVkeysFlag()` then follows the gateway defaults again.
+
+#### Recovering a halted FEP chain (`recovery`)
 
 When the L2 reorgs past an output already settled on L1, the `AggchainFEP` contract keeps hashing the orphaned output root as the pre-root while the prover proves from the live L2 pre-root, and every certificate fails on the agglayer with `Aggchain hash mismatch`.
-Settled outputs cannot be rewritten, so the way out is one certificate whose pre-root is the L1 one, proven with `aggchain-proof-noop-program`: a program that commits its public values without verifying them.
-It is a real SP1 proof of an empty program, unrelated to the SP1 mock prover (`mock-prover`), which produces fake proofs the agglayer rejects.
-The contract only accepts it under the selector `0xFFFF0001`, with its vkey registered in the rollup's own `ownedAggchainVKeys`.
-Never register it on the `AgglayerGateway`.
-Bridge constraints are not verified by this program, so this is for non-production chains only.
+Settled outputs cannot be rewritten, so the way out is one certificate whose pre-root is the L1 one.
+Bridge constraints are not verified in this mode, so this is for non-production chains only.
 
-1. Print the vkey and the selector: `aggkit-prover vkey --noop` and `aggkit-prover vkey-selector --noop`.
-2. Check that the local exit root on L2 at the last settled block matches the one on L1. If not, reconcile it first with the bridge `BackwardLET` / `ForwardLET` tooling.
-3. As aggchain manager: `addOwnedAggchainVKey(0xFFFF0001, <vkey>)`, then `disableUseDefaultVkeysFlag()`.
-4. Set `program = "noop"` in `[aggchain-proof-service.aggchain-proof-builder]`, keep the regular prover type (`network-prover` or `cpu-prover`, never `mock-prover`), restart the prover.
-5. Make sure the aggsender asks the prover again: it reuses the aggchain proof cached with an InError certificate, so drop that proof (resync the aggsender database) if needed.
-6. Once the certificate is settled: `enableUseDefaultVkeysFlag()` (the regular selector is rejected while it is disabled), set `program = "standard"` back, restart.
+1. Check that the local exit root on L2 at the last settled block matches the one on L1. If not, reconcile it first with the bridge `BackwardLET` / `ForwardLET` tooling.
+2. Switch to `mode = "recovery"` as above. op-succinct-proposer can be stopped.
+3. Once the certificate is settled, switch back to `mode = "standard"`.
 
-`program` and `primary-prover` are independent: the program is what gets proven, the prover is how (`mock-prover` gives an SP1 mock proof, for local stacks with mock verifiers only). With `program = "noop"` the prover refuses a request that is not anchored at the latest L1 output.
-In that mode it asks nothing from op-succinct-proposer and fetches no L2 state proofs: only the L2 bridge root at both ends of the range, the L2 output at the end block and the L1 contract values, so an L2 node that cannot serve `eth_getProof` at the reorged anchor is not a blocker.
+With `mode = "recovery"` the prover refuses a request that is not anchored at the latest L1 output.
+It asks nothing from op-succinct-proposer and fetches no L2 state proofs: only the L2 bridge root at both ends of the range, the L2 output at the end block and the L1 contract values, so an L2 node that cannot serve `eth_getProof` at the reorged anchor is not a blocker.
 
 ## Development
 

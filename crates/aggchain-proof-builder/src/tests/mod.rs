@@ -28,7 +28,7 @@ mod noop {
     use sp1_sdk::{HashableKey as _, LightProver, Prover as _, SP1Stdin};
     use unified_bridge::AggchainProofPublicValues;
 
-    use crate::NoopAggchainParams;
+    use crate::RecoveryAggchainParams;
 
     const TRUSTED_SEQUENCER: Address = address!("0x1111111111111111111111111111111111111111");
     const L1_PRE_ROOT: Digest = Digest([0xAAu8; 32]);
@@ -62,10 +62,10 @@ mod noop {
         }
     }
 
-    /// The noop params built from the same values as the program's inputs,
+    /// The recovery params built from the same values as the program's inputs,
     /// with the given pre-root.
-    fn noop_params(fep_inputs: &FepInputs, l2_pre_root: Digest) -> NoopAggchainParams {
-        NoopAggchainParams {
+    fn recovery_params(fep_inputs: &FepInputs, l2_pre_root: Digest) -> RecoveryAggchainParams {
+        RecoveryAggchainParams {
             l2_pre_root,
             claim_root: fep_inputs.compute_claim_root().0,
             claim_block_num: fep_inputs.claim_block_num.into(),
@@ -77,12 +77,12 @@ mod noop {
         }
     }
 
-    /// The noop params pack like the program's own encoding, with the L1
+    /// The recovery params pack like the program's own encoding, with the L1
     /// pre-root in the first field and nothing else changed.
     #[test]
     fn params_with_the_l1_pre_root_replace_only_the_pre_root() {
         let fep_inputs = fep_inputs();
-        let params = noop_params(&fep_inputs, L1_PRE_ROOT);
+        let params = recovery_params(&fep_inputs, L1_PRE_ROOT);
 
         let mut packed = fep_inputs.encoded_aggchain_params();
         packed[..32].copy_from_slice(&L1_PRE_ROOT.0);

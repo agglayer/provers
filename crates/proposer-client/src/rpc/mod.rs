@@ -91,10 +91,7 @@ impl ProposerRpcClient {
         // TODO: Configure various other limits besides timeout on the channel.
         let channel = tonic::transport::Channel::builder(rpc_endpoint)
             .timeout(timeout)
-            .connect()
-            .await
-            .inspect_err(|e| error!("Error connecting to proposer gRPC: {e}"))
-            .map_err(Error::Connect)?;
+            .connect_lazy();
 
         let client = ProofsClient::new(channel);
         Ok(ProposerRpcClient { client })
