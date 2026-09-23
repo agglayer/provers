@@ -177,7 +177,7 @@ impl AggchainProofService {
                     )
                     .boxed_clone(),
             ),
-            AggchainProofMode::Standard => Some(
+            AggchainProofMode::Standard | AggchainProofMode::Eco => Some(
                 tower::ServiceBuilder::new()
                     .service(
                         ProposerService::new_mock(&config.proposer_service, l1_rpc_client)
@@ -203,7 +203,7 @@ impl AggchainProofService {
 
         let vkey_selector = match config.aggchain_proof_builder.mode {
             AggchainProofMode::Standard => AGGCHAIN_VKEY_SELECTOR,
-            AggchainProofMode::Recovery => NOOP_SELECTOR,
+            AggchainProofMode::Eco | AggchainProofMode::Recovery => NOOP_SELECTOR,
         };
         info!(
             vkey_selector = %alloy_primitives::hex::encode_prefixed(vkey_selector.to_be_bytes()),

@@ -76,6 +76,12 @@ pub enum Error {
     #[error("Recovery FEP verification requested outside the recovery mode")]
     RecoveryVerificationOutsideRecoveryMode,
 
+    #[error("Execution of the standard aggchain program failed")]
+    StandardProgramExecutionFailed(#[source] prover_executor::Error),
+
+    #[error("Unable to deserialize the aggchain proof public values")]
+    UnableToDeserializePublicValues(#[source] bincode::Error),
+
     #[error("Unable to fetch trusted sequencer address")]
     UnableToFetchTrustedSequencerAddress(#[source] aggchain_proof_contracts::Error),
 

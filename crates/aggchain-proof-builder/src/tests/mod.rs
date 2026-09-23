@@ -25,7 +25,7 @@ mod noop {
     use aggchain_proof_core::full_execution_proof::{FepInputs, KoalaBearDigest};
     use agglayer_interop::types::{bincode, L1InfoTreeLeaf, L1InfoTreeLeafInner, MerkleProof};
     use agglayer_primitives::{address, keccak::keccak256, Address, Digest, Signature, U256};
-    use sp1_sdk::{HashableKey as _, LightProver, Prover as _, SP1Stdin};
+    use sp1_sdk::HashableKey as _;
     use unified_bridge::AggchainProofPublicValues;
 
     use crate::RecoveryAggchainParams;
@@ -94,7 +94,7 @@ mod noop {
 
     /// The committed noop ELF commits exactly the public values it reads, so a
     /// stale ELF (program changed without `AGGLAYER_ELF_BUILD=update`) fails
-    /// here rather than at recovery time.
+    /// here rather than in the eco or recovery mode.
     #[tokio::test]
     async fn noop_elf_commits_the_given_public_values() {
         let public_values = AggchainProofPublicValues {
@@ -105,12 +105,9 @@ mod noop {
             commit_imported_bridge_exits: Digest([4u8; 32]),
             aggchain_params: Digest([5u8; 32]),
         };
-        let mut stdin = SP1Stdin::new();
-        stdin.write(&public_values);
+        let stdin = crate::noop_stdin(&public_values).unwrap();
 
-        let prover = LightProver::new().await;
-        let (committed, _) = prover
-            .execute(crate::AGGCHAIN_PROOF_NOOP_ELF.into(), stdin)
+        let committed = prover_executor::execute(crate::AGGCHAIN_PROOF_NOOP_ELF, stdin)
             .await
             .unwrap();
         let committed: AggchainProofPublicValues = bincode::sp1_compatible()

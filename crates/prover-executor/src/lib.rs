@@ -13,7 +13,7 @@ use prover_config::ProverType;
 use sp1_sdk::{
     network::FulfillmentStrategy, CpuProver, LightProver, MockProver, NetworkProver,
     ProveRequest as _, Prover, ProverClient, ProvingKey as _, SP1ProofWithPublicValues,
-    SP1ProvingKey, SP1Stdin, SP1VerifyingKey,
+    SP1ProvingKey, SP1PublicValues, SP1Stdin, SP1VerifyingKey,
 };
 use tower::{
     limit::ConcurrencyLimitLayer, timeout::TimeoutLayer, util::BoxCloneService, Service,
@@ -212,6 +212,28 @@ impl Executor {
 
         Ok(proving_key.verifying_key().clone())
     }
+}
+
+/// Executes `program` without proving it and without verifying the proofs in
+/// `stdin`.
+pub async fn execute(program: &'static [u8], stdin: SP1Stdin) -> Result<SP1PublicValues, Error> {
+    let (public_values, report) = sp1_async(AssertUnwindSafe(async move {
+        let prover = LightProver::new().await;
+        prover
+            .execute(program.into(), stdin)
+            .deferred_proof_verification(false)
+            .await
+    }))
+    .await
+    .map_err(|error| Error::ExecutionFailed(error.to_string()))?
+    .map_err(|error| Error::ExecutionFailed(error.to_string()))?;
+
+    info!(
+        instructions = report.total_instruction_count(),
+        "Program executed without proof"
+    );
+
+    Ok(public_values)
 }
 
 #[derive(Debug, Clone)]

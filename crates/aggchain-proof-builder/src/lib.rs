@@ -458,7 +458,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     {
         let program = match config.mode {
             AggchainProofMode::Standard => AGGCHAIN_PROOF_ELF,
-            AggchainProofMode::Recovery => AGGCHAIN_PROOF_NOOP_ELF,
+            AggchainProofMode::Eco | AggchainProofMode::Recovery => AGGCHAIN_PROOF_NOOP_ELF,
         };
 
         let executor = Executor::new(
@@ -471,11 +471,17 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
 
         let aggchain_vkey = executor.get_vkey().clone();
 
-        if config.mode == AggchainProofMode::Recovery {
-            warn!(
+        match config.mode {
+            AggchainProofMode::Standard => {}
+            AggchainProofMode::Eco => warn!(
+                noop_vkey = %Digest(aggchain_vkey.hash_bytes()),
+                "Eco mode: the standard program is executed without verifying the FEP proof, only \
+                 the noop program is proven"
+            ),
+            AggchainProofMode::Recovery => warn!(
                 noop_vkey = %Digest(aggchain_vkey.hash_bytes()),
                 "Recovery mode: nothing is verified, the pre-root is taken from the latest L1 output"
-            );
+            ),
         }
 
         if config.mode != AggchainProofMode::Standard {
@@ -626,17 +632,9 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             public_values.aggchain_params
         );
 
-        let stdin = sp1_fast(|| {
-            let mut stdin = SP1Stdin::new();
-            stdin.write(&public_values);
-            stdin
-        })
-        .context("Failed to build SP1 stdin")
-        .map_err(Error::Other)?;
-
         Ok(AggchainProverInputs {
             output_root: ClaimRoot(claim_output.output_root),
-            stdin,
+            stdin: noop_stdin(&public_values)?,
         })
     }
 
@@ -844,6 +842,26 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     }
 }
 
+async fn execute_standard_program(stdin: SP1Stdin) -> Result<AggchainProofPublicValues, Error> {
+    let public_values = prover_executor::execute(AGGCHAIN_PROOF_ELF, stdin)
+        .await
+        .map_err(Error::StandardProgramExecutionFailed)?;
+
+    bincode::sp1_compatible()
+        .deserialize(public_values.as_slice())
+        .map_err(Error::UnableToDeserializePublicValues)
+}
+
+fn noop_stdin(public_values: &AggchainProofPublicValues) -> Result<SP1Stdin, Error> {
+    sp1_fast(|| {
+        let mut stdin = SP1Stdin::new();
+        stdin.write(public_values);
+        stdin
+    })
+    .context("Failed to build SP1 stdin")
+    .map_err(Error::Other)
+}
+
 /// Validates that the OpSuccinct config keys match the expected values.
 /// This ensures that the same proposer aggregation program is being used.
 fn validate_op_succinct_config_keys(
@@ -922,11 +940,11 @@ where
             // Retrieve all the necessary public inputs. Combine with
             // the data provided by the agg-sender in the request.
             let aggchain_prover_inputs = match mode {
-                AggchainProofMode::Standard => {
+                AggchainProofMode::Standard | AggchainProofMode::Eco => {
                     if matches!(req.fep_verification, FepVerification::Recovery) {
                         return Err(Error::RecoveryVerificationOutsideRecoveryMode);
                     }
-                    Self::retrieve_chain_data(
+                    let inputs = Self::retrieve_chain_data(
                         contracts_client,
                         req,
                         network_id,
@@ -934,7 +952,17 @@ where
                         static_call_caller_address,
                         range_vkey_commitment,
                     )
-                    .await?
+                    .await?;
+
+                    if mode == AggchainProofMode::Eco {
+                        let public_values = execute_standard_program(inputs.stdin).await?;
+                        AggchainProverInputs {
+                            output_root: inputs.output_root,
+                            stdin: noop_stdin(&public_values)?,
+                        }
+                    } else {
+                        inputs
+                    }
                 }
                 AggchainProofMode::Recovery => {
                     let l1_pre_root =
@@ -958,7 +986,7 @@ where
 
             let public_input: AggchainProofPublicValues = bincode::sp1_compatible()
                 .deserialize(proof.public_values.as_slice())
-                .unwrap();
+                .map_err(Error::UnableToDeserializePublicValues)?;
 
             let stark = proof
                 .proof

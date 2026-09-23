@@ -180,6 +180,7 @@ This version must be bumped between releases / deployments.
 `mode` in `[aggchain-proof-service.aggchain-proof-builder]` selects what the prover does with a request:
 
 - `standard` (default): the standard aggchain program is proven. It verifies the FEP (for an optimistic certificate, the trusted sequencer signature) and the bridge constraints.
+- `eco`: cost saving for chains that can do without a zero-knowledge proof of their execution. op-succinct-proposer runs in SP1 mock mode and is still asked for the aggregation proof, so it keeps deriving the chain from L1 and decides the end block. The standard aggchain program is executed without proof over that SP1 mock aggregation proof, then the noop program is proven over the public values that execution committed.
 - `recovery`: after an L2 reorg past a settled output. Nothing is executed: the public values are built from L1 (pre-root of the latest L1 output), the L2 bridge roots and the request, and the noop program is proven over them. op-succinct-proposer is not used.
 
 `primary-prover` says how the program of the mode is proven: `network-prover` or `cpu-prover` give a real SP1 proof, `mock-prover` an SP1 mock proof that only a mock verifier accepts.
@@ -189,13 +190,14 @@ The setups in use:
 |---|---|---|---|---|
 | production | `standard` (default) | `network-prover` | `false` | real proofs |
 | kurtosis | `standard` (default) | `mock-prover` | `true` | `OP_SUCCINCT_MOCK=true` |
+| eco | `eco` | `network-prover` or `cpu-prover` | not read | `OP_SUCCINCT_MOCK=true` |
 | recovery | `recovery` | `network-prover` or `cpu-prover` | not read | may be stopped |
 
 A chain in `optimisticMode` needs no mode of its own: the aggsender sends optimistic requests, which every mode serves without calling op-succinct-proposer.
 
 #### Switching to the noop program
 
-`recovery` proves `aggchain-proof-noop-program`, a program that commits its public values without verifying them.
+`eco` and `recovery` prove `aggchain-proof-noop-program`, a program that commits its public values without verifying them.
 It is a real SP1 proof of an empty program, unrelated to the SP1 mock prover.
 The certificate carries the selector `0xFFFF0001` instead of the standard one, and the contract only accepts it with the noop vkey registered in the rollup's own `ownedAggchainVKeys`.
 Never register it on the `AgglayerGateway`.
@@ -206,6 +208,18 @@ Never register it on the `AgglayerGateway`.
 4. A certificate already InError keeps the aggchain proof the aggsender cached for it: drop that proof (resync the aggsender database) if needed.
 
 To switch back, set `mode = "standard"` and restart the prover. `enableUseDefaultVkeysFlag()` then follows the gateway defaults again.
+
+#### Saving the proving cost (`eco`)
+
+In `eco` the FEP proof is not verified.
+The execution of the L2 is only checked by op-succinct-proposer, which derives and executes the range without proof, and by the prover, which compares the proposer's output roots with the L2 node's.
+Everything else in the standard program runs: the L1 head against the L1 info tree, the bridge constraints and the aggchain params, or the trusted sequencer signature for an optimistic certificate.
+
+1. Restart op-succinct-proposer with `OP_SUCCINCT_MOCK=true`.
+2. Switch to `mode = "eco"` as above.
+
+The prover still sends every normal request to op-succinct-proposer and fetches its SP1 mock aggregation proof, whatever `proposer-service.mock` says.
+Against an op-succinct-proposer in real mode, that request starts a real, paid aggregation proof and no certificate comes out, hence the order of the steps.
 
 #### Recovering a halted FEP chain (`recovery`)
 

@@ -31,8 +31,8 @@ pub enum Commands {
 
     /// Proof verification key.
     Vkey {
-        /// Use the noop aggchain proof program (recovery path, verifies
-        /// nothing) instead of the regular one.
+        /// Use the noop aggchain proof program (eco and recovery modes)
+        /// instead of the regular one.
         #[arg(long)]
         noop: bool,
     },

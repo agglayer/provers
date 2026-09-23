@@ -16,6 +16,12 @@ pub enum AggchainProofMode {
     #[default]
     Standard,
 
+    /// Cost saving: op-succinct-proposer runs in SP1 mock mode and still
+    /// decides the end block. The standard program is executed without
+    /// proof over its SP1 mock aggregation proof, then the noop program is
+    /// proven over the public values that execution committed.
+    Eco,
+
     /// After an L2 reorg past a settled output: proves the noop program over
     /// public values built from L1, with the pre-root of the latest L1 output.
     /// op-succinct-proposer is not used.
