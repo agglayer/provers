@@ -53,13 +53,27 @@ const DIGEST_WORD_BITS: usize = 31;
 ///
 /// The encoding is sp1's `HashableKey::bytes32_raw`: the eight digest words
 /// laid end to end, most significant first, `DIGEST_WORD_BITS` bits each.
-fn hash_bn254_bytes(digest: HashU32) -> [u8; 32] {
+pub fn hash_bn254_bytes(digest: HashU32) -> [u8; 32] {
     digest
         .into_iter()
         .fold(U256::ZERO, |packed, word| {
             (packed << DIGEST_WORD_BITS) | U256::from(word)
         })
         .to_be_bytes()
+}
+
+/// Recover a vkey's KoalaBear digest from the 32 byte value registered on L1
+/// as `aggregationVkey`, or `None` when the value is not the packing of one.
+pub fn hash_u32_from_bn254_bytes(packed: [u8; 32]) -> Option<HashU32> {
+    let packed_value = U256::from_be_bytes(packed);
+    let word_mask = (U256::from(1u8) << DIGEST_WORD_BITS) - U256::from(1u8);
+
+    let mut digest: HashU32 = [0; 8];
+    for (position, word) in digest.iter_mut().rev().enumerate() {
+        *word = u32::try_from((packed_value >> (position * DIGEST_WORD_BITS)) & word_mask).ok()?;
+    }
+
+    (hash_bn254_bytes(digest) == packed).then_some(digest)
 }
 
 /// Public values to verify the FEP.
@@ -308,14 +322,34 @@ pub(crate) fn compute_output_root(
 
 #[cfg(test)]
 mod tests {
+    use alloy_primitives::hex;
     use slop_algebra::{AbstractField, PrimeField32};
     use sp1_primitives::SP1Field;
     use sp1_sdk::HashableKey;
 
     use crate::{
-        full_execution_proof::{compute_output_root, hash_bn254_bytes},
+        full_execution_proof::{compute_output_root, hash_bn254_bytes, hash_u32_from_bn254_bytes},
         vkey_hash::HashU32,
     };
+
+    /// op-succinct v3.10.0's aggregation and range vkeys, as sp1 hashes and
+    /// packs them (`hash_u32` and `bytes32_raw`).
+    const REAL_VKEYS: [(HashU32, [u8; 32]); 2] = [
+        (
+            [
+                439107325, 1199179148, 1352299494, 71262125, 2101968112, 267188236, 735481144,
+                1427103296,
+            ],
+            hex!("0034587dfb1de8163284d39f3043f5fadfa92f9e03fb3e0315eb469c550fde40"),
+        ),
+        (
+            [
+                453280291, 1942644072, 2536801, 203349826, 1201160731, 53410065, 2066490950,
+                1641948271,
+            ],
+            hex!("0036090447cf2995a00135ab08c1edf428f3084360cbbe447d96132361de246f"),
+        ),
+    ];
 
     /// Lets sp1's own encoder run on a digest that no real vkey produced, so
     /// every test below can use sp1 as the reference rather than restating the
@@ -381,12 +415,33 @@ mod tests {
     /// sp1 produces, and therefore what `addOpSuccinctConfig` registers on L1.
     #[test]
     fn matches_sp1_for_the_real_op_succinct_vkeys() {
-        for vkey in [
-            proposer_elfs::aggregation::VKEY.vkey(),
-            proposer_elfs::range::VKEY.vkey(),
-        ] {
-            assert_eq!(hash_bn254_bytes(vkey.hash_u32()), vkey.bytes32_raw());
+        for (digest, packed) in REAL_VKEYS {
+            assert_eq!(hash_bn254_bytes(digest), packed);
         }
+    }
+
+    /// Unpacking inverts the packing, so the digest inferred from the value
+    /// registered on L1 is the one the aggregation proof is verified against.
+    #[test]
+    fn recovers_the_digest_from_its_packing() {
+        let real_digests = REAL_VKEYS.map(|(digest, _)| digest);
+
+        for digest in coordinate_boundaries().chain(real_digests) {
+            assert_eq!(
+                hash_u32_from_bn254_bytes(hash_bn254_bytes(digest)),
+                Some(digest)
+            );
+        }
+    }
+
+    /// Bits above the eight packed words belong to no digest, so such a value
+    /// is rejected rather than truncated into one.
+    #[test]
+    fn rejects_values_that_are_not_a_packing() {
+        let (_, mut packed) = REAL_VKEYS[0];
+        packed[0] |= 0x80;
+
+        assert_eq!(hash_u32_from_bn254_bytes(packed), None);
     }
 
     /// Agreement with sp1 on every coordinate of the encoding, at each of its

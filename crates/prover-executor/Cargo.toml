@@ -38,4 +38,3 @@ testutils = []
 gpu = ["sp1-sdk/cuda"]
 
 [dev-dependencies]
-proposer-elfs.workspace = true

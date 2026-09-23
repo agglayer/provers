@@ -26,7 +26,6 @@ aggkit-prover = { path = "crates/aggkit-prover" }
 aggkit-prover-config = { path = "crates/aggkit-prover-config" }
 aggkit-prover-types = { path = "crates/aggkit-prover-types" }
 proposer-client = { path = "crates/proposer-client" }
-proposer-elfs = { path = "crates/proposer-elfs" }
 proposer-service = { path = "crates/proposer-service" }
 prover-alloy = { path = "crates/prover-alloy" }
 prover-config = { path = "crates/prover-config" }
@@ -48,9 +47,6 @@ agglayer-primitives = "0.18.0"
 agglayer-tries = "0.18.0"
 unified-bridge = "0.18.0"
 
-# Ecosystem dependencies
-op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = "v3.10.0-agglayer" }
-
 # SP1 dependencies
 # Please check if the toolchain image at the top `scripts/make/Makefile.elf.toml` could also be
 # updated whenever updating the below dependencies; as well as updating the proof-program binary
@@ -58,6 +54,7 @@ op-succinct-elfs = { git = "https://github.com/agglayer/op-succinct.git", tag = 
 slop-algebra = "=6.2.2"
 sp1-core-executor = "=6.2.2"
 sp1-primitives = "=6.2.2"
+sp1-recursion-executor = "=6.2.2"
 sp1-core-machine = "=6.2.2"
 sp1-sdk = "=6.2.2"
 sp1-prover = "=6.2.2"

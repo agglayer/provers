@@ -34,7 +34,6 @@ slop-algebra.workspace = true
 sp1-primitives.workspace = true
 dotenvy.workspace = true
 mockall.workspace = true
-proposer-elfs.workspace = true
 serde_json.workspace = true
 sp1-cc-host-executor.workspace = true
 sp1-sdk.workspace = true

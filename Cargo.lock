@@ -44,7 +44,6 @@ dependencies = [
  "color-eyre",
  "eyre",
  "futures",
- "proposer-elfs",
  "prover-config",
  "prover-executor",
  "prover-utils",
@@ -104,7 +103,6 @@ dependencies = [
  "hex",
  "k256 0.13.4",
  "mockall 0.13.1",
- "proposer-elfs",
  "reqwest 0.12.24",
  "semver 1.0.27",
  "serde",
@@ -140,7 +138,6 @@ dependencies = [
  "eyre",
  "futures",
  "proposer-client",
- "proposer-elfs",
  "proposer-service",
  "prover-alloy",
  "serde",
@@ -5971,11 +5968,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "op-succinct-elfs"
-version = "3.10.0"
-source = "git+https://github.com/agglayer/op-succinct.git?tag=v3.10.0-agglayer#36f20e5265ac77634997424f5817b1548c449183"
-
-[[package]]
 name = "opaque-debug"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6832,6 +6824,9 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
+ "slop-algebra",
+ "sp1-primitives",
+ "sp1-recursion-executor",
  "sp1-sdk",
  "test-log",
  "thiserror 2.0.17",
@@ -6840,20 +6835,6 @@ dependencies = [
  "tonic 0.13.1",
  "tracing",
  "url",
-]
-
-[[package]]
-name = "proposer-elfs"
-version = "0.1.0"
-dependencies = [
- "aggkit-prover-types",
- "alloy-primitives",
- "color-eyre",
- "insta",
- "op-succinct-elfs",
- "prover-elf-utils",
- "rstest",
- "sp1-sdk",
 ]
 
 [[package]]
@@ -6874,7 +6855,6 @@ dependencies = [
  "futures",
  "mockall 0.13.1",
  "proposer-client",
- "proposer-elfs",
  "prover-alloy",
  "prover-executor",
  "prover-logger",
@@ -7045,7 +7025,6 @@ dependencies = [
  "buildstructor",
  "eyre",
  "futures",
- "proposer-elfs",
  "prover-config",
  "prover-engine",
  "prover-logger",

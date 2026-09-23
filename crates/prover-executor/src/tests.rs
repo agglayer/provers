@@ -9,7 +9,7 @@ use tokio::sync::OnceCell;
 use tower::{service_fn, timeout::TimeoutLayer, Service, ServiceBuilder, ServiceExt};
 
 use crate::{Executor, LocalExecutor, LocalProver, ProofType, Request, Response};
-const ELF: &[u8] = proposer_elfs::aggregation::ELF;
+const ELF: &[u8] = include_bytes!("../../aggchain-proof-builder/elf/riscv64im-succinct-zkvm-elf");
 
 async fn mock_prover() -> &'static MockProver {
     static RES: OnceCell<MockProver> = OnceCell::const_new();

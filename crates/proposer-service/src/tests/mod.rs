@@ -10,7 +10,8 @@ use tower::Service as _;
 
 use crate::{Error, ProposerService};
 
-const ELF: &[u8] = proposer_elfs::aggregation::ELF;
+const ELF: &[u8] =
+    include_bytes!("../../../aggchain-proof-builder/elf/riscv64im-succinct-zkvm-elf");
 
 async fn generate_keys() -> (
     sp1_sdk::SP1ProvingKey,
@@ -80,6 +81,11 @@ async fn test_proposer_service() {
             .return_once(move |_| Box::pin(async move { Ok(mock_proof) }));
 
         client
+            .expect_aggregation_vkey()
+            .once()
+            .return_once(move |_, _| Box::pin(async move { Ok(vkey) }));
+
+        client
             .expect_verify_agg_proof()
             .once()
             .return_once(move |_, _, _| Ok(()));
@@ -87,11 +93,7 @@ async fn test_proposer_service() {
 
     let client = Arc::new(client);
     let l1_rpc = Arc::new(l1_rpc);
-    let mut proposer_service = ProposerService {
-        client,
-        l1_rpc,
-        aggregation_vkey: vkey,
-    };
+    let mut proposer_service = ProposerService { client, l1_rpc };
 
     let request = FepProposerRequest {
         last_proven_block: 0,
@@ -113,15 +115,9 @@ async fn unable_to_fetch_block_hash() {
 
     let client = MockProposerClient::new();
 
-    let (_pkey, vkey, _public_values) = generate_keys().await;
-
     let client = Arc::new(client);
     let l1_rpc = Arc::new(l1_rpc);
-    let mut proposer_service = ProposerService {
-        client,
-        l1_rpc,
-        aggregation_vkey: vkey,
-    };
+    let mut proposer_service = ProposerService { client, l1_rpc };
 
     let request = FepProposerRequest {
         last_proven_block: 0,
