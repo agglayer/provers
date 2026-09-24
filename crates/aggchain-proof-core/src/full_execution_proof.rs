@@ -4,8 +4,6 @@ use agglayer_primitives::{
 };
 use alloy_primitives::{FixedBytes, B256, U256};
 use alloy_sol_types::{sol, SolValue};
-use p3_bn254_fr::Bn254Fr;
-use p3_field::{AbstractField, PrimeField};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest as Sha256Digest, Sha256};
 use unified_bridge::{L1InfoTreeLeaf, MerkleProof};
@@ -47,32 +45,35 @@ impl From<ClaimRoot> for L2PreRoot {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct KoalaBearDigest(pub HashU32);
+/// Bits each digest word occupies in the packed form.
+const DIGEST_WORD_BITS: usize = 31;
 
-impl KoalaBearDigest {
-    pub fn to_hash_u32(&self) -> HashU32 {
-        self.0
+/// Pack a vkey's KoalaBear digest into the 32 byte value registered on L1 as
+/// `aggregationVkey`.
+///
+/// The encoding is sp1's `HashableKey::bytes32_raw`: the eight digest words
+/// laid end to end, most significant first, `DIGEST_WORD_BITS` bits each.
+pub fn hash_bn254_bytes(digest: HashU32) -> [u8; 32] {
+    digest
+        .into_iter()
+        .fold(U256::ZERO, |packed, word| {
+            (packed << DIGEST_WORD_BITS) | U256::from(word)
+        })
+        .to_be_bytes()
+}
+
+/// Recover a vkey's KoalaBear digest from the 32 byte value registered on L1
+/// as `aggregationVkey`, or `None` when the value is not the packing of one.
+pub fn hash_u32_from_bn254_bytes(packed: [u8; 32]) -> Option<HashU32> {
+    let packed_value = U256::from_be_bytes(packed);
+    let word_mask = (U256::from(1u8) << DIGEST_WORD_BITS) - U256::from(1u8);
+
+    let mut digest: HashU32 = [0; 8];
+    for (position, word) in digest.iter_mut().rev().enumerate() {
+        *word = u32::try_from((packed_value >> (position * DIGEST_WORD_BITS)) & word_mask).ok()?;
     }
 
-    pub fn to_hash_bn254(&self) -> [u8; 32] {
-        let vkey_digest_bn254: Bn254Fr = {
-            let mut result = Bn254Fr::zero();
-            for word in self.0 {
-                // Since KoalaBear prime is less than 2^31, we can shift by 31
-                // bits each time and still be within the
-                // Bn254Fr field, so we don't have to
-                // truncate the top 3 bits.
-                result *= Bn254Fr::from_canonical_u64(1 << 31);
-                result += Bn254Fr::from_canonical_u32(word);
-            }
-            result
-        };
-        let vkey_bytes = vkey_digest_bn254.as_canonical_biguint().to_bytes_be();
-        let mut result = [0u8; 32];
-        result[1..].copy_from_slice(&vkey_bytes);
-        result
-    }
+    (hash_bn254_bytes(digest) == packed).then_some(digest)
 }
 
 /// Public values to verify the FEP.
@@ -91,8 +92,8 @@ pub struct FepInputs {
     pub new_withdrawal_storage_root: Digest,
     pub new_block_hash: Digest,
 
-    /// Aggregation vkey hash koalabear.
-    pub aggregation_vkey_hash: KoalaBearDigest,
+    /// Aggregation vkey hash, as the KoalaBear digest words.
+    pub aggregation_vkey_hash: HashU32,
 
     /// Range vkey commitment.
     pub range_vkey_commitment: [u8; 32],
@@ -158,7 +159,7 @@ impl From<&FepInputs> for AggchainParamsValues {
             optimistic_mode: inputs.optimistic_mode() == OptimisticMode::Ecdsa,
             trusted_sequencer: inputs.trusted_sequencer.into(),
             range_vkey_commitment: inputs.range_vkey_commitment.into(),
-            aggregation_vkey_hash: inputs.aggregation_vkey_hash.to_hash_bn254().into(),
+            aggregation_vkey_hash: hash_bn254_bytes(inputs.aggregation_vkey_hash).into(),
         }
     }
 }
@@ -246,7 +247,7 @@ impl FepInputs {
             #[cfg(target_os = "zkvm")]
             {
                 sp1_zkvm::lib::verify::verify_sp1_proof(
-                    &self.aggregation_vkey_hash.to_hash_u32(),
+                    &self.aggregation_vkey_hash,
                     &self.sha256_public_values().into(),
                 );
 
@@ -321,20 +322,175 @@ pub(crate) fn compute_output_root(
 
 #[cfg(test)]
 mod tests {
-    use sp1_sdk::HashableKey as _;
+    use alloy_primitives::hex;
+    use slop_algebra::{AbstractField, PrimeField32};
+    use sp1_primitives::SP1Field;
+    use sp1_sdk::HashableKey;
 
-    use crate::full_execution_proof::compute_output_root;
+    use crate::{
+        full_execution_proof::{compute_output_root, hash_bn254_bytes, hash_u32_from_bn254_bytes},
+        vkey_hash::HashU32,
+    };
 
+    /// op-succinct v3.10.0's aggregation and range vkeys, as sp1 hashes and
+    /// packs them (`hash_u32` and `bytes32_raw`).
+    const REAL_VKEYS: [(HashU32, [u8; 32]); 2] = [
+        (
+            [
+                439107325, 1199179148, 1352299494, 71262125, 2101968112, 267188236, 735481144,
+                1427103296,
+            ],
+            hex!("0034587dfb1de8163284d39f3043f5fadfa92f9e03fb3e0315eb469c550fde40"),
+        ),
+        (
+            [
+                453280291, 1942644072, 2536801, 203349826, 1201160731, 53410065, 2066490950,
+                1641948271,
+            ],
+            hex!("0036090447cf2995a00135ab08c1edf428f3084360cbbe447d96132361de246f"),
+        ),
+    ];
+
+    /// Lets sp1's own encoder run on a digest that no real vkey produced, so
+    /// every test below can use sp1 as the reference rather than restating the
+    /// encoding.
+    struct ArbitraryVkey(HashU32);
+
+    impl HashableKey for ArbitraryVkey {
+        fn hash_koalabear(&self) -> [SP1Field; 8] {
+            self.0.map(SP1Field::from_canonical_u32)
+        }
+
+        fn hash_u32(&self) -> HashU32 {
+            self.0
+        }
+    }
+
+    /// What sp1 encodes a digest to, or `None` where it refuses: its encoder
+    /// assumes a packed digest always fills its buffer, and panics otherwise.
+    fn sp1_encoding(digest: HashU32) -> Option<[u8; 32]> {
+        std::panic::catch_unwind(|| ArbitraryVkey(digest).bytes32_raw()).ok()
+    }
+
+    /// A digest with nothing in it.
+    const EMPTY: HashU32 = [0; 8];
+
+    /// The largest word the digest field holds, without these tests needing to
+    /// know how it is bounded.
+    fn largest_word() -> u32 {
+        (SP1Field::zero() - SP1Field::one()).as_canonical_u32()
+    }
+
+    /// `digest` with one word replaced. The only digest constructor these tests
+    /// need: over [`EMPTY`] it isolates a single coordinate, over a saturated
+    /// digest it perturbs one.
+    fn replacing(digest: HashU32, position: usize, word: u32) -> HashU32 {
+        std::array::from_fn(|index| {
+            if index == position {
+                word
+            } else {
+                digest[index]
+            }
+        })
+    }
+
+    /// Every coordinate of the encoding, at each value where an implementation
+    /// would go wrong: empty, minimal, and the largest the field holds.
+    ///
+    /// The leading word stays at its largest throughout so sp1's own encoder
+    /// accepts all of them -- it refuses short packings, see
+    /// `encodes_the_digests_sp1_refuses` -- and the final digest carries the
+    /// leading coordinate at full scale on its own.
+    fn coordinate_boundaries() -> impl Iterator<Item = HashU32> {
+        let saturated = [largest_word(); 8];
+
+        (1..8)
+            .flat_map(move |position| {
+                [0, 1, largest_word()].map(move |word| replacing(saturated, position, word))
+            })
+            .chain(std::iter::once(replacing(EMPTY, 0, largest_word())))
+    }
+
+    /// The value committed for the real op-succinct keys is byte for byte what
+    /// sp1 produces, and therefore what `addOpSuccinctConfig` registers on L1.
     #[test]
-    fn test_koalabear_digest_round_trip_with_aggregation_vkey() {
-        let aggregation_vkey = proposer_elfs::aggregation::VKEY.vkey();
-        let koalabear_digest = super::KoalaBearDigest(aggregation_vkey.hash_u32());
+    fn matches_sp1_for_the_real_op_succinct_vkeys() {
+        for (digest, packed) in REAL_VKEYS {
+            assert_eq!(hash_bn254_bytes(digest), packed);
+        }
+    }
 
-        assert_eq!(
-            aggregation_vkey.bytes32_raw(),
-            koalabear_digest.to_hash_bn254()
-        );
-        assert_eq!(aggregation_vkey.hash_u32(), koalabear_digest.to_hash_u32());
+    /// Unpacking inverts the packing, so the digest inferred from the value
+    /// registered on L1 is the one the aggregation proof is verified against.
+    #[test]
+    fn recovers_the_digest_from_its_packing() {
+        let real_digests = REAL_VKEYS.map(|(digest, _)| digest);
+
+        for digest in coordinate_boundaries().chain(real_digests) {
+            assert_eq!(
+                hash_u32_from_bn254_bytes(hash_bn254_bytes(digest)),
+                Some(digest)
+            );
+        }
+    }
+
+    /// Bits above the eight packed words belong to no digest, so such a value
+    /// is rejected rather than truncated into one.
+    #[test]
+    fn rejects_values_that_are_not_a_packing() {
+        let (_, mut packed) = REAL_VKEYS[0];
+        packed[0] |= 0x80;
+
+        assert_eq!(hash_u32_from_bn254_bytes(packed), None);
+    }
+
+    /// Agreement with sp1 on every coordinate of the encoding, at each of its
+    /// boundary values.
+    ///
+    /// Both implementations are the same positional sum -- every digest word
+    /// scaled by the weight of its position -- so they can only disagree
+    /// through a coordinate's weight or through coordinates interfering. This
+    /// pins each weight against sp1, and
+    /// `no_word_reaches_into_the_next_positions_range` rules out interference,
+    /// which together settle every digest rather than a sample of them.
+    #[test]
+    fn matches_sp1_on_every_coordinate_boundary() {
+        for digest in coordinate_boundaries() {
+            let expected =
+                sp1_encoding(digest).expect("leading word is maximal, so sp1 encodes this");
+
+            assert_eq!(hash_bn254_bytes(digest), expected, "diverged on {digest:?}");
+        }
+    }
+
+    /// A word at its largest stays strictly below the smallest contribution of
+    /// the position above it, so no word can ever carry into its neighbour.
+    ///
+    /// This is what makes the encoding injective for *every* digest: distinct
+    /// digests cannot share a commitment, so the value registered on L1 pins
+    /// exactly one aggregation vkey.
+    #[test]
+    fn no_word_reaches_into_the_next_positions_range() {
+        let commitment = |position, word| hash_bn254_bytes(replacing(EMPTY, position, word));
+
+        for position in 1..8 {
+            assert!(
+                commitment(position, largest_word()) < commitment(position - 1, 1),
+                "word {position} at its largest reaches position {}",
+                position - 1,
+            );
+        }
+    }
+
+    /// sp1's own encoder cannot represent every digest: it assumes the packed
+    /// value fills its buffer, and gives up when it does not. That is the
+    /// reason the encoding is computed here rather than called out to.
+    #[test]
+    fn encodes_the_digests_sp1_refuses() {
+        let digest = replacing(EMPTY, 7, 1);
+
+        assert!(sp1_encoding(digest).is_none(), "sp1 encoded it after all");
+        assert_ne!(hash_bn254_bytes(digest), [0u8; 32]);
     }
 
     #[test]

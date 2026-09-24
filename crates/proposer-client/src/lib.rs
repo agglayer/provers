@@ -35,6 +35,12 @@ pub trait ProposerClient {
         request_id: RequestId,
     ) -> Result<SP1ProofWithPublicValues, Error>;
 
+    async fn aggregation_vkey(
+        &self,
+        request_id: RequestId,
+        proof: &SP1ProofWithPublicValues,
+    ) -> Result<SP1VerifyingKey, Error>;
+
     #[allow(clippy::result_large_err)]
     fn verify_agg_proof(
         &self,

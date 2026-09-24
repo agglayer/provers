@@ -23,8 +23,6 @@ k256.workspace = true
 serde.workspace = true
 serde_with.workspace = true
 sha2.workspace = true
-p3-bn254-fr.workspace = true
-p3-field.workspace = true
 sp1-cc-client-executor.workspace = true
 sp1-zkvm = { workspace = true, features = ["verify"] }
 thiserror.workspace = true
@@ -32,9 +30,10 @@ tiny-keccak.workspace = true
 
 [dev-dependencies]
 alloy = { workspace = true, features = ["sol-types", "genesis"] }
+slop-algebra.workspace = true
+sp1-primitives.workspace = true
 dotenvy.workspace = true
 mockall.workspace = true
-proposer-elfs.workspace = true
 serde_json.workspace = true
 sp1-cc-host-executor.workspace = true
 sp1-sdk.workspace = true
