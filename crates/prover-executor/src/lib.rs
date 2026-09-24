@@ -218,6 +218,7 @@ impl Executor {
 pub enum ProofType {
     Stark,
     Plonk,
+    Groth16,
 }
 
 #[derive(Debug, Clone)]
@@ -306,6 +307,7 @@ where
     proof_request = match proof_type {
         ProofType::Plonk => proof_request.plonk(),
         ProofType::Stark => proof_request.compressed(),
+        ProofType::Groth16 => proof_request.groth16(),
     };
 
     if disable_deferred_proof_verification {
@@ -417,6 +419,7 @@ impl Service<Request> for NetworkExecutor {
             let proof_request = match req.proof_type {
                 ProofType::Plonk => proof_request.plonk(),
                 ProofType::Stark => proof_request.compressed(),
+                ProofType::Groth16 => proof_request.groth16(),
             };
 
             let proof = proof_request
