@@ -1,3 +1,5 @@
+// tonic::Status is 176 bytes and is required by the generated Proofs trait;
+// we have no control over its size.
 #![allow(clippy::result_large_err)]
 
 use std::time::Duration;
