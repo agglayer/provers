@@ -119,7 +119,7 @@ impl<L1Rpc>
             "Building a mock proposer service with a non-mock config"
         );
         let proposer_rpc_client = Arc::new(
-            ProposerRpcClient::new(
+            ProposerRpcClient::new_lazy(
                 config.client.proposer_endpoint.clone(),
                 config.client.request_timeout,
             )
