@@ -99,6 +99,17 @@ impl ProposerRpcClient {
         let client = ProofsClient::new(channel);
         Ok(ProposerRpcClient { client })
     }
+
+    /// Builds a client without contacting the proposer. Use this where the
+    /// proposer is not expected to be reachable up front, such as mock mode.
+    pub async fn new_lazy(rpc_endpoint: GrpcUri, timeout: Duration) -> Result<Self, Error> {
+        let channel = tonic::transport::Channel::builder(rpc_endpoint)
+            .timeout(timeout)
+            .connect_lazy();
+
+        let client = ProofsClient::new(channel);
+        Ok(ProposerRpcClient { client })
+    }
 }
 
 #[tonic::async_trait]
