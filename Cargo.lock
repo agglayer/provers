@@ -6821,6 +6821,7 @@ dependencies = [
  "prost",
  "prover-executor",
  "prover-utils",
+ "rustls",
  "serde",
  "serde_json",
  "serde_with",

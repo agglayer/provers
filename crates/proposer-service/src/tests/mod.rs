@@ -5,13 +5,17 @@ use alloy_primitives::FixedBytes;
 use proposer_client::{
     rpc::AggregationProofProposerRequest, FepProposerRequest, MockProposerClient, RequestId,
 };
-use sp1_sdk::{Prover as _, ProvingKey as _, SP1PublicValues, SP1_CIRCUIT_VERSION};
+use sp1_sdk::{
+    HashableKey as _, Prover as _, ProvingKey as _, SP1PublicValues, SP1_CIRCUIT_VERSION,
+};
 use tower::Service as _;
 
 use crate::{Error, ProposerService};
 
-const ELF: &[u8] =
-    include_bytes!("../../../aggchain-proof-builder/elf/riscv64im-succinct-zkvm-elf");
+const ELF: &[u8] = include_bytes!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../aggchain-proof-builder/elf/riscv64im-succinct-zkvm-elf"
+));
 
 async fn generate_keys() -> (
     sp1_sdk::SP1ProvingKey,
@@ -44,8 +48,7 @@ async fn generate_keys() -> (
     (pk, vk, public_values)
 }
 
-#[tokio::test]
-async fn test_proposer_service() {
+async fn client_with_proof() -> (MockRpc, MockProposerClient, sp1_sdk::SP1VerifyingKey) {
     let mut l1_rpc = MockRpc::new();
 
     l1_rpc
@@ -67,29 +70,35 @@ async fn test_proposer_service() {
     );
 
     let (_pkey, vkey, public_values) = generate_keys().await;
-    {
-        let mock_proof = sp1_sdk::SP1ProofWithPublicValues::create_mock_proof(
-            &vkey,
-            public_values,
-            sp1_sdk::SP1ProofMode::Compressed,
-            SP1_CIRCUIT_VERSION,
-        );
+    let mock_proof = sp1_sdk::SP1ProofWithPublicValues::create_mock_proof(
+        &vkey,
+        public_values,
+        sp1_sdk::SP1ProofMode::Compressed,
+        SP1_CIRCUIT_VERSION,
+    );
 
-        client
-            .expect_wait_for_proof()
-            .once()
-            .return_once(move |_| Box::pin(async move { Ok(mock_proof) }));
+    client
+        .expect_wait_for_proof()
+        .once()
+        .return_once(move |_| Box::pin(async move { Ok(mock_proof) }));
 
-        client
-            .expect_aggregation_vkey()
-            .once()
-            .return_once(move |_, _| Box::pin(async move { Ok(vkey) }));
+    (l1_rpc, client, vkey)
+}
 
-        client
-            .expect_verify_agg_proof()
-            .once()
-            .return_once(move |_, _, _| Ok(()));
-    };
+#[tokio::test]
+async fn test_proposer_service() {
+    let (l1_rpc, mut client, vkey) = client_with_proof().await;
+    let expected_key_hash = vkey.hash_bytes();
+    client
+        .expect_aggregation_vkey()
+        .once()
+        .return_once(move |_, _| Box::pin(async move { Ok(vkey) }));
+
+    client
+        .expect_verify_agg_proof()
+        .withf(move |_, _, key| key.hash_bytes() == expected_key_hash)
+        .once()
+        .return_once(move |_, _, _| Ok(()));
 
     let client = Arc::new(client);
     let l1_rpc = Arc::new(l1_rpc);
@@ -103,6 +112,7 @@ async fn test_proposer_service() {
 
     let response = proposer_service.call(request).await.unwrap();
     assert_eq!(response.last_proven_block, 0);
+    assert_eq!(response.aggregation_vkey.hash_bytes(), expected_key_hash);
 }
 
 #[tokio::test]
@@ -133,6 +143,76 @@ async fn unable_to_fetch_block_hash() {
     ));
 }
 
-#[test]
-#[ignore = "to be implemented"]
-fn test_invalid_proof_vkey_verificatinon_fails() {}
+#[tokio::test]
+async fn key_lookup_failure_stops_before_verification() {
+    let (l1_rpc, mut client, _) = client_with_proof().await;
+    client
+        .expect_aggregation_vkey()
+        .once()
+        .return_once(|request_id, _| {
+            Box::pin(async move {
+                Err(proposer_client::Error::AggregationVkey {
+                    request_id,
+                    source: eyre::eyre!("registry unavailable"),
+                })
+            })
+        });
+    client.expect_verify_agg_proof().never();
+
+    let mut service = ProposerService {
+        client: Arc::new(client),
+        l1_rpc: Arc::new(l1_rpc),
+    };
+    let error = service
+        .call(FepProposerRequest {
+            last_proven_block: 0,
+            requested_end_block: 10,
+            l1_block_hash: Default::default(),
+        })
+        .await
+        .expect_err("a registry failure must fail the request");
+
+    let Error::Client(proposer_client::Error::AggregationVkey { request_id, source }) = error
+    else {
+        panic!("expected a key lookup error");
+    };
+    assert_eq!(request_id, RequestId(FixedBytes::ZERO));
+    assert_eq!(source.to_string(), "registry unavailable");
+}
+
+#[tokio::test]
+async fn verification_failure_rejects_the_proof() {
+    let (l1_rpc, mut client, vkey) = client_with_proof().await;
+    client
+        .expect_aggregation_vkey()
+        .once()
+        .return_once(move |_, _| Box::pin(async move { Ok(vkey) }));
+    client
+        .expect_verify_agg_proof()
+        .once()
+        .return_once(|request_id, _, _| {
+            Err(proposer_client::Error::Verification {
+                request_id,
+                source: eyre::eyre!("invalid proof"),
+            })
+        });
+
+    let mut service = ProposerService {
+        client: Arc::new(client),
+        l1_rpc: Arc::new(l1_rpc),
+    };
+    let error = service
+        .call(FepProposerRequest {
+            last_proven_block: 0,
+            requested_end_block: 10,
+            l1_block_hash: Default::default(),
+        })
+        .await
+        .expect_err("an invalid proof must fail the request");
+
+    let Error::Client(proposer_client::Error::Verification { request_id, source }) = error else {
+        panic!("expected a verification error");
+    };
+    assert_eq!(request_id, RequestId(FixedBytes::ZERO));
+    assert_eq!(source.to_string(), "invalid proof");
+}

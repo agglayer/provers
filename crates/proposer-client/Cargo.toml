@@ -45,6 +45,7 @@ proposer-client = { path = ".", features = ["testutils"] }
 
 insta.workspace = true
 mockito.workspace = true
+rustls = { version = "0.23", default-features = false, features = ["aws_lc_rs"] }
 serde_json.workspace = true
 test-log.workspace = true
 tokio.workspace = true

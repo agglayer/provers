@@ -25,6 +25,7 @@ use aggchain_proof_core::{
         AggregationProofPublicValues, ClaimRoot, FepInputs,
     },
     proof::{AggchainProofWitness, IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION},
+    vkey_hash::HashU32,
 };
 use aggchain_proof_types::AggchainProofInputs;
 use agglayer_interop::types::{
@@ -81,6 +82,31 @@ pub enum FepVerification {
 }
 
 impl FepVerification {
+    fn validate_aggregation_vkey_hash(&self, configured_hash: Digest) -> Result<HashU32, Error> {
+        let aggregation_vkey_hash = hash_u32_from_bn254_bytes(configured_hash.0)
+            .ok_or(Error::InvalidAggregationVkeyHash(configured_hash))?;
+
+        if let Self::Proof {
+            aggregation_vkey, ..
+        } = self
+        {
+            let proven = Digest(hash_bn254_bytes(aggregation_vkey.hash_u32()));
+            if proven != configured_hash {
+                error!(
+                    "Mismatch on the aggregation vkey hash - got from op succinct contract \
+                     config: {}, proven by the aggregation proof: {}",
+                    configured_hash, proven
+                );
+                return Err(Error::MismatchAggregationVkeyHash {
+                    got: configured_hash,
+                    expected: proven,
+                });
+            }
+        }
+
+        Ok(aggregation_vkey_hash)
+    }
+
     /// Returns the optimistic mode signature if any.
     pub fn optimistic_mode_signature(&self) -> Option<agglayer_primitives::Signature> {
         match &self {
@@ -385,29 +411,9 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .await
             .map_err(Error::L1ChainDataRetrievalError)?;
 
-        let aggregation_vkey_hash =
-            hash_u32_from_bn254_bytes(op_succinct_config.aggregation_vkey_hash.0).ok_or(
-                Error::InvalidAggregationVkeyHash(op_succinct_config.aggregation_vkey_hash),
-            )?;
-
-        if let FepVerification::Proof {
-            ref aggregation_vkey,
-            ..
-        } = request.fep_verification
-        {
-            let proven = Digest(hash_bn254_bytes(aggregation_vkey.hash_u32()));
-            if proven != op_succinct_config.aggregation_vkey_hash {
-                error!(
-                    "Mismatch on the aggregation vkey hash - got from op succinct contract \
-                     config: {}, proven by the aggregation proof: {}",
-                    op_succinct_config.aggregation_vkey_hash, proven
-                );
-                return Err(Error::MismatchAggregationVkeyHash {
-                    got: op_succinct_config.aggregation_vkey_hash,
-                    expected: proven,
-                });
-            }
-        }
+        let aggregation_vkey_hash = request
+            .fep_verification
+            .validate_aggregation_vkey_hash(op_succinct_config.aggregation_vkey_hash)?;
 
         let prev_l2_block_sketch = contracts_client
             .get_prev_l2_block_sketch(BlockNumberOrTag::Number(
