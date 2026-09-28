@@ -64,6 +64,12 @@ where
             .await?,
         );
 
+        info!(
+            proposer = %config.client.proposer_endpoint,
+            "Proposer connection is deferred until a request needs it. Optimistic proofs \
+             do not require the proposer; non-optimistic proofs require it, including in mock mode."
+        );
+
         // Use the op-succinct aggregation vkey in effect: the configured
         // override when installed at startup (see
         // `proposer_elfs::install_overrides`), otherwise the value

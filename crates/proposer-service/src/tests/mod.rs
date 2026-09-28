@@ -8,7 +8,7 @@ use proposer_client::{
 use sp1_sdk::{Prover as _, ProvingKey as _, SP1PublicValues, SP1_CIRCUIT_VERSION};
 use tower::Service as _;
 
-use crate::{Error, ProposerService};
+use crate::{config::ProposerServiceConfig, Error, ProposerService};
 
 const ELF: &[u8] = proposer_elfs::aggregation::ELF;
 
@@ -140,3 +140,18 @@ async fn unable_to_fetch_block_hash() {
 #[test]
 #[ignore = "to be implemented"]
 fn test_invalid_proof_vkey_verificatinon_fails() {}
+
+#[tokio::test]
+async fn new_mock_builds_without_a_reachable_proposer() -> eyre::Result<()> {
+    let config = ProposerServiceConfig {
+        mock: true,
+        client: proposer_client::config::ProposerClientConfig {
+            proposer_endpoint: "http://proposer.invalid:3000".parse()?,
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+
+    ProposerService::new_mock(&config, Arc::new(MockRpc::new())).await?;
+    Ok(())
+}
