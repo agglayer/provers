@@ -11,6 +11,62 @@ use tower::{service_fn, timeout::TimeoutLayer, Service, ServiceBuilder, ServiceE
 use crate::{Executor, LocalExecutor, LocalProver, ProofType, Request, Response};
 const ELF: &[u8] = proposer_elfs::aggregation::ELF;
 
+#[tokio::test]
+async fn execution_timeout_keeps_concurrency_slot_until_finished() -> eyre::Result<()> {
+    let limiter = crate::ExecutionLimiter::new(1, Duration::from_secs(1));
+    let (started_sender, started_receiver) = tokio::sync::oneshot::channel();
+    let (finish_sender, finish_receiver) = tokio::sync::oneshot::channel();
+    let execution = tokio::spawn({
+        let limiter = limiter.clone();
+        async move {
+            limiter
+                .run(async move {
+                    started_sender.send(()).expect("execution started");
+                    finish_receiver.await.expect("finish execution");
+                    Ok(SP1PublicValues::default())
+                })
+                .await
+        }
+    });
+    started_receiver.await?;
+    assert!(
+        matches!(execution.await?, Err(crate::Error::ExecutionFailed(message)) if message == "execution timed out")
+    );
+    assert_eq!(limiter.permits.available_permits(), 0);
+
+    let queued = limiter
+        .clone()
+        .run(async { panic!("a queued execution must not start while the first is running") })
+        .await;
+    assert!(
+        matches!(queued, Err(crate::Error::ExecutionFailed(message)) if message == "execution timed out")
+    );
+
+    finish_sender.send(()).expect("execution is still running");
+    let permit = limiter.permits.acquire().await?;
+    drop(permit);
+    limiter
+        .run(async { Ok(SP1PublicValues::default()) })
+        .await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn execution_failure_releases_concurrency_slot() -> eyre::Result<()> {
+    let limiter = crate::ExecutionLimiter::new(1, Duration::from_secs(1));
+    let result = limiter
+        .run(async { Err(crate::Error::ExecutionFailed("invalid witness".to_owned())) })
+        .await;
+    assert!(
+        matches!(result, Err(crate::Error::ExecutionFailed(message)) if message == "invalid witness")
+    );
+    assert_eq!(limiter.permits.available_permits(), 1);
+    limiter
+        .run(async { Ok(SP1PublicValues::default()) })
+        .await?;
+    Ok(())
+}
+
 async fn mock_prover() -> &'static MockProver {
     static RES: OnceCell<MockProver> = OnceCell::const_new();
     RES.get_or_init(|| async { MockProver::new().await }).await

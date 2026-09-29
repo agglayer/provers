@@ -76,7 +76,7 @@ pub enum Error {
     #[error("Recovery FEP verification requested outside the recovery mode")]
     RecoveryVerificationOutsideRecoveryMode,
 
-    #[error("Execution of the standard aggchain program failed")]
+    #[error("Execution of the standard aggchain program failed: {0}")]
     StandardProgramExecutionFailed(#[source] prover_executor::Error),
 
     #[error("Unable to deserialize the aggchain proof public values")]

@@ -18,7 +18,7 @@ pub enum Error {
     #[error("Unable to poll for aggchain proof builder readiness")]
     AggchainProofBuilderPollReadyFailed(#[source] aggchain_proof_builder::Error),
 
-    #[error("Aggchain proof builder service request failed")]
+    #[error("Aggchain proof builder service request failed: {0}")]
     AggchainProofBuilderRequestFailed(#[source] aggchain_proof_builder::Error),
 
     #[error("Unable to setup aggchain contracts client")]

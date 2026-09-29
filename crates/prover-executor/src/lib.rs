@@ -15,6 +15,7 @@ use sp1_sdk::{
     ProveRequest as _, Prover, ProverClient, ProvingKey as _, SP1ProofWithPublicValues,
     SP1ProvingKey, SP1PublicValues, SP1Stdin, SP1VerifyingKey,
 };
+use tokio::sync::Semaphore;
 use tower::{
     limit::ConcurrencyLimitLayer, timeout::TimeoutLayer, util::BoxCloneService, Service,
     ServiceBuilder, ServiceExt,
@@ -214,9 +215,61 @@ impl Executor {
     }
 }
 
+#[derive(Clone)]
+pub struct ExecutionLimiter {
+    permits: Arc<Semaphore>,
+    timeout: Duration,
+}
+
+impl ExecutionLimiter {
+    pub fn new(concurrency: usize, timeout: Duration) -> Self {
+        Self {
+            permits: Arc::new(Semaphore::new(concurrency)),
+            timeout,
+        }
+    }
+
+    /// Executes without proving or verifying the proofs in `stdin`.
+    pub async fn execute(
+        &self,
+        program: &'static [u8],
+        stdin: SP1Stdin,
+    ) -> Result<SP1PublicValues, Error> {
+        self.run(execute(program, stdin)).await
+    }
+
+    async fn run(
+        &self,
+        execution: impl Future<Output = Result<SP1PublicValues, Error>> + Send + 'static,
+    ) -> Result<SP1PublicValues, Error> {
+        tokio::time::timeout(self.timeout, async {
+            let permit = self
+                .permits
+                .clone()
+                .acquire_owned()
+                .await
+                .map_err(|error| Error::ExecutionFailed(error.to_string()))?;
+
+            // SP1 execution can outlive cancellation. Keep its permit in a
+            // separate task until execution finishes, even if the caller
+            // leaves.
+            tokio::spawn(async move {
+                let _permit = permit;
+                execution.await.inspect_err(|error| {
+                    error!(%error, "Program execution failed");
+                })
+            })
+            .await
+            .map_err(|error| Error::ExecutionFailed(error.to_string()))?
+        })
+        .await
+        .map_err(|_| Error::ExecutionFailed("execution timed out".to_owned()))?
+    }
+}
+
 /// Executes `program` without proving it and without verifying the proofs in
 /// `stdin`.
-pub async fn execute(program: &'static [u8], stdin: SP1Stdin) -> Result<SP1PublicValues, Error> {
+async fn execute(program: &'static [u8], stdin: SP1Stdin) -> Result<SP1PublicValues, Error> {
     let (public_values, report) = sp1_async(AssertUnwindSafe(async move {
         let prover = LightProver::new().await;
         prover

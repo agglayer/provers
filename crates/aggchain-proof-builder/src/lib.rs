@@ -25,7 +25,10 @@ use aggchain_proof_core::{
     },
     proof::{AggchainProofWitness, IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION},
 };
-use aggchain_proof_types::AggchainProofInputs;
+use aggchain_proof_types::{
+    imported_bridge_exit::ImportedBridgeExitWithBlockNumber, unclaim::UnclaimWithBlockNumber,
+    AggchainProofInputs,
+};
 use aggkit_prover_types::vkey_hash::{Sp1VKeyHash, VKeyHash};
 use agglayer_interop::types::{
     bincode, GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues,
@@ -36,7 +39,7 @@ pub use error::Error;
 use eyre::Context as _;
 use futures::{future::BoxFuture, FutureExt, TryFutureExt as _};
 use prover_config::ProverType;
-use prover_executor::{sp1_async, sp1_fast, Executor, ProofType};
+use prover_executor::{sp1_async, sp1_fast, ExecutionLimiter, Executor, ProofType};
 use serde::{Deserialize, Serialize};
 use sp1_sdk::{HashableKey, SP1Stdin, SP1VerifyingKey};
 use tower::{buffer::Buffer, util::BoxService, ServiceExt as _};
@@ -334,48 +337,13 @@ pub struct AggchainProofBuilder<ContractsClient> {
 
     /// Execution path, see [`AggchainProofMode`].
     mode: AggchainProofMode,
+    execution_limiter: ExecutionLimiter,
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum WitnessGeneration {
     #[error("Invalid inserted GER.")]
     InvalidInsertedGer,
-}
-
-/// Aggchain params exactly as `AggchainFEP.getVKeyAndAggchainParams` packs
-/// them, built from the values the contract itself uses rather than from a
-/// witness. Used by the recovery mode.
-#[derive(Clone, Debug)]
-pub struct RecoveryAggchainParams {
-    /// `l2Outputs[latestOutputIndex()].outputRoot` on L1.
-    pub l2_pre_root: Digest,
-    /// `optimism_outputAtBlock(claim_block_num).outputRoot` on L2.
-    pub claim_root: Digest,
-    pub claim_block_num: u64,
-    pub rollup_config_hash: Digest,
-    pub optimistic_mode: bool,
-    pub trusted_sequencer: Address,
-    pub range_vkey_commitment: Digest,
-    /// `aggregationVkey` of the op-succinct config, already in its on-chain
-    /// form.
-    pub aggregation_vkey_hash: Digest,
-}
-
-impl RecoveryAggchainParams {
-    pub fn hash(&self) -> Digest {
-        let values = AggchainParamsValues {
-            l2_pre_root: self.l2_pre_root.0.into(),
-            claim_root: self.claim_root.0.into(),
-            claim_block_num: U256::from(self.claim_block_num),
-            rollup_config_hash: self.rollup_config_hash.0.into(),
-            optimistic_mode: self.optimistic_mode,
-            trusted_sequencer: self.trusted_sequencer.into(),
-            range_vkey_commitment: self.range_vkey_commitment.0.into(),
-            aggregation_vkey_hash: self.aggregation_vkey_hash.0.into(),
-        };
-
-        keccak256(values.abi_encode_packed().as_slice())
-    }
 }
 
 /// Imported bridge exits of the new blocks range, as the aggchain proof sees
@@ -392,11 +360,12 @@ struct ImportedBridgeExits {
 }
 
 fn collect_imported_bridge_exits(
-    inputs: &AggchainProofInputs,
+    imported_bridge_exits: Vec<ImportedBridgeExitWithBlockNumber>,
+    unclaims: Vec<UnclaimWithBlockNumber>,
     new_blocks_range: &std::ops::RangeInclusive<u64>,
 ) -> Result<ImportedBridgeExits, Error> {
     let all: Vec<GlobalIndexWithLeafHash> = filter_sort_map(
-        inputs.imported_bridge_exits.clone(),
+        imported_bridge_exits,
         new_blocks_range,
         |ib| ib.block_number,
         |ib| GlobalIndexWithLeafHash {
@@ -407,7 +376,7 @@ fn collect_imported_bridge_exits(
     .collect();
 
     let unset_claims: Vec<U256> = filter_sort_map(
-        inputs.unclaims.clone(),
+        unclaims,
         new_blocks_range,
         |unclaim| unclaim.block_number,
         |unclaim| unclaim.global_index,
@@ -542,6 +511,12 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             )?;
         }
 
+        let execution_concurrency = match &config.primary_prover {
+            ProverType::CpuProver(config) => config.max_concurrency_limit,
+            ProverType::MockProver(config) => config.max_concurrency_limit,
+            ProverType::NetworkProver(_) => prover_config::default_max_concurrency_limit(),
+        };
+
         Ok(AggchainProofBuilder {
             aggchain_vkey,
             contracts_client,
@@ -551,6 +526,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             range_vkey_commitment,
             static_call_caller_address: config.contracts.static_call_caller_address,
             mode: config.mode,
+            execution_limiter: ExecutionLimiter::new(execution_concurrency, config.proving_timeout),
         })
     }
 
@@ -604,18 +580,21 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .await
             .map_err(Error::UnableToFetchTrustedSequencerAddress)?;
 
-        let imported_bridge_exits =
-            collect_imported_bridge_exits(&request.aggchain_proof_inputs, &new_blocks_range)?;
+        let imported_bridge_exits = collect_imported_bridge_exits(
+            request.aggchain_proof_inputs.imported_bridge_exits,
+            request.aggchain_proof_inputs.unclaims,
+            &new_blocks_range,
+        )?;
 
-        let aggchain_params = RecoveryAggchainParams {
-            l2_pre_root: l1_pre_root,
-            claim_root: claim_output.output_root,
-            claim_block_num: end_block,
-            rollup_config_hash: op_succinct_config.rollup_config_hash,
+        let aggchain_params = AggchainParamsValues {
+            l2_pre_root: l1_pre_root.0.into(),
+            claim_root: claim_output.output_root.0.into(),
+            claim_block_num: U256::from(end_block),
+            rollup_config_hash: op_succinct_config.rollup_config_hash.0.into(),
             optimistic_mode: request.fep_verification.is_optimistic(),
-            trusted_sequencer,
-            range_vkey_commitment: op_succinct_config.range_vkey_commitment,
-            aggregation_vkey_hash: op_succinct_config.aggregation_vkey_hash,
+            trusted_sequencer: trusted_sequencer.into(),
+            range_vkey_commitment: op_succinct_config.range_vkey_commitment.0.into(),
+            aggregation_vkey_hash: op_succinct_config.aggregation_vkey_hash.0.into(),
         };
 
         let public_values = AggchainProofPublicValues {
@@ -624,7 +603,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             l1_info_root: request.aggchain_proof_inputs.l1_info_tree_root_hash,
             origin_network: network_id.into(),
             commit_imported_bridge_exits: imported_bridge_exits.commitment,
-            aggchain_params: aggchain_params.hash(),
+            aggchain_params: keccak256(aggchain_params.abi_encode_packed().as_slice()),
         };
 
         info!(
@@ -718,8 +697,11 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .aggchain_proof_inputs
             .sorted_inserted_gers(&new_blocks_range);
 
-        let imported_bridge_exits =
-            collect_imported_bridge_exits(&request.aggchain_proof_inputs, &new_blocks_range)?;
+        let imported_bridge_exits = collect_imported_bridge_exits(
+            request.aggchain_proof_inputs.imported_bridge_exits,
+            request.aggchain_proof_inputs.unclaims,
+            &new_blocks_range,
+        )?;
 
         // Prepare removed GERS for the proof.
         let removed_gers: Vec<Digest> = filter_sort_map(
@@ -842,8 +824,12 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     }
 }
 
-async fn execute_standard_program(stdin: SP1Stdin) -> Result<AggchainProofPublicValues, Error> {
-    let public_values = prover_executor::execute(AGGCHAIN_PROOF_ELF, stdin)
+async fn execute_standard_program(
+    execution_limiter: &ExecutionLimiter,
+    stdin: SP1Stdin,
+) -> Result<AggchainProofPublicValues, Error> {
+    let public_values = execution_limiter
+        .execute(AGGCHAIN_PROOF_ELF, stdin)
         .await
         .map_err(Error::StandardProgramExecutionFailed)?;
 
@@ -928,6 +914,7 @@ where
         let static_call_caller_address = self.static_call_caller_address;
         let range_vkey_commitment = self.range_vkey_commitment;
         let mode = self.mode;
+        let execution_limiter = self.execution_limiter.clone();
 
         // TODO: figure out a way to stop only this service upon an sp1 panic,
         // and not the entire system. For now, just ignore the panic,
@@ -955,7 +942,8 @@ where
                     .await?;
 
                     if mode == AggchainProofMode::Eco {
-                        let public_values = execute_standard_program(inputs.stdin).await?;
+                        let public_values =
+                            execute_standard_program(&execution_limiter, inputs.stdin).await?;
                         AggchainProverInputs {
                             output_root: inputs.output_root,
                             stdin: noop_stdin(&public_values)?,

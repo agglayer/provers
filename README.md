@@ -207,11 +207,14 @@ Never register it on the `AgglayerGateway`.
 3. Set `mode`, restart the prover.
 4. A certificate already InError keeps the aggchain proof the aggsender cached for it: drop that proof (resync the aggsender database) if needed.
 
-To switch back, set `mode = "standard"` and restart the prover. `enableUseDefaultVkeysFlag()` then follows the gateway defaults again.
+To switch back:
+
+1. Set `mode = "standard"`. For normal FEP requests, restore op-succinct-proposer to the mode expected by `proposer-service.mock` (`OP_SUCCINCT_MOCK=false` for real proofs), and restart it if stopped. Start the proposer before restarting aggkit-prover; standard and eco modes connect to it at startup.
+2. Restart aggkit-prover. Wait for any pending noop certificates to settle before calling `enableUseDefaultVkeysFlag()` to follow the gateway defaults again.
 
 #### Saving the proving cost (`eco`)
 
-In `eco` the FEP proof is not verified.
+In `eco` the FEP proof is not verified. Native execution uses the builder's `proving-timeout` and the primary local prover's `max-concurrency-limit` (the default limit for a network prover). A timed-out execution retains its slot until it finishes.
 The execution of the L2 is only checked by op-succinct-proposer, which derives and executes the range without proof, and by the prover, which compares the proposer's output roots with the L2 node's.
 Everything else in the standard program runs: the L1 head against the L1 info tree, the bridge constraints and the aggchain params, or the trusted sequencer signature for an optimistic certificate.
 
@@ -229,7 +232,7 @@ Bridge constraints are not verified in this mode, so this is for non-production 
 
 1. Check that the local exit root on L2 at the last settled block matches the one on L1. If not, reconcile it first with the bridge `BackwardLET` / `ForwardLET` tooling.
 2. Switch to `mode = "recovery"` as above. op-succinct-proposer can be stopped.
-3. Once the certificate is settled, switch back to `mode = "standard"`.
+3. Once the certificate is settled, follow the switch-back steps above.
 
 With `mode = "recovery"` the prover refuses a request that is not anchored at the latest L1 output.
 It asks nothing from op-succinct-proposer and fetches no L2 state proofs: only the L2 bridge root at both ends of the range, the L2 output at the end block and the L1 contract values, so an L2 node that cannot serve `eth_getProof` at the reorged anchor is not a blocker.
