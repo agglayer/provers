@@ -229,3 +229,55 @@ async fn receive_an_invalid_start_end_block() {
 
     server.stop().await.unwrap();
 }
+
+#[test_log::test(tokio::test)]
+async fn connects_on_demand_and_recovers_after_an_unreachable_proposer() -> eyre::Result<()> {
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+    let address = listener.local_addr()?;
+    let client =
+        ProposerRpcClient::new(format!("http://{address}").parse()?, Duration::from_secs(1))
+            .await?;
+
+    assert!(
+        tokio::time::timeout(Duration::from_millis(100), listener.accept())
+            .await
+            .is_err(),
+        "constructing an idle client must not connect to the proposer"
+    );
+    drop(listener);
+
+    let outcome = tokio::time::timeout(
+        Duration::from_secs(10),
+        client.request_agg_proof(create_agg_proof_request()),
+    )
+    .await?;
+
+    assert!(matches!(outcome, Err(crate::error::Error::Requesting(_))));
+
+    let listener = tokio::net::TcpListener::bind(address).await?;
+    let mut server = MockProofsService::new();
+    server
+        .expect_request_agg_proof()
+        .once()
+        .returning(|request| {
+            let request = request.into_inner();
+            Ok(tonic::Response::new(AggProofResponse {
+                last_proven_block: request.last_proven_block,
+                end_block: request.requested_end_block,
+                proof_request_id: Bytes::from_static(&[1; 32]),
+            }))
+        });
+    let server = server.run_with_listener(listener)?;
+
+    let response = tokio::time::timeout(
+        Duration::from_secs(10),
+        client.request_agg_proof(create_agg_proof_request()),
+    )
+    .await??;
+    assert_eq!(response.request_id, RequestId(B256::new([1; 32])));
+    assert_eq!(response.last_proven_block, 500);
+    assert_eq!(response.end_block, 550);
+
+    server.stop().await?;
+    Ok(())
+}
