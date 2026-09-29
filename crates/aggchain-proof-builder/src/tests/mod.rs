@@ -244,7 +244,7 @@ mod noop {
 
     /// The committed noop ELF commits exactly the public values it reads, so a
     /// stale ELF (program changed without `AGGLAYER_ELF_BUILD=update`) fails
-    /// here rather than in the eco or recovery mode.
+    /// here rather than in the skip-proof-verification or recovery mode.
     #[tokio::test]
     async fn noop_elf_commits_the_given_public_values() {
         let public_values = AggchainProofPublicValues {

@@ -440,7 +440,9 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     ) -> eyre::Result<Self> {
         let program = match config.mode {
             AggchainProofMode::Standard => AGGCHAIN_PROOF_ELF,
-            AggchainProofMode::Eco | AggchainProofMode::Recovery => AGGCHAIN_PROOF_NOOP_ELF,
+            AggchainProofMode::SkipProofVerification | AggchainProofMode::Recovery => {
+                AGGCHAIN_PROOF_NOOP_ELF
+            }
         };
 
         let executor = Executor::new(
@@ -455,10 +457,10 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
 
         match config.mode {
             AggchainProofMode::Standard => {}
-            AggchainProofMode::Eco => warn!(
+            AggchainProofMode::SkipProofVerification => warn!(
                 noop_vkey = %Digest(aggchain_vkey.hash_bytes()),
-                "Eco mode: the standard program is executed without verifying the FEP proof, only \
-                 the noop program is proven"
+                "Skip-proof-verification mode: the standard program is executed without \
+                 verifying the FEP proof, only the noop program is proven"
             ),
             AggchainProofMode::Recovery => warn!(
                 noop_vkey = %Digest(aggchain_vkey.hash_bytes()),
@@ -858,7 +860,7 @@ where
             // Retrieve all the necessary public inputs. Combine with
             // the data provided by the agg-sender in the request.
             let aggchain_prover_inputs = match mode {
-                AggchainProofMode::Standard | AggchainProofMode::Eco => {
+                AggchainProofMode::Standard | AggchainProofMode::SkipProofVerification => {
                     if matches!(req.fep_verification, FepVerification::Recovery) {
                         return Err(Error::RecoveryVerificationOutsideRecoveryMode);
                     }
@@ -870,7 +872,7 @@ where
                     )
                     .await?;
 
-                    if mode == AggchainProofMode::Eco {
+                    if mode == AggchainProofMode::SkipProofVerification {
                         let public_values =
                             execute_standard_program(&execution_limiter, inputs.stdin).await?;
                         AggchainProverInputs {
