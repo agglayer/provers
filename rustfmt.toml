@@ -3,5 +3,5 @@ format_strings = true
 group_imports = "StdExternalCrate"
 reorder_imports = true
 unstable_features = true
-wrap_comments = true
+wrap_comments = false
 imports_granularity = "Crate"
