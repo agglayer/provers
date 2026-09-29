@@ -12,18 +12,21 @@ use futures::{future::BoxFuture, FutureExt};
 use proposer_client::{
     aggregation_prover::AggregationProver,
     mock_grpc_prover::MockGrpcProver,
-    network_prover::new_network_prover,
+    network_prover::{new_network_prover, NetworkAggregationProver},
     rpc::{AggregationProofProposerRequest, ProposerRpcClient},
     FepProposerRequest,
 };
-use sp1_sdk::{NetworkProver, SP1ProofWithPublicValues, SP1VerifyingKey};
+use sp1_sdk::{SP1ProofWithPublicValues, SP1VerifyingKey};
 use tracing::{debug, info};
 
 use crate::config::ProposerServiceConfig;
 
-#[derive(Debug)]
+#[derive(Educe)]
+#[educe(Debug)]
 pub struct ProposerResponse {
     pub aggregation_proof: SP1ProofWithPublicValues,
+    #[educe(Debug(ignore))]
+    pub aggregation_vkey: SP1VerifyingKey,
     pub last_proven_block: u64,
     pub end_block: u64,
     pub public_values: AggregationProofPublicValues,
@@ -41,9 +44,6 @@ pub struct ProposerService<L1Rpc, ProposerClient> {
     pub client: Arc<ProposerClient>,
 
     pub l1_rpc: Arc<L1Rpc>,
-
-    /// Aggregated span proof verification key.
-    aggregation_vkey: SP1VerifyingKey,
 }
 
 impl<L1Rpc, Prover>
@@ -64,12 +64,6 @@ where
             .await?,
         );
 
-        // Use the op-succinct aggregation vkey in effect: the configured
-        // override when installed at startup (see
-        // `proposer_elfs::install_overrides`), otherwise the value
-        // embedded from op-succinct-elfs.
-        let aggregation_vkey = proposer_elfs::aggregation::vkey().clone();
-
         Ok(Self {
             l1_rpc,
             client: Arc::new(proposer_client::client::Client::new(
@@ -77,13 +71,15 @@ where
                 prover,
                 Some(config.client.proving_timeout),
             )?),
-            aggregation_vkey,
         })
     }
 }
 
 impl<L1Rpc>
-    ProposerService<L1Rpc, proposer_client::client::Client<ProposerRpcClient, NetworkProver>>
+    ProposerService<
+        L1Rpc,
+        proposer_client::client::Client<ProposerRpcClient, NetworkAggregationProver>,
+    >
 {
     pub async fn new_network(
         config: &ProposerServiceConfig,
@@ -161,7 +157,6 @@ where
     ) -> Self::Future {
         let client = self.client.clone();
         let l1_rpc = self.l1_rpc.clone();
-        let aggregation_vkey = self.aggregation_vkey.clone();
 
         async move {
             info!(%last_proven_block, %requested_end_block, "Requesting fep aggregation proof");
@@ -198,6 +193,10 @@ where
 
             debug!(%last_proven_block, %end_block, %request_id, "Aggregation proof received from the proposer");
 
+            let aggregation_vkey = client
+                .aggregation_vkey(request_id.clone(), &proof_with_pv)
+                .await?;
+
             // Verify received proof
             client.verify_agg_proof(request_id.clone(), &proof_with_pv, &aggregation_vkey)?;
 
@@ -207,6 +206,7 @@ where
 
             Ok(ProposerResponse {
                 aggregation_proof: proof_with_pv,
+                aggregation_vkey,
                 last_proven_block: response.last_proven_block,
                 end_block: response.end_block,
                 public_values,

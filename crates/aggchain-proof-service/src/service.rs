@@ -13,9 +13,8 @@ use alloy_primitives::B256;
 use futures::FutureExt as _;
 use proposer_client::FepProposerRequest;
 use proposer_service::ProposerService;
-use sp1_sdk::HashableKey as _;
 use tower::{util::BoxCloneService, Service as _, ServiceExt as _};
-use tracing::{debug, info};
+use tracing::{debug, warn};
 use unified_bridge::AggchainProofPublicValues;
 
 use crate::{
@@ -90,50 +89,13 @@ impl AggchainProofService {
     pub async fn new(config: &AggchainProofServiceConfig) -> Result<Self, Error> {
         debug!("Initializing AggchainProofService");
 
-        // Install the optional op-succinct vkey overrides from configuration
-        // before constructing the services, so the proposer service
-        // (host-side verification) and the proof builder (recursive
-        // verification) both read the same in-effect values via
-        // `proposer_elfs`. When absent, the values embedded from
-        // op-succinct-elfs are used.
-        proposer_elfs::install_overrides(
-            config
-                .op_succinct
-                .aggregation_vkey
-                .as_ref()
-                .map(|vkey| vkey.as_ref()),
-            config
-                .op_succinct
-                .range_vkey_commitment
-                .map(|digest| digest.0),
-        )
-        .map_err(Error::OpSuccinctVkeyDecode)?;
-
-        // Report the op-succinct verification keys in effect, and whether each
-        // came from a config override or the embedded op-succinct-elfs
-        // default, so the active keys can be confirmed at runtime.
-        let source = |overridden: bool| {
-            if overridden {
-                "config override"
-            } else {
-                "embedded (op-succinct-elfs)"
-            }
-        };
-        let aggregation_vkey_hash = format!(
-            "0x{}",
-            alloy_primitives::hex::encode(proposer_elfs::aggregation::vkey().bytes32_raw())
-        );
-        let range_vkey_commitment = format!(
-            "0x{}",
-            alloy_primitives::hex::encode(proposer_elfs::range::commitment())
-        );
-        info!(
-            aggregation_vkey_source = source(config.op_succinct.aggregation_vkey.is_some()),
-            %aggregation_vkey_hash,
-            range_vkey_commitment_source = source(config.op_succinct.range_vkey_commitment.is_some()),
-            %range_vkey_commitment,
-            "Resolved op-succinct verification keys",
-        );
+        if !config.op_succinct.is_empty() {
+            warn!(
+                "Ignoring [aggchain-proof-service.op-succinct]: the op-succinct verification keys \
+                 are now read from the op-succinct config selected on L1 and from the SP1 \
+                 network, so this section can be removed"
+            );
+        }
 
         let client = prover_alloy::AlloyProvider::new(
             &config.proposer_service.l1_rpc_endpoint.url,
@@ -219,6 +181,7 @@ impl AggchainProofService {
                 aggchain_proof_builder::AggchainProofBuilderRequest {
                     fep_verification: FepVerification::Proof {
                         aggregation_proof: Box::new(aggregation_proof_response.aggregation_proof),
+                        aggregation_vkey: Box::new(aggregation_proof_response.aggregation_vkey),
                         aggregation_proof_public_values: aggregation_proof_response.public_values,
                     },
                     end_block: aggregation_proof_response.end_block,
