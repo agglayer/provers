@@ -64,6 +64,12 @@ where
             .await?,
         );
 
+        info!(
+            proposer = %config.client.proposer_endpoint,
+            "Proposer connection is deferred until a request needs it. Optimistic proofs \
+             do not require the proposer; non-optimistic proofs require it, including in mock mode."
+        );
+
         Ok(Self {
             l1_rpc,
             client: Arc::new(proposer_client::client::Client::new(

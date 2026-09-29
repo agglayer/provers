@@ -84,20 +84,24 @@ pub struct MockProofProposerResponse {
 
 pub struct ProposerRpcClient {
     client: ProofsClient<tonic::transport::Channel>,
+    endpoint: GrpcUri,
 }
 
 impl ProposerRpcClient {
+    /// Defers connecting until a request needs the proposer, so optimistic
+    /// proofs can be served while the proposer is unavailable.
     pub async fn new(rpc_endpoint: GrpcUri, timeout: Duration) -> Result<Self, Error> {
         // TODO: Configure various other limits besides timeout on the channel.
-        let channel = tonic::transport::Channel::builder(rpc_endpoint)
+        // Request timeouts do not cover connecting, so bound that separately.
+        let channel = tonic::transport::Channel::builder(rpc_endpoint.clone())
             .timeout(timeout)
-            .connect()
-            .await
-            .inspect_err(|e| error!("Error connecting to proposer gRPC: {e}"))
-            .map_err(Error::Connect)?;
+            .connect_timeout(timeout)
+            .connect_lazy();
 
-        let client = ProofsClient::new(channel);
-        Ok(ProposerRpcClient { client })
+        Ok(ProposerRpcClient {
+            client: ProofsClient::new(channel),
+            endpoint: rpc_endpoint,
+        })
     }
 }
 
@@ -113,8 +117,16 @@ impl AggregationProofProposer for ProposerRpcClient {
         let grpc_response = client
             .request_agg_proof(request)
             .await
+            .inspect_err(|status| {
+                error!(
+                    proposer = %self.endpoint,
+                    code = ?status.code(),
+                    error = ?status,
+                    "Aggregation proof request to proposer failed. Non-optimistic proofs \
+                     require a successful proposer response, including in mock mode."
+                )
+            })
             .map_err(ProofRequestError::Grpc)
-            .inspect_err(|e| error!("Aggregation proof request failed: {e:?}"))
             .map_err(|e| Error::Requesting(Box::new(e)))?;
         let response: AggregationProofProposerResponse = grpc_response
             .into_inner()
@@ -140,8 +152,16 @@ impl AggregationProofProposer for ProposerRpcClient {
         let grpc_response = client
             .get_mock_proof(request)
             .await
+            .inspect_err(|status| {
+                error!(
+                    proposer = %self.endpoint,
+                    code = ?status.code(),
+                    error = ?status,
+                    "Could not retrieve the mock proof from the proposer. \
+                     Mock proofs require a successful proposer response."
+                )
+            })
             .map_err(ProofRequestError::Grpc)
-            .inspect_err(|e| error!("Get mock proof request failed: {e:?}"))
             .map_err(|e| Error::Requesting(Box::new(e)))?;
         let response: MockProofProposerResponse = grpc_response
             .into_inner()

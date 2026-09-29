@@ -34,6 +34,10 @@ impl MockProofsService {
     /// Run a mock server.
     pub async fn run(self) -> Result<Handle, eyre::Error> {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
+        self.run_with_listener(listener)
+    }
+
+    pub fn run_with_listener(self, listener: tokio::net::TcpListener) -> eyre::Result<Handle> {
         let local_addr = listener.local_addr()?;
 
         info!("Starting mock server on {local_addr}");
