@@ -11,6 +11,12 @@ pub enum Error {
         source: eyre::Report,
     },
 
+    #[error("Retrieving the aggregation vkey of proof request {request_id} failed")]
+    AggregationVkey {
+        request_id: RequestId,
+        source: eyre::Report,
+    },
+
     #[error("Error requesting proof")]
     Requesting(#[source] Box<ProofRequestError>),
 

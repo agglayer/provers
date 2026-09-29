@@ -18,6 +18,12 @@ pub trait AggregationProver {
         timeout: Option<Duration>,
     ) -> eyre::Result<SP1ProofWithPublicValues>;
 
+    /// The verifying key of the program `proof` proves.
+    async fn aggregation_vkey(
+        &self,
+        proof: &SP1ProofWithPublicValues,
+    ) -> eyre::Result<SP1VerifyingKey>;
+
     fn verify_aggregated_proof(
         &self,
         proof: &SP1ProofWithPublicValues,
