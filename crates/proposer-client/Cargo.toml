@@ -35,6 +35,7 @@ url.workspace = true
 agglayer-interop-types.workspace = true
 
 # Local dependencies
+prover-config.workspace = true
 prover-utils.workspace = true
 
 # Optional dependencies

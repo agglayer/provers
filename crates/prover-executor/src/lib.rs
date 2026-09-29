@@ -118,6 +118,7 @@ impl Executor {
                         network_prover_config.get_proving_request_timeout(),
                         NetworkExecutor {
                             prover: Arc::new(network_prover),
+                            rpc_url: network_prover_config.sp1_cluster_endpoint.to_string(),
                             proving_key,
                             verification_key,
                             timeout: network_prover_config.proving_timeout,
@@ -380,6 +381,7 @@ impl Service<Request> for LocalExecutor {
 #[derive(Clone)]
 struct NetworkExecutor {
     prover: Arc<NetworkProver>,
+    rpc_url: String,
     proving_key: SP1ProvingKey,
     verification_key: SP1VerifyingKey,
     timeout: Duration,
@@ -404,7 +406,7 @@ impl Service<Request> for NetworkExecutor {
         let proving_key = self.proving_key.clone();
         let timeout = self.timeout;
 
-        debug!("Proving with network prover with timeout: {:?}", timeout);
+        info!(rpc_url = %self.rpc_url, ?timeout, "Requesting proof from Succinct network");
         let fut = sp1_async(AssertUnwindSafe(async move {
             // AssertUnwindSafe might be a lie, but we currently have a choice
             // between crashing the whole system and hoping for the

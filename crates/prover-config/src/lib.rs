@@ -5,9 +5,6 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use url::Url;
 
-/// The default url endpoint for the grpc cluster service
-const DEFAULT_SP1_CLUSTER_ENDPOINT: &str = "https://rpc.production.succinct.xyz/";
-
 /// Type of the prover to be used for generation of the pessimistic proof
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 #[serde(rename_all = "kebab-case")]
@@ -144,9 +141,9 @@ const fn default_network_proving_timeout() -> Duration {
     Duration::from_secs(60 * 5)
 }
 
-fn default_sp1_cluster_endpoint() -> Url {
+pub fn default_sp1_cluster_endpoint() -> Url {
     from_env_or_default(
         "SP1_CLUSTER_ENDPOINT",
-        Url::from_str(DEFAULT_SP1_CLUSTER_ENDPOINT).unwrap(),
+        Url::from_str("https://rpc.production.succinct.xyz/").unwrap(),
     )
 }

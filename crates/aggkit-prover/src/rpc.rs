@@ -28,6 +28,7 @@ const MAX_CONCURRENT_REQUESTS: usize = 100;
 
 #[derive(Clone)]
 pub struct GrpcService {
+    network_id: u32,
     service: Buffer<AggchainProofService, AggchainProofServiceRequest>,
 }
 
@@ -36,6 +37,7 @@ impl GrpcService {
         config: &AggchainProofServiceConfig,
     ) -> Result<Self, aggchain_proof_service::Error> {
         Ok(GrpcService {
+            network_id: config.aggchain_proof_builder.network_id,
             service: tower::ServiceBuilder::new()
                 .buffer(MAX_CONCURRENT_REQUESTS)
                 .service(AggchainProofService::new(config).await?),
@@ -45,7 +47,7 @@ impl GrpcService {
 
 #[tonic::async_trait]
 impl AggchainProofGrpcService for GrpcService {
-    #[instrument(skip(self, request))]
+    #[instrument(skip(self, request), fields(network_id = self.network_id))]
     async fn generate_aggchain_proof(
         &self,
         request: Request<GenerateAggchainProofRequest>,
@@ -163,7 +165,7 @@ impl AggchainProofGrpcService for GrpcService {
         }
     }
 
-    #[instrument(skip(self, request))]
+    #[instrument(skip(self, request), fields(network_id = self.network_id))]
     async fn generate_optimistic_aggchain_proof(
         &self,
         request: Request<GenerateOptimisticAggchainProofRequest>,

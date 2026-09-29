@@ -6819,6 +6819,7 @@ dependencies = [
  "pbjson 0.7.0",
  "proposer-client",
  "prost",
+ "prover-config",
  "prover-executor",
  "prover-utils",
  "rustls",

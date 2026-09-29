@@ -1,5 +1,6 @@
 use std::{str::FromStr, time::Duration};
 
+use prover_config::default_sp1_cluster_endpoint;
 use prover_utils::from_env_or_default;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr, DurationSeconds};
@@ -9,9 +10,6 @@ use crate::GrpcUri;
 
 /// The default proposer service endpoint
 const DEFAULT_PROPOSER_SERVICE_ENDPOINT: &str = "http://proposer-mock-rpc:3000";
-
-/// The default url endpoint for the grpc cluster service
-const DEFAULT_SP1_CLUSTER_ENDPOINT: &str = "https://rpc.production.succinct.xyz/";
 
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
@@ -52,13 +50,6 @@ fn default_proposer_service_endpoint() -> GrpcUri {
     from_env_or_default(
         "PROPOSER_SERVICE_ENDPOINT",
         GrpcUri::from_str(DEFAULT_PROPOSER_SERVICE_ENDPOINT).unwrap(),
-    )
-}
-
-fn default_sp1_cluster_endpoint() -> Url {
-    from_env_or_default(
-        "SP1_CLUSTER_ENDPOINT",
-        Url::from_str(DEFAULT_SP1_CLUSTER_ENDPOINT).unwrap(),
     )
 }
 

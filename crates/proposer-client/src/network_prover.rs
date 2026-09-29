@@ -18,6 +18,7 @@ use sp1_sdk::{
     NetworkProver, Prover, ProvingKey, SP1Proof, SP1ProofWithPublicValues, SP1ProvingKey,
     SP1VerifyingKey,
 };
+use tracing::info;
 
 use crate::aggregation_prover::AggregationProver;
 
@@ -26,6 +27,7 @@ use crate::aggregation_prover::AggregationProver;
 pub struct NetworkAggregationProver {
     prover: NetworkProver,
     network: NetworkClient,
+    rpc_url: String,
     /// Verifying keys already fetched from the program registry, by vk hash.
     vkeys: Mutex<HashMap<B256, SP1VerifyingKey>>,
 }
@@ -52,6 +54,7 @@ impl AggregationProver for NetworkAggregationProver {
         request_id: B256,
         timeout: Option<Duration>,
     ) -> eyre::Result<SP1ProofWithPublicValues> {
+        info!(rpc_url = %self.rpc_url, %request_id, "Waiting for proof from Succinct network");
         // TODO: Figure out a way to kill this struct if there's an unwind, and
         // start again with a fresh Prover
         sp1_async(AssertUnwindSafe(
@@ -68,6 +71,7 @@ impl AggregationProver for NetworkAggregationProver {
     ) -> eyre::Result<SP1VerifyingKey> {
         let vk_hash = proven_program_vk_hash(proof)?;
         fetch_aggregation_vkey(vk_hash, &self.vkeys, async {
+            info!(rpc_url = %self.rpc_url, %vk_hash, "Fetching verification key from Succinct network");
             sp1_async(AssertUnwindSafe(self.network.get_program(vk_hash)))
                 .await?
                 .map_err(|error| eyre!(error))
@@ -181,11 +185,12 @@ pub async fn new_network_prover<T: AsRef<str>>(
             .private_key(&private_key)
             .build()
             .await;
-        let network = NetworkClient::new(signer, endpoint, prover.network_mode());
+        let network = NetworkClient::new(signer, endpoint.clone(), prover.network_mode());
 
         NetworkAggregationProver {
             prover,
             network,
+            rpc_url: endpoint,
             vkeys: Mutex::default(),
         }
     }))
