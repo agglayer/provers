@@ -58,7 +58,7 @@ fn aggchain_pattern() {
 #[test]
 fn test_custom_chain_data_builder_service() {
     for (selector, bytes) in [
-        (AGGCHAIN_VKEY_SELECTOR, [0, 11, 0, 1]),
+        (AGGCHAIN_VKEY_SELECTOR, [0, 12, 0, 1]),
         (NOOP_SELECTOR, [0xFF, 0xFF, 0, 1]),
     ] {
         let response = compute_custom_chain_data(selector, ClaimRoot(Digest([1u8; 32])), 10);

@@ -4,7 +4,8 @@ use alloy_primitives::B256;
 use eyre::{eyre, Context};
 use prover_executor::{sp1_async, sp1_fast};
 use sp1_sdk::{
-    MockProver, Prover as _, ProvingKey, SP1ProofWithPublicValues, SP1ProvingKey, SP1VerifyingKey,
+    MockProver, Prover as _, ProvingKey, SP1Proof, SP1ProofWithPublicValues, SP1ProvingKey,
+    SP1VerifyingKey,
 };
 
 use crate::{aggregation_prover::AggregationProver, rpc::MockProofProposerRequest};
@@ -67,6 +68,22 @@ where
                 .with_context(|| format!("deserializing proof {request_id}"))?;
 
         Ok(proof)
+    }
+
+    async fn aggregation_vkey(
+        &self,
+        proof: &SP1ProofWithPublicValues,
+    ) -> eyre::Result<SP1VerifyingKey> {
+        // An SP1 mock compressed proof carries the program's own vkey, where a
+        // real one carries the recursion program's.
+        match &proof.proof {
+            SP1Proof::Compressed(proof) => Ok(SP1VerifyingKey {
+                vk: proof.vk.clone(),
+            }),
+            _ => Err(eyre!(
+                "The SP1 mock aggregation proof is not a compressed proof"
+            )),
+        }
     }
 
     fn verify_aggregated_proof(

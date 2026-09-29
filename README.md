@@ -185,11 +185,11 @@ This version must be bumped between releases / deployments.
 
 | Mode | Selector | Normal request | Optimistic request |
 |---|---|---|---|
-| `standard` | `0x000B0001` | **Checks:** FEP proof, FEP L1-head inclusion, bridge constraints. **Skipped:** trusted sequencer signature (not required). | **Checks:** trusted sequencer signature, bridge constraints. **Skipped:** FEP proof and FEP L1-head inclusion. |
+| `standard` | `0x000C0001` | **Checks:** FEP proof, FEP L1-head inclusion, bridge constraints. **Skipped:** trusted sequencer signature (not required). | **Checks:** trusted sequencer signature, bridge constraints. **Skipped:** FEP proof and FEP L1-head inclusion. |
 | `eco` | `0xFFFF0001` | **Checks:** FEP L1-head inclusion and bridge constraints during host-side execution; proposer public values compared with contract data. **Skipped:** FEP proof verification (`deferred_proof_verification(false)`); trusted sequencer signature (not required). | **Checks:** trusted sequencer signature and bridge constraints during host-side execution. **Skipped:** FEP proof and FEP L1-head inclusion. |
 | `recovery` | `0xFFFF0001` | **Checks:** host checks the request starts at the latest settled L1 output and uses its pre-root. **Skipped:** FEP proof, FEP L1-head inclusion, bridge constraints; trusted sequencer signature (not required). | **Checks:** same L1 anchor check as normal recovery. **Skipped:** FEP proof, FEP L1-head inclusion, bridge constraints, trusted sequencer signature. |
 
-With a real SP1 prover, `standard` proves the standard program's checks. `eco` and `recovery` prove only the noop program's commitment to the supplied public values; their host-side checks are not established by the resulting proof. The selector follows the configured mode for both request types. The standard selector above corresponds to program version 11; the noop selector uses the reserved version `0xFFFF`.
+With a real SP1 prover, `standard` proves the standard program's checks. `eco` and `recovery` prove only the noop program's commitment to the supplied public values; their host-side checks are not established by the resulting proof. The selector follows the configured mode for both request types. The standard selector above corresponds to program version 12; the noop selector uses the reserved version `0xFFFF`.
 
 `primary-prover` says how the program of the mode is proven: `network-prover` or `cpu-prover` give a real SP1 proof, `mock-prover` an SP1 mock proof that only a mock verifier accepts.
 Use the following settings for each execution path (the proposer settings apply to normal requests):

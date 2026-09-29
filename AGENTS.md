@@ -49,7 +49,6 @@ The project is structured as a Rust workspace with multiple interconnected crate
 - **proposer-***: Components for the proposer system
   - `proposer-client`: Client for proposer interactions
   - `proposer-service`: Service layer
-  - `proposer-elfs`: ELF management for proposers
 
 ### Shared Infrastructure
 - **prover-***: Shared prover utilities and infrastructure

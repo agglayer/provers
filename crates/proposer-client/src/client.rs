@@ -67,6 +67,17 @@ where
             .map_err(|e| Error::Proving(request_id, e.to_string()))
     }
 
+    async fn aggregation_vkey(
+        &self,
+        request_id: RequestId,
+        proof: &SP1ProofWithPublicValues,
+    ) -> Result<SP1VerifyingKey, Error> {
+        self.prover_rpc
+            .aggregation_vkey(proof)
+            .await
+            .map_err(|source| Error::AggregationVkey { request_id, source })
+    }
+
     fn verify_agg_proof(
         &self,
         request_id: RequestId,

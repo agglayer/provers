@@ -28,7 +28,7 @@ mod noop {
         GetTrustedSequencerAddress, L1L2Output, L1LatestL2OutputFetcher, L1OpSuccinctConfigFetcher,
         L2LocalExitRootFetcher, L2OutputAtBlock, L2OutputAtBlockFetcher, OpSuccinctConfig,
     };
-    use aggchain_proof_core::full_execution_proof::{FepInputs, KoalaBearDigest};
+    use aggchain_proof_core::full_execution_proof::{hash_bn254_bytes, FepInputs};
     use aggchain_proof_types::{
         imported_bridge_exit::{BridgeExitHash, ImportedBridgeExitWithBlockNumber},
         unclaim::UnclaimWithBlockNumber,
@@ -36,7 +36,6 @@ mod noop {
     };
     use agglayer_interop::types::{bincode, L1InfoTreeLeaf, L1InfoTreeLeafInner, MerkleProof};
     use agglayer_primitives::{address, keccak::keccak256, Address, Digest, Signature, U256};
-    use sp1_sdk::HashableKey as _;
     use unified_bridge::{
         AggchainProofPublicValues, GlobalIndex, GlobalIndexWithLeafHash,
         ImportedBridgeExitCommitmentValues,
@@ -61,7 +60,7 @@ mod noop {
             new_state_root: Digest([6u8; 32]),
             new_withdrawal_storage_root: Digest([7u8; 32]),
             new_block_hash: Digest([8u8; 32]),
-            aggregation_vkey_hash: KoalaBearDigest(proposer_elfs::aggregation::vkey().hash_u32()),
+            aggregation_vkey_hash: [1, 2, 3, 4, 5, 6, 7, 8],
             range_vkey_commitment: [10u8; 32],
             trusted_sequencer: TRUSTED_SEQUENCER,
             signature_optimistic_mode: Some(Signature::new(U256::ZERO, U256::ZERO, false)),
@@ -127,7 +126,7 @@ mod noop {
             Ok(OpSuccinctConfig {
                 rollup_config_hash: inputs.rollup_config_hash,
                 range_vkey_commitment: Digest(inputs.range_vkey_commitment),
-                aggregation_vkey_hash: Digest(inputs.aggregation_vkey_hash.to_hash_bn254()),
+                aggregation_vkey_hash: Digest(hash_bn254_bytes(inputs.aggregation_vkey_hash)),
             })
         }
     }
@@ -268,6 +267,108 @@ mod noop {
             .unwrap();
 
         assert_eq!(committed, public_values);
+    }
+}
+
+mod aggregation_vkey {
+    use aggchain_proof_core::{
+        full_execution_proof::{hash_bn254_bytes, AggregationProofPublicValues},
+        vkey_hash::HashU32,
+    };
+    use agglayer_primitives::{Digest, Signature, U256};
+    use prover_executor::Executor;
+    use sp1_sdk::{HashableKey as _, SP1ProofMode, SP1ProofWithPublicValues, SP1_CIRCUIT_VERSION};
+
+    use crate::{Error, FepVerification, AGGCHAIN_PROOF_ELF};
+
+    async fn proof_verification() -> eyre::Result<(FepVerification, HashU32)> {
+        let vkey = Executor::compute_program_vkey(AGGCHAIN_PROOF_ELF).await?;
+        let digest = vkey.hash_u32();
+        let proof = SP1ProofWithPublicValues::create_mock_proof(
+            &vkey,
+            Default::default(),
+            SP1ProofMode::Compressed,
+            SP1_CIRCUIT_VERSION,
+        );
+        Ok((
+            FepVerification::Proof {
+                aggregation_proof: Box::new(proof),
+                aggregation_vkey: Box::new(vkey),
+                aggregation_proof_public_values: AggregationProofPublicValues {
+                    l1_head: Default::default(),
+                    l2_pre_root: Default::default(),
+                    l2_post_root: Default::default(),
+                    l2_block_number: 0,
+                    rollup_config_hash: Default::default(),
+                    multi_block_vkey: Default::default(),
+                    prover_address: Default::default(),
+                },
+            },
+            digest,
+        ))
+    }
+
+    fn optimistic_verification() -> FepVerification {
+        FepVerification::Optimistic {
+            signature: Signature::new(U256::ZERO, U256::ZERO, false),
+        }
+    }
+
+    #[tokio::test]
+    async fn accepts_aggregation_key_matching_l1() -> eyre::Result<()> {
+        let (verification, digest) = proof_verification().await?;
+        let configured_hash = Digest(hash_bn254_bytes(digest));
+
+        assert_eq!(
+            verification.validate_aggregation_vkey_hash(configured_hash)?,
+            digest,
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn rejects_aggregation_key_mismatching_l1() -> eyre::Result<()> {
+        let (verification, digest) = proof_verification().await?;
+        let proven_hash = Digest(hash_bn254_bytes(digest));
+        let error = verification
+            .validate_aggregation_vkey_hash(Digest::ZERO)
+            .expect_err("a key different from L1 must fail");
+
+        assert!(matches!(
+            error,
+            Error::MismatchAggregationVkeyHash { got, expected }
+                if got == Digest::ZERO && expected == proven_hash
+        ));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn rejects_invalid_l1_key_in_both_modes() -> eyre::Result<()> {
+        let (proof, _) = proof_verification().await?;
+        let invalid_hash = Digest([0xff; 32]);
+        for verification in [proof, optimistic_verification()] {
+            let error = verification
+                .validate_aggregation_vkey_hash(invalid_hash)
+                .expect_err("an invalid packed key must fail");
+
+            assert!(matches!(
+                error,
+                Error::InvalidAggregationVkeyHash(hash) if hash == invalid_hash
+            ));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn optimistic_mode_uses_l1_aggregation_key() -> eyre::Result<()> {
+        let digest = [1, 2, 3, 4, 5, 6, 7, 8];
+        let configured_hash = Digest(hash_bn254_bytes(digest));
+
+        assert_eq!(
+            optimistic_verification().validate_aggregation_vkey_hash(configured_hash)?,
+            digest,
+        );
+        Ok(())
     }
 }
 
