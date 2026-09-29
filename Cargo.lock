@@ -41,6 +41,7 @@ dependencies = [
  "agglayer-primitives",
  "alloy",
  "alloy-primitives",
+ "async-trait",
  "color-eyre",
  "eyre",
  "futures",

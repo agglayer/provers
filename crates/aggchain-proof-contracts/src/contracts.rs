@@ -72,6 +72,19 @@ pub trait GetTrustedSequencerAddress {
     async fn get_trusted_sequencer_address(&self) -> Result<Address, Error>;
 }
 
+/// Latest L2 output settled on L1 in the aggchain FEP contract.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct L1L2Output {
+    pub output_root: Digest,
+    pub l2_block_number: u64,
+}
+
+#[async_trait::async_trait]
+pub trait L1LatestL2OutputFetcher {
+    /// Latest L2 output settled on L1, `None` before the first one.
+    async fn get_latest_l2_output(&self) -> Result<Option<L1L2Output>, Error>;
+}
+
 #[async_trait::async_trait]
 pub trait L2EvmStateSketchFetcher {
     async fn get_prev_l2_block_sketch(

@@ -14,12 +14,15 @@ use aggchain_proof_core::bridge::{
 use agglayer_interop::types::Digest;
 use agglayer_primitives::Address;
 use alloy::{
-    eips::BlockNumberOrTag, network::AnyNetwork, primitives::B256, providers::Provider,
+    eips::BlockNumberOrTag,
+    network::AnyNetwork,
+    primitives::{B256, U256},
+    providers::Provider,
     sol_types::SolCall,
 };
 use contracts::{
-    GetTrustedSequencerAddress, GlobalExitRootManagerL2SovereignChainRpcClient,
-    L2EvmStateSketchFetcher,
+    GetTrustedSequencerAddress, GlobalExitRootManagerL2SovereignChainRpcClient, L1L2Output,
+    L1LatestL2OutputFetcher, L2EvmStateSketchFetcher,
 };
 use eyre::Context as _;
 use jsonrpsee::{core::client::ClientT, http_client::HttpClient, rpc_params};
@@ -50,6 +53,7 @@ pub trait AggchainContractsClient:
     L2LocalExitRootFetcher
     + L2OutputAtBlockFetcher
     + L1OpSuccinctConfigFetcher
+    + L1LatestL2OutputFetcher
     + L2EvmStateSketchFetcher
 {
 }
@@ -151,6 +155,41 @@ where
 {
     async fn get_trusted_sequencer_address(&self) -> Result<Address, Error> {
         Ok(self.trusted_sequencer_addr)
+    }
+}
+
+#[async_trait::async_trait]
+impl<RpcProvider> L1LatestL2OutputFetcher for AggchainContractsRpcClient<RpcProvider>
+where
+    RpcProvider: Provider + Send + Sync,
+{
+    async fn get_latest_l2_output(&self) -> Result<Option<L1L2Output>, Error> {
+        // `latestOutputIndex()` reverts while there is no output, so the count
+        // is read first.
+        let output_count = self
+            .aggchain_fep
+            .nextOutputIndex()
+            .call()
+            .await
+            .map_err(Error::LatestL2OutputRetrievalError)?;
+        if output_count.is_zero() {
+            return Ok(None);
+        }
+
+        let output = self
+            .aggchain_fep
+            .getL2Output(output_count - U256::from(1))
+            .call()
+            .await
+            .map_err(Error::LatestL2OutputRetrievalError)?;
+
+        let l2_block_number = u64::try_from(output.l2BlockNumber)
+            .map_err(|_| Error::InvalidL1BlockNumber(output.l2BlockNumber.to_string()))?;
+
+        Ok(Some(L1L2Output {
+            output_root: output.outputRoot.0.into(),
+            l2_block_number,
+        }))
     }
 }
 

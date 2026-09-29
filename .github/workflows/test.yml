@@ -76,6 +76,7 @@ jobs:
       - name: Define source checksum
         run: |
           echo CHECKSUM="$(sha256sum crates/aggchain-proof-builder/elf/riscv64im-succinct-zkvm-elf | awk '{ print $1 }')" >> "$GITHUB_ENV"
+          echo NOOP_CHECKSUM="$(sha256sum crates/aggchain-proof-builder/elf/noop/riscv64im-succinct-zkvm-elf | awk '{ print $1 }')" >> "$GITHUB_ENV"
 
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -103,3 +104,6 @@ jobs:
 
       - name: ELF is up to date
         run: diff <(sha256sum crates/aggchain-proof-builder/elf/riscv64im-succinct-zkvm-elf | awk '{ print $1 }') <( echo $CHECKSUM )
+
+      - name: Noop ELF is up to date
+        run: diff <(sha256sum crates/aggchain-proof-builder/elf/noop/riscv64im-succinct-zkvm-elf | awk '{ print $1 }') <( echo $NOOP_CHECKSUM )
