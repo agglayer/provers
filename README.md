@@ -183,15 +183,27 @@ This version must be bumped between releases / deployments.
 - `eco`: cost saving for chains that can do without a zero-knowledge proof of their execution. op-succinct-proposer runs in SP1 mock mode and is still asked for the aggregation proof, so it keeps deriving the chain from L1 and decides the end block. The standard aggchain program is executed without proof over that SP1 mock aggregation proof, then the noop program is proven over the public values that execution committed.
 - `recovery`: after an L2 reorg past a settled output. Nothing is executed: the public values are built from L1 (pre-root of the latest L1 output), the L2 bridge roots and the request, and the noop program is proven over them. op-succinct-proposer is not used.
 
-`primary-prover` says how the program of the mode is proven: `network-prover` or `cpu-prover` give a real SP1 proof, `mock-prover` an SP1 mock proof that only a mock verifier accepts.
-The setups in use:
+| Mode | Selector | Normal request | Optimistic request |
+|---|---|---|---|
+| `standard` | `0x000B0001` | **Checks:** FEP proof, FEP L1-head inclusion, bridge constraints. **Skipped:** trusted sequencer signature (not required). | **Checks:** trusted sequencer signature, bridge constraints. **Skipped:** FEP proof and FEP L1-head inclusion. |
+| `eco` | `0xFFFF0001` | **Checks:** FEP L1-head inclusion and bridge constraints during host-side execution; proposer public values compared with contract data. **Skipped:** FEP proof verification (`deferred_proof_verification(false)`); trusted sequencer signature (not required). | **Checks:** trusted sequencer signature and bridge constraints during host-side execution. **Skipped:** FEP proof and FEP L1-head inclusion. |
+| `recovery` | `0xFFFF0001` | **Checks:** host checks the request starts at the latest settled L1 output and uses its pre-root. **Skipped:** FEP proof, FEP L1-head inclusion, bridge constraints; trusted sequencer signature (not required). | **Checks:** same L1 anchor check as normal recovery. **Skipped:** FEP proof, FEP L1-head inclusion, bridge constraints, trusted sequencer signature. |
 
-| setup | `mode` | `primary-prover` | `proposer-service.mock` | op-succinct-proposer |
-|---|---|---|---|---|
-| production | `standard` (default) | `network-prover` | `false` | real proofs |
-| kurtosis | `standard` (default) | `mock-prover` | `true` | `OP_SUCCINCT_MOCK=true` |
-| eco | `eco` | `network-prover` or `cpu-prover` | not read | `OP_SUCCINCT_MOCK=true` |
-| recovery | `recovery` | `network-prover` or `cpu-prover` | not read | may be stopped |
+With a real SP1 prover, `standard` proves the standard program's checks. `eco` and `recovery` prove only the noop program's commitment to the supplied public values; their host-side checks are not established by the resulting proof. The selector follows the configured mode for both request types. The standard selector above corresponds to program version 11; the noop selector uses the reserved version `0xFFFF`.
+
+`primary-prover` says how the program of the mode is proven: `network-prover` or `cpu-prover` give a real SP1 proof, `mock-prover` an SP1 mock proof that only a mock verifier accepts.
+Use the following settings for each execution path (the proposer settings apply to normal requests):
+
+| Execution path | `mode` setting | `primary-prover` | `proposer-service.mock` | op-succinct-proposer | Result |
+|---|---|---|---|---|---|
+| Full sp1-mock (Kurtosis) | Omit; defaults to `"standard"` | `mock-prover` | `true` | `OP_SUCCINCT_MOCK=true` | sp1-mock FEP and sp1-mock standard aggchain proof; requires a sp1-mock verifier downstream |
+| Full sp1-real | Omit; defaults to `"standard"` | `network-prover` or `cpu-prover` | `false` | `OP_SUCCINCT_MOCK=false` | sp1-real FEP and sp1-real standard aggchain proof |
+| Eco | **Required: `mode = "eco"`** | `network-prover` or `cpu-prover` | Ignored; sp1-mock proposer client is selected | `OP_SUCCINCT_MOCK=true` | sp1-mock FEP, host execution of the standard program, sp1-real noop proof |
+| Recovery | **Required: `mode = "recovery"`** | `network-prover` or `cpu-prover` | Ignored; proposer is unused | May be stopped | Public values built from L1/L2 data, sp1-real noop proof |
+
+Only eco and recovery require the new `mode` field. Existing full mock and full real configurations keep working without it; `mode = "standard"` is also accepted explicitly. Set `mode` under `[aggchain-proof-service.aggchain-proof-builder]` and `mock` under `[aggchain-proof-service.proposer-service]`. The prover types select TOML subtables, for example `[aggchain-proof-service.aggchain-proof-builder.primary-prover.mock-prover]` for Kurtosis or `[aggchain-proof-service.aggchain-proof-builder.primary-prover.network-prover]` for network proving; retain the other required endpoint and contract settings.
+
+The full mock path still executes the standard aggchain program, but skips deferred FEP proof verification and produces no cryptographic proof of its checks. Choosing `cpu-prover` changes only aggchain proving; real FEP generation still uses the proposer network path. If a `fallback-prover` is configured, use a real prover there too when real proofs are required. Eco and recovery also accept `mock-prover` with a warning, but then their noop proofs require a mock verifier as well.
 
 A chain in `optimisticMode` needs no mode of its own: the aggsender sends optimistic requests, which every mode serves without calling op-succinct-proposer.
 
