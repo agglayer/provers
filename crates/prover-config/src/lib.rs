@@ -72,6 +72,9 @@ pub struct NetworkProverConfig {
     /// The sp1 proving cluster endpoint.
     #[serde(default = "default_sp1_cluster_endpoint")]
     pub sp1_cluster_endpoint: url::Url,
+
+    #[serde(default = "default_private_stdin")]
+    pub private_stdin: bool,
 }
 
 impl NetworkProverConfig {
@@ -90,6 +93,7 @@ impl Default for NetworkProverConfig {
             proving_request_timeout: None,
             proving_timeout: default_network_proving_timeout(),
             sp1_cluster_endpoint: default_sp1_cluster_endpoint(),
+            private_stdin: default_private_stdin(),
         }
     }
 }
@@ -139,6 +143,10 @@ const fn default_local_proving_timeout() -> Duration {
 
 const fn default_network_proving_timeout() -> Duration {
     Duration::from_secs(60 * 5)
+}
+
+const fn default_private_stdin() -> bool {
+    false
 }
 
 fn default_sp1_cluster_endpoint() -> Url {
