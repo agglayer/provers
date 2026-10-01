@@ -4,6 +4,8 @@ use agglayer_primitives::{
 };
 use alloy_primitives::{FixedBytes, B256, U256};
 use alloy_sol_types::{sol, SolValue};
+use p3_bn254_fr::Bn254Fr;
+use p3_field::{AbstractField, PrimeField};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest as Sha256Digest, Sha256};
 use unified_bridge::{L1InfoTreeLeaf, MerkleProof};
@@ -45,35 +47,32 @@ impl From<ClaimRoot> for L2PreRoot {
     }
 }
 
-/// Bits each digest word occupies in the packed form.
-const DIGEST_WORD_BITS: usize = 31;
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct KoalaBearDigest(pub HashU32);
 
-/// Pack a vkey's KoalaBear digest into the 32 byte value registered on L1 as
-/// `aggregationVkey`.
-///
-/// The encoding is sp1's `HashableKey::bytes32_raw`: the eight digest words
-/// laid end to end, most significant first, `DIGEST_WORD_BITS` bits each.
-pub fn hash_bn254_bytes(digest: HashU32) -> [u8; 32] {
-    digest
-        .into_iter()
-        .fold(U256::ZERO, |packed, word| {
-            (packed << DIGEST_WORD_BITS) | U256::from(word)
-        })
-        .to_be_bytes()
-}
-
-/// Recover a vkey's KoalaBear digest from the 32 byte value registered on L1
-/// as `aggregationVkey`, or `None` when the value is not the packing of one.
-pub fn hash_u32_from_bn254_bytes(packed: [u8; 32]) -> Option<HashU32> {
-    let packed_value = U256::from_be_bytes(packed);
-    let word_mask = (U256::from(1u8) << DIGEST_WORD_BITS) - U256::from(1u8);
-
-    let mut digest: HashU32 = [0; 8];
-    for (position, word) in digest.iter_mut().rev().enumerate() {
-        *word = u32::try_from((packed_value >> (position * DIGEST_WORD_BITS)) & word_mask).ok()?;
+impl KoalaBearDigest {
+    pub fn to_hash_u32(&self) -> HashU32 {
+        self.0
     }
 
-    (hash_bn254_bytes(digest) == packed).then_some(digest)
+    pub fn to_hash_bn254(&self) -> [u8; 32] {
+        let vkey_digest_bn254: Bn254Fr = {
+            let mut result = Bn254Fr::zero();
+            for word in self.0 {
+                // Since KoalaBear prime is less than 2^31, we can shift by 31
+                // bits each time and still be within the
+                // Bn254Fr field, so we don't have to
+                // truncate the top 3 bits.
+                result *= Bn254Fr::from_canonical_u64(1 << 31);
+                result += Bn254Fr::from_canonical_u32(word);
+            }
+            result
+        };
+        let vkey_bytes = vkey_digest_bn254.as_canonical_biguint().to_bytes_be();
+        let mut result = [0u8; 32];
+        result[1..].copy_from_slice(&vkey_bytes);
+        result
+    }
 }
 
 /// Public values to verify the FEP.
@@ -92,8 +91,8 @@ pub struct FepInputs {
     pub new_withdrawal_storage_root: Digest,
     pub new_block_hash: Digest,
 
-    /// Aggregation vkey hash, as the KoalaBear digest words.
-    pub aggregation_vkey_hash: HashU32,
+    /// Aggregation vkey hash koalabear.
+    pub aggregation_vkey_hash: KoalaBearDigest,
 
     /// Range vkey commitment.
     pub range_vkey_commitment: [u8; 32],
@@ -159,7 +158,7 @@ impl From<&FepInputs> for AggchainParamsValues {
             optimistic_mode: inputs.optimistic_mode() == OptimisticMode::Ecdsa,
             trusted_sequencer: inputs.trusted_sequencer.into(),
             range_vkey_commitment: inputs.range_vkey_commitment.into(),
-            aggregation_vkey_hash: hash_bn254_bytes(inputs.aggregation_vkey_hash).into(),
+            aggregation_vkey_hash: inputs.aggregation_vkey_hash.to_hash_bn254().into(),
         }
     }
 }
@@ -247,7 +246,7 @@ impl FepInputs {
             #[cfg(target_os = "zkvm")]
             {
                 sp1_zkvm::lib::verify::verify_sp1_proof(
-                    &self.aggregation_vkey_hash,
+                    &self.aggregation_vkey_hash.to_hash_u32(),
                     &self.sha256_public_values().into(),
                 );
 
@@ -322,88 +321,20 @@ pub(crate) fn compute_output_root(
 
 #[cfg(test)]
 mod tests {
-    use alloy_primitives::hex;
-    use slop_algebra::{AbstractField, PrimeField32};
-    use sp1_primitives::SP1Field;
-    use sp1_sdk::HashableKey;
+    use sp1_sdk::HashableKey as _;
 
-    use crate::{
-        full_execution_proof::{compute_output_root, hash_bn254_bytes, hash_u32_from_bn254_bytes},
-        vkey_hash::HashU32,
-    };
-
-    /// op-succinct v3.10.0's aggregation and range vkeys, as sp1 hashes and
-    /// packs them (`hash_u32` and `bytes32_raw`).
-    const REAL_VKEYS: [(HashU32, [u8; 32]); 2] = [
-        (
-            [
-                439107325, 1199179148, 1352299494, 71262125, 2101968112, 267188236, 735481144,
-                1427103296,
-            ],
-            hex!("0034587dfb1de8163284d39f3043f5fadfa92f9e03fb3e0315eb469c550fde40"),
-        ),
-        (
-            [
-                453280291, 1942644072, 2536801, 203349826, 1201160731, 53410065, 2066490950,
-                1641948271,
-            ],
-            hex!("0036090447cf2995a00135ab08c1edf428f3084360cbbe447d96132361de246f"),
-        ),
-    ];
-
-    struct ArbitraryVkey(HashU32);
-
-    impl HashableKey for ArbitraryVkey {
-        fn hash_koalabear(&self) -> [SP1Field; 8] {
-            self.0.map(SP1Field::from_canonical_u32)
-        }
-
-        fn hash_u32(&self) -> HashU32 {
-            self.0
-        }
-    }
+    use crate::full_execution_proof::compute_output_root;
 
     #[test]
-    fn packs_and_unpacks_op_succinct_keys() {
-        for (digest, packed) in REAL_VKEYS {
-            assert_eq!(hash_bn254_bytes(digest), packed);
-            assert_eq!(hash_u32_from_bn254_bytes(packed), Some(digest));
-            assert_eq!(ArbitraryVkey(digest).bytes32_raw(), packed);
-        }
-    }
+    fn test_koalabear_digest_round_trip_with_aggregation_vkey() {
+        let aggregation_vkey = proposer_elfs::aggregation::VKEY.vkey();
+        let koalabear_digest = super::KoalaBearDigest(aggregation_vkey.hash_u32());
 
-    #[test]
-    fn matches_sp1_at_digest_word_boundaries() {
-        let largest_word = SP1Field::ORDER_U32 - 1;
-
-        for fill in [0, largest_word] {
-            for position in 0..8 {
-                for word in [0, 1, largest_word] {
-                    let mut digest = [fill; 8];
-                    digest[position] = word;
-                    let packed = hash_bn254_bytes(digest);
-
-                    // SP1 6.2.2's bytes32_raw panics on short encodings;
-                    // bytes32 pads them.
-                    assert_eq!(
-                        alloy_primitives::B256::from(packed).to_string(),
-                        ArbitraryVkey(digest).bytes32(),
-                        "digest: {digest:?}",
-                    );
-                    assert_eq!(hash_u32_from_bn254_bytes(packed), Some(digest));
-                }
-            }
-        }
-    }
-
-    #[test]
-    fn rejects_bits_above_the_packed_digest() {
-        for bit in 0..8 {
-            let (_, mut packed) = REAL_VKEYS[0];
-            packed[0] |= 1 << bit;
-
-            assert_eq!(hash_u32_from_bn254_bytes(packed), None);
-        }
+        assert_eq!(
+            aggregation_vkey.bytes32_raw(),
+            koalabear_digest.to_hash_bn254()
+        );
+        assert_eq!(aggregation_vkey.hash_u32(), koalabear_digest.to_hash_u32());
     }
 
     #[test]
