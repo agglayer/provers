@@ -297,8 +297,7 @@ impl BridgeConstraintsInput {
         .0
         .into();
 
-        // Check that the new local exit root returned from L2 matches the
-        // expected
+        // Check that the new local exit root returned from L2 matches the expected
         if new_ler != self.new_local_exit_root {
             return Err(BridgeConstraintsError::MismatchNewLocalExitRoot {
                 retrieved: new_ler,
@@ -313,8 +312,8 @@ impl BridgeConstraintsInput {
     fn fetch_bridge_address(&self) -> Result<Address, BridgeConstraintsError> {
         // Get the bridge address from the GER smart contract.
         // Since the bridge address is not constant but the l2 ger address is
-        // We can retrieve the bridge address saving some public inputs and
-        // possible errors
+        // We can retrieve the bridge address saving some public inputs and possible
+        // errors
         let bridge_address = StaticCallWithContext {
             address: self.ger_addr.into(),
             stage: StaticCallStage::BridgeAddress,
@@ -355,8 +354,8 @@ impl BridgeConstraintsInput {
 
     /// Verify the inclusion proofs of the inserted GERs up to the L1InfoRoot.
     fn verify_inserted_gers(&self) -> Result<(), BridgeConstraintsError> {
-        // Iterate over claimed indices and remove (skip) one occurrence for
-        // each value in removal_map.
+        // Iterate over claimed indices and remove (skip) one occurrence for each value
+        // in removal_map.
         let filtered_hash_chain_gers = filter_values(
             &self.bridge_witness.removed_gers,
             &self.bridge_witness.raw_inserted_gers,
@@ -378,8 +377,7 @@ impl BridgeConstraintsInput {
             });
         }
 
-        // Check that the inserted gers are correctly inserted in the
-        // L1InfoRoot.
+        // Check that the inserted gers are correctly inserted in the L1InfoRoot.
         let maybe_wrong_inserted_ger = self
             .bridge_witness
             .inserted_gers
@@ -445,8 +443,7 @@ fn filter_values<K: Eq + Hash + Copy, V: Copy>(
     values: &[V],
     mut key_fn: impl FnMut(&V) -> K,
 ) -> Result<Vec<V>, BridgeConstraintsError> {
-    // Create a map that counts how many removals are needed for each removed
-    // value
+    // Create a map that counts how many removals are needed for each removed value
     let mut removal_map: HashMap<K, usize> = HashMap::new();
     for &value in removed.iter() {
         let count = removal_map.entry(value).or_insert(0);
@@ -455,8 +452,7 @@ fn filter_values<K: Eq + Hash + Copy, V: Copy>(
             .ok_or(BridgeConstraintsError::HashChainOverflow)?;
     }
 
-    // Iterate over values and remove (skip) one occurrence for each removed
-    // value
+    // Iterate over values and remove (skip) one occurrence for each removed value
     let result = values
         .iter()
         .filter(|value| {
@@ -687,8 +683,7 @@ mod tests {
                     .collect::<Vec<_>>()
                     .join("\n");
 
-                // Parse the JSON into alloy_genesis::Genesis first, then
-                // extract the config
+                // Parse the JSON into alloy_genesis::Genesis first, then extract the config
                 let genesis_parsed: alloy::genesis::Genesis =
                     serde_json::from_str(&json_clean).expect("Failed to parse genesis JSON");
 
@@ -946,20 +941,18 @@ mod tests {
         let file = File::open(path).unwrap();
         let reader = BufReader::new(file);
         let bridge_data_input: BridgeConstraintsInput = serde_json::from_reader(reader).unwrap();
-        // If the alloy version changes, this can lead to the file no longer
-        // parsing correctly, and thus this test failing.
+        // If the alloy version changes, this can lead to the file no longer parsing
+        // correctly, and thus this test failing.
         // In that case, you should update the file.
         // The process is to:
-        // 1. Ask someone from Agglayer team to give you the required Quiknode
-        //    RPC URL
+        // 1. Ask someone from Agglayer team to give you the required Quiknode RPC URL
         // 2. Put it into an environment variable: `export RPC_11155420=https://dawn-maximum-dream.optimism-sepolia.quiknode.pro/[censored]`
-        // 3. Run `cargo test --workspace --
-        //    bridge::tests::test_bridge_constraints --exact --show-output
-        //    --include-ignored` (Or you can limit to `--package
+        // 3. Run `cargo test --workspace -- bridge::tests::test_bridge_constraints
+        //    --exact --show-output --include-ignored` (Or you can limit to `--package
         //    aggchain-proof-core --lib` if your cargo folder is not filled yet)
         // 4. The file should then be ready for committing
-        // Note that it is possible the RPC no longer has the required blocks
-        // available for proof getting.
+        // Note that it is possible the RPC no longer has the required blocks available
+        // for proof getting.
         // In this case, you can use the script here to regenerate the tests:
         // https://github.com/agglayer/agglayer-contracts/blob/4e1e07dd83f822b9a05d1cf45bc15d0341e3a2b3/tools/deploySovereignTest/deploySovereign.ts
         assert_bridge_data(bridge_data_input);
@@ -978,8 +971,7 @@ mod tests {
             Digest([byte; 32])
         }
 
-        // Claimed exits: include a duplicate hash (20) to verify multiplicity
-        // handling.
+        // Claimed exits: include a duplicate hash (20) to verify multiplicity handling.
         let base_claims = &base_input.bridge_witness.imported_bridge_exits;
         let n = base_claims.len().min(4);
         let hash_choices = [d(10), d(20), d(20), d(30)];
@@ -990,16 +982,15 @@ mod tests {
             })
             .collect();
 
-        // Compute proper unset claims. We want to unset the claims with bridge
-        // exit hash d(20) and d(30).
+        // Compute proper unset claims. We want to unset the claims with bridge exit
+        // hash d(20) and d(30).
         let unset_claims: Vec<U256> = claims
             .iter()
             .filter(|claim| claim.bridge_exit_hash == d(20) || claim.bridge_exit_hash == d(30))
             .map(|claim| claim.global_index)
             .collect();
 
-        // Expected constrained claims after removing by commitment once per
-        // occurrence.
+        // Expected constrained claims after removing by commitment once per occurrence.
         let expected_filtered: Vec<GlobalIndexWithLeafHash> = filter_values(
             &unset_claims,
             &claims,
