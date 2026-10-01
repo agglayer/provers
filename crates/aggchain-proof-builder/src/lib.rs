@@ -343,9 +343,9 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         let prover = Buffer::new(executor, MAX_CONCURRENT_REQUESTS);
 
         // Resolve the aggregation vkey and range vkey commitment. These use the
-        // configured op-succinct override when one was installed at startup (see
-        // `proposer_elfs::install_overrides`), otherwise the values embedded from
-        // op-succinct-elfs at build time.
+        // configured op-succinct override when one was installed at startup
+        // (see `proposer_elfs::install_overrides`), otherwise the
+        // values embedded from op-succinct-elfs at build time.
         let aggregation_vkey = Arc::new(proposer_elfs::aggregation::vkey().clone());
         let range_vkey_commitment = Digest(proposer_elfs::range::commitment());
 
@@ -365,8 +365,8 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             }
         }
 
-        // Check the mismatch of the keys from the op-succinct configuration in the
-        // contract
+        // Check the mismatch of the keys from the op-succinct configuration in
+        // the contract
         let op_succinct_config = contracts_client
             .get_op_succinct_config()
             .await
@@ -469,7 +469,8 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .aggchain_proof_inputs
             .sorted_inserted_gers(&new_blocks_range);
 
-        // All the bridge exits in the new blocks range, also those that are unclaimed.
+        // All the bridge exits in the new blocks range, also those that are
+        // unclaimed.
         let all_imported_bridge_exits: Vec<GlobalIndexWithLeafHash> = filter_sort_map(
             request.aggchain_proof_inputs.imported_bridge_exits,
             &new_blocks_range,
@@ -686,9 +687,10 @@ where
         let static_call_caller_address = self.static_call_caller_address;
         let range_vkey_commitment = self.range_vkey_commitment;
 
-        // TODO: figure out a way to stop only this service upon an sp1 panic, and not
-        // the entire system. For now, just ignore the panic, even though some
-        // internal mutability inside sp1 might end up unhappy.
+        // TODO: figure out a way to stop only this service upon an sp1 panic,
+        // and not the entire system. For now, just ignore the panic,
+        // even though some internal mutability inside sp1 might end up
+        // unhappy.
         sp1_async(AssertUnwindSafe(async move {
             let last_proven_block = req.aggchain_proof_inputs.last_proven_block;
             let end_block = req.end_block;

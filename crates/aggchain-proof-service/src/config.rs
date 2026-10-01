@@ -56,8 +56,8 @@ mod tests {
     #[test]
     fn op_succinct_aggregation_vkey_round_trips_through_config() {
         // `Bytes` carries the hex value through serde, and the existing bincode
-        // codec turns it back into the real verifying key. Use a real serialized
-        // vkey: the one embedded from op-succinct-elfs.
+        // codec turns it back into the real verifying key. Use a real
+        // serialized vkey: the one embedded from op-succinct-elfs.
         let encoded = alloy_primitives::hex::encode(proposer_elfs::aggregation::VKEY.as_bytes());
         let config: OpSuccinctVkeyConfig =
             serde_json::from_str(&format!(r#"{{ "aggregation-vkey": "0x{encoded}" }}"#))

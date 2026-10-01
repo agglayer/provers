@@ -35,8 +35,8 @@ where
         &self,
         program: &[u8],
     ) -> eyre::Result<(SP1ProvingKey, SP1VerifyingKey)> {
-        // TODO: Figure out a way to kill this struct if there's an unwind, and start
-        // again with a fresh Prover
+        // TODO: Figure out a way to kill this struct if there's an unwind, and
+        // start again with a fresh Prover
         let proving_key = sp1_async(AssertUnwindSafe(async {
             self.sp1_prover.setup(program.into()).await
         }))
@@ -74,8 +74,8 @@ where
         proof: &SP1ProofWithPublicValues,
         vkey: &SP1VerifyingKey,
     ) -> eyre::Result<()> {
-        // TODO: kill sp1 prover if there's a panic, to avoid any interior mutability on
-        // panic issues?
+        // TODO: kill sp1 prover if there's a panic, to avoid any interior
+        // mutability on panic issues?
         sp1_fast(AssertUnwindSafe(|| {
             self.sp1_prover.verify(proof, vkey, None)
         }))

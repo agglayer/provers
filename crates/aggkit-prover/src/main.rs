@@ -56,8 +56,9 @@ fn main() -> eyre::Result<()> {
                 .enable_all()
                 .build()?
                 .block_on(async move {
-                    // The CLI is short-lived, so leaking the ELF bytes to satisfy the
-                    // `'static` bound of `compute_program_vkey` is acceptable.
+                    // The CLI is short-lived, so leaking the ELF bytes to
+                    // satisfy the `'static` bound of
+                    // `compute_program_vkey` is acceptable.
                     let read_elf = |name: &str| -> eyre::Result<&'static [u8]> {
                         let path = elf_dir.join(name);
                         let bytes = std::fs::read(&path)

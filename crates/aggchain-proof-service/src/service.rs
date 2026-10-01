@@ -90,11 +90,12 @@ impl AggchainProofService {
     pub async fn new(config: &AggchainProofServiceConfig) -> Result<Self, Error> {
         debug!("Initializing AggchainProofService");
 
-        // Install the optional op-succinct vkey overrides from configuration before
-        // constructing the services, so the proposer service (host-side
-        // verification) and the proof builder (recursive verification) both read
-        // the same in-effect values via `proposer_elfs`. When absent, the values
-        // embedded from op-succinct-elfs are used.
+        // Install the optional op-succinct vkey overrides from configuration
+        // before constructing the services, so the proposer service
+        // (host-side verification) and the proof builder (recursive
+        // verification) both read the same in-effect values via
+        // `proposer_elfs`. When absent, the values embedded from
+        // op-succinct-elfs are used.
         proposer_elfs::install_overrides(
             config
                 .op_succinct
@@ -108,9 +109,9 @@ impl AggchainProofService {
         )
         .map_err(Error::OpSuccinctVkeyDecode)?;
 
-        // Report the op-succinct verification keys in effect, and whether each came
-        // from a config override or the embedded op-succinct-elfs default, so the
-        // active keys can be confirmed at runtime.
+        // Report the op-succinct verification keys in effect, and whether each
+        // came from a config override or the embedded op-succinct-elfs
+        // default, so the active keys can be confirmed at runtime.
         let source = |overridden: bool| {
             if overridden {
                 "config override"
