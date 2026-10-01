@@ -3,5 +3,9 @@ format_strings = true
 group_imports = "StdExternalCrate"
 reorder_imports = true
 unstable_features = true
+# Reformatting the aggchain proof program or its local dependency can shift
+# panic-location line numbers embedded in the ELF and change its vkey.
+# Reformat them only with a deliberate program version and selector bump.
+ignore = ["crates/aggchain-proof-core", "crates/aggchain-proof-program"]
 wrap_comments = true
 imports_granularity = "Crate"

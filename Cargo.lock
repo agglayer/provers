@@ -44,6 +44,7 @@ dependencies = [
  "color-eyre",
  "eyre",
  "futures",
+ "proposer-elfs",
  "prover-config",
  "prover-executor",
  "prover-utils",
@@ -103,16 +104,17 @@ dependencies = [
  "hex",
  "k256 0.13.4",
  "mockall 0.13.1",
+ "p3-bn254-fr",
+ "p3-field",
+ "proposer-elfs",
  "reqwest 0.12.24",
  "semver 1.0.27",
  "serde",
  "serde_json",
  "serde_with",
  "sha2 0.10.9",
- "slop-algebra",
  "sp1-cc-client-executor",
  "sp1-cc-host-executor",
- "sp1-primitives",
  "sp1-sdk",
  "sp1-zkvm",
  "thiserror 2.0.17",
@@ -138,6 +140,7 @@ dependencies = [
  "eyre",
  "futures",
  "proposer-client",
+ "proposer-elfs",
  "proposer-service",
  "prover-alloy",
  "serde",
@@ -1689,13 +1692,13 @@ dependencies = [
 
 [[package]]
 name = "async-trait"
-version = "0.1.89"
+version = "0.1.92"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9035ad2d096bed7955a320ee7e2230574d28fd3c3a0f186cbea1ff3c7eed5dbb"
+checksum = "82f6aeea286b8eb4dd3431a1be1b59d290ace00f5bfd8e2a159bc2a05e2c1667"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.117",
+ "syn 3.0.6",
 ]
 
 [[package]]
@@ -5968,6 +5971,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "op-succinct-elfs"
+version = "3.10.0"
+source = "git+https://github.com/agglayer/op-succinct.git?tag=v3.10.0-agglayer#36f20e5265ac77634997424f5817b1548c449183"
+
+[[package]]
 name = "opaque-debug"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6821,13 +6829,9 @@ dependencies = [
  "prost",
  "prover-executor",
  "prover-utils",
- "rustls",
  "serde",
  "serde_json",
  "serde_with",
- "slop-algebra",
- "sp1-primitives",
- "sp1-recursion-executor",
  "sp1-sdk",
  "test-log",
  "thiserror 2.0.17",
@@ -6836,6 +6840,20 @@ dependencies = [
  "tonic 0.13.1",
  "tracing",
  "url",
+]
+
+[[package]]
+name = "proposer-elfs"
+version = "0.1.0"
+dependencies = [
+ "aggkit-prover-types",
+ "alloy-primitives",
+ "color-eyre",
+ "insta",
+ "op-succinct-elfs",
+ "prover-elf-utils",
+ "rstest",
+ "sp1-sdk",
 ]
 
 [[package]]
@@ -6856,6 +6874,7 @@ dependencies = [
  "futures",
  "mockall 0.13.1",
  "proposer-client",
+ "proposer-elfs",
  "prover-alloy",
  "prover-executor",
  "prover-logger",
@@ -7026,6 +7045,7 @@ dependencies = [
  "buildstructor",
  "eyre",
  "futures",
+ "proposer-elfs",
  "prover-config",
  "prover-engine",
  "prover-logger",
@@ -10570,6 +10590,17 @@ name = "syn"
 version = "2.0.117"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e665b8803e7b1d2a727f4023456bbbbe74da67099c585258af0ad9c5013b9b99"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "unicode-ident",
+]
+
+[[package]]
+name = "syn"
+version = "3.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8593e8e72159ed2257d083c7a454a85cbf854f37a0966d8d483aff8c8a3ebcee"
 dependencies = [
  "proc-macro2",
  "quote",

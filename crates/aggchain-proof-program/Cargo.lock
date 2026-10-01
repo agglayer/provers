@@ -42,6 +42,8 @@ dependencies = [
  "eyre",
  "hex",
  "k256",
+ "p3-bn254-fr",
+ "p3-field",
  "semver 1.0.28",
  "serde",
  "serde_with",
@@ -56,7 +58,7 @@ dependencies = [
 
 [[package]]
 name = "aggchain-proof-program"
-version = "12.0.0"
+version = "11.0.0"
 dependencies = [
  "aggchain-proof-core",
  "sp1-zkvm",
