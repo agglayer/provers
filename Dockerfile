@@ -1,4 +1,4 @@
-FROM --platform=${BUILDPLATFORM} rust:slim-bullseye AS chef
+FROM --platform=${BUILDPLATFORM} rust:slim-bookworm AS chef
 
 ARG PROTOC_VERSION=28.2
 ARG CHEF_VERSION=0.1.68
@@ -41,7 +41,7 @@ COPY --link Cargo.lock Cargo.lock
 RUN cargo build --release --bin aggkit-prover
 
 
-FROM --platform=${BUILDPLATFORM} debian:bullseye-slim
+FROM --platform=${BUILDPLATFORM} debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y ca-certificates
 COPY --from=builder /app/target/release/aggkit-prover /usr/local/bin/
