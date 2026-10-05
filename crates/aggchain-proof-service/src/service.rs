@@ -125,28 +125,34 @@ impl AggchainProofService {
         );
         debug!("Contract L1 client initialized");
 
-        let proposer_service = match config.aggchain_proof_builder.mode {
+        let (proposer_mode, proposer_service) = match config.aggchain_proof_builder.mode {
             AggchainProofMode::Recovery => {
                 info!("Recovery mode: op-succinct-proposer is not used");
-                None
+                ("none", None)
             }
-            AggchainProofMode::Standard if !config.proposer_service.mock => Some(
-                tower::ServiceBuilder::new()
-                    .service(
-                        ProposerService::new_network(&config.proposer_service, l1_rpc_client)
-                            .await
-                            .map_err(Error::ProposerServiceInitFailed)?,
-                    )
-                    .boxed_clone(),
+            AggchainProofMode::Standard if !config.proposer_service.mock => (
+                "network",
+                Some(
+                    tower::ServiceBuilder::new()
+                        .service(
+                            ProposerService::new_network(&config.proposer_service, l1_rpc_client)
+                                .await
+                                .map_err(Error::ProposerServiceInitFailed)?,
+                        )
+                        .boxed_clone(),
+                ),
             ),
-            AggchainProofMode::Standard | AggchainProofMode::SkipProofVerification => Some(
-                tower::ServiceBuilder::new()
-                    .service(
-                        ProposerService::new_mock(&config.proposer_service, l1_rpc_client)
-                            .await
-                            .map_err(Error::ProposerServiceInitFailed)?,
-                    )
-                    .boxed_clone(),
+            AggchainProofMode::Standard | AggchainProofMode::SkipProofVerification => (
+                "mock",
+                Some(
+                    tower::ServiceBuilder::new()
+                        .service(
+                            ProposerService::new_mock(&config.proposer_service, l1_rpc_client)
+                                .await
+                                .map_err(Error::ProposerServiceInitFailed)?,
+                        )
+                        .boxed_clone(),
+                ),
             ),
         };
         debug!("ProposerService initialized");
@@ -169,6 +175,7 @@ impl AggchainProofService {
         };
         info!(
             vkey_selector = %alloy_primitives::hex::encode_prefixed(vkey_selector.to_be_bytes()),
+            proposer_mode,
             "Aggchain vkey selector in effect"
         );
 

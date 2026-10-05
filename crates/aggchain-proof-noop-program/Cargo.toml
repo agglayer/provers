@@ -11,7 +11,7 @@ overflow-checks = true
 [dependencies]
 sp1-zkvm = "=6.2.2"
 
-unified-bridge = "0.18.0"
+unified-bridge = "=0.18.0"
 
 [patch.crates-io]
 crypto-bigint = { git = "https://github.com/sp1-patches/RustCrypto-bigint", tag = "patch-0.5.5-sp1-6.2.0" }
