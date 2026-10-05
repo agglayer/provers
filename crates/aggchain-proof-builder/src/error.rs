@@ -67,6 +67,14 @@ pub enum Error {
         l1_latest_output_block: Option<u64>,
     },
 
+    #[error(
+        "Recovery end block {end_block} is not after the last proven block {last_proven_block}"
+    )]
+    RecoveryEmptyRange {
+        last_proven_block: u64,
+        end_block: u64,
+    },
+
     #[error("Recovery FEP verification requested outside the recovery mode")]
     RecoveryVerificationOutsideRecoveryMode,
 

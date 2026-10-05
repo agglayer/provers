@@ -25,8 +25,9 @@ mod noop {
     use std::sync::Arc;
 
     use aggchain_proof_contracts::contracts::{
-        GetTrustedSequencerAddress, L1L2Output, L1LatestL2OutputFetcher, L1OpSuccinctConfigFetcher,
-        L2LocalExitRootFetcher, L2OutputAtBlock, L2OutputAtBlockFetcher, OpSuccinctConfig,
+        GetTrustedSequencerAddress, L1L2Output, L1LatestL2OutputFetcher, L1LocalExitRootFetcher,
+        L1OpSuccinctConfigFetcher, L1OptimisticModeFetcher, L2LocalExitRootFetcher,
+        L2OutputAtBlock, L2OutputAtBlockFetcher, OpSuccinctConfig,
     };
     use aggchain_proof_core::full_execution_proof::{hash_bn254_bytes, FepInputs};
     use aggchain_proof_types::{
@@ -78,14 +79,17 @@ mod noop {
         }
     }
 
-    struct RecoveryContracts(Option<L1L2Output>);
+    struct RecoveryContracts {
+        latest_l2_output: Option<L1L2Output>,
+        optimistic_mode: bool,
+    }
 
     #[async_trait::async_trait]
     impl L1LatestL2OutputFetcher for RecoveryContracts {
         async fn get_latest_l2_output(
             &self,
         ) -> Result<Option<L1L2Output>, aggchain_proof_contracts::Error> {
-            Ok(self.0)
+            Ok(self.latest_l2_output)
         }
     }
 
@@ -95,8 +99,27 @@ mod noop {
             &self,
             block_number: u64,
         ) -> Result<Digest, aggchain_proof_contracts::Error> {
-            assert!((41..=42).contains(&block_number));
-            Ok(Digest([if block_number == 41 { 1 } else { 2 }; 32]))
+            assert_eq!(
+                block_number, 42,
+                "recovery must not read the L2 state at the anchor"
+            );
+            Ok(Digest([2; 32]))
+        }
+    }
+
+    #[async_trait::async_trait]
+    impl L1LocalExitRootFetcher for RecoveryContracts {
+        async fn get_l1_last_local_exit_root(
+            &self,
+        ) -> Result<Digest, aggchain_proof_contracts::Error> {
+            Ok(Digest([1; 32]))
+        }
+    }
+
+    #[async_trait::async_trait]
+    impl L1OptimisticModeFetcher for RecoveryContracts {
+        async fn get_optimistic_mode(&self) -> Result<bool, aggchain_proof_contracts::Error> {
+            Ok(self.optimistic_mode)
         }
     }
 
@@ -142,21 +165,32 @@ mod noop {
 
     #[tokio::test]
     async fn recovery_public_values_use_l1_anchor_and_filter_claims() -> eyre::Result<()> {
-        let contracts = Arc::new(RecoveryContracts(Some(L1L2Output {
+        let latest_l2_output = Some(L1L2Output {
             output_root: L1_PRE_ROOT,
             l2_block_number: 41,
-        })));
-        let pre_root = latest_l1_pre_root(contracts.as_ref(), 41).await?;
-        assert_eq!(pre_root, L1_PRE_ROOT);
+        });
 
-        for optimistic in [false, true] {
+        for (l1_optimistic_mode, optimistic_request) in
+            [(false, false), (false, true), (true, false), (true, true)]
+        {
+            let contracts = Arc::new(RecoveryContracts {
+                latest_l2_output,
+                optimistic_mode: l1_optimistic_mode,
+            });
+            let pre_root = latest_l1_pre_root(contracts.as_ref(), 41).await?;
+            assert_eq!(pre_root, L1_PRE_ROOT);
+
+            // The params hash follows the L1 flag, whatever the request type.
             let mut inputs = fep_inputs();
-            if !optimistic {
+            if !l1_optimistic_mode {
                 inputs.signature_optimistic_mode = None;
             }
-            let fep_verification = match inputs.signature_optimistic_mode {
-                Some(signature) => FepVerification::Optimistic { signature },
-                None => FepVerification::Recovery,
+            let fep_verification = if optimistic_request {
+                FepVerification::Optimistic {
+                    signature: Signature::new(U256::ZERO, U256::ZERO, false),
+                }
+            } else {
+                FepVerification::Recovery
             };
             let request = AggchainProofBuilderRequest {
                 fep_verification,
@@ -235,9 +269,50 @@ mod noop {
             }),
         ] {
             assert!(matches!(
-                latest_l1_pre_root(&RecoveryContracts(latest), 41).await,
+                latest_l1_pre_root(
+                    &RecoveryContracts {
+                        latest_l2_output: latest,
+                        optimistic_mode: false,
+                    },
+                    41
+                )
+                .await,
                 Err(Error::RecoveryAnchorMismatch { last_proven_block: 41, l1_latest_output_block })
                     if l1_latest_output_block == latest.map(|output| output.l2_block_number)
+            ));
+        }
+    }
+
+    #[tokio::test]
+    async fn recovery_rejects_an_empty_range() {
+        let inputs = fep_inputs();
+        for end_block in [40, 41] {
+            let request = AggchainProofBuilderRequest {
+                fep_verification: FepVerification::Recovery,
+                end_block,
+                aggchain_proof_inputs: AggchainProofInputs {
+                    last_proven_block: 41,
+                    requested_end_block: end_block,
+                    l1_info_tree_root_hash: Digest::ZERO,
+                    l1_info_tree_leaf: inputs.l1_info_tree_leaf.clone(),
+                    l1_info_tree_merkle_proof: inputs.l1_head_inclusion_proof.clone(),
+                    ger_leaves: Default::default(),
+                    imported_bridge_exits: vec![],
+                    removed_gers: vec![],
+                    unclaims: vec![],
+                },
+            };
+            let contracts = Arc::new(RecoveryContracts {
+                latest_l2_output: None,
+                optimistic_mode: false,
+            });
+            assert!(matches!(
+                AggchainProofBuilder::retrieve_recovery_data(contracts, request, 7, L1_PRE_ROOT)
+                    .await,
+                Err(Error::RecoveryEmptyRange {
+                    last_proven_block: 41,
+                    end_block: got,
+                }) if got == end_block
             ));
         }
     }

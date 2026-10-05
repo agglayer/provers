@@ -51,6 +51,9 @@ pub enum Error {
     #[error("Error retrieving op succinct config")]
     OpSuccinctConfigRetrievalError(#[source] alloy::contract::Error),
 
+    #[error("Error retrieving the optimistic mode flag")]
+    OptimisticModeRetrievalError(#[source] alloy::contract::Error),
+
     #[error("Could not fetch selected op succinct config")]
     SelectedOpSuccinctConfigRetrievalError(#[source] alloy::contract::Error),
 

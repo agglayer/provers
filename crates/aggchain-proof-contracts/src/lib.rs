@@ -41,9 +41,9 @@ use crate::{
     config::AggchainProofContractsConfig,
     contracts::{
         AggchainFep, AggchainFepRpcClient, GlobalExitRootManagerL2SovereignChain,
-        L1OpSuccinctConfigFetcher, L2LocalExitRootFetcher, L2OutputAtBlock, L2OutputAtBlockFetcher,
-        OpSuccinctConfig, PolygonRollupManagerRpcClient, PolygonZkevmBridgeV2,
-        ZkevmBridgeRpcClient,
+        L1LocalExitRootFetcher, L1OpSuccinctConfigFetcher, L1OptimisticModeFetcher,
+        L2LocalExitRootFetcher, L2OutputAtBlock, L2OutputAtBlockFetcher, OpSuccinctConfig,
+        PolygonRollupManagerRpcClient, PolygonZkevmBridgeV2, ZkevmBridgeRpcClient,
     },
 };
 
@@ -76,6 +76,12 @@ pub struct AggchainContractsRpcClient<RpcProvider> {
 
     /// Aggchain FEP contract on the l1 network.
     aggchain_fep: AggchainFepRpcClient<RpcProvider>,
+
+    /// Polygon rollup manager contract on the l1 network.
+    polygon_rollup_manager: PolygonRollupManagerRpcClient<RpcProvider>,
+
+    /// Network id of the chain in the rollup manager.
+    network_id: u32,
 
     /// Trusted sequencer address.
     trusted_sequencer_addr: agglayer_primitives::Address,
@@ -145,6 +151,37 @@ where
             aggregation_vkey_hash: (op_succinct_config.aggregationVkey.0).into(),
             rollup_config_hash: (op_succinct_config.rollupConfigHash.0).into(),
         })
+    }
+}
+
+#[async_trait::async_trait]
+impl<RpcProvider> L1OptimisticModeFetcher for AggchainContractsRpcClient<RpcProvider>
+where
+    RpcProvider: Provider + Send + Sync,
+{
+    async fn get_optimistic_mode(&self) -> Result<bool, Error> {
+        self.aggchain_fep
+            .optimisticMode()
+            .call()
+            .await
+            .map_err(Error::OptimisticModeRetrievalError)
+    }
+}
+
+#[async_trait::async_trait]
+impl<RpcProvider> L1LocalExitRootFetcher for AggchainContractsRpcClient<RpcProvider>
+where
+    RpcProvider: Provider + Send + Sync,
+{
+    async fn get_l1_last_local_exit_root(&self) -> Result<Digest, Error> {
+        let rollup_data = self
+            .polygon_rollup_manager
+            .rollupIDToRollupData(self.network_id)
+            .call()
+            .await
+            .map_err(Error::InvalidRollupIdToRollupData)?;
+
+        Ok((rollup_data.lastLocalExitRoot.0).into())
     }
 }
 
@@ -500,6 +537,8 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             l2_cl_client,
             polygon_zkevm_bridge_v2,
             aggchain_fep,
+            polygon_rollup_manager,
+            network_id,
             l2_root_provider_endpoint: config.l2_execution_layer_rpc_endpoint.clone(),
             global_exit_root_manager_l2,
             trusted_sequencer_addr,

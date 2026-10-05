@@ -13,8 +13,9 @@ use std::{
 
 use aggchain_proof_contracts::{
     contracts::{
-        GetTrustedSequencerAddress, L1LatestL2OutputFetcher, L1OpSuccinctConfigFetcher,
-        L2EvmStateSketchFetcher, L2LocalExitRootFetcher, L2OutputAtBlockFetcher,
+        GetTrustedSequencerAddress, L1LatestL2OutputFetcher, L1LocalExitRootFetcher,
+        L1OpSuccinctConfigFetcher, L1OptimisticModeFetcher, L2EvmStateSketchFetcher,
+        L2LocalExitRootFetcher, L2OutputAtBlockFetcher,
     },
     AggchainContractsClient,
 };
@@ -128,12 +129,6 @@ impl FepVerification {
             FepVerification::Proof { .. } | FepVerification::Recovery => None,
             FepVerification::Optimistic { signature } => Some(*signature),
         }
-    }
-
-    /// Whether the certificate is an optimistic one: the flag the contract
-    /// hashes into the aggchain params.
-    fn is_optimistic(&self) -> bool {
-        matches!(self, FepVerification::Optimistic { .. })
     }
 }
 
@@ -505,10 +500,10 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     }
 
     /// Inputs of the recovery mode: the public values assembled from the L1
-    /// contract values, the L2 bridge root at both ends of the range, the L2
-    /// output at the end block and the aggsender request. No proposer call, no
-    /// witness, no state sketch: the pre-block sketch at the reorged anchor is
-    /// the call that fails during the reorg being recovered from.
+    /// contract values, the L2 bridge root and the L2 output at the end block
+    /// and the aggsender request. No proposer call, no witness, no state
+    /// sketch: the pre-block sketch at the reorged anchor is the call that
+    /// fails during the reorg being recovered from.
     pub(crate) async fn retrieve_recovery_data(
         contracts_client: Arc<ContractsClient>,
         request: AggchainProofBuilderRequest,
@@ -519,19 +514,23 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         ContractsClient: L2LocalExitRootFetcher
             + L2OutputAtBlockFetcher
             + GetTrustedSequencerAddress
-            + L1OpSuccinctConfigFetcher,
+            + L1OpSuccinctConfigFetcher
+            + L1OptimisticModeFetcher
+            + L1LocalExitRootFetcher,
     {
         let last_proven_block = request.aggchain_proof_inputs.last_proven_block;
         let end_block = request.end_block;
         info!(%last_proven_block, %end_block, %l1_pre_root,
             "Retrieving chain data for the recovery aggchain proof");
 
-        let new_blocks_range = (last_proven_block + 1)..=end_block;
+        if end_block <= last_proven_block {
+            return Err(Error::RecoveryEmptyRange {
+                last_proven_block,
+                end_block,
+            });
+        }
 
-        let prev_local_exit_root = contracts_client
-            .get_l2_local_exit_root(last_proven_block)
-            .await
-            .map_err(Error::L2ChainDataRetrievalError)?;
+        let new_blocks_range = (last_proven_block + 1)..=end_block;
 
         let new_local_exit_root = contracts_client
             .get_l2_local_exit_root(end_block)
@@ -544,6 +543,16 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .map_err(Error::L2ChainDataRetrievalError)?;
 
         // Taken from L1 as-is: these are the values the contract hashes.
+        let prev_local_exit_root = contracts_client
+            .get_l1_last_local_exit_root()
+            .await
+            .map_err(Error::L1ChainDataRetrievalError)?;
+
+        let optimistic_mode = contracts_client
+            .get_optimistic_mode()
+            .await
+            .map_err(Error::L1ChainDataRetrievalError)?;
+
         let op_succinct_config = contracts_client
             .get_op_succinct_config()
             .await
@@ -565,7 +574,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             claim_root: claim_output.output_root.0.into(),
             claim_block_num: U256::from(end_block),
             rollup_config_hash: op_succinct_config.rollup_config_hash.0.into(),
-            optimistic_mode: request.fep_verification.is_optimistic(),
+            optimistic_mode,
             trusted_sequencer: trusted_sequencer.into(),
             range_vkey_commitment: op_succinct_config.range_vkey_commitment.0.into(),
             aggregation_vkey_hash: op_succinct_config.aggregation_vkey_hash.0.into(),
@@ -822,7 +831,13 @@ fn noop_stdin(public_values: &AggchainProofPublicValues) -> Result<SP1Stdin, Err
 impl<ContractsClient> tower::Service<AggchainProofBuilderRequest>
     for AggchainProofBuilder<ContractsClient>
 where
-    ContractsClient: AggchainContractsClient + GetTrustedSequencerAddress + Send + Sync + 'static,
+    ContractsClient: AggchainContractsClient
+        + GetTrustedSequencerAddress
+        + L1OptimisticModeFetcher
+        + L1LocalExitRootFetcher
+        + Send
+        + Sync
+        + 'static,
 {
     type Response = AggchainProofBuilderResponse;
 
@@ -861,6 +876,8 @@ where
             // the data provided by the agg-sender in the request.
             let aggchain_prover_inputs = match mode {
                 AggchainProofMode::Standard | AggchainProofMode::SkipProofVerification => {
+                    // Unreachable: the service builds `Recovery` only
+                    // without a proposer, that is in recovery mode.
                     if matches!(req.fep_verification, FepVerification::Recovery) {
                         return Err(Error::RecoveryVerificationOutsideRecoveryMode);
                     }

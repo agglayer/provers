@@ -68,6 +68,17 @@ pub trait L1OpSuccinctConfigFetcher {
 }
 
 #[async_trait::async_trait]
+pub trait L1OptimisticModeFetcher {
+    async fn get_optimistic_mode(&self) -> Result<bool, Error>;
+}
+
+#[async_trait::async_trait]
+pub trait L1LocalExitRootFetcher {
+    /// Local exit root of the last certificate settled on L1.
+    async fn get_l1_last_local_exit_root(&self) -> Result<Digest, Error>;
+}
+
+#[async_trait::async_trait]
 pub trait GetTrustedSequencerAddress {
     async fn get_trusted_sequencer_address(&self) -> Result<Address, Error>;
 }
