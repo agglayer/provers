@@ -58,6 +58,32 @@ pub enum Error {
         expected_by_contract: Box<AggregationProofPublicValues>,
         expected_by_verifier: Box<AggregationProofPublicValues>,
     },
+    #[error(
+        "Recovery mode: request anchored at block {last_proven_block} but the latest L1 output is \
+         at block {l1_latest_output_block:?}"
+    )]
+    RecoveryAnchorMismatch {
+        last_proven_block: u64,
+        l1_latest_output_block: Option<u64>,
+    },
+
+    #[error(
+        "Recovery end block {end_block} is not after the last proven block {last_proven_block}"
+    )]
+    RecoveryEmptyRange {
+        last_proven_block: u64,
+        end_block: u64,
+    },
+
+    #[error("Recovery FEP verification requested outside the recovery mode")]
+    RecoveryVerificationOutsideRecoveryMode,
+
+    #[error("Execution of the standard aggchain program failed: {0}")]
+    StandardProgramExecutionFailed(#[source] prover_executor::Error),
+
+    #[error("Unable to deserialize the aggchain proof public values")]
+    UnableToDeserializePublicValues(#[source] bincode::Error),
+
     #[error("Unable to fetch trusted sequencer address")]
     UnableToFetchTrustedSequencerAddress(#[source] aggchain_proof_contracts::Error),
 

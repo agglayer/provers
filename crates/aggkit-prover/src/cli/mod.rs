@@ -30,8 +30,18 @@ pub enum Commands {
     },
 
     /// Proof verification key.
-    Vkey,
+    Vkey {
+        /// Use the noop aggchain proof program (skip-proof-verification and
+        /// recovery modes) instead of the regular one.
+        #[arg(long)]
+        noop: bool,
+    },
 
     /// Proof verification key selector.
-    VkeySelector,
+    VkeySelector {
+        /// Use the noop aggchain proof selector (`0xFFFF0001`) instead of the
+        /// regular one.
+        #[arg(long)]
+        noop: bool,
+    },
 }

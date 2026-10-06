@@ -175,6 +175,81 @@ The proof binary to use is uniquely identified by a vkey selector on the L1.
 The selector is derived from the major version of the `aggchain-proof-program` package.
 This version must be bumped between releases / deployments.
 
+### Aggchain proof modes
+
+`mode` in `[aggchain-proof-service.aggchain-proof-builder]` selects what the prover does with a request:
+
+- `standard` (default): the standard aggchain program is proven. It verifies the FEP (for an optimistic certificate, the trusted sequencer signature) and the bridge constraints.
+- `skip-proof-verification`: executes the standard aggchain program with FEP proof verification disabled, then proves the noop program over the resulting public values. op-succinct-proposer runs in SP1 mock mode and is still asked for the aggregation proof, so it keeps deriving the chain from L1 and decides the end block.
+- `recovery`: after an L2 reorg past a settled output. Nothing is executed: the public values are built from L1 (pre-root of the latest L1 output, last settled local exit root, `optimisticMode`, op-succinct config), the L2 bridge root and output at the end block and the request, and the noop program is proven over them. op-succinct-proposer is not used.
+
+| Mode | Selector | Normal request | Optimistic request |
+|---|---|---|---|
+| `standard` | `0x000C0001` | **Checks:** FEP proof, FEP L1-head inclusion, bridge constraints. **Skipped:** trusted sequencer signature (not required). | **Checks:** trusted sequencer signature, bridge constraints. **Skipped:** FEP proof and FEP L1-head inclusion. |
+| `skip-proof-verification` | `0xFFFF0001` | **Checks:** FEP L1-head inclusion and bridge constraints during host-side execution; proposer public values compared with contract data. **Skipped:** FEP proof verification (`deferred_proof_verification(false)`); trusted sequencer signature (not required). | **Checks:** trusted sequencer signature and bridge constraints during host-side execution. **Skipped:** FEP proof and FEP L1-head inclusion. |
+| `recovery` | `0xFFFF0001` | **Checks:** host checks the request starts at the latest settled L1 output, uses its pre-root and ends after it. **Skipped:** FEP proof, FEP L1-head inclusion, bridge constraints; trusted sequencer signature (not required). | **Checks:** same L1 anchor check as normal recovery. **Skipped:** FEP proof, FEP L1-head inclusion, bridge constraints, trusted sequencer signature. |
+
+With a real SP1 prover, `standard` proves the standard program's checks. `skip-proof-verification` and `recovery` prove only the noop program's commitment to the supplied public values; their host-side checks are not established by the resulting proof. The selector follows the configured mode for both request types. The standard selector above corresponds to program version 12; the noop selector uses the reserved version `0xFFFF`.
+
+`primary-prover` says how the program of the mode is proven: `network-prover` or `cpu-prover` give a real SP1 proof, `mock-prover` an SP1 mock proof that only a mock verifier accepts.
+Use the following settings for each execution path (the proposer settings apply to normal requests):
+
+| Execution path | `mode` setting | `primary-prover` | `proposer-service.mock` | op-succinct-proposer | Result |
+|---|---|---|---|---|---|
+| Full sp1-mock (Kurtosis) | Omit; defaults to `"standard"` | `mock-prover` | `true` | `OP_SUCCINCT_MOCK=true` | sp1-mock FEP and sp1-mock standard aggchain proof; requires a sp1-mock verifier downstream |
+| Full sp1-real | Omit; defaults to `"standard"` | `network-prover` or `cpu-prover` | `false` | `OP_SUCCINCT_MOCK=false` | sp1-real FEP and sp1-real standard aggchain proof |
+| Skip proof verification | **Required: `mode = "skip-proof-verification"`** | `network-prover` or `cpu-prover` | Ignored; sp1-mock proposer client is selected | `OP_SUCCINCT_MOCK=true` | sp1-mock FEP, host execution of the standard program, sp1-real noop proof |
+| Recovery | **Required: `mode = "recovery"`** | `network-prover` or `cpu-prover` | Ignored; proposer is unused | May be stopped | Public values built from L1/L2 data, sp1-real noop proof |
+
+Only `skip-proof-verification` and `recovery` require the new `mode` field. Existing full mock and full real configurations keep working without it; `mode = "standard"` is also accepted explicitly. Set `mode` under `[aggchain-proof-service.aggchain-proof-builder]` and `mock` under `[aggchain-proof-service.proposer-service]`. The prover types select TOML subtables, for example `[aggchain-proof-service.aggchain-proof-builder.primary-prover.mock-prover]` for Kurtosis or `[aggchain-proof-service.aggchain-proof-builder.primary-prover.network-prover]` for network proving; retain the other required endpoint and contract settings.
+
+The full mock path still executes the standard aggchain program, but skips deferred FEP proof verification and produces no cryptographic proof of its checks. Choosing `cpu-prover` changes only aggchain proving; real FEP generation still uses the proposer network path. If a `fallback-prover` is configured, use a real prover there too when real proofs are required. `skip-proof-verification` and `recovery` also accept `mock-prover` with a warning, but then their noop proofs require a mock verifier as well.
+
+A chain in `optimisticMode` needs no mode of its own: the aggsender sends optimistic requests, which every mode serves without calling op-succinct-proposer. In `recovery` the flag hashed into the aggchain params is read from the contract, so a normal request also matches.
+
+#### Switching to the noop program
+
+`skip-proof-verification` and `recovery` prove `aggchain-proof-noop-program`, a program that commits its public values without verifying them.
+It is a real SP1 proof of an empty program, unrelated to the SP1 mock prover.
+The certificate carries the selector `0xFFFF0001` instead of the standard one, and the contract only accepts it with the noop vkey registered in the rollup's own `ownedAggchainVKeys`.
+Never register it on the `AgglayerGateway`.
+
+1. Print the vkeys and selectors: `aggkit-prover vkey --noop`, `aggkit-prover vkey-selector --noop`, `aggkit-prover vkey`, `aggkit-prover vkey-selector`.
+2. As aggchain manager: `addOwnedAggchainVKey(0xFFFF0001, <noop vkey>)` and `addOwnedAggchainVKey(<standard selector>, <standard vkey>)`, then `disableUseDefaultVkeysFlag()`. Owning the standard vkey keeps in-flight certificates and the way back working.
+3. Set `mode`, restart the prover.
+4. A certificate already InError keeps the aggchain proof the aggsender cached for it: drop that proof (resync the aggsender database) if needed.
+
+To switch back:
+
+1. Set `mode = "standard"`. For normal FEP requests, restore op-succinct-proposer to the mode expected by `proposer-service.mock` (`OP_SUCCINCT_MOCK=false` for real proofs), and restart it if stopped. Start the proposer before restarting aggkit-prover; `standard` and `skip-proof-verification` modes connect to it at startup.
+2. Restart aggkit-prover. Wait for any pending noop certificates to settle before calling `enableUseDefaultVkeysFlag()` to follow the gateway defaults again.
+
+#### Skipping FEP proof verification (`skip-proof-verification`)
+
+In `skip-proof-verification` the FEP proof is not verified. Native execution uses the builder's `proving-timeout` and the primary local prover's `max-concurrency-limit` (the default limit for a network prover). A timed-out execution retains its slot until it finishes.
+The execution of the L2 is only checked by op-succinct-proposer, which derives and executes the range without proof, and by the prover, which compares the proposer's output roots with the L2 node's.
+Everything else in the standard program runs: the L1 head against the L1 info tree, the bridge constraints and the aggchain params, or the trusted sequencer signature for an optimistic certificate.
+
+1. Restart op-succinct-proposer with `OP_SUCCINCT_MOCK=true`.
+2. Switch to `mode = "skip-proof-verification"` as above.
+
+The prover still sends every normal request to op-succinct-proposer and fetches its SP1 mock aggregation proof, whatever `proposer-service.mock` says.
+Against an op-succinct-proposer in real mode, that request starts a real, paid aggregation proof and no certificate comes out, hence the order of the steps.
+
+#### Recovering a halted FEP chain (`recovery`)
+
+When the L2 reorgs past an output already settled on L1, the `AggchainFEP` contract keeps hashing the orphaned output root as the pre-root while the prover proves from the live L2 pre-root, and every certificate fails on the agglayer with `Aggchain hash mismatch`.
+Settled outputs cannot be rewritten, so the way out is one certificate whose pre-root is the L1 one.
+Bridge constraints are not verified in this mode, so this is for non-production chains only.
+
+1. Check that the local exit root on L2 at the last settled block matches the one on L1. If not, reconcile it first with the bridge `BackwardLET` / `ForwardLET` tooling.
+2. Switch to `mode = "recovery"` as above. op-succinct-proposer can be stopped.
+3. Once the certificate is settled, follow the switch-back steps above.
+
+With `mode = "recovery"` the prover refuses a request that is not anchored at the latest L1 output.
+It asks nothing from op-succinct-proposer and reads no L2 state at the reorged anchor: the previous local exit root, the pre-root, `optimisticMode` and the op-succinct config come from L1, and only the L2 bridge root and the L2 output at the end block come from the L2 node.
+An L2 node that cannot serve historical state at the anchor is therefore not a blocker, but it must serve the end block.
+
 ## Development
 
 Contributions are very welcomed, the guidelines are currently not available (WIP)
