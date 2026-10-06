@@ -15,23 +15,22 @@ use aggchain_proof_contracts::{
     contracts::{
         GetTrustedSequencerAddress, L1LatestL2OutputFetcher, L1LocalExitRootFetcher,
         L1OpSuccinctConfigFetcher, L1OptimisticModeFetcher, L2EvmStateSketchFetcher,
-        L2LocalExitRootFetcher, L2OutputAtBlockFetcher,
+        L2LocalExitRootFetcher, L2OutputAtBlockFetcher, OpSuccinctConfig,
     },
     AggchainContractsClient,
 };
 use aggchain_proof_core::{
     bridge::{inserted_ger::InsertedGER, BridgeWitness},
     full_execution_proof::{
-        hash_bn254_bytes, hash_u32_from_bn254_bytes, AggchainParamsValues,
-        AggregationProofPublicValues, ClaimRoot, FepInputs,
+        AggchainParamsValues, AggregationProofPublicValues, ClaimRoot, FepInputs, KoalaBearDigest,
     },
     proof::{AggchainProofWitness, IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION},
-    vkey_hash::HashU32,
 };
 use aggchain_proof_types::{
     imported_bridge_exit::ImportedBridgeExitWithBlockNumber, unclaim::UnclaimWithBlockNumber,
     AggchainProofInputs,
 };
+use aggkit_prover_types::vkey_hash::{Sp1VKeyHash, VKeyHash};
 use agglayer_interop::types::{
     bincode, GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues,
 };
@@ -53,6 +52,13 @@ use crate::config::{AggchainProofBuilderConfig, AggchainProofMode};
 const MAX_CONCURRENT_REQUESTS: usize = 100;
 
 pub const AGGCHAIN_PROOF_ELF: &[u8] = include_bytes!(env!("AGGLAYER_ELF_PATH"));
+
+/// Hardcoded hash of the "aggregation vkey".
+/// NOTE: Format being `hash_u32()` of the `SP1StarkVerifyingKey`.
+pub const AGGREGATION_VKEY_HASH: VKeyHash = proposer_elfs::aggregation::VKEY_HASH;
+
+/// Specific commitment for the range proofs.
+pub const RANGE_VKEY_COMMITMENT: [u8; 32] = proposer_elfs::range::VKEY_COMMITMENT;
 
 /// Aggchain proof program that commits the public values it is given without
 /// verifying anything. Proven like the regular program: an SP1 mock proof of it
@@ -78,9 +84,6 @@ pub enum FepVerification {
         /// spans.
         aggregation_proof: Box<sp1_sdk::SP1ProofWithPublicValues>,
 
-        /// Verifying key of the program the aggregation proof proves.
-        aggregation_vkey: Box<SP1VerifyingKey>,
-
         /// Aggregation proof's public values produced by the prover. Used to
         /// verify the proof.
         aggregation_proof_public_values: AggregationProofPublicValues,
@@ -98,31 +101,6 @@ pub enum FepVerification {
 }
 
 impl FepVerification {
-    fn validate_aggregation_vkey_hash(&self, configured_hash: Digest) -> Result<HashU32, Error> {
-        let aggregation_vkey_hash = hash_u32_from_bn254_bytes(configured_hash.0)
-            .ok_or(Error::InvalidAggregationVkeyHash(configured_hash))?;
-
-        if let Self::Proof {
-            aggregation_vkey, ..
-        } = self
-        {
-            let proven = Digest(hash_bn254_bytes(aggregation_vkey.hash_u32()));
-            if proven != configured_hash {
-                error!(
-                    "Mismatch on the aggregation vkey hash - got from op succinct contract \
-                     config: {}, proven by the aggregation proof: {}",
-                    configured_hash, proven
-                );
-                return Err(Error::MismatchAggregationVkeyHash {
-                    got: configured_hash,
-                    expected: proven,
-                });
-            }
-        }
-
-        Ok(aggregation_vkey_hash)
-    }
-
     /// Returns the optimistic mode signature if any.
     pub fn optimistic_mode_signature(&self) -> Option<agglayer_primitives::Signature> {
         match &self {
@@ -340,8 +318,14 @@ pub struct AggchainProofBuilder<ContractsClient> {
     /// Prover client service.
     prover: ProverService,
 
+    /// Verification key for the aggregated fep proof.
+    aggregation_vkey: Arc<SP1VerifyingKey>,
+
     /// Verification key for the aggchain proof.
     aggchain_vkey: Arc<SP1VerifyingKey>,
+
+    /// Range vkey commitment of the proposer range proofs program.
+    range_vkey_commitment: Digest,
 
     /// Static call caller address.
     static_call_caller_address: Address,
@@ -432,14 +416,16 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     pub async fn new(
         config: &AggchainProofBuilderConfig,
         contracts_client: Arc<ContractsClient>,
-    ) -> eyre::Result<Self> {
+    ) -> eyre::Result<Self>
+    where
+        ContractsClient: L1OpSuccinctConfigFetcher,
+    {
         let program = match config.mode {
             AggchainProofMode::Standard => AGGCHAIN_PROOF_ELF,
             AggchainProofMode::SkipProofVerification | AggchainProofMode::Recovery => {
                 AGGCHAIN_PROOF_NOOP_ELF
             }
         };
-
         let executor = Executor::new(
             config.primary_prover.clone(),
             config.fallback_prover.clone(),
@@ -482,6 +468,43 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
 
         let prover = Buffer::new(executor, MAX_CONCURRENT_REQUESTS);
 
+        // Resolve the aggregation vkey and range vkey commitment. These use the
+        // configured op-succinct override when one was installed at startup
+        // (see `proposer_elfs::install_overrides`), otherwise the
+        // values embedded from op-succinct-elfs at build time.
+        let aggregation_vkey = Arc::new(proposer_elfs::aggregation::vkey().clone());
+        let range_vkey_commitment = Digest(proposer_elfs::range::commitment());
+
+        // Sanity-check that the embedded op-succinct-elfs vkey constants are
+        // internally consistent. The resolved (possibly overridden) key is
+        // validated against the on-chain op-succinct config below instead.
+        {
+            let retrieved =
+                sp1_fast(|| VKeyHash::from_vkey(proposer_elfs::aggregation::VKEY.vkey()))
+                    .context("Computing VKey hash")?;
+
+            if retrieved != AGGREGATION_VKEY_HASH {
+                return Err(eyre::Report::from(Error::MismatchAggregationElfVkeyHash {
+                    got: retrieved,
+                    expected: AGGREGATION_VKEY_HASH,
+                }));
+            }
+        }
+
+        // Check the mismatch of the keys from the op-succinct configuration in
+        // the contract
+        let op_succinct_config = contracts_client
+            .get_op_succinct_config()
+            .await
+            .map_err(Error::L1ChainDataRetrievalError)?;
+
+        // Validate that the OpSuccinct config keys match expected values
+        validate_op_succinct_config_keys(
+            &op_succinct_config,
+            aggregation_vkey.as_ref(),
+            &range_vkey_commitment,
+        )?;
+
         let execution_concurrency = match &config.primary_prover {
             ProverType::CpuProver(config) => config.max_concurrency_limit,
             ProverType::MockProver(config) => config.max_concurrency_limit,
@@ -493,6 +516,8 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             contracts_client,
             prover,
             network_id: config.network_id,
+            aggregation_vkey,
+            range_vkey_commitment,
             static_call_caller_address: config.contracts.static_call_caller_address,
             mode: config.mode,
             execution_limiter: ExecutionLimiter::new(execution_concurrency, config.proving_timeout),
@@ -606,7 +631,9 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         contracts_client: Arc<ContractsClient>,
         request: AggchainProofBuilderRequest,
         network_id: u32,
+        aggregation_vkey: Arc<SP1VerifyingKey>,
         static_call_caller_address: Address,
+        range_vkey_commitment: Digest,
     ) -> Result<AggchainProverInputs, Error>
     where
         ContractsClient: L2LocalExitRootFetcher
@@ -648,9 +675,12 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .await
             .map_err(Error::L1ChainDataRetrievalError)?;
 
-        let aggregation_vkey_hash = request
-            .fep_verification
-            .validate_aggregation_vkey_hash(op_succinct_config.aggregation_vkey_hash)?;
+        // Validate that the OpSuccinct config keys match expected values
+        validate_op_succinct_config_keys(
+            &op_succinct_config,
+            &aggregation_vkey,
+            &range_vkey_commitment,
+        )?;
 
         let prev_l2_block_sketch = contracts_client
             .get_prev_l2_block_sketch(BlockNumberOrTag::Number(
@@ -717,8 +747,8 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             signature_optimistic_mode: request.fep_verification.optimistic_mode_signature(),
             l1_info_tree_leaf,
             l1_head_inclusion_proof: request.aggchain_proof_inputs.l1_info_tree_merkle_proof,
-            aggregation_vkey_hash,
-            range_vkey_commitment: op_succinct_config.range_vkey_commitment.0,
+            aggregation_vkey_hash: KoalaBearDigest(aggregation_vkey.hash_u32()),
+            range_vkey_commitment: range_vkey_commitment.0,
         };
 
         {
@@ -775,9 +805,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                 stdin.write(&prover_witness);
 
                 if let FepVerification::Proof {
-                    aggregation_proof,
-                    aggregation_vkey,
-                    ..
+                    aggregation_proof, ..
                 } = request.fep_verification
                 {
                     let aggregation_proof = aggregation_proof
@@ -785,7 +813,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                         .clone()
                         .try_as_compressed()
                         .ok_or(Error::GeneratedProofIsNotCompressed)?;
-                    stdin.write_proof(*aggregation_proof, aggregation_vkey.vk);
+                    stdin.write_proof(*aggregation_proof, aggregation_vkey.vk.clone());
                 }
                 Ok::<_, Error>(stdin)
             })
@@ -802,6 +830,42 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             })
         }
     }
+}
+
+/// Validates that the OpSuccinct config keys match the expected values.
+/// This ensures that the same proposer aggregation program is being used.
+fn validate_op_succinct_config_keys(
+    op_succinct_config: &OpSuccinctConfig,
+    aggregation_vkey: &SP1VerifyingKey,
+    expected_range_vkey_commitment: &Digest,
+) -> Result<(), Error> {
+    // Check if retrieved op-succinct config aggregation vkey hash matches
+    let expected_aggregation_vkey_hash = Digest(aggregation_vkey.bytes32_raw());
+    if op_succinct_config.aggregation_vkey_hash != expected_aggregation_vkey_hash {
+        error!(
+            "Mismatch on the aggregation vkey hash - got from op succinct contract config: {}, \
+             expected from elf config: {}",
+            op_succinct_config.aggregation_vkey_hash, expected_aggregation_vkey_hash
+        );
+        return Err(Error::MismatchAggregationVkeyHash {
+            got: op_succinct_config.aggregation_vkey_hash,
+            expected: expected_aggregation_vkey_hash,
+        });
+    }
+
+    // Check if retrieved op-succinct config range_vkey_commitment matches
+    if op_succinct_config.range_vkey_commitment != *expected_range_vkey_commitment {
+        error!(
+            "Mismatch on the range vkey commitment - got from op succinct config: {}, expected: {}",
+            op_succinct_config.range_vkey_commitment, expected_range_vkey_commitment
+        );
+        return Err(Error::MismatchRangeVkeyCommitment {
+            got: op_succinct_config.range_vkey_commitment,
+            expected: *expected_range_vkey_commitment,
+        });
+    }
+
+    Ok(())
 }
 
 async fn execute_standard_program(
@@ -859,8 +923,10 @@ where
         let contracts_client = self.contracts_client.clone();
         let mut prover = self.prover.clone();
         let network_id = self.network_id;
+        let aggregation_vkey = self.aggregation_vkey.clone();
         let aggchain_vkey = self.aggchain_vkey.clone();
         let static_call_caller_address = self.static_call_caller_address;
+        let range_vkey_commitment = self.range_vkey_commitment;
         let mode = self.mode;
         let execution_limiter = self.execution_limiter.clone();
 
@@ -885,7 +951,9 @@ where
                         contracts_client,
                         req,
                         network_id,
+                        aggregation_vkey,
                         static_call_caller_address,
+                        range_vkey_commitment,
                     )
                     .await?;
 

@@ -23,6 +23,7 @@ proving-timeout = "1h"
 [aggchain-proof-service.aggchain-proof-builder.primary-prover.network-prover]
 proving-timeout = "5m"
 sp1-cluster-endpoint = "https://rpc.production.succinct.xyz/"
+private-stdin = false
 
 [aggchain-proof-service.aggchain-proof-builder.contracts]
 l1-rpc-endpoint = "http://anvil-mock-l1-rpc:8545/"
@@ -46,3 +47,4 @@ proving-timeout = 3600
 [primary-prover.network-prover]
 proving-timeout = "5m"
 sp1-cluster-endpoint = "https://rpc.production.succinct.xyz/"
+private-stdin = false

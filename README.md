@@ -185,7 +185,7 @@ This version must be bumped between releases / deployments.
 
 | Mode | Selector | Normal request | Optimistic request |
 |---|---|---|---|
-| `standard` | `0x000C0001` | **Checks:** FEP proof, FEP L1-head inclusion, bridge constraints. **Skipped:** trusted sequencer signature (not required). | **Checks:** trusted sequencer signature, bridge constraints. **Skipped:** FEP proof and FEP L1-head inclusion. |
+| `standard` | `0x000B0001` | **Checks:** FEP proof, FEP L1-head inclusion, bridge constraints. **Skipped:** trusted sequencer signature (not required). | **Checks:** trusted sequencer signature, bridge constraints. **Skipped:** FEP proof and FEP L1-head inclusion. |
 | `skip-proof-verification` | `0xFFFF0001` | **Checks:** FEP L1-head inclusion and bridge constraints during host-side execution; proposer public values compared with contract data. **Skipped:** FEP proof verification (`deferred_proof_verification(false)`); trusted sequencer signature (not required). | **Checks:** trusted sequencer signature and bridge constraints during host-side execution. **Skipped:** FEP proof and FEP L1-head inclusion. |
 | `recovery` | `0xFFFF0001` | **Checks:** host checks the request starts at the latest settled L1 output, uses its pre-root and ends after it. **Skipped:** FEP proof, FEP L1-head inclusion, bridge constraints; trusted sequencer signature (not required). | **Checks:** same L1 anchor check as normal recovery. **Skipped:** FEP proof, FEP L1-head inclusion, bridge constraints, trusted sequencer signature. |
 

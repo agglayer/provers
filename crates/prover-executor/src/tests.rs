@@ -9,10 +9,7 @@ use tokio::sync::OnceCell;
 use tower::{service_fn, timeout::TimeoutLayer, Service, ServiceBuilder, ServiceExt};
 
 use crate::{Executor, LocalExecutor, LocalProver, ProofType, Request, Response};
-const ELF: &[u8] = include_bytes!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/../aggchain-proof-builder/elf/riscv64im-succinct-zkvm-elf"
-));
+const ELF: &[u8] = proposer_elfs::aggregation::ELF;
 
 #[tokio::test]
 async fn execution_timeout_keeps_concurrency_slot_until_finished() -> eyre::Result<()> {
