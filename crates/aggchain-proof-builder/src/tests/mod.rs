@@ -61,7 +61,7 @@ mod noop {
             new_state_root: Digest([6u8; 32]),
             new_withdrawal_storage_root: Digest([7u8; 32]),
             new_block_hash: Digest([8u8; 32]),
-            aggregation_vkey_hash: KoalaBearDigest([1, 2, 3, 4, 5, 6, 7, 8]),
+            aggregation_vkey_hash: KoalaBearDigest([1 << 23, 2, 3, 4, 5, 6, 7, 8]),
             range_vkey_commitment: [10u8; 32],
             trusted_sequencer: TRUSTED_SEQUENCER,
             signature_optimistic_mode: Some(Signature::new(U256::ZERO, U256::ZERO, false)),
