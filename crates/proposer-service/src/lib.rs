@@ -120,10 +120,6 @@ impl<L1Rpc>
         config: &ProposerServiceConfig,
         l1_rpc: Arc<L1Rpc>,
     ) -> Result<Self, Error> {
-        assert!(
-            config.mock,
-            "Building a mock proposer service with a non-mock config"
-        );
         let proposer_rpc_client = Arc::new(
             ProposerRpcClient::new(
                 config.client.proposer_endpoint.clone(),

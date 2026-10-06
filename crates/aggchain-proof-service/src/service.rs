@@ -5,7 +5,7 @@ use std::{
     task::{Context, Poll},
 };
 
-use aggchain_proof_builder::{AggchainProofBuilder, FepVerification};
+use aggchain_proof_builder::{config::AggchainProofMode, AggchainProofBuilder, FepVerification};
 use aggchain_proof_contracts::AggchainContractsRpcClient;
 use aggchain_proof_types::{AggchainProofInputs, OptimisticAggchainProofInputs};
 use agglayer_interop::types::Digest;
@@ -19,7 +19,11 @@ use tracing::{debug, info};
 use unified_bridge::AggchainProofPublicValues;
 
 use crate::{
-    config::AggchainProofServiceConfig, custom_chain_data::compute_custom_chain_data, error::Error,
+    config::AggchainProofServiceConfig,
+    custom_chain_data::{
+        compute_custom_chain_data, VKeySelector, AGGCHAIN_VKEY_SELECTOR, NOOP_SELECTOR,
+    },
+    error::Error,
 };
 
 /// A request for the AggchainProofService to generate the
@@ -74,16 +78,21 @@ pub struct AggchainProofServiceResponse {
 /// Aggchain proof.
 #[derive(Clone)]
 pub struct AggchainProofService {
-    pub(crate) proposer_service: BoxCloneService<
-        proposer_client::FepProposerRequest,
-        proposer_service::ProposerResponse,
-        proposer_service::Error,
+    pub(crate) proposer_service: Option<
+        BoxCloneService<
+            proposer_client::FepProposerRequest,
+            proposer_service::ProposerResponse,
+            proposer_service::Error,
+        >,
     >,
     pub(crate) aggchain_proof_builder: BoxCloneService<
         aggchain_proof_builder::AggchainProofBuilderRequest,
         aggchain_proof_builder::AggchainProofBuilderResponse,
         aggchain_proof_builder::Error,
     >,
+    /// Selector embedded in the custom chain data, matching the aggchain proof
+    /// program the builder was configured with.
+    pub(crate) vkey_selector: VKeySelector,
 }
 
 impl AggchainProofService {
@@ -154,22 +163,35 @@ impl AggchainProofService {
         );
         debug!("Contract L1 client initialized");
 
-        let proposer_service = if config.proposer_service.mock {
-            tower::ServiceBuilder::new()
-                .service(
-                    ProposerService::new_mock(&config.proposer_service, l1_rpc_client)
-                        .await
-                        .map_err(Error::ProposerServiceInitFailed)?,
-                )
-                .boxed_clone()
-        } else {
-            tower::ServiceBuilder::new()
-                .service(
-                    ProposerService::new_network(&config.proposer_service, l1_rpc_client)
-                        .await
-                        .map_err(Error::ProposerServiceInitFailed)?,
-                )
-                .boxed_clone()
+        let (proposer_mode, proposer_service) = match config.aggchain_proof_builder.mode {
+            AggchainProofMode::Recovery => {
+                info!("Recovery mode: op-succinct-proposer is not used");
+                ("none", None)
+            }
+            AggchainProofMode::Standard if !config.proposer_service.mock => (
+                "network",
+                Some(
+                    tower::ServiceBuilder::new()
+                        .service(
+                            ProposerService::new_network(&config.proposer_service, l1_rpc_client)
+                                .await
+                                .map_err(Error::ProposerServiceInitFailed)?,
+                        )
+                        .boxed_clone(),
+                ),
+            ),
+            AggchainProofMode::Standard | AggchainProofMode::SkipProofVerification => (
+                "mock",
+                Some(
+                    tower::ServiceBuilder::new()
+                        .service(
+                            ProposerService::new_mock(&config.proposer_service, l1_rpc_client)
+                                .await
+                                .map_err(Error::ProposerServiceInitFailed)?,
+                        )
+                        .boxed_clone(),
+                ),
+            ),
         };
         debug!("ProposerService initialized");
 
@@ -185,9 +207,20 @@ impl AggchainProofService {
             .boxed_clone();
         debug!("AggchainProofBuilder initialized");
 
+        let vkey_selector = match config.aggchain_proof_builder.mode {
+            AggchainProofMode::Standard => AGGCHAIN_VKEY_SELECTOR,
+            AggchainProofMode::SkipProofVerification | AggchainProofMode::Recovery => NOOP_SELECTOR,
+        };
+        info!(
+            vkey_selector = %alloy_primitives::hex::encode_prefixed(vkey_selector.to_be_bytes()),
+            proposer_mode,
+            "Aggchain vkey selector in effect"
+        );
+
         Ok(AggchainProofService {
             proposer_service,
             aggchain_proof_builder,
+            vkey_selector,
         })
     }
 
@@ -203,27 +236,39 @@ impl AggchainProofService {
             l1_block_hash: B256::from(l1_block_hash.0),
         };
 
-        let mut proposer_service = self.proposer_service.clone();
+        let proposer_service = self.proposer_service.clone();
         let mut proof_builder = self.aggchain_proof_builder.clone();
+        let vkey_selector = self.vkey_selector;
 
         async move {
             let last_proven_block = aggchain_proof_inputs.last_proven_block;
-            // The ProposerResponse contains the start and end block number
-            // It also contains the generated proof.
-            let aggregation_proof_response = proposer_service
-                .call(proposer_request)
-                .await
-                .map_err(Error::ProposerServiceError)?;
-
-            let aggchain_proof_builder_request =
-                aggchain_proof_builder::AggchainProofBuilderRequest {
-                    fep_verification: FepVerification::Proof {
-                        aggregation_proof: Box::new(aggregation_proof_response.aggregation_proof),
-                        aggregation_proof_public_values: aggregation_proof_response.public_values,
-                    },
-                    end_block: aggregation_proof_response.end_block,
+            let aggchain_proof_builder_request = match proposer_service {
+                None => aggchain_proof_builder::AggchainProofBuilderRequest {
+                    fep_verification: FepVerification::Recovery,
+                    end_block: aggchain_proof_inputs.requested_end_block,
                     aggchain_proof_inputs,
-                };
+                },
+                Some(mut proposer_service) => {
+                    // The ProposerResponse contains the start and end block
+                    // number. It also contains the generated proof.
+                    let aggregation_proof_response = proposer_service
+                        .call(proposer_request)
+                        .await
+                        .map_err(Error::ProposerServiceError)?;
+
+                    aggchain_proof_builder::AggchainProofBuilderRequest {
+                        fep_verification: FepVerification::Proof {
+                            aggregation_proof: Box::new(
+                                aggregation_proof_response.aggregation_proof,
+                            ),
+                            aggregation_proof_public_values: aggregation_proof_response
+                                .public_values,
+                        },
+                        end_block: aggregation_proof_response.end_block,
+                        aggchain_proof_inputs,
+                    }
+                }
+            };
 
             let end_block = aggchain_proof_builder_request.end_block;
 
@@ -232,8 +277,11 @@ impl AggchainProofService {
                 .await
                 .map_err(Error::AggchainProofBuilderRequestFailed)?;
 
-            let custom_chain_data =
-                compute_custom_chain_data(aggchain_proof_response.output_root, end_block);
+            let custom_chain_data = compute_custom_chain_data(
+                vkey_selector,
+                aggchain_proof_response.output_root,
+                end_block,
+            );
 
             Ok(AggchainProofServiceResponse {
                 proof: aggchain_proof_response.proof,
@@ -257,6 +305,7 @@ impl AggchainProofService {
         }: OptimisticAggchainProofInputs,
     ) -> AggchainProofServiceFuture {
         let mut proof_builder = self.aggchain_proof_builder.clone();
+        let vkey_selector = self.vkey_selector;
 
         async move {
             let last_proven_block = aggchain_proof_inputs.last_proven_block;
@@ -278,8 +327,11 @@ impl AggchainProofService {
                 .await
                 .map_err(Error::AggchainProofBuilderRequestFailed)?;
 
-            let custom_chain_data =
-                compute_custom_chain_data(aggchain_proof_response.output_root, end_block);
+            let custom_chain_data = compute_custom_chain_data(
+                vkey_selector,
+                aggchain_proof_response.output_root,
+                end_block,
+            );
 
             Ok(AggchainProofServiceResponse {
                 proof: aggchain_proof_response.proof,
@@ -305,10 +357,11 @@ impl tower::Service<AggchainProofServiceRequest> for AggchainProofService {
     type Future = AggchainProofServiceFuture;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        std::task::ready!(self
-            .proposer_service
-            .poll_ready(cx)
-            .map_err(Error::ProposerServiceError)?);
+        if let Some(proposer_service) = &mut self.proposer_service {
+            std::task::ready!(proposer_service
+                .poll_ready(cx)
+                .map_err(Error::ProposerServiceError)?);
+        }
 
         self.aggchain_proof_builder
             .poll_ready(cx)

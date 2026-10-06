@@ -13,7 +13,8 @@ use std::{
 
 use aggchain_proof_contracts::{
     contracts::{
-        GetTrustedSequencerAddress, L1OpSuccinctConfigFetcher, L2EvmStateSketchFetcher,
+        GetTrustedSequencerAddress, L1LatestL2OutputFetcher, L1LocalExitRootFetcher,
+        L1OpSuccinctConfigFetcher, L1OptimisticModeFetcher, L2EvmStateSketchFetcher,
         L2LocalExitRootFetcher, L2OutputAtBlockFetcher, OpSuccinctConfig,
     },
     AggchainContractsClient,
@@ -25,24 +26,28 @@ use aggchain_proof_core::{
     },
     proof::{AggchainProofWitness, IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION},
 };
-use aggchain_proof_types::AggchainProofInputs;
+use aggchain_proof_types::{
+    imported_bridge_exit::ImportedBridgeExitWithBlockNumber, unclaim::UnclaimWithBlockNumber,
+    AggchainProofInputs,
+};
 use aggkit_prover_types::vkey_hash::{Sp1VKeyHash, VKeyHash};
 use agglayer_interop::types::{
     bincode, GlobalIndexWithLeafHash, ImportedBridgeExitCommitmentValues,
 };
-use agglayer_primitives::{Address, Digest, U256};
-use alloy::eips::BlockNumberOrTag;
+use agglayer_primitives::{keccak::keccak256, Address, Digest, U256};
+use alloy::{eips::BlockNumberOrTag, sol_types::SolValue as _};
 pub use error::Error;
 use eyre::Context as _;
 use futures::{future::BoxFuture, FutureExt, TryFutureExt as _};
-use prover_executor::{sp1_async, sp1_fast, Executor, ProofType};
+use prover_config::ProverType;
+use prover_executor::{sp1_async, sp1_fast, ExecutionLimiter, Executor, ProofType};
 use serde::{Deserialize, Serialize};
 use sp1_sdk::{HashableKey, SP1Stdin, SP1VerifyingKey};
 use tower::{buffer::Buffer, util::BoxService, ServiceExt as _};
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 use unified_bridge::AggchainProofPublicValues;
 
-use crate::config::AggchainProofBuilderConfig;
+use crate::config::{AggchainProofBuilderConfig, AggchainProofMode};
 
 const MAX_CONCURRENT_REQUESTS: usize = 100;
 
@@ -54,6 +59,11 @@ pub const AGGREGATION_VKEY_HASH: VKeyHash = proposer_elfs::aggregation::VKEY_HAS
 
 /// Specific commitment for the range proofs.
 pub const RANGE_VKEY_COMMITMENT: [u8; 32] = proposer_elfs::range::VKEY_COMMITMENT;
+
+/// Aggchain proof program that commits the public values it is given without
+/// verifying anything. Proven like the regular program: an SP1 mock proof of it
+/// is rejected by the pessimistic proof.
+pub const AGGCHAIN_PROOF_NOOP_ELF: &[u8] = include_bytes!(env!("AGGLAYER_NOOP_ELF_PATH"));
 
 pub(crate) type ProverService = Buffer<
     BoxService<prover_executor::Request, prover_executor::Response, prover_executor::Error>,
@@ -82,13 +92,19 @@ pub enum FepVerification {
     Optimistic {
         signature: agglayer_primitives::Signature,
     },
+
+    /// Recovery mode, normal (non-optimistic) request: nothing is verified, so
+    /// no aggregation proof is requested from the proposer. An optimistic
+    /// request keeps its `Optimistic` variant, the recovery mode ignores the
+    /// signature.
+    Recovery,
 }
 
 impl FepVerification {
     /// Returns the optimistic mode signature if any.
     pub fn optimistic_mode_signature(&self) -> Option<agglayer_primitives::Signature> {
         match &self {
-            FepVerification::Proof { .. } => None,
+            FepVerification::Proof { .. } | FepVerification::Recovery => None,
             FepVerification::Optimistic { signature } => Some(*signature),
         }
     }
@@ -313,12 +329,87 @@ pub struct AggchainProofBuilder<ContractsClient> {
 
     /// Static call caller address.
     static_call_caller_address: Address,
+
+    /// Execution path, see [`AggchainProofMode`].
+    mode: AggchainProofMode,
+    execution_limiter: ExecutionLimiter,
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum WitnessGeneration {
     #[error("Invalid inserted GER.")]
     InvalidInsertedGer,
+}
+
+/// Imported bridge exits of the new blocks range, as the aggchain proof sees
+/// them.
+struct ImportedBridgeExits {
+    /// All of them, also the unclaimed ones.
+    all: Vec<GlobalIndexWithLeafHash>,
+
+    /// Global indexes of the claims unset in the range.
+    unset_claims: Vec<U256>,
+
+    /// Commitment on the ones still claimed, as committed by the proof.
+    commitment: Digest,
+}
+
+fn collect_imported_bridge_exits(
+    imported_bridge_exits: Vec<ImportedBridgeExitWithBlockNumber>,
+    unclaims: Vec<UnclaimWithBlockNumber>,
+    new_blocks_range: &std::ops::RangeInclusive<u64>,
+) -> Result<ImportedBridgeExits, Error> {
+    let all: Vec<GlobalIndexWithLeafHash> = filter_sort_map(
+        imported_bridge_exits,
+        new_blocks_range,
+        |ib| ib.block_number,
+        |ib| GlobalIndexWithLeafHash {
+            global_index: ib.global_index.into(),
+            bridge_exit_hash: ib.bridge_exit_hash.0,
+        },
+    )
+    .collect();
+
+    let unset_claims: Vec<U256> = filter_sort_map(
+        unclaims,
+        new_blocks_range,
+        |unclaim| unclaim.block_number,
+        |unclaim| unclaim.global_index,
+    )
+    .collect();
+
+    // Filter out the unset claims from the all imported bridge exits list.
+    let claimed = filter_values(&unset_claims, &all, |value| value.global_index)?;
+
+    Ok(ImportedBridgeExits {
+        all,
+        unset_claims,
+        commitment: ImportedBridgeExitCommitmentValues { claims: claimed }
+            .commitment(IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION),
+    })
+}
+
+/// Root of the latest L1 output, the pre-root the contract hashes for the next
+/// one. The request must be anchored at that output.
+async fn latest_l1_pre_root<ContractsClient>(
+    contracts_client: &ContractsClient,
+    last_proven_block: u64,
+) -> Result<Digest, Error>
+where
+    ContractsClient: L1LatestL2OutputFetcher + Sync,
+{
+    let l1_output = contracts_client
+        .get_latest_l2_output()
+        .await
+        .map_err(Error::L1ChainDataRetrievalError)?;
+
+    match l1_output {
+        Some(output) if output.l2_block_number == last_proven_block => Ok(output.output_root),
+        _ => Err(Error::RecoveryAnchorMismatch {
+            last_proven_block,
+            l1_latest_output_block: l1_output.map(|output| output.l2_block_number),
+        }),
+    }
 }
 
 impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
@@ -329,15 +420,50 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
     where
         ContractsClient: L1OpSuccinctConfigFetcher,
     {
+        let program = match config.mode {
+            AggchainProofMode::Standard => AGGCHAIN_PROOF_ELF,
+            AggchainProofMode::SkipProofVerification | AggchainProofMode::Recovery => {
+                AGGCHAIN_PROOF_NOOP_ELF
+            }
+        };
         let executor = Executor::new(
             config.primary_prover.clone(),
             config.fallback_prover.clone(),
-            AGGCHAIN_PROOF_ELF,
+            program,
         )
         .await
         .context("Failed creating executor for AggchainProofBuilder")?;
 
         let aggchain_vkey = executor.get_vkey().clone();
+
+        match config.mode {
+            AggchainProofMode::Standard => {}
+            AggchainProofMode::SkipProofVerification => warn!(
+                noop_vkey = %Digest(aggchain_vkey.hash_bytes()),
+                "Skip-proof-verification mode: the standard program is executed without \
+                 verifying the FEP proof, only the noop program is proven"
+            ),
+            AggchainProofMode::Recovery => warn!(
+                noop_vkey = %Digest(aggchain_vkey.hash_bytes()),
+                "Recovery mode: nothing is verified, the pre-root is taken from the latest L1 output"
+            ),
+        }
+
+        if config.mode != AggchainProofMode::Standard {
+            let mock_prover = [
+                Some(&config.primary_prover),
+                config.fallback_prover.as_ref(),
+            ]
+            .into_iter()
+            .flatten()
+            .any(|prover| matches!(prover, ProverType::MockProver(_)));
+            if mock_prover {
+                warn!(
+                    "The noop program is proven by the SP1 mock prover: only a mock verifier \
+                     accepts that proof, a real agglayer rejects it"
+                );
+            }
+        }
         let executor = tower::ServiceBuilder::new().service(executor).boxed();
 
         let prover = Buffer::new(executor, MAX_CONCURRENT_REQUESTS);
@@ -379,6 +505,12 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             &range_vkey_commitment,
         )?;
 
+        let execution_concurrency = match &config.primary_prover {
+            ProverType::CpuProver(config) => config.max_concurrency_limit,
+            ProverType::MockProver(config) => config.max_concurrency_limit,
+            ProverType::NetworkProver(_) => prover_config::default_max_concurrency_limit(),
+        };
+
         Ok(AggchainProofBuilder {
             aggchain_vkey,
             contracts_client,
@@ -387,6 +519,109 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             aggregation_vkey,
             range_vkey_commitment,
             static_call_caller_address: config.contracts.static_call_caller_address,
+            mode: config.mode,
+            execution_limiter: ExecutionLimiter::new(execution_concurrency, config.proving_timeout),
+        })
+    }
+
+    /// Inputs of the recovery mode: the public values assembled from the L1
+    /// contract values, the L2 bridge root and the L2 output at the end block
+    /// and the aggsender request. No proposer call, no witness, no state
+    /// sketch: the pre-block sketch at the reorged anchor is the call that
+    /// fails during the reorg being recovered from.
+    pub(crate) async fn retrieve_recovery_data(
+        contracts_client: Arc<ContractsClient>,
+        request: AggchainProofBuilderRequest,
+        network_id: u32,
+        l1_pre_root: Digest,
+    ) -> Result<AggchainProverInputs, Error>
+    where
+        ContractsClient: L2LocalExitRootFetcher
+            + L2OutputAtBlockFetcher
+            + GetTrustedSequencerAddress
+            + L1OpSuccinctConfigFetcher
+            + L1OptimisticModeFetcher
+            + L1LocalExitRootFetcher,
+    {
+        let last_proven_block = request.aggchain_proof_inputs.last_proven_block;
+        let end_block = request.end_block;
+        info!(%last_proven_block, %end_block, %l1_pre_root,
+            "Retrieving chain data for the recovery aggchain proof");
+
+        if end_block <= last_proven_block {
+            return Err(Error::RecoveryEmptyRange {
+                last_proven_block,
+                end_block,
+            });
+        }
+
+        let new_blocks_range = (last_proven_block + 1)..=end_block;
+
+        let new_local_exit_root = contracts_client
+            .get_l2_local_exit_root(end_block)
+            .await
+            .map_err(Error::L2ChainDataRetrievalError)?;
+
+        let claim_output = contracts_client
+            .get_l2_output_at_block(end_block)
+            .await
+            .map_err(Error::L2ChainDataRetrievalError)?;
+
+        // Taken from L1 as-is: these are the values the contract hashes.
+        let prev_local_exit_root = contracts_client
+            .get_l1_last_local_exit_root()
+            .await
+            .map_err(Error::L1ChainDataRetrievalError)?;
+
+        let optimistic_mode = contracts_client
+            .get_optimistic_mode()
+            .await
+            .map_err(Error::L1ChainDataRetrievalError)?;
+
+        let op_succinct_config = contracts_client
+            .get_op_succinct_config()
+            .await
+            .map_err(Error::L1ChainDataRetrievalError)?;
+
+        let trusted_sequencer = contracts_client
+            .get_trusted_sequencer_address()
+            .await
+            .map_err(Error::UnableToFetchTrustedSequencerAddress)?;
+
+        let imported_bridge_exits = collect_imported_bridge_exits(
+            request.aggchain_proof_inputs.imported_bridge_exits,
+            request.aggchain_proof_inputs.unclaims,
+            &new_blocks_range,
+        )?;
+
+        let aggchain_params = AggchainParamsValues {
+            l2_pre_root: l1_pre_root.0.into(),
+            claim_root: claim_output.output_root.0.into(),
+            claim_block_num: U256::from(end_block),
+            rollup_config_hash: op_succinct_config.rollup_config_hash.0.into(),
+            optimistic_mode,
+            trusted_sequencer: trusted_sequencer.into(),
+            range_vkey_commitment: op_succinct_config.range_vkey_commitment.0.into(),
+            aggregation_vkey_hash: op_succinct_config.aggregation_vkey_hash.0.into(),
+        };
+
+        let public_values = AggchainProofPublicValues {
+            prev_local_exit_root,
+            new_local_exit_root,
+            l1_info_root: request.aggchain_proof_inputs.l1_info_tree_root_hash,
+            origin_network: network_id.into(),
+            commit_imported_bridge_exits: imported_bridge_exits.commitment,
+            aggchain_params: keccak256(aggchain_params.abi_encode_packed().as_slice()),
+        };
+
+        info!(
+            "Recovery aggchain-params unrolled values: {aggchain_params:?}; keccak-hashed: {}",
+            public_values.aggchain_params
+        );
+
+        Ok(AggchainProverInputs {
+            output_root: ClaimRoot(claim_output.output_root),
+            stdin: noop_stdin(&public_values)?,
         })
     }
 
@@ -410,6 +645,7 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         info!(last_proven_block=%request.aggchain_proof_inputs.last_proven_block,
             end_block=%request.end_block,
             "Retrieving chain data for aggchain proof generation");
+
         let new_blocks_range =
             (request.aggchain_proof_inputs.last_proven_block + 1)..=request.end_block;
 
@@ -469,18 +705,11 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .aggchain_proof_inputs
             .sorted_inserted_gers(&new_blocks_range);
 
-        // All the bridge exits in the new blocks range, also those that are
-        // unclaimed.
-        let all_imported_bridge_exits: Vec<GlobalIndexWithLeafHash> = filter_sort_map(
+        let imported_bridge_exits = collect_imported_bridge_exits(
             request.aggchain_proof_inputs.imported_bridge_exits,
+            request.aggchain_proof_inputs.unclaims,
             &new_blocks_range,
-            |ib| ib.block_number,
-            |ib| GlobalIndexWithLeafHash {
-                global_index: ib.global_index.into(),
-                bridge_exit_hash: ib.bridge_exit_hash.0,
-            },
-        )
-        .collect();
+        )?;
 
         // Prepare removed GERS for the proof.
         let removed_gers: Vec<Digest> = filter_sort_map(
@@ -502,21 +731,6 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .into_iter()
             .map(|inserted_ger| inserted_ger.l1_info_tree_leaf.inner.global_exit_root)
             .collect();
-
-        // Prepare unset claims input for the proof.
-        let unset_claims: Vec<U256> = filter_sort_map(
-            request.aggchain_proof_inputs.unclaims,
-            &new_blocks_range,
-            |unclaim| unclaim.block_number,
-            |unclaim| unclaim.global_index,
-        )
-        .collect();
-
-        // Filter out the unset claims from the all imported bridge exits list.
-        let filtered_claimed_imported_bridge_exits =
-            filter_values(&unset_claims, &all_imported_bridge_exits, |value| {
-                value.global_index
-            })?;
 
         let l1_info_tree_leaf = request.aggchain_proof_inputs.l1_info_tree_leaf;
         let fep_inputs = FepInputs {
@@ -571,16 +785,13 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                 l1_info_root: request.aggchain_proof_inputs.l1_info_tree_root_hash,
                 origin_network: network_id,
                 fep: fep_inputs,
-                commit_imported_bridge_exits: ImportedBridgeExitCommitmentValues {
-                    claims: filtered_claimed_imported_bridge_exits,
-                }
-                .commitment(IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION),
+                commit_imported_bridge_exits: imported_bridge_exits.commitment,
                 bridge_witness: BridgeWitness {
                     inserted_gers,
-                    imported_bridge_exits: all_imported_bridge_exits,
+                    imported_bridge_exits: imported_bridge_exits.all,
                     removed_gers,
                     raw_inserted_gers,
-                    unset_claims,
+                    unset_claims: imported_bridge_exits.unset_claims,
                     prev_l2_block_sketch,
                     new_l2_block_sketch,
                     caller_address: static_call_caller_address,
@@ -657,10 +868,40 @@ fn validate_op_succinct_config_keys(
     Ok(())
 }
 
+async fn execute_standard_program(
+    execution_limiter: &ExecutionLimiter,
+    stdin: SP1Stdin,
+) -> Result<AggchainProofPublicValues, Error> {
+    let public_values = execution_limiter
+        .execute(AGGCHAIN_PROOF_ELF, stdin)
+        .await
+        .map_err(Error::StandardProgramExecutionFailed)?;
+
+    bincode::sp1_compatible()
+        .deserialize(public_values.as_slice())
+        .map_err(Error::UnableToDeserializePublicValues)
+}
+
+fn noop_stdin(public_values: &AggchainProofPublicValues) -> Result<SP1Stdin, Error> {
+    sp1_fast(|| {
+        let mut stdin = SP1Stdin::new();
+        stdin.write(public_values);
+        stdin
+    })
+    .context("Failed to build SP1 stdin")
+    .map_err(Error::Other)
+}
+
 impl<ContractsClient> tower::Service<AggchainProofBuilderRequest>
     for AggchainProofBuilder<ContractsClient>
 where
-    ContractsClient: AggchainContractsClient + GetTrustedSequencerAddress + Send + Sync + 'static,
+    ContractsClient: AggchainContractsClient
+        + GetTrustedSequencerAddress
+        + L1OptimisticModeFetcher
+        + L1LocalExitRootFetcher
+        + Send
+        + Sync
+        + 'static,
 {
     type Response = AggchainProofBuilderResponse;
 
@@ -686,6 +927,8 @@ where
         let aggchain_vkey = self.aggchain_vkey.clone();
         let static_call_caller_address = self.static_call_caller_address;
         let range_vkey_commitment = self.range_vkey_commitment;
+        let mode = self.mode;
+        let execution_limiter = self.execution_limiter.clone();
 
         // TODO: figure out a way to stop only this service upon an sp1 panic,
         // and not the entire system. For now, just ignore the panic,
@@ -697,15 +940,41 @@ where
             info!(%last_proven_block, %end_block, "Starting generation of the aggchain proof");
             // Retrieve all the necessary public inputs. Combine with
             // the data provided by the agg-sender in the request.
-            let aggchain_prover_inputs = Self::retrieve_chain_data(
-                contracts_client,
-                req,
-                network_id,
-                aggregation_vkey,
-                static_call_caller_address,
-                range_vkey_commitment,
-            )
-            .await?;
+            let aggchain_prover_inputs = match mode {
+                AggchainProofMode::Standard | AggchainProofMode::SkipProofVerification => {
+                    // Unreachable: the service builds `Recovery` only
+                    // without a proposer, that is in recovery mode.
+                    if matches!(req.fep_verification, FepVerification::Recovery) {
+                        return Err(Error::RecoveryVerificationOutsideRecoveryMode);
+                    }
+                    let inputs = Self::retrieve_chain_data(
+                        contracts_client,
+                        req,
+                        network_id,
+                        aggregation_vkey,
+                        static_call_caller_address,
+                        range_vkey_commitment,
+                    )
+                    .await?;
+
+                    if mode == AggchainProofMode::SkipProofVerification {
+                        let public_values =
+                            execute_standard_program(&execution_limiter, inputs.stdin).await?;
+                        AggchainProverInputs {
+                            output_root: inputs.output_root,
+                            stdin: noop_stdin(&public_values)?,
+                        }
+                    } else {
+                        inputs
+                    }
+                }
+                AggchainProofMode::Recovery => {
+                    let l1_pre_root =
+                        latest_l1_pre_root(contracts_client.as_ref(), last_proven_block).await?;
+                    Self::retrieve_recovery_data(contracts_client, req, network_id, l1_pre_root)
+                        .await?
+                }
+            };
 
             let output_root = aggchain_prover_inputs.output_root;
             let prover_executor::Response { proof } = prover
@@ -721,7 +990,7 @@ where
 
             let public_input: AggchainProofPublicValues = bincode::sp1_compatible()
                 .deserialize(proof.public_values.as_slice())
-                .unwrap();
+                .map_err(Error::UnableToDeserializePublicValues)?;
 
             let stark = proof
                 .proof

@@ -14,12 +14,15 @@ use aggchain_proof_core::bridge::{
 use agglayer_interop::types::Digest;
 use agglayer_primitives::Address;
 use alloy::{
-    eips::BlockNumberOrTag, network::AnyNetwork, primitives::B256, providers::Provider,
+    eips::BlockNumberOrTag,
+    network::AnyNetwork,
+    primitives::{B256, U256},
+    providers::Provider,
     sol_types::SolCall,
 };
 use contracts::{
-    GetTrustedSequencerAddress, GlobalExitRootManagerL2SovereignChainRpcClient,
-    L2EvmStateSketchFetcher,
+    GetTrustedSequencerAddress, GlobalExitRootManagerL2SovereignChainRpcClient, L1L2Output,
+    L1LatestL2OutputFetcher, L2EvmStateSketchFetcher,
 };
 use eyre::Context as _;
 use jsonrpsee::{core::client::ClientT, http_client::HttpClient, rpc_params};
@@ -38,9 +41,9 @@ use crate::{
     config::AggchainProofContractsConfig,
     contracts::{
         AggchainFep, AggchainFepRpcClient, GlobalExitRootManagerL2SovereignChain,
-        L1OpSuccinctConfigFetcher, L2LocalExitRootFetcher, L2OutputAtBlock, L2OutputAtBlockFetcher,
-        OpSuccinctConfig, PolygonRollupManagerRpcClient, PolygonZkevmBridgeV2,
-        ZkevmBridgeRpcClient,
+        L1LocalExitRootFetcher, L1OpSuccinctConfigFetcher, L1OptimisticModeFetcher,
+        L2LocalExitRootFetcher, L2OutputAtBlock, L2OutputAtBlockFetcher, OpSuccinctConfig,
+        PolygonRollupManagerRpcClient, PolygonZkevmBridgeV2, ZkevmBridgeRpcClient,
     },
 };
 
@@ -50,6 +53,7 @@ pub trait AggchainContractsClient:
     L2LocalExitRootFetcher
     + L2OutputAtBlockFetcher
     + L1OpSuccinctConfigFetcher
+    + L1LatestL2OutputFetcher
     + L2EvmStateSketchFetcher
 {
 }
@@ -72,6 +76,12 @@ pub struct AggchainContractsRpcClient<RpcProvider> {
 
     /// Aggchain FEP contract on the l1 network.
     aggchain_fep: AggchainFepRpcClient<RpcProvider>,
+
+    /// Polygon rollup manager contract on the l1 network.
+    polygon_rollup_manager: PolygonRollupManagerRpcClient<RpcProvider>,
+
+    /// Network id of the chain in the rollup manager.
+    network_id: u32,
 
     /// Trusted sequencer address.
     trusted_sequencer_addr: agglayer_primitives::Address,
@@ -145,12 +155,78 @@ where
 }
 
 #[async_trait::async_trait]
+impl<RpcProvider> L1OptimisticModeFetcher for AggchainContractsRpcClient<RpcProvider>
+where
+    RpcProvider: Provider + Send + Sync,
+{
+    async fn get_optimistic_mode(&self) -> Result<bool, Error> {
+        self.aggchain_fep
+            .optimisticMode()
+            .call()
+            .await
+            .map_err(Error::OptimisticModeRetrievalError)
+    }
+}
+
+#[async_trait::async_trait]
+impl<RpcProvider> L1LocalExitRootFetcher for AggchainContractsRpcClient<RpcProvider>
+where
+    RpcProvider: Provider + Send + Sync,
+{
+    async fn get_l1_last_local_exit_root(&self) -> Result<Digest, Error> {
+        let rollup_data = self
+            .polygon_rollup_manager
+            .rollupIDToRollupData(self.network_id)
+            .call()
+            .await
+            .map_err(Error::InvalidRollupIdToRollupData)?;
+
+        Ok((rollup_data.lastLocalExitRoot.0).into())
+    }
+}
+
+#[async_trait::async_trait]
 impl<RpcProvider> GetTrustedSequencerAddress for AggchainContractsRpcClient<RpcProvider>
 where
     RpcProvider: alloy::providers::Provider + Send + Sync,
 {
     async fn get_trusted_sequencer_address(&self) -> Result<Address, Error> {
         Ok(self.trusted_sequencer_addr)
+    }
+}
+
+#[async_trait::async_trait]
+impl<RpcProvider> L1LatestL2OutputFetcher for AggchainContractsRpcClient<RpcProvider>
+where
+    RpcProvider: Provider + Send + Sync,
+{
+    async fn get_latest_l2_output(&self) -> Result<Option<L1L2Output>, Error> {
+        // `latestOutputIndex()` reverts while there is no output, so the count
+        // is read first.
+        let output_count = self
+            .aggchain_fep
+            .nextOutputIndex()
+            .call()
+            .await
+            .map_err(Error::LatestL2OutputRetrievalError)?;
+        if output_count.is_zero() {
+            return Ok(None);
+        }
+
+        let output = self
+            .aggchain_fep
+            .getL2Output(output_count - U256::from(1))
+            .call()
+            .await
+            .map_err(Error::LatestL2OutputRetrievalError)?;
+
+        let l2_block_number = u64::try_from(output.l2BlockNumber)
+            .map_err(|_| Error::InvalidL1BlockNumber(output.l2BlockNumber.to_string()))?;
+
+        Ok(Some(L1L2Output {
+            output_root: output.outputRoot.0.into(),
+            l2_block_number,
+        }))
     }
 }
 
@@ -461,6 +537,8 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             l2_cl_client,
             polygon_zkevm_bridge_v2,
             aggchain_fep,
+            polygon_rollup_manager,
+            network_id,
             l2_root_provider_endpoint: config.l2_execution_layer_rpc_endpoint.clone(),
             global_exit_root_manager_l2,
             trusted_sequencer_addr,
