@@ -55,21 +55,19 @@ fn aggchain_pattern() {
     );
 }
 
-#[tokio::test]
-async fn test_custom_chain_data_builder_service() {
-    let response = compute_custom_chain_data(ClaimRoot(Digest([1u8; 32])), 10u64);
-
-    let mut expected = [0u8; 96];
-    // program selector
-    expected[0..4].copy_from_slice(&[0, 11, 0, 1]);
-
-    // output root
-    expected[32..64].copy_from_slice(&[1u8; 32]);
-
-    // l2 block number
-    expected[64..96].copy_from_slice(&U256::from(10u64).to_be_bytes::<32>());
-
-    assert_eq!(response, expected.to_vec());
+#[test]
+fn test_custom_chain_data_builder_service() {
+    for (selector, bytes) in [
+        (AGGCHAIN_VKEY_SELECTOR, [0, 11, 0, 1]),
+        (NOOP_SELECTOR, [0xFF, 0xFF, 0, 1]),
+    ] {
+        let response = compute_custom_chain_data(selector, ClaimRoot(Digest([1u8; 32])), 10);
+        let mut expected = [0u8; 96];
+        expected[0..4].copy_from_slice(&bytes);
+        expected[32..64].copy_from_slice(&[1u8; 32]);
+        expected[64..96].copy_from_slice(&U256::from(10u64).to_be_bytes::<32>());
+        assert_eq!(response, expected.to_vec());
+    }
 }
 
 #[derive(Debug, Deserialize)]
