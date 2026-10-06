@@ -121,6 +121,7 @@ impl Executor {
                             proving_key,
                             verification_key,
                             timeout: network_prover_config.proving_timeout,
+                            private_stdin: network_prover_config.private_stdin,
                         },
                     ),
                 ))
@@ -383,6 +384,7 @@ struct NetworkExecutor {
     proving_key: SP1ProvingKey,
     verification_key: SP1VerifyingKey,
     timeout: Duration,
+    private_stdin: bool,
 }
 
 impl Service<Request> for NetworkExecutor {
@@ -403,6 +405,7 @@ impl Service<Request> for NetworkExecutor {
         let verification_key = self.verification_key.clone();
         let proving_key = self.proving_key.clone();
         let timeout = self.timeout;
+        let private_stdin = self.private_stdin;
 
         debug!("Proving with network prover with timeout: {:?}", timeout);
         let fut = sp1_async(AssertUnwindSafe(async move {
@@ -422,6 +425,7 @@ impl Service<Request> for NetworkExecutor {
             let proof = proof_request
                 .timeout(timeout)
                 .strategy(FulfillmentStrategy::Reserved)
+                .private_stdin(private_stdin)
                 .await
                 .map_err(|error| Error::ProverFailed(error.to_string()))?;
 
