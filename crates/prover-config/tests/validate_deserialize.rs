@@ -1,5 +1,6 @@
 use pretty_assertions::assert_eq;
 use prover_config::{CpuProverConfig, MockProverConfig, NetworkProverConfig, ProverType};
+use rstest::rstest;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
@@ -20,8 +21,33 @@ fn network_prover() {
             proving_request_timeout: Some(std::time::Duration::from_secs(300)),
             proving_timeout: std::time::Duration::from_secs(600),
             sp1_cluster_endpoint: url::Url::parse("https://rpc.production.succinct.xyz/").unwrap(),
+            private_stdin: false,
         })
     );
+}
+
+#[test]
+fn network_prover_defaults() -> Result<(), toml::de::Error> {
+    let config = NetworkProverConfig::default();
+    assert!(!config.private_stdin);
+    assert_eq!(toml::from_str::<NetworkProverConfig>("")?, config);
+    Ok(())
+}
+
+#[rstest]
+#[case("private-stdin = true", true)]
+#[case("private-stdin = false", false)]
+fn network_prover_private_stdin(
+    #[case] input: &str,
+    #[case] expected: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let config: NetworkProverConfig = toml::from_str(input)?;
+    assert_eq!(config.private_stdin, expected);
+    assert_eq!(
+        toml::from_str::<NetworkProverConfig>(&toml::to_string(&config)?)?,
+        config,
+    );
+    Ok(())
 }
 
 #[test]
@@ -50,6 +76,7 @@ fn network_and_cpu_prover() {
             proving_request_timeout: Some(std::time::Duration::from_secs(300)),
             proving_timeout: std::time::Duration::from_secs(600),
             sp1_cluster_endpoint: url::Url::parse("https://rpc.production.succinct.xyz/").unwrap(),
+            private_stdin: false,
         })
     );
 

@@ -1,6 +1,6 @@
 use aggchain_proof_core::full_execution_proof::AggregationProofPublicValues;
 use agglayer_interop::types::bincode;
-use agglayer_primitives::Digest;
+use agglayer_primitives::{vkey_hash::VKeyHash, Digest};
 
 use crate::WitnessGeneration;
 
@@ -37,16 +37,22 @@ pub enum Error {
     ProverServiceReadyError(#[source] tower::BoxError),
 
     #[error(
-        "Aggregation vkey hash from the op succinct contract config is not a packed vkey digest: \
-         {0:?}"
+        "Mismatch on the aggregation vkey hash derived from the elf aggregation vkey. got: \
+         {got:?}, expected: {expected:?}"
     )]
-    InvalidAggregationVkeyHash(Digest),
+    MismatchAggregationElfVkeyHash { got: VKeyHash, expected: VKeyHash },
 
     #[error(
         "Mismatch on the aggregation vkey hash - got from op succinct contract config: {got:?}, \
-         proven by the aggregation proof: {expected:?}"
+         expected from the elf: {expected:?}"
     )]
     MismatchAggregationVkeyHash { got: Digest, expected: Digest },
+
+    #[error(
+        "Mismatch on the range vkey commitment - got from op succinct config: {got:?}, expected \
+         from the elf: {expected:?}"
+    )]
+    MismatchRangeVkeyCommitment { got: Digest, expected: Digest },
 
     /// Mismatch on the aggregation proof public values between what we got from
     /// the contracts and what we expect from the proof public values.
