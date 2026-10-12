@@ -56,14 +56,12 @@ pub async fn new_network_prover<T: AsRef<str>>(endpoint: T) -> eyre::Result<Netw
     )?;
 
     sp1_async(AssertUnwindSafe(async move {
-        Ok::<_, eyre::Report>(
-            sp1_sdk::ProverClient::builder()
-                .network()
-                .rpc_url(&endpoint)
-                .private_key(&private_key)
-                .build()
-                .await,
-        )
+        sp1_sdk::ProverClient::builder()
+            .network()
+            .rpc_url(&endpoint)
+            .private_key(&private_key)
+            .build()
+            .await
     }))
-    .await?
+    .await
 }

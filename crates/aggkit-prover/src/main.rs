@@ -100,8 +100,8 @@ fn main() -> eyre::Result<()> {
                         hex::encode(range_vkey.hash_bytes())
                     );
                     println!(
-                        "# aggregation on-chain vkey hash (bytes32): 0x{}",
-                        hex::encode(aggregation_vkey.bytes32_raw())
+                        "# aggregation on-chain vkey hash (bytes32): {}",
+                        aggregation_vkey.bytes32()
                     );
                     Ok::<(), eyre::Report>(())
                 })?;

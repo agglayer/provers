@@ -62,3 +62,23 @@ fn decode_rejects_truncated_vkey() {
 
     assert!(aggkit_prover_types::vkey::decode_verifying_key(truncated).is_err());
 }
+
+#[rstest::rstest]
+#[case::embedded_aggregation(aggregation::VKEY_HASH_U32, true)]
+#[case::smallest_packable([1 << 23, 0, 0, 0, 0, 0, 0, 0], true)]
+#[case::short_digest([(1 << 23) - 1, 0, 0, 0, 0, 0, 0, 0], false)]
+#[case::small_words([1, 2, 3, 4, 5, 6, 7, 8], false)]
+fn bn254_packable(#[case] hash: HashU32, #[case] expected: bool) {
+    assert_eq!(is_bn254_packable(hash), expected);
+}
+
+#[test]
+fn install_overrides_rejects_conflicting_range_commitment() {
+    install_overrides(None, Some([7; 32])).expect("first install");
+    install_overrides(None, Some([7; 32])).expect("identical repeat");
+    assert!(matches!(
+        install_overrides(None, Some([8; 32])),
+        Err(InstallOverridesError::ConflictingOverride(_))
+    ));
+    assert_eq!(range::commitment(), [7; 32]);
+}

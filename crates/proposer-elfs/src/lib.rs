@@ -3,6 +3,8 @@ pub use aggkit_prover_types::{
     vkey_hash::{HashU32, Sp1VKeyHash, VKeyHash},
 };
 
+use sp1_sdk::HashableKey;
+
 mod vkeys_raw {
     include!(concat!(env!("OUT_DIR"), "/vkeys_raw.rs"));
 }
@@ -61,25 +63,59 @@ pub mod range {
     }
 }
 
+/// Error returned when the op-succinct vkey overrides cannot be installed.
+#[derive(Debug, thiserror::Error)]
+pub enum InstallOverridesError {
+    #[error(transparent)]
+    Decode(#[from] VKeyDecodeError),
+
+    #[error(
+        "aggregation vkey {0} is not supported: the first word of its hash is below 2^23, so \
+         its bn254 digest does not fill 31 bytes"
+    )]
+    UnsupportedAggregationVkey(String),
+
+    #[error("the op-succinct {0} override is already installed with a different value")]
+    ConflictingOverride(&'static str),
+}
+
+fn is_bn254_packable(hash: HashU32) -> bool {
+    hash[0] >= 1 << 23
+}
+
 /// Install optional op-succinct vkey overrides parsed from configuration.
 ///
 /// The values are process-global and intended to be installed once at startup,
-/// before the proof services are constructed; a repeated install keeps the
-/// first value. When an override is absent, the value embedded from
+/// before the proof services are constructed; a repeated install must carry the
+/// same values. When an override is absent, the value embedded from
 /// `op-succinct-elfs` at build time is used instead. See [`aggregation::vkey`]
 /// and [`range::commitment`] for the resolved accessors the services read.
 pub fn install_overrides(
     aggregation_vkey: Option<&[u8]>,
     range_vkey_commitment: Option<[u8; 32]>,
-) -> Result<(), VKeyDecodeError> {
-    // An `Err` from `set` means the value was already installed, which is
-    // expected on repeated startup-time calls (e.g. multiple service
-    // constructions in tests); the first installed value is kept.
+) -> Result<(), InstallOverridesError> {
     if let Some(bytes) = aggregation_vkey {
-        let _ = aggregation::VKEY_OVERRIDE.set(decode_verifying_key(bytes)?);
+        let vkey = decode_verifying_key(bytes)?;
+        if !is_bn254_packable(vkey.hash_u32()) {
+            return Err(InstallOverridesError::UnsupportedAggregationVkey(
+                vkey.bytes32(),
+            ));
+        }
+        if let Err(vkey) = aggregation::VKEY_OVERRIDE.set(vkey) {
+            let installed = aggregation::VKEY_OVERRIDE.get().map(HashableKey::hash_u32);
+            if installed != Some(vkey.hash_u32()) {
+                return Err(InstallOverridesError::ConflictingOverride("aggregation vkey"));
+            }
+        }
     }
     if let Some(commitment) = range_vkey_commitment {
-        let _ = range::VKEY_COMMITMENT_OVERRIDE.set(commitment);
+        if let Err(commitment) = range::VKEY_COMMITMENT_OVERRIDE.set(commitment) {
+            if range::VKEY_COMMITMENT_OVERRIDE.get() != Some(&commitment) {
+                return Err(InstallOverridesError::ConflictingOverride(
+                    "range vkey commitment",
+                ));
+            }
+        }
     }
     Ok(())
 }

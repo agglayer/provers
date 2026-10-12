@@ -116,7 +116,7 @@ impl AggchainProofService {
                 .range_vkey_commitment
                 .map(|digest| digest.0),
         )
-        .map_err(Error::OpSuccinctVkeyDecode)?;
+        .map_err(Error::OpSuccinctVkeyOverride)?;
 
         // Report the op-succinct verification keys in effect, and whether each
         // came from a config override or the embedded op-succinct-elfs
