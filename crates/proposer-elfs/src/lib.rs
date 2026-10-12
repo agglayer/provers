@@ -2,7 +2,6 @@ pub use aggkit_prover_types::{
     vkey::{decode_verifying_key, LazyVerifyingKey, SP1VerifyingKey, VKeyDecodeError},
     vkey_hash::{HashU32, Sp1VKeyHash, VKeyHash},
 };
-
 use sp1_sdk::HashableKey;
 
 mod vkeys_raw {
@@ -70,8 +69,8 @@ pub enum InstallOverridesError {
     Decode(#[from] VKeyDecodeError),
 
     #[error(
-        "aggregation vkey {0} is not supported: the first word of its hash is below 2^23, so \
-         its bn254 digest does not fill 31 bytes"
+        "aggregation vkey {0} is not supported: the first word of its hash is below 2^23, so its \
+         bn254 digest does not fill 31 bytes"
     )]
     UnsupportedAggregationVkey(String),
 
@@ -104,7 +103,9 @@ pub fn install_overrides(
         if let Err(vkey) = aggregation::VKEY_OVERRIDE.set(vkey) {
             let installed = aggregation::VKEY_OVERRIDE.get().map(HashableKey::hash_u32);
             if installed != Some(vkey.hash_u32()) {
-                return Err(InstallOverridesError::ConflictingOverride("aggregation vkey"));
+                return Err(InstallOverridesError::ConflictingOverride(
+                    "aggregation vkey",
+                ));
             }
         }
     }
