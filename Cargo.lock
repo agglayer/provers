@@ -6855,6 +6855,7 @@ dependencies = [
  "prover-elf-utils",
  "rstest",
  "sp1-sdk",
+ "thiserror 2.0.17",
 ]
 
 [[package]]

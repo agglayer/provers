@@ -11,6 +11,8 @@ prover-elf-utils.workspace = true
 
 [dependencies]
 aggkit-prover-types = { workspace = true, features = ["sp1"] }
+sp1-sdk.workspace = true
+thiserror.workspace = true
 
 op-succinct-elfs.workspace = true
 
