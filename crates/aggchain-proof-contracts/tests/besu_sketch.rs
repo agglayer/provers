@@ -22,8 +22,9 @@ use alloy::{
     primitives::{keccak256, Address, B256},
     providers::{Provider, ProviderBuilder},
     sol,
+    sol_types::SolCall,
 };
-use sp1_cc_client_executor::{ClientExecutor, ContractInput, Genesis};
+use sp1_cc_client_executor::{ClientExecutor, ContractCalldata, ContractInput, Genesis};
 use sp1_cc_host_executor::EvmSketch;
 
 sol! {
@@ -140,13 +141,50 @@ async fn besu_sketches() {
 
         // Client side, the way `StaticCallWithContext` does it.
         let client = ClientExecutor::eth_like(&input).expect("client init");
-        let pv = client
-            .execute(ContractInput::new_call(
+        // Every view the bridge constraints call must also run on the client.
+        let mut pv = None;
+        for (name, to, call) in [
+            (
+                "ger.insertedGERHashChain",
                 ger,
-                caller,
-                GerL2::bridgeAddressCall {},
-            ))
-            .expect("client execute");
+                GerL2::insertedGERHashChainCall {}.abi_encode(),
+            ),
+            (
+                "ger.removedGERHashChain",
+                ger,
+                GerL2::removedGERHashChainCall {}.abi_encode(),
+            ),
+            (
+                "ger.bridgeAddress",
+                ger,
+                GerL2::bridgeAddressCall {}.abi_encode(),
+            ),
+            (
+                "bridge.getRoot",
+                bridge,
+                BridgeL2SovereignChain::getRootCall {}.abi_encode(),
+            ),
+            (
+                "bridge.claimedGlobalIndexHashChain",
+                bridge,
+                BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {}.abi_encode(),
+            ),
+            (
+                "bridge.unsetGlobalIndexHashChain",
+                bridge,
+                BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {}.abi_encode(),
+            ),
+        ] {
+            let v = client
+                .execute(ContractInput {
+                    contract_address: to,
+                    caller_address: caller,
+                    calldata: ContractCalldata::Call(call.into()),
+                })
+                .unwrap_or_else(|e| panic!("client {name} at block {n}: {e}"));
+            pv = Some(v);
+        }
+        let pv = pv.unwrap();
         let anchor_derived = B256::from(pv.anchorHash.0);
         println!("block {n}: anchor derived by sp1-cc = {anchor_derived}");
         println!("block {n}: keccak256(debug_getRawHeader) = {anchor_expected}");
