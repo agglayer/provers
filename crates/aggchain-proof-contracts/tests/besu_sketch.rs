@@ -1,6 +1,14 @@
 //! Host-side check of the sp1-cc sketch builder against a Besu QBFT node.
 //!
-//! Ignored by default. Run with:
+//! Ignored by default. With stock sp1-cc (`reth-1.9.3-sp1-6.2.2`) this test
+//! fails on the client side: the builder accepts the Besu header, but
+//! `ClientExecutor::eth` panics in `validate_header` (QBFT `difficulty = 1`,
+//! `extraData` > 32 bytes) and, without a Paris-active genesis, the host
+//! reports `prevrandao not set`. It passes with the `eth_like` patch kept in
+//! `prover-besu-qbft/vectors/bridge/sketches/sp1-cc-eth-like.patch` (use
+//! `.eth_like()` / `ClientExecutor::eth_like` and the sketch genesis there).
+//!
+//! Run with:
 //!
 //! ```text
 //! BESU_RPC_URL=http://localhost:18541 \
