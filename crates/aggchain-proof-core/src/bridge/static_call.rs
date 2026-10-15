@@ -3,7 +3,7 @@ use alloy_primitives::Address;
 use alloy_sol_types::SolCall;
 use sp1_cc_client_executor::{io::EvmSketchInput, ClientExecutor, ContractInput};
 
-use super::BridgeConstraintsError;
+use super::{BridgeConstraintsError, EvmFlavor};
 
 /// Context giver about the stage of the error.
 #[derive(Clone, Copy, Debug)]
@@ -42,6 +42,7 @@ pub struct StaticCallWithContext {
     pub(crate) address: Address,
     pub(crate) stage: StaticCallStage,
     pub(crate) block_hash: Digest,
+    pub(crate) evm: EvmFlavor,
 }
 
 impl StaticCallWithContext {
@@ -82,14 +83,16 @@ impl StaticCallWithContext {
         calldata: C,
         caller_address: Address,
     ) -> Result<(C::Return, Digest), StaticCallError> {
-        let cc_public_values = ClientExecutor::optimism(state_sketch)
-            .map_err(StaticCallError::ClientInitialization)?
-            .execute(ContractInput::new_call(
-                self.address,
-                caller_address,
-                calldata,
-            ))
-            .map_err(StaticCallError::ClientExecution)?;
+        let call = ContractInput::new_call(self.address, caller_address, calldata);
+        let cc_public_values = match self.evm {
+            EvmFlavor::Optimism => ClientExecutor::optimism(state_sketch)
+                .map_err(StaticCallError::ClientInitialization)?
+                .execute(call),
+            EvmFlavor::Ethereum => ClientExecutor::eth(state_sketch)
+                .map_err(StaticCallError::ClientInitialization)?
+                .execute(call),
+        }
+        .map_err(StaticCallError::ClientExecution)?;
 
         let decoded_contract_output =
             C::abi_decode_returns_validate(&cc_public_values.contractOutput)

@@ -9,7 +9,7 @@ use std::{panic::AssertUnwindSafe, str::FromStr, sync::Arc};
 
 use aggchain_proof_core::bridge::{
     static_call::{HashChainType, StaticCallStage},
-    BridgeL2SovereignChain,
+    BridgeL2SovereignChain, EvmFlavor,
 };
 use agglayer_interop::types::Digest;
 use agglayer_primitives::Address;
@@ -94,6 +94,9 @@ pub struct AggchainContractsRpcClient<RpcProvider> {
 
     /// Aggchain FEP opSuccinctConfig name.
     op_succinct_config_name: agglayer_primitives::alloy_primitives::FixedBytes<32>,
+
+    /// EVM flavour of the L2 the sketches are built for.
+    evm_flavor: EvmFlavor,
 }
 
 impl<T: Provider> AggchainContractsClient for AggchainContractsRpcClient<T> {}
@@ -242,65 +245,28 @@ where
         // TODO: Figure out how to deal with interior mutability here —
         // AssertUnwindSafe sounds suboptimal
         sp1_async(AssertUnwindSafe(async move {
-            let sketch = EvmSketch::builder()
-                .optimism()
+            let builder = EvmSketch::builder()
                 .at_block(prev_l2_block)
                 .with_genesis(self.evm_sketch_genesis.clone())
-                .el_rpc_url(self.l2_root_provider_endpoint.clone())
-                .build()
-                .await
-                .map_err(Error::HostExecutorPreBlockInitialization)?;
+                .el_rpc_url(self.l2_root_provider_endpoint.clone());
 
-            let caller_address = self.static_call_caller_address;
-            let ger_address = *self.global_exit_root_manager_l2.address();
-            let bridge_address = *self.polygon_zkevm_bridge_v2.address();
-
-            // Static calls on the hash chains
-            {
-                host_execute(
-                    caller_address,
-                    ger_address,
-                    &sketch,
-                    GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
-                    StaticCallStage::PrevHashChain(HashChainType::InsertedGER),
-                )
-                .await?;
-
-                host_execute(
-                    caller_address,
-                    ger_address,
-                    &sketch,
-                    GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
-                    StaticCallStage::PrevHashChain(HashChainType::RemovedGER),
-                )
-                .await?;
-
-                host_execute(
-                    caller_address,
-                    bridge_address,
-                    &sketch,
-                    BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
-                    StaticCallStage::PrevHashChain(HashChainType::ClaimedGlobalIndex),
-                )
-                .await?;
-
-                host_execute(
-                    caller_address,
-                    bridge_address,
-                    &sketch,
-                    BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
-                    StaticCallStage::PrevHashChain(HashChainType::UnsetGlobalIndex),
-                )
-                .await?;
+            match self.evm_flavor {
+                EvmFlavor::Optimism => {
+                    let sketch = builder
+                        .optimism()
+                        .build()
+                        .await
+                        .map_err(Error::HostExecutorPreBlockInitialization)?;
+                    self.prev_l2_block_sketch(sketch).await
+                }
+                EvmFlavor::Ethereum => {
+                    let sketch = builder
+                        .build()
+                        .await
+                        .map_err(Error::HostExecutorPreBlockInitialization)?;
+                    self.prev_l2_block_sketch(sketch).await
+                }
             }
-
-            // Finalize to retrieve the EVMStateSketch
-            let prev_l2_block_sketch = sketch
-                .finalize()
-                .await
-                .map_err(Error::InvalidPreBlockSketchFinalization)?;
-
-            Ok(prev_l2_block_sketch)
         }))
         .await
         .context("Failed getting previous L2 block sketch")
@@ -314,85 +280,28 @@ where
         // TODO: Figure out how to deal with interior mutability here —
         // AssertUnwindSafe sounds suboptimal
         sp1_async(AssertUnwindSafe(async move {
-            let sketch = EvmSketch::builder()
-                .optimism()
+            let builder = EvmSketch::builder()
                 .at_block(new_l2_block)
                 .with_genesis(self.evm_sketch_genesis.clone())
-                .el_rpc_url(self.l2_root_provider_endpoint.clone())
-                .build()
-                .await
-                .map_err(Error::HostExecutorNewBlockInitialization)?;
+                .el_rpc_url(self.l2_root_provider_endpoint.clone());
 
-            let caller_address = self.static_call_caller_address;
-            let ger_address = *self.global_exit_root_manager_l2.address();
-            let bridge_address = *self.polygon_zkevm_bridge_v2.address();
-
-            // Static call on the bridge address
-            host_execute(
-                caller_address,
-                ger_address,
-                &sketch,
-                GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
-                StaticCallStage::BridgeAddress,
-            )
-            .await?;
-
-            // Static call on the new LER
-            host_execute(
-                caller_address,
-                bridge_address,
-                &sketch,
-                BridgeL2SovereignChain::getRootCall {},
-                StaticCallStage::NewLer,
-            )
-            .await?;
-
-            // Static calls on the hash chains
-            {
-                host_execute(
-                    caller_address,
-                    ger_address,
-                    &sketch,
-                    GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
-                    StaticCallStage::NewHashChain(HashChainType::InsertedGER),
-                )
-                .await?;
-
-                host_execute(
-                    caller_address,
-                    ger_address,
-                    &sketch,
-                    GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
-                    StaticCallStage::NewHashChain(HashChainType::RemovedGER),
-                )
-                .await?;
-
-                host_execute(
-                    caller_address,
-                    bridge_address,
-                    &sketch,
-                    BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
-                    StaticCallStage::NewHashChain(HashChainType::ClaimedGlobalIndex),
-                )
-                .await?;
-
-                host_execute(
-                    caller_address,
-                    bridge_address,
-                    &sketch,
-                    BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
-                    StaticCallStage::NewHashChain(HashChainType::UnsetGlobalIndex),
-                )
-                .await?;
+            match self.evm_flavor {
+                EvmFlavor::Optimism => {
+                    let sketch = builder
+                        .optimism()
+                        .build()
+                        .await
+                        .map_err(Error::HostExecutorNewBlockInitialization)?;
+                    self.new_l2_block_sketch(sketch).await
+                }
+                EvmFlavor::Ethereum => {
+                    let sketch = builder
+                        .build()
+                        .await
+                        .map_err(Error::HostExecutorNewBlockInitialization)?;
+                    self.new_l2_block_sketch(sketch).await
+                }
             }
-
-            // Finalize to retrieve the EVMStateSketch
-            let new_l2_block_sketch = sketch
-                .finalize()
-                .await
-                .map_err(Error::InvalidNewBlockSketchFinalization)?;
-
-            Ok(new_l2_block_sketch)
         }))
         .await
         .context("Failed getting new L2 block sketch")
@@ -423,6 +332,159 @@ async fn host_execute<
     debug!("output bytes for static call at stage {stage:?}: {output_bytes:?}");
 
     Ok(())
+}
+
+impl<RpcProvider> AggchainContractsRpcClient<RpcProvider> {
+    /// Sets the EVM flavour of the L2 the sketches are built for.
+    ///
+    /// Defaults to [`EvmFlavor::Optimism`] (FEP). The flavour must match the
+    /// one set in the `BridgeConstraintsInput` that consumes the sketches.
+    pub fn with_evm_flavor(mut self, evm_flavor: EvmFlavor) -> Self {
+        self.evm_flavor = evm_flavor;
+        self
+    }
+}
+
+impl<RpcProvider: Provider> AggchainContractsRpcClient<RpcProvider> {
+    /// Runs the static calls needed at the previous L2 block and finalizes the
+    /// sketch.
+    async fn prev_l2_block_sketch<P, PT>(
+        &self,
+        sketch: EvmSketch<P, PT>,
+    ) -> Result<EvmSketchInput, Error>
+    where
+        P: Provider<AnyNetwork> + Clone + std::fmt::Debug,
+        PT: Primitives,
+    {
+        let caller_address = self.static_call_caller_address;
+        let ger_address = *self.global_exit_root_manager_l2.address();
+        let bridge_address = *self.polygon_zkevm_bridge_v2.address();
+
+        // Static calls on the hash chains
+        {
+            host_execute(
+                caller_address,
+                ger_address,
+                &sketch,
+                GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
+                StaticCallStage::PrevHashChain(HashChainType::InsertedGER),
+            )
+            .await?;
+
+            host_execute(
+                caller_address,
+                ger_address,
+                &sketch,
+                GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
+                StaticCallStage::PrevHashChain(HashChainType::RemovedGER),
+            )
+            .await?;
+
+            host_execute(
+                caller_address,
+                bridge_address,
+                &sketch,
+                BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
+                StaticCallStage::PrevHashChain(HashChainType::ClaimedGlobalIndex),
+            )
+            .await?;
+
+            host_execute(
+                caller_address,
+                bridge_address,
+                &sketch,
+                BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
+                StaticCallStage::PrevHashChain(HashChainType::UnsetGlobalIndex),
+            )
+            .await?;
+        }
+
+        // Finalize to retrieve the EVMStateSketch
+        sketch
+            .finalize()
+            .await
+            .map_err(Error::InvalidPreBlockSketchFinalization)
+    }
+
+    /// Runs the static calls needed at the new L2 block and finalizes the
+    /// sketch.
+    async fn new_l2_block_sketch<P, PT>(
+        &self,
+        sketch: EvmSketch<P, PT>,
+    ) -> Result<EvmSketchInput, Error>
+    where
+        P: Provider<AnyNetwork> + Clone + std::fmt::Debug,
+        PT: Primitives,
+    {
+        let caller_address = self.static_call_caller_address;
+        let ger_address = *self.global_exit_root_manager_l2.address();
+        let bridge_address = *self.polygon_zkevm_bridge_v2.address();
+
+        // Static call on the bridge address
+        host_execute(
+            caller_address,
+            ger_address,
+            &sketch,
+            GlobalExitRootManagerL2SovereignChain::bridgeAddressCall {},
+            StaticCallStage::BridgeAddress,
+        )
+        .await?;
+
+        // Static call on the new LER
+        host_execute(
+            caller_address,
+            bridge_address,
+            &sketch,
+            BridgeL2SovereignChain::getRootCall {},
+            StaticCallStage::NewLer,
+        )
+        .await?;
+
+        // Static calls on the hash chains
+        {
+            host_execute(
+                caller_address,
+                ger_address,
+                &sketch,
+                GlobalExitRootManagerL2SovereignChain::insertedGERHashChainCall {},
+                StaticCallStage::NewHashChain(HashChainType::InsertedGER),
+            )
+            .await?;
+
+            host_execute(
+                caller_address,
+                ger_address,
+                &sketch,
+                GlobalExitRootManagerL2SovereignChain::removedGERHashChainCall {},
+                StaticCallStage::NewHashChain(HashChainType::RemovedGER),
+            )
+            .await?;
+
+            host_execute(
+                caller_address,
+                bridge_address,
+                &sketch,
+                BridgeL2SovereignChain::claimedGlobalIndexHashChainCall {},
+                StaticCallStage::NewHashChain(HashChainType::ClaimedGlobalIndex),
+            )
+            .await?;
+
+            host_execute(
+                caller_address,
+                bridge_address,
+                &sketch,
+                BridgeL2SovereignChain::unsetGlobalIndexHashChainCall {},
+                StaticCallStage::NewHashChain(HashChainType::UnsetGlobalIndex),
+            )
+            .await?;
+        }
+
+        // Finalize to retrieve the EVMStateSketch
+        sketch
+            .finalize()
+            .await
+            .map_err(Error::InvalidNewBlockSketchFinalization)
+    }
 }
 
 impl<RpcProvider> AggchainContractsRpcClient<RpcProvider> {
@@ -545,6 +607,7 @@ impl AggchainContractsRpcClient<AlloyFillProvider> {
             static_call_caller_address: config.static_call_caller_address,
             evm_sketch_genesis: config::parse_evm_sketch_genesis(&config.evm_sketch_genesis)?,
             op_succinct_config_name,
+            evm_flavor: EvmFlavor::Optimism,
         })
     }
 }

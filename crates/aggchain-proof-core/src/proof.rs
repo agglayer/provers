@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use unified_bridge::{AggchainProofPublicValues, ImportedBridgeExitCommitmentVersion};
 
 use crate::{
-    bridge::{BridgeConstraintsInput, BridgeWitness, L2_GER_ADDR},
+    bridge::{BridgeConstraintsInput, BridgeWitness, EvmFlavor, L2_GER_ADDR},
     error::ProofError,
     full_execution_proof::FepInputs,
 };
@@ -69,6 +69,7 @@ impl AggchainProofWitness {
             l1_info_root: self.l1_info_root,
             commit_imported_bridge_exits: self.commit_imported_bridge_exits,
             bridge_witness: self.bridge_witness.clone(),
+            evm: EvmFlavor::Optimism,
         }
     }
 }

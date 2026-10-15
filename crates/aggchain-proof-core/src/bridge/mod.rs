@@ -17,7 +17,7 @@ pub mod static_call;
 
 /// NOTE: Won't work with Outpost networks as this address won't be constant.
 /// Address of the GlobalExitRootManagerL2SovereignChain smart contract.
-pub(crate) const L2_GER_ADDR: Address = address!("a40d5f56745a118d0906a34e69aec8c0db1cb8fa");
+pub const L2_GER_ADDR: Address = address!("a40d5f56745a118d0906a34e69aec8c0db1cb8fa");
 
 // Contract interfaces of the pre-deployed contracts on sovereign chains
 sol! (
@@ -35,6 +35,17 @@ sol! (
         function unsetGlobalIndexHashChain() public view returns (bytes32 hashChain);
     }
 );
+
+/// EVM flavour used to execute the static calls against the L2 sketches.
+///
+/// `Optimism` is the default and what the FEP program uses. `Ethereum` is for
+/// Ethereum-like L2s (e.g. Besu).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum EvmFlavor {
+    #[default]
+    Optimism,
+    Ethereum,
+}
 
 /// Represents all the bridge constraints errors.
 #[derive(thiserror::Error, Debug)]
@@ -145,6 +156,11 @@ pub struct BridgeConstraintsInput {
     pub l1_info_root: Digest,
     pub commit_imported_bridge_exits: Digest,
     pub bridge_witness: BridgeWitness,
+    /// EVM flavour of the L2 the sketches were built against. Defaults to
+    /// `Optimism` so witnesses serialized before this field existed still
+    /// decode (self-describing formats only).
+    #[serde(default)]
+    pub evm: EvmFlavor,
 }
 
 impl BridgeConstraintsInput {
@@ -161,6 +177,7 @@ impl BridgeConstraintsInput {
             address,
             stage: StaticCallStage::PrevHashChain(hash_chain),
             block_hash: self.prev_l2_block_hash,
+            evm: self.evm,
         }
         .execute(
             self.bridge_witness.caller_address.into(),
@@ -173,6 +190,7 @@ impl BridgeConstraintsInput {
             address,
             stage: StaticCallStage::NewHashChain(hash_chain),
             block_hash: self.new_l2_block_hash,
+            evm: self.evm,
         }
         .execute(
             self.bridge_witness.caller_address.into(),
@@ -288,6 +306,7 @@ impl BridgeConstraintsInput {
             address: bridge_address.into(),
             stage: StaticCallStage::NewLer,
             block_hash: self.new_l2_block_hash,
+            evm: self.evm,
         }
         .execute(
             self.bridge_witness.caller_address.into(),
@@ -318,6 +337,7 @@ impl BridgeConstraintsInput {
             address: self.ger_addr.into(),
             stage: StaticCallStage::BridgeAddress,
             block_hash: self.new_l2_block_hash,
+            evm: self.evm,
         }
         .execute(
             self.bridge_witness.caller_address.into(),
@@ -866,6 +886,7 @@ mod tests {
                 claims: bridge_exits_claimed_filtered,
             }
             .commitment(IMPORTED_BRIDGE_EXIT_COMMITMENT_VERSION),
+            evm: EvmFlavor::Optimism,
             bridge_witness: BridgeWitness {
                 inserted_gers: final_imported_l1_info_tree_leafs,
                 raw_inserted_gers,
