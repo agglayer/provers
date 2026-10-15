@@ -1,0 +1,8 @@
+{
+  "prev_local_exit_root": "0x0101010101010101010101010101010101010101010101010101010101010101",
+  "new_local_exit_root": "0x94b931a82d9f95b6ea777d16147ae3fc7674cbe2b3c388c1964c6080e151e5b3",
+  "l1_info_root": "0xdd9c0d1cf39f56a232c6662b398bf9a64a3c50f8ccc1aa11fb2651a80f60ec0f",
+  "origin_network": 7,
+  "commit_imported_bridge_exits": "0xcd23cde3d44cfe734e7bbeacaa0034081e9066199593354b9432590d6ab22f86",
+  "aggchain_params": "0x11f0cea71e40fb0e0b8c699d6944f70a605c306069085c5d938acdbdfd749c7a"
+}
