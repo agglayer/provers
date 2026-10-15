@@ -91,6 +91,9 @@ impl StaticCallWithContext {
             EvmFlavor::Ethereum => ClientExecutor::eth(state_sketch)
                 .map_err(StaticCallError::ClientInitialization)?
                 .execute(call),
+            EvmFlavor::EthLike => ClientExecutor::eth_like(state_sketch)
+                .map_err(StaticCallError::ClientInitialization)?
+                .execute(call),
         }
         .map_err(StaticCallError::ClientExecution)?;
 

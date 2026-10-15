@@ -266,6 +266,14 @@ where
                         .map_err(Error::HostExecutorPreBlockInitialization)?;
                     self.prev_l2_block_sketch(sketch).await
                 }
+                EvmFlavor::EthLike => {
+                    let sketch = builder
+                        .eth_like()
+                        .build()
+                        .await
+                        .map_err(Error::HostExecutorPreBlockInitialization)?;
+                    self.prev_l2_block_sketch(sketch).await
+                }
             }
         }))
         .await
@@ -296,6 +304,14 @@ where
                 }
                 EvmFlavor::Ethereum => {
                     let sketch = builder
+                        .build()
+                        .await
+                        .map_err(Error::HostExecutorNewBlockInitialization)?;
+                    self.new_l2_block_sketch(sketch).await
+                }
+                EvmFlavor::EthLike => {
+                    let sketch = builder
+                        .eth_like()
                         .build()
                         .await
                         .map_err(Error::HostExecutorNewBlockInitialization)?;

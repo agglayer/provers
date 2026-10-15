@@ -1,18 +1,15 @@
 //! Host-side check of the sp1-cc sketch builder against a Besu QBFT node.
 //!
-//! Ignored by default. With stock sp1-cc (`reth-1.9.3-sp1-6.2.2`) this test
-//! fails on the client side: the builder accepts the Besu header, but
-//! `ClientExecutor::eth` panics in `validate_header` (QBFT `difficulty = 1`,
-//! `extraData` > 32 bytes) and, without a Paris-active genesis, the host
-//! reports `prevrandao not set`. It passes with the `eth_like` patch kept in
-//! `prover-besu-qbft/vectors/bridge/sketches/sp1-cc-eth-like.patch` (use
-//! `.eth_like()` / `ClientExecutor::eth_like` and the sketch genesis there).
+//! Uses the `eth_like` executor of the local sp1-cc fork (`EvmFlavor::EthLike`)
+//! and a Paris-active sketch genesis
+//! (`vectors/bridge/sketches/sketch-genesis.json`: the Besu config plus
+//! `terminalTotalDifficulty: 0`).
 //!
-//! Run with:
+//! Ignored by default. Run with:
 //!
 //! ```text
 //! BESU_RPC_URL=http://localhost:18541 \
-//! BESU_GENESIS=<path>/vectors/genesis/genesis.json \
+//! BESU_GENESIS=<path>/vectors/bridge/sketches/sketch-genesis.json \
 //! BESU_GER_ADDR=0xa40d5f56745a118d0906a34e69aec8c0db1cb8fa \
 //! BESU_BRIDGE_ADDR=0x2a3dd3eb832af982ec71669e178424b10dca2ede \
 //! BESU_BLOCKS=31,47 BESU_OUT_DIR=<path>/vectors/bridge/sketches \
@@ -76,6 +73,7 @@ async fn besu_sketches() {
             .hash;
 
         let sketch = EvmSketch::builder()
+            .eth_like()
             .at_block(n)
             .with_genesis(genesis.clone())
             .el_rpc_url(rpc.clone())
@@ -141,7 +139,7 @@ async fn besu_sketches() {
         let input = sketch.finalize().await.expect("finalize");
 
         // Client side, the way `StaticCallWithContext` does it.
-        let client = ClientExecutor::eth(&input).expect("client init");
+        let client = ClientExecutor::eth_like(&input).expect("client init");
         let pv = client
             .execute(ContractInput::new_call(
                 ger,

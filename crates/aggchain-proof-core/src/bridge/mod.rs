@@ -38,13 +38,16 @@ sol! (
 
 /// EVM flavour used to execute the static calls against the L2 sketches.
 ///
-/// `Optimism` is the default and what the FEP program uses. `Ethereum` is for
-/// Ethereum-like L2s (e.g. Besu).
+/// `Optimism` is the default and what the FEP program uses. `Ethereum` is stock
+/// sp1-cc Ethereum execution with Ethereum header validation. `EthLike` is
+/// Ethereum execution without header validation, for chains with non-Ethereum
+/// headers (e.g. Besu QBFT); it needs the sp1-cc `eth_like` fork.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum EvmFlavor {
     #[default]
     Optimism,
     Ethereum,
+    EthLike,
 }
 
 /// Represents all the bridge constraints errors.
