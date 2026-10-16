@@ -112,7 +112,7 @@ mod noop {
         async fn get_l1_last_local_exit_root(
             &self,
         ) -> Result<Digest, aggchain_proof_contracts::Error> {
-            Ok(Digest([1; 32]))
+            Ok(Digest::ZERO)
         }
     }
 
@@ -246,7 +246,10 @@ mod noop {
             assert_eq!(
                 public_values,
                 AggchainProofPublicValues {
-                    prev_local_exit_root: Digest([1; 32]),
+                    // Empty local exit tree root, stored as zero on L1.
+                    prev_local_exit_root: Digest(alloy::primitives::hex!(
+                        "27ae5ba08d7291c96c8cbddcc148bf48a6d68c7974b94356f53754ef6171d757"
+                    )),
                     new_local_exit_root: Digest([2; 32]),
                     l1_info_root: Digest([3; 32]),
                     origin_network: 7.into(),
