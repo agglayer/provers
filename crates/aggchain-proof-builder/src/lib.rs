@@ -45,7 +45,7 @@ use serde::{Deserialize, Serialize};
 use sp1_sdk::{HashableKey, SP1Stdin, SP1VerifyingKey};
 use tower::{buffer::Buffer, util::BoxService, ServiceExt as _};
 use tracing::{debug, error, info, warn};
-use unified_bridge::AggchainProofPublicValues;
+use unified_bridge::{AggchainProofPublicValues, LocalExitTree};
 
 use crate::config::{AggchainProofBuilderConfig, AggchainProofMode};
 
@@ -567,11 +567,16 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             .await
             .map_err(Error::L2ChainDataRetrievalError)?;
 
-        // Taken from L1 as-is: these are the values the contract hashes.
-        let prev_local_exit_root = contracts_client
+        // Taken from L1: these are the values the contract hashes. L1 stores
+        // an empty local exit tree as zero, while the PP expects its root.
+        let prev_local_exit_root = match contracts_client
             .get_l1_last_local_exit_root()
             .await
-            .map_err(Error::L1ChainDataRetrievalError)?;
+            .map_err(Error::L1ChainDataRetrievalError)?
+        {
+            Digest::ZERO => LocalExitTree::<32>::default().get_root(),
+            root => root,
+        };
 
         let optimistic_mode = contracts_client
             .get_optimistic_mode()
