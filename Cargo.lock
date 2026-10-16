@@ -7095,6 +7095,7 @@ dependencies = [
  "prover-logger",
  "serde",
  "sp1-sdk",
+ "tempfile",
  "thiserror 2.0.17",
  "tokio",
  "tokio-util",

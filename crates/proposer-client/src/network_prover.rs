@@ -2,7 +2,7 @@ use std::{panic::AssertUnwindSafe, time::Duration};
 
 use alloy_primitives::B256;
 use eyre::{eyre, Context};
-use prover_executor::{sp1_async, sp1_fast};
+use prover_executor::{build_network_prover, sp1_async, sp1_fast};
 use sp1_sdk::{
     NetworkProver, Prover, ProvingKey, SP1ProofWithPublicValues, SP1ProvingKey, SP1VerifyingKey,
 };
@@ -56,14 +56,13 @@ pub async fn new_network_prover<T: AsRef<str>>(endpoint: T) -> eyre::Result<Netw
     )?;
 
     sp1_async(AssertUnwindSafe(async move {
-        Ok::<_, eyre::Report>(
+        build_network_prover(
             sp1_sdk::ProverClient::builder()
                 .network()
                 .rpc_url(&endpoint)
-                .private_key(&private_key)
-                .build()
-                .await,
+                .private_key(&private_key),
         )
+        .await
     }))
     .await?
 }
