@@ -4747,7 +4747,7 @@ checksum = "1b6b67fb9a61334225b5b790716f609cd58395f895b3fe8b328786812a40bc3b"
 [[package]]
 name = "sp1-cc-client-executor"
 version = "0.1.0"
-source = "git+https://github.com/succinctlabs/sp1-contract-call/?tag=reth-1.9.3-sp1-6.2.2#9427943dfa721cecdd953c5798757c2e93c5a37b"
+source = "git+https://github.com/agglayer/sp1-contract-call.git?rev=5b72307565acd07b3bf3561f41470a674ab63be1#5b72307565acd07b3bf3561f41470a674ab63be1"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",

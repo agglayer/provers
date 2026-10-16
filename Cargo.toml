@@ -141,8 +141,7 @@ tracing-appender = "0.2.3"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 url = { version = "2.5", features = ["serde"] }
 
-# Local until the agglayer fork is pushed (G1); then
-# `{ git = "https://github.com/agglayer/sp1-contract-call", rev = ... }`.
+# Fork with EthLikePrimitives (Besu QBFT) and genesis-sketch support.
 [patch."https://github.com/succinctlabs/sp1-contract-call/"]
-sp1-cc-host-executor = { path = "../sp1-contract-call/crates/host-executor" }
-sp1-cc-client-executor = { path = "../sp1-contract-call/crates/client-executor" }
+sp1-cc-host-executor = { git = "https://github.com/agglayer/sp1-contract-call.git", rev = "5b72307565acd07b3bf3561f41470a674ab63be1" }
+sp1-cc-client-executor = { git = "https://github.com/agglayer/sp1-contract-call.git", rev = "5b72307565acd07b3bf3561f41470a674ab63be1" }

@@ -9694,6 +9694,7 @@ dependencies = [
 [[package]]
 name = "sp1-cc-client-executor"
 version = "0.1.0"
+source = "git+https://github.com/agglayer/sp1-contract-call.git?rev=5b72307565acd07b3bf3561f41470a674ab63be1#5b72307565acd07b3bf3561f41470a674ab63be1"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
@@ -9733,6 +9734,7 @@ dependencies = [
 [[package]]
 name = "sp1-cc-host-executor"
 version = "0.1.0"
+source = "git+https://github.com/agglayer/sp1-contract-call.git?rev=5b72307565acd07b3bf3561f41470a674ab63be1#5b72307565acd07b3bf3561f41470a674ab63be1"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",

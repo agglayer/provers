@@ -22,3 +22,7 @@ sha2 = { git = "https://github.com/sp1-patches/RustCrypto-hashes", package = "sh
 sha3 = { git = "https://github.com/sp1-patches/RustCrypto-hashes", package = "sha3", tag = "patch-sha3-0.10.8-sp1-6.2.0" }
 substrate-bn = { git = "https://github.com/sp1-patches/bn", tag = "patch-0.6.0-sp1-6.2.0-substrate-bn" }
 tiny-keccak = { git = "https://github.com/sp1-patches/tiny-keccak", tag = "patch-2.0.2-sp1-6.2.0" }
+
+# aggchain-proof-core calls EvmFlavor::EthLike, which needs the fork's eth_like executor.
+[patch."https://github.com/succinctlabs/sp1-contract-call/"]
+sp1-cc-client-executor = { git = "https://github.com/agglayer/sp1-contract-call.git", rev = "5b72307565acd07b3bf3561f41470a674ab63be1" }
