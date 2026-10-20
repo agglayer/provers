@@ -26,8 +26,10 @@ use tracing::{debug, error, info};
 mod tests;
 
 mod error;
+mod network;
 mod utils;
 
+pub use network::build_network_prover;
 pub use utils::*;
 
 #[derive(Clone)]
@@ -102,11 +104,12 @@ impl Executor {
         match prover_type {
             ProverType::NetworkProver(network_prover_config) => {
                 debug!("Creating network prover executor...");
-                let network_prover = ProverClient::builder()
-                    .network()
-                    .rpc_url(network_prover_config.sp1_cluster_endpoint.as_str())
-                    .build()
-                    .await;
+                let network_prover = build_network_prover(
+                    ProverClient::builder()
+                        .network()
+                        .rpc_url(network_prover_config.sp1_cluster_endpoint.as_str()),
+                )
+                .await?;
                 let proving_key = network_prover
                     .setup(program.into())
                     .await
