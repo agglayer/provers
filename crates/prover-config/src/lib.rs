@@ -39,7 +39,8 @@ pub struct CpuProverConfig {
 }
 
 impl CpuProverConfig {
-    // This constant represents the number of second added to the proving_timeout
+    // This constant represents the number of second added to the
+    // proving_timeout
     pub const DEFAULT_PROVING_TIMEOUT_PADDING: Duration = Duration::from_secs(1);
 
     pub fn get_proving_request_timeout(&self) -> Duration {
@@ -78,7 +79,8 @@ pub struct NetworkProverConfig {
 }
 
 impl NetworkProverConfig {
-    // This constant represents the number of second added to the proving_timeout
+    // This constant represents the number of second added to the
+    // proving_timeout
     pub const DEFAULT_PROVING_TIMEOUT_PADDING: Duration = Duration::from_secs(1);
 
     pub fn get_proving_request_timeout(&self) -> Duration {
@@ -114,7 +116,8 @@ pub struct MockProverConfig {
 }
 
 impl MockProverConfig {
-    // This constant represents the number of second added to the proving_timeout
+    // This constant represents the number of second added to the
+    // proving_timeout
     pub const DEFAULT_PROVING_TIMEOUT_PADDING: Duration = Duration::from_secs(1);
 
     pub fn get_proving_request_timeout(&self) -> Duration {

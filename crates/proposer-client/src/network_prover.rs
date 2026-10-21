@@ -15,8 +15,8 @@ impl AggregationProver for NetworkProver {
         &self,
         program: &[u8],
     ) -> eyre::Result<(SP1ProvingKey, SP1VerifyingKey)> {
-        // TODO: Figure out a way to kill this struct if there's an unwind, and start
-        // again with a fresh Prover
+        // TODO: Figure out a way to kill this struct if there's an unwind, and
+        // start again with a fresh Prover
         let proving_key = sp1_async(AssertUnwindSafe(async { self.setup(program.into()).await }))
             .await?
             .map_err(|error| eyre!(error.to_string()))?;
@@ -29,8 +29,8 @@ impl AggregationProver for NetworkProver {
         request_id: B256,
         timeout: Option<Duration>,
     ) -> eyre::Result<SP1ProofWithPublicValues> {
-        // TODO: Figure out a way to kill this struct if there's an unwind, and start
-        // again with a fresh Prover
+        // TODO: Figure out a way to kill this struct if there's an unwind, and
+        // start again with a fresh Prover
         sp1_async(AssertUnwindSafe(self.wait_proof(request_id, timeout, None)))
             .await?
             .map_err(|e| eyre!(e))
@@ -42,8 +42,8 @@ impl AggregationProver for NetworkProver {
         proof: &SP1ProofWithPublicValues,
         vkey: &SP1VerifyingKey,
     ) -> eyre::Result<()> {
-        // TODO: Figure out a way to kill this struct if there's an unwind, and start
-        // again with a fresh Prover
+        // TODO: Figure out a way to kill this struct if there's an unwind, and
+        // start again with a fresh Prover
         sp1_fast(AssertUnwindSafe(|| self.verify(proof, vkey, None)))?
             .map_err(|error| eyre!(error.to_string()))
     }

@@ -42,8 +42,9 @@ mod aggchain_contracts_rpc_client {
         let mut server_l2_el = mockito::Server::new_async().await;
         let server_l2_cl = mockito::Server::new_async().await;
 
-        // We ask the global exit root manager contract for the PolygonZkEVMBridgeV2
-        // contract address with the "bridgeAddress()" call
+        // We ask the global exit root manager contract for the
+        // PolygonZkEVMBridgeV2 contract address with the
+        // "bridgeAddress()" call
         let bridge_address_expected_body = serde_json::json!({
             "method": "eth_call",
             "params": [{
@@ -168,8 +169,8 @@ mod aggchain_contracts_rpc_client {
     }
 
     fn mock_selected_op_succinct_config_name_call(server_l1: &mut ServerGuard) -> mockito::Mock {
-        // Function selector for selectedOpSuccinctConfigName() - first 4 bytes of
-        // keccak256 hash
+        // Function selector for selectedOpSuccinctConfigName() - first 4 bytes
+        // of keccak256 hash
         let function_selector = &keccak256(b"selectedOpSuccinctConfigName()")[..4];
 
         let expected_body = serde_json::json!({
@@ -202,12 +203,12 @@ mod aggchain_contracts_rpc_client {
     }
 
     fn mock_op_succinct_configs(server_l1: &mut ServerGuard) -> mockito::Mock {
-        // opSuccinctConfigs takes a bytes32 parameter (the config name) and returns 3
-        // bytes32 values
+        // opSuccinctConfigs takes a bytes32 parameter (the config name) and
+        // returns 3 bytes32 values
         let op_succinct_config_name = keccak256(b"opsuccinct_genesis");
 
-        // Function selector for opSuccinctConfigs(bytes32) - first 4 bytes of keccak256
-        // hash
+        // Function selector for opSuccinctConfigs(bytes32) - first 4 bytes of
+        // keccak256 hash
         let function_selector = &keccak256(b"opSuccinctConfigs(bytes32)")[..4];
         let calldata = [function_selector, &op_succinct_config_name[..]].concat();
 
@@ -283,8 +284,9 @@ mod aggchain_contracts_rpc_client {
     {
         let mut server_l2 = mockito::Server::new_async().await;
 
-        // We ask the global exit root manager contract for the PolygonZkEVMBridgeV2
-        // contract address with the "bridgeAddress()" call
+        // We ask the global exit root manager contract for the
+        // PolygonZkEVMBridgeV2 contract address with the
+        // "bridgeAddress()" call
         let bridge_address_expected_body = serde_json::json!({
             "method": "eth_call",
             "params": [{
@@ -337,7 +339,8 @@ mod aggchain_contracts_rpc_client {
         let (contracts_client, test_servers) = aggchain_contracts_rpc_client().await?;
         let mut server_l2_el = test_servers.server_l2_el;
 
-        // We ask the PolygonZkEVMBridgeV2 for the local exit root with `getRoot()`
+        // We ask the PolygonZkEVMBridgeV2 for the local exit root with
+        // `getRoot()`
         let get_local_exit_root_body = serde_json::json!({
             "method": "eth_call",
             "params": [{
@@ -386,7 +389,8 @@ mod aggchain_contracts_rpc_client {
         let (contracts_client, test_servers) = aggchain_contracts_rpc_client().await?;
         let mut server_l2_el = test_servers.server_l2_el;
 
-        // We ask the PolygonZkEVMBridgeV2 for the local exit root with `getRoot()`
+        // We ask the PolygonZkEVMBridgeV2 for the local exit root with
+        // `getRoot()`
         let get_local_exit_root_body = serde_json::json!({
             "method": "eth_call",
             "params": [{
@@ -471,7 +475,8 @@ mod aggchain_contracts_rpc_client {
         let (contracts_client, test_servers) = aggchain_contracts_rpc_client().await?;
         let mut server_l2_cl = test_servers.server_l2_cl;
 
-        // We ask the PolygonZkEVMBridgeV2 for the local exit root with `getRoot()`
+        // We ask the PolygonZkEVMBridgeV2 for the local exit root with
+        // `getRoot()`
         let get_rollup_config_hash = serde_json::json!({
             "method": "optimism_outputAtBlock",
             "params":["0x10"],

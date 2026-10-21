@@ -426,7 +426,6 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
                 AGGCHAIN_PROOF_NOOP_ELF
             }
         };
-
         let executor = Executor::new(
             config.primary_prover.clone(),
             config.fallback_prover.clone(),
@@ -470,9 +469,9 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
         let prover = Buffer::new(executor, MAX_CONCURRENT_REQUESTS);
 
         // Resolve the aggregation vkey and range vkey commitment. These use the
-        // configured op-succinct override when one was installed at startup (see
-        // `proposer_elfs::install_overrides`), otherwise the values embedded from
-        // op-succinct-elfs at build time.
+        // configured op-succinct override when one was installed at startup
+        // (see `proposer_elfs::install_overrides`), otherwise the
+        // values embedded from op-succinct-elfs at build time.
         let aggregation_vkey = Arc::new(proposer_elfs::aggregation::vkey().clone());
         let range_vkey_commitment = Digest(proposer_elfs::range::commitment());
 
@@ -492,8 +491,8 @@ impl<ContractsClient> AggchainProofBuilder<ContractsClient> {
             }
         }
 
-        // Check the mismatch of the keys from the op-succinct configuration in the
-        // contract
+        // Check the mismatch of the keys from the op-succinct configuration in
+        // the contract
         let op_succinct_config = contracts_client
             .get_op_succinct_config()
             .await
@@ -931,9 +930,10 @@ where
         let mode = self.mode;
         let execution_limiter = self.execution_limiter.clone();
 
-        // TODO: figure out a way to stop only this service upon an sp1 panic, and not
-        // the entire system. For now, just ignore the panic, even though some
-        // internal mutability inside sp1 might end up unhappy.
+        // TODO: figure out a way to stop only this service upon an sp1 panic,
+        // and not the entire system. For now, just ignore the panic,
+        // even though some internal mutability inside sp1 might end up
+        // unhappy.
         sp1_async(AssertUnwindSafe(async move {
             let last_proven_block = req.aggchain_proof_inputs.last_proven_block;
             let end_block = req.end_block;

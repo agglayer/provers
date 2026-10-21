@@ -122,9 +122,10 @@ impl ProverEngine {
         // Spawn the metrics server into the metrics runtime.
         let metrics_handle = {
             // This guard is used to ensure that the metrics runtime is entered
-            // before the server is spawned. This is necessary because the `into_future`
-            // of `WithGracefulShutdown` is spawning various tasks before returning the
-            // actual server instance to spawn.
+            // before the server is spawned. This is necessary because the
+            // `into_future` of `WithGracefulShutdown` is spawning
+            // various tasks before returning the actual server
+            // instance to spawn.
             let _guard = metrics_runtime.enter();
             // Spawn the metrics server
             metrics_runtime.spawn(metric_server.into_future())

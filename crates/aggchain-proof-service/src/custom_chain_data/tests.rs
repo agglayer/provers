@@ -26,8 +26,8 @@ fn aggchain_pattern() {
         0b0000_0000_0000_0000_0000_0000_0000_0000,
         (((ECDSA_DEFAULT as u32) << 16) | AGGCHAIN_TYPE_ECDSA as u32)
     );
-    // aggchain is using aggchain-type 0 and use the default FEP program -> Should
-    // fail
+    // aggchain is using aggchain-type 0 and use the default FEP program ->
+    // Should fail
     assert_eq!(
         0b0000_0000_0000_0000_0000_0000_0000_0000,
         (((FEP_DEFAULT as u32) << 16) | AGGCHAIN_TYPE_ECDSA as u32)
