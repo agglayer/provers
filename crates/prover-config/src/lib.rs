@@ -1,4 +1,4 @@
-use std::{str::FromStr, time::Duration};
+use std::{path::PathBuf, str::FromStr, time::Duration};
 
 use prover_utils::{from_env_or_default, with};
 use serde::{Deserialize, Serialize};
@@ -74,8 +74,19 @@ pub struct NetworkProverConfig {
     #[serde(default = "default_sp1_cluster_endpoint")]
     pub sp1_cluster_endpoint: url::Url,
 
-    #[serde(default = "default_private_stdin")]
-    pub private_stdin: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub private_stdin: Option<bool>,
+
+    /// mTLS client certificate for the sp1 proving cluster endpoint.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mtls: Option<MtlsConfig>,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+#[serde(rename_all = "kebab-case")]
+pub struct MtlsConfig {
+    pub cert_path: PathBuf,
+    pub key_path: PathBuf,
 }
 
 impl NetworkProverConfig {
@@ -95,7 +106,8 @@ impl Default for NetworkProverConfig {
             proving_request_timeout: None,
             proving_timeout: default_network_proving_timeout(),
             sp1_cluster_endpoint: default_sp1_cluster_endpoint(),
-            private_stdin: default_private_stdin(),
+            private_stdin: None,
+            mtls: None,
         }
     }
 }
@@ -146,10 +158,6 @@ const fn default_local_proving_timeout() -> Duration {
 
 const fn default_network_proving_timeout() -> Duration {
     Duration::from_secs(60 * 5)
-}
-
-const fn default_private_stdin() -> bool {
-    false
 }
 
 fn default_sp1_cluster_endpoint() -> Url {
