@@ -108,6 +108,7 @@ impl Executor {
                     ProverClient::builder()
                         .network()
                         .rpc_url(network_prover_config.sp1_cluster_endpoint.as_str()),
+                    network_prover_config.mtls.as_ref(),
                 )
                 .await?;
                 let proving_key = network_prover
@@ -125,7 +126,7 @@ impl Executor {
                             proving_key,
                             verification_key,
                             timeout: network_prover_config.proving_timeout,
-                            private_stdin: network_prover_config.private_stdin,
+                            private_stdin: network_prover_config.private_stdin.unwrap_or_default(),
                         },
                     ),
                 ))

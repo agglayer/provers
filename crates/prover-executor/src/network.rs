@@ -1,6 +1,13 @@
-use std::{env, ffi::OsString, fs, path::PathBuf, time::Duration};
+use std::{
+    env,
+    ffi::OsString,
+    fs,
+    path::{Path, PathBuf},
+    time::Duration,
+};
 
 use eyre::{bail, Context as _};
+use prover_config::MtlsConfig;
 use sp1_sdk::{network::builder::NetworkProverBuilder, NetworkProver};
 use tracing::info;
 
@@ -10,8 +17,12 @@ const NETWORK_MTLS_PREFLIGHT_TIMEOUT: Duration = Duration::from_secs(20);
 
 pub async fn build_network_prover(
     mut builder: NetworkProverBuilder,
+    mtls: Option<&MtlsConfig>,
 ) -> eyre::Result<NetworkProver> {
-    let client_identity = load_network_client_identity()?;
+    let client_identity = match mtls {
+        Some(mtls) => Some(load_client_identity_from_config(mtls)?),
+        None => load_network_client_identity()?,
+    };
     let uses_client_identity = client_identity.is_some();
 
     if let Some((certificate, private_key)) = client_identity {
@@ -36,6 +47,13 @@ fn load_network_client_identity() -> eyre::Result<Option<(Vec<u8>, Vec<u8>)>> {
         env::var_os(NETWORK_MTLS_CERT_PATH),
         env::var_os(NETWORK_MTLS_KEY_PATH),
     )
+}
+
+fn load_client_identity_from_config(mtls: &MtlsConfig) -> eyre::Result<(Vec<u8>, Vec<u8>)> {
+    let read = |path: &Path| {
+        fs::read(path).with_context(|| format!("Failed to read mTLS file at {}", path.display()))
+    };
+    Ok((read(&mtls.cert_path)?, read(&mtls.key_path)?))
 }
 
 fn load_network_client_identity_from_paths(
@@ -146,5 +164,24 @@ mod tests {
         assert!(error
             .to_string()
             .contains("Failed to read NETWORK_MTLS_CERT_PATH file"));
+    }
+
+    #[test]
+    fn loads_client_identity_from_config() {
+        let directory = tempfile::tempdir().unwrap();
+        let mtls = MtlsConfig {
+            cert_path: directory.path().join("certificate.pem"),
+            key_path: directory.path().join("private-key.pem"),
+        };
+        fs::write(&mtls.cert_path, b"certificate").unwrap();
+
+        let error = load_client_identity_from_config(&mtls).unwrap_err();
+        assert!(error.to_string().contains("Failed to read mTLS file at"));
+
+        fs::write(&mtls.key_path, b"private key").unwrap();
+        let identity = load_client_identity_from_config(&mtls).unwrap();
+
+        assert_eq!(identity.0, b"certificate");
+        assert_eq!(identity.1, b"private key");
     }
 }

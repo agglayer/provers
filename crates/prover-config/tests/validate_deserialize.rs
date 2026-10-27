@@ -21,25 +21,27 @@ fn network_prover() {
             proving_request_timeout: Some(std::time::Duration::from_secs(300)),
             proving_timeout: std::time::Duration::from_secs(600),
             sp1_cluster_endpoint: url::Url::parse("https://rpc.production.succinct.xyz/").unwrap(),
-            private_stdin: false,
+            private_stdin: None,
+            mtls: None,
         })
     );
 }
 
 #[test]
-fn network_prover_defaults() -> Result<(), toml::de::Error> {
+fn network_prover_defaults() -> Result<(), Box<dyn std::error::Error>> {
     let config = NetworkProverConfig::default();
-    assert!(!config.private_stdin);
+    assert_eq!(config.private_stdin, None);
     assert_eq!(toml::from_str::<NetworkProverConfig>("")?, config);
+    assert!(!toml::to_string(&config)?.contains("private-stdin"));
     Ok(())
 }
 
 #[rstest]
-#[case("private-stdin = true", true)]
-#[case("private-stdin = false", false)]
+#[case("private-stdin = true", Some(true))]
+#[case("private-stdin = false", Some(false))]
 fn network_prover_private_stdin(
     #[case] input: &str,
-    #[case] expected: bool,
+    #[case] expected: Option<bool>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let config: NetworkProverConfig = toml::from_str(input)?;
     assert_eq!(config.private_stdin, expected);
@@ -76,7 +78,8 @@ fn network_and_cpu_prover() {
             proving_request_timeout: Some(std::time::Duration::from_secs(300)),
             proving_timeout: std::time::Duration::from_secs(600),
             sp1_cluster_endpoint: url::Url::parse("https://rpc.production.succinct.xyz/").unwrap(),
-            private_stdin: false,
+            private_stdin: None,
+            mtls: None,
         })
     );
 

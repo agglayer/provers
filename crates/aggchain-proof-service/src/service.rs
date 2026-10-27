@@ -315,7 +315,8 @@ impl AggchainProofService {
                     fep_verification: FepVerification::Optimistic {
                         signature: signature_optimistic_mode,
                     },
-                    // In optimistic mode, the end_block is the one defined in the request.
+                    // In optimistic mode, the end_block is the one defined in
+                    // the request.
                     end_block: aggchain_proof_inputs.requested_end_block,
                     aggchain_proof_inputs,
                 };
