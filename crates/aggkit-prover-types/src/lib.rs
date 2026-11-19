@@ -1,4 +1,4 @@
-#[path = "generated/aggkit.prover.v1.rs"]
+#[path = "generated/aggkit/prover/v1/aggkit.prover.v1.rs"]
 #[rustfmt::skip]
 #[allow(warnings)]
 pub mod v1;

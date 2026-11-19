@@ -1,6 +1,6 @@
 use aggchain_proof_types::inserted_ger::{InsertedGer, InsertedGerWithBlockNumber};
 
-use crate::{error::AggchainProofRequestError as Error, v1};
+use crate::{conversion::TryIntoInterop as _, error::AggchainProofRequestError as Error, v1};
 
 impl TryFrom<v1::ProvenInsertedGerWithBlockNumber> for InsertedGerWithBlockNumber {
     type Error = Error;
@@ -33,20 +33,20 @@ impl TryFrom<v1::ProvenInsertedGer> for InsertedGer {
                 .ok_or_else(|| Error::MissingInsertedGer {
                     field_path: "proof_ger_l1root".to_string(),
                 })?
-                .try_into()
+                .try_into_interop()
                 .map_err(|error| Error::InvalidInsertedGer {
                     field_path: "proof_ger_l1root".to_string(),
-                    source: eyre::Error::from(error),
+                    source: error,
                 })?,
             l1_leaf: value
                 .l1_leaf
                 .ok_or_else(|| Error::MissingL1InfoTreeLeaf {
                     field_path: "l1_leaf".to_string(),
                 })?
-                .try_into()
+                .try_into_interop()
                 .map_err(|error| Error::InvalidL1InfoTreeLeaf {
                     field_path: "l1_leaf".to_string(),
-                    source: eyre::Error::from(error),
+                    source: error,
                 })?,
         })
     }
