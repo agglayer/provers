@@ -10,7 +10,7 @@ plugins:
     strategy: all
     opt:
       - bytes=.
-      - extern_path=.agglayer.interop.types=::agglayer-interop::grpc
+      - extern_path=.agglayer.interop.types=::agglayer_interop_grpc_types
       - file_descriptor_set
       - compile_well_known_types
 

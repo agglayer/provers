@@ -1,6 +1,6 @@
 // @generated
 /// Generated client implementations.
-pub mod proofs_client {
+pub mod aggchain_proof_service_client {
     #![allow(
         unused_variables,
         dead_code,
@@ -11,10 +11,10 @@ pub mod proofs_client {
     use tonic::codegen::*;
     use tonic::codegen::http::Uri;
     #[derive(Debug, Clone)]
-    pub struct ProofsClient<T> {
+    pub struct AggchainProofServiceClient<T> {
         inner: tonic::client::Grpc<T>,
     }
-    impl ProofsClient<tonic::transport::Channel> {
+    impl AggchainProofServiceClient<tonic::transport::Channel> {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
@@ -25,7 +25,7 @@ pub mod proofs_client {
             Ok(Self::new(conn))
         }
     }
-    impl<T> ProofsClient<T>
+    impl<T> AggchainProofServiceClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::Body>,
         T::Error: Into<StdError>,
@@ -43,7 +43,7 @@ pub mod proofs_client {
         pub fn with_interceptor<F>(
             inner: T,
             interceptor: F,
-        ) -> ProofsClient<InterceptedService<T, F>>
+        ) -> AggchainProofServiceClient<InterceptedService<T, F>>
         where
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
@@ -57,7 +57,7 @@ pub mod proofs_client {
                 http::Request<tonic::body::Body>,
             >>::Error: Into<StdError> + std::marker::Send + std::marker::Sync,
         {
-            ProofsClient::new(InterceptedService::new(inner, interceptor))
+            AggchainProofServiceClient::new(InterceptedService::new(inner, interceptor))
         }
         /// Compress requests with the given encoding.
         ///
@@ -90,11 +90,11 @@ pub mod proofs_client {
             self.inner = self.inner.max_encoding_message_size(limit);
             self
         }
-        pub async fn request_agg_proof(
+        pub async fn generate_aggchain_proof(
             &mut self,
-            request: impl tonic::IntoRequest<super::AggProofRequest>,
+            request: impl tonic::IntoRequest<super::GenerateAggchainProofRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::AggProofResponse>,
+            tonic::Response<super::GenerateAggchainProofResponse>,
             tonic::Status,
         > {
             self.inner
@@ -105,20 +105,27 @@ pub mod proofs_client {
                         format!("Service was not ready: {}", e.into()),
                     )
                 })?;
-            let codec = tonic::codec::ProstCodec::default();
+            let codec = tonic_prost::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/proofs.Proofs/RequestAggProof",
+                "/aggkit.prover.v1.AggchainProofService/GenerateAggchainProof",
             );
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("proofs.Proofs", "RequestAggProof"));
+                .insert(
+                    GrpcMethod::new(
+                        "aggkit.prover.v1.AggchainProofService",
+                        "GenerateAggchainProof",
+                    ),
+                );
             self.inner.unary(req, path, codec).await
         }
-        pub async fn get_mock_proof(
+        pub async fn generate_optimistic_aggchain_proof(
             &mut self,
-            request: impl tonic::IntoRequest<super::GetMockProofRequest>,
+            request: impl tonic::IntoRequest<
+                super::GenerateOptimisticAggchainProofRequest,
+            >,
         ) -> std::result::Result<
-            tonic::Response<super::GetMockProofResponse>,
+            tonic::Response<super::GenerateOptimisticAggchainProofResponse>,
             tonic::Status,
         > {
             self.inner
@@ -129,19 +136,24 @@ pub mod proofs_client {
                         format!("Service was not ready: {}", e.into()),
                     )
                 })?;
-            let codec = tonic::codec::ProstCodec::default();
+            let codec = tonic_prost::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/proofs.Proofs/GetMockProof",
+                "/aggkit.prover.v1.AggchainProofService/GenerateOptimisticAggchainProof",
             );
             let mut req = request.into_request();
             req.extensions_mut()
-                .insert(GrpcMethod::new("proofs.Proofs", "GetMockProof"));
+                .insert(
+                    GrpcMethod::new(
+                        "aggkit.prover.v1.AggchainProofService",
+                        "GenerateOptimisticAggchainProof",
+                    ),
+                );
             self.inner.unary(req, path, codec).await
         }
     }
 }
 /// Generated server implementations.
-pub mod proofs_server {
+pub mod aggchain_proof_service_server {
     #![allow(
         unused_variables,
         dead_code,
@@ -150,33 +162,33 @@ pub mod proofs_server {
         clippy::let_unit_value,
     )]
     use tonic::codegen::*;
-    /// Generated trait containing gRPC methods that should be implemented for use with ProofsServer.
+    /// Generated trait containing gRPC methods that should be implemented for use with AggchainProofServiceServer.
     #[async_trait]
-    pub trait Proofs: std::marker::Send + std::marker::Sync + 'static {
-        async fn request_agg_proof(
+    pub trait AggchainProofService: std::marker::Send + std::marker::Sync + 'static {
+        async fn generate_aggchain_proof(
             &self,
-            request: tonic::Request<super::AggProofRequest>,
+            request: tonic::Request<super::GenerateAggchainProofRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::AggProofResponse>,
+            tonic::Response<super::GenerateAggchainProofResponse>,
             tonic::Status,
         >;
-        async fn get_mock_proof(
+        async fn generate_optimistic_aggchain_proof(
             &self,
-            request: tonic::Request<super::GetMockProofRequest>,
+            request: tonic::Request<super::GenerateOptimisticAggchainProofRequest>,
         ) -> std::result::Result<
-            tonic::Response<super::GetMockProofResponse>,
+            tonic::Response<super::GenerateOptimisticAggchainProofResponse>,
             tonic::Status,
         >;
     }
     #[derive(Debug)]
-    pub struct ProofsServer<T> {
+    pub struct AggchainProofServiceServer<T> {
         inner: Arc<T>,
         accept_compression_encodings: EnabledCompressionEncodings,
         send_compression_encodings: EnabledCompressionEncodings,
         max_decoding_message_size: Option<usize>,
         max_encoding_message_size: Option<usize>,
     }
-    impl<T> ProofsServer<T> {
+    impl<T> AggchainProofServiceServer<T> {
         pub fn new(inner: T) -> Self {
             Self::from_arc(Arc::new(inner))
         }
@@ -227,9 +239,10 @@ pub mod proofs_server {
             self
         }
     }
-    impl<T, B> tonic::codegen::Service<http::Request<B>> for ProofsServer<T>
+    impl<T, B> tonic::codegen::Service<http::Request<B>>
+    for AggchainProofServiceServer<T>
     where
-        T: Proofs,
+        T: AggchainProofService,
         B: Body + std::marker::Send + 'static,
         B::Error: Into<StdError> + std::marker::Send + 'static,
     {
@@ -244,23 +257,29 @@ pub mod proofs_server {
         }
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             match req.uri().path() {
-                "/proofs.Proofs/RequestAggProof" => {
+                "/aggkit.prover.v1.AggchainProofService/GenerateAggchainProof" => {
                     #[allow(non_camel_case_types)]
-                    struct RequestAggProofSvc<T: Proofs>(pub Arc<T>);
-                    impl<T: Proofs> tonic::server::UnaryService<super::AggProofRequest>
-                    for RequestAggProofSvc<T> {
-                        type Response = super::AggProofResponse;
+                    struct GenerateAggchainProofSvc<T: AggchainProofService>(pub Arc<T>);
+                    impl<
+                        T: AggchainProofService,
+                    > tonic::server::UnaryService<super::GenerateAggchainProofRequest>
+                    for GenerateAggchainProofSvc<T> {
+                        type Response = super::GenerateAggchainProofResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::AggProofRequest>,
+                            request: tonic::Request<super::GenerateAggchainProofRequest>,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as Proofs>::request_agg_proof(&inner, request).await
+                                <T as AggchainProofService>::generate_aggchain_proof(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -271,8 +290,8 @@ pub mod proofs_server {
                     let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
-                        let method = RequestAggProofSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
+                        let method = GenerateAggchainProofSvc(inner);
+                        let codec = tonic_prost::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
                                 accept_compression_encodings,
@@ -287,25 +306,34 @@ pub mod proofs_server {
                     };
                     Box::pin(fut)
                 }
-                "/proofs.Proofs/GetMockProof" => {
+                "/aggkit.prover.v1.AggchainProofService/GenerateOptimisticAggchainProof" => {
                     #[allow(non_camel_case_types)]
-                    struct GetMockProofSvc<T: Proofs>(pub Arc<T>);
+                    struct GenerateOptimisticAggchainProofSvc<T: AggchainProofService>(
+                        pub Arc<T>,
+                    );
                     impl<
-                        T: Proofs,
-                    > tonic::server::UnaryService<super::GetMockProofRequest>
-                    for GetMockProofSvc<T> {
-                        type Response = super::GetMockProofResponse;
+                        T: AggchainProofService,
+                    > tonic::server::UnaryService<
+                        super::GenerateOptimisticAggchainProofRequest,
+                    > for GenerateOptimisticAggchainProofSvc<T> {
+                        type Response = super::GenerateOptimisticAggchainProofResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::GetMockProofRequest>,
+                            request: tonic::Request<
+                                super::GenerateOptimisticAggchainProofRequest,
+                            >,
                         ) -> Self::Future {
                             let inner = Arc::clone(&self.0);
                             let fut = async move {
-                                <T as Proofs>::get_mock_proof(&inner, request).await
+                                <T as AggchainProofService>::generate_optimistic_aggchain_proof(
+                                        &inner,
+                                        request,
+                                    )
+                                    .await
                             };
                             Box::pin(fut)
                         }
@@ -316,8 +344,8 @@ pub mod proofs_server {
                     let max_encoding_message_size = self.max_encoding_message_size;
                     let inner = self.inner.clone();
                     let fut = async move {
-                        let method = GetMockProofSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
+                        let method = GenerateOptimisticAggchainProofSvc(inner);
+                        let codec = tonic_prost::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
                                 accept_compression_encodings,
@@ -354,7 +382,7 @@ pub mod proofs_server {
             }
         }
     }
-    impl<T> Clone for ProofsServer<T> {
+    impl<T> Clone for AggchainProofServiceServer<T> {
         fn clone(&self) -> Self {
             let inner = self.inner.clone();
             Self {
@@ -367,8 +395,8 @@ pub mod proofs_server {
         }
     }
     /// Generated gRPC service name
-    pub const SERVICE_NAME: &str = "proofs.Proofs";
-    impl<T> tonic::server::NamedService for ProofsServer<T> {
+    pub const SERVICE_NAME: &str = "aggkit.prover.v1.AggchainProofService";
+    impl<T> tonic::server::NamedService for AggchainProofServiceServer<T> {
         const NAME: &'static str = SERVICE_NAME;
     }
 }

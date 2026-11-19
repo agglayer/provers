@@ -4,7 +4,7 @@ use aggchain_proof_service::{
 };
 use aggchain_proof_types::{AggchainProofInputs, OptimisticAggchainProofInputs};
 use aggkit_prover_types::{
-    conversion::v1::context::Contextualize as _,
+    conversion::{digest_to_grpc, v1::context::Contextualize as _},
     error::AggchainProofRequestError,
     v1::{
         aggchain_proof_service_server::AggchainProofService as AggchainProofGrpcService,
@@ -12,10 +12,8 @@ use aggkit_prover_types::{
         GenerateOptimisticAggchainProofRequest, GenerateOptimisticAggchainProofResponse,
     },
 };
-use agglayer_interop::{
-    grpc::v1::{AggchainProof, Sp1StarkProof},
-    types::bincode,
-};
+use agglayer_interop::types::bincode;
+use agglayer_interop_grpc_types::v1::{aggchain_proof, AggchainProof, Sp1StarkProof};
 use prost::bytes::Bytes;
 use prover_executor::sp1_fast;
 use sp1_sdk::SP1_CIRCUIT_VERSION;
@@ -138,21 +136,19 @@ impl AggchainProofGrpcService for GrpcService {
                     "GenerateAggchainProof request executed successfully");
                 Ok(Response::new(GenerateAggchainProofResponse {
                     aggchain_proof: Some(AggchainProof {
-                        aggchain_params: Some(response.aggchain_params.into()),
+                        aggchain_params: Some(digest_to_grpc(response.aggchain_params)),
                         // Signature is handled by the initiator
                         signature: None,
                         context,
-                        proof: Some(agglayer_interop::grpc::v1::aggchain_proof::Proof::Sp1Stark(
-                            Sp1StarkProof {
-                                version: SP1_CIRCUIT_VERSION.to_string(),
-                                proof: response.proof.into(),
-                                vkey: response.vkey.into(),
-                            },
-                        )),
+                        proof: Some(aggchain_proof::Proof::Sp1Stark(Sp1StarkProof {
+                            version: SP1_CIRCUIT_VERSION.to_string(),
+                            proof: response.proof.into(),
+                            vkey: response.vkey.into(),
+                        })),
                     }),
                     last_proven_block: response.last_proven_block,
                     end_block: response.end_block,
-                    local_exit_root_hash: Some(response.local_exit_root_hash.into()),
+                    local_exit_root_hash: Some(digest_to_grpc(response.local_exit_root_hash)),
                     custom_chain_data: response.custom_chain_data.into(),
                 }))
             }
@@ -261,19 +257,17 @@ impl AggchainProofGrpcService for GrpcService {
                     "Generate optimistic aggchain proof request executed successfully");
                 Ok(Response::new(GenerateOptimisticAggchainProofResponse {
                     aggchain_proof: Some(AggchainProof {
-                        aggchain_params: Some(response.aggchain_params.into()),
+                        aggchain_params: Some(digest_to_grpc(response.aggchain_params)),
                         // Signature is handled by the initiator
                         signature: None,
                         context,
-                        proof: Some(agglayer_interop::grpc::v1::aggchain_proof::Proof::Sp1Stark(
-                            Sp1StarkProof {
-                                version: SP1_CIRCUIT_VERSION.to_string(),
-                                proof: response.proof.into(),
-                                vkey: response.vkey.into(),
-                            },
-                        )),
+                        proof: Some(aggchain_proof::Proof::Sp1Stark(Sp1StarkProof {
+                            version: SP1_CIRCUIT_VERSION.to_string(),
+                            proof: response.proof.into(),
+                            vkey: response.vkey.into(),
+                        })),
                     }),
-                    local_exit_root_hash: Some(response.local_exit_root_hash.into()),
+                    local_exit_root_hash: Some(digest_to_grpc(response.local_exit_root_hash)),
                     custom_chain_data: response.custom_chain_data.into(),
                 }))
             }

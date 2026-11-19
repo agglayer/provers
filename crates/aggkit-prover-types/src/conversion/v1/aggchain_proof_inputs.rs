@@ -1,6 +1,6 @@
 use aggchain_proof_types::AggchainProofInputs;
 
-use crate::{error::AggchainProofRequestError as Error, v1};
+use crate::{conversion::TryIntoInterop as _, error::AggchainProofRequestError as Error, v1};
 
 impl TryFrom<v1::GenerateAggchainProofRequest> for AggchainProofInputs {
     type Error = Error;
@@ -14,30 +14,30 @@ impl TryFrom<v1::GenerateAggchainProofRequest> for AggchainProofInputs {
                 .ok_or_else(|| Error::MissingL1InfoTreeRootHash {
                     field_path: "l1_info_tree_root_hash".to_string(),
                 })?
-                .try_into()
+                .try_into_interop()
                 .map_err(|error| Error::InvalidDigest {
                     field_path: "l1_info_tree_root_hash".to_string(),
-                    source: eyre::Error::from(error),
+                    source: error,
                 })?,
             l1_info_tree_leaf: value
                 .l1_info_tree_leaf
                 .ok_or(Error::MissingL1InfoTreeLeaf {
                     field_path: "l1_info_tree_leaf".to_string(),
                 })?
-                .try_into()
+                .try_into_interop()
                 .map_err(|error| Error::InvalidL1InfoTreeLeaf {
                     field_path: "l1_info_tree_leaf".to_string(),
-                    source: eyre::Error::from(error),
+                    source: error,
                 })?,
             l1_info_tree_merkle_proof: value
                 .l1_info_tree_merkle_proof
                 .ok_or_else(|| Error::MissingL1InfoTreeMerkleProof {
                     field_path: "l1_info_tree_merkle_proof".to_string(),
                 })?
-                .try_into()
+                .try_into_interop()
                 .map_err(|source| Error::InvalidL1InfoTreeMerkleProof {
                     field_path: "l1_info_tree_merkle_proof".to_string(),
-                    source: eyre::Error::from(source),
+                    source,
                 })?,
             ger_leaves: value
                 .ger_leaves
