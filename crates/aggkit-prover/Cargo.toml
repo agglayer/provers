@@ -31,7 +31,8 @@ aggchain-proof-service.workspace = true
 aggchain-proof-types.workspace = true
 aggkit-prover-config.workspace = true
 aggkit-prover-types = { workspace = true, features = ["sp1"] }
-agglayer-interop = { workspace = true, features = ["grpc-compat"] }
+agglayer-interop.workspace = true
+agglayer-interop-grpc-types.workspace = true
 proposer-client.workspace = true
 proposer-service.workspace = true
 prover-config.workspace = true

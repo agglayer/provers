@@ -2,7 +2,7 @@ use aggchain_proof_types::imported_bridge_exit::{
     BridgeExitHash, ImportedBridgeExitWithBlockNumber,
 };
 
-use crate::{error::AggchainProofRequestError as Error, v1};
+use crate::{conversion::TryIntoInterop as _, error::AggchainProofRequestError as Error, v1};
 
 impl TryFrom<v1::ImportedBridgeExitWithBlockNumber> for ImportedBridgeExitWithBlockNumber {
     type Error = Error;
@@ -15,10 +15,10 @@ impl TryFrom<v1::ImportedBridgeExitWithBlockNumber> for ImportedBridgeExitWithBl
                 .ok_or_else(|| Error::MissingGlobalIndex {
                     field_path: "global_index".to_string(),
                 })?
-                .try_into()
+                .try_into_interop()
                 .map_err(|error| Error::InvalidDigest {
                     field_path: "global_index".to_string(),
-                    source: eyre::Error::from(error),
+                    source: error,
                 })?,
             bridge_exit_hash: BridgeExitHash(
                 value
@@ -26,10 +26,10 @@ impl TryFrom<v1::ImportedBridgeExitWithBlockNumber> for ImportedBridgeExitWithBl
                     .ok_or_else(|| Error::MissingGlobalIndex {
                         field_path: "global_index".to_string(),
                     })?
-                    .try_into()
+                    .try_into_interop()
                     .map_err(|error| Error::InvalidDigest {
                         field_path: "global_index".to_string(),
-                        source: eyre::Error::from(error),
+                        source: error,
                     })?,
             ),
             log_index: value.log_index,

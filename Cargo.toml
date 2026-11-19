@@ -47,6 +47,10 @@ agglayer-telemetry = { git = "https://github.com/agglayer/agglayer.git", tag = "
 agglayer-elf-build = { git = "https://github.com/agglayer/interop", rev = "623e2379b807eb9856e0d629d4c3ce0f98a350b8" }
 agglayer-evm-client = "0.18.0"
 agglayer-interop = "0.18.0"
+# prost 0.14 build of the interop gRPC types, from https://github.com/agglayer/interop/pull/296.
+# Only this crate is taken from git: the other interop crates stay on the released 0.18.0 so that
+# the proof program dependencies, and thus its ELF, are left untouched.
+agglayer-interop-grpc-types = { git = "https://github.com/agglayer/interop.git", rev = "5ef149ab2f2bf88a1e9dae5f701b12f118fc33b3", default-features = false }
 agglayer-interop-types = "0.18.0"
 agglayer-primitives = "0.18.0"
 agglayer-tries = "0.18.0"
@@ -114,8 +118,10 @@ lazy_static = "1.5"
 mockall = "0.13.1"
 mockito = "1.6"
 parking_lot = "0.12.3"
-pbjson = "0.7.0"
-prost = "0.13.5"
+pbjson = "0.9.0"
+prost = "0.14.3"
+# prost version of the gRPC types shipped by `agglayer-interop` 0.18.0.
+prost-legacy = { package = "prost", version = "0.13.5" }
 rand = "0.8.5"
 rstest = "0.22.0"
 reqwest = { version = "0.12", features = ["json"] }
@@ -132,10 +138,11 @@ tokio = { version = "1.42", features = ["full"] }
 tokio-stream = { version = "0.1.17", features = ["sync"] }
 tokio-util = "0.7.13"
 toml = "0.8.15"
-tonic = { version = "0.13.1", default-features = false }
-tonic-health = "0.13.1"
-tonic-reflection = "0.13.1"
-tonic-types = "0.13.1"
+tonic = { version = "0.14.6", default-features = false }
+tonic-health = "0.14.6"
+tonic-prost = "0.14.6"
+tonic-reflection = "0.14.6"
+tonic-types = "0.14.6"
 tower = "0.4.13"
 tracing = "0.1.41"
 tracing-appender = "0.2.3"

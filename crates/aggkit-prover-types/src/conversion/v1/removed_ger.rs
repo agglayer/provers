@@ -1,6 +1,6 @@
 use aggchain_proof_types::removed_ger::RemovedGerWithBlockNumber;
 
-use crate::{error::AggchainProofRequestError as Error, v1};
+use crate::{conversion::TryIntoInterop as _, error::AggchainProofRequestError as Error, v1};
 
 impl TryFrom<v1::RemovedGer> for RemovedGerWithBlockNumber {
     type Error = Error;
@@ -11,10 +11,10 @@ impl TryFrom<v1::RemovedGer> for RemovedGerWithBlockNumber {
             .ok_or_else(|| Error::MissingRemovedGer {
                 field_path: "global_exit_root".to_string(),
             })?
-            .try_into()
+            .try_into_interop()
             .map_err(|error| Error::InvalidDigest {
                 field_path: "global_exit_root".to_string(),
-                source: eyre::Error::from(error),
+                source: error,
             })?;
 
         Ok(Self {
