@@ -13,16 +13,18 @@ eyre.workspace = true
 prost.workspace = true
 serde.workspace = true
 thiserror.workspace = true
+prost-legacy.workspace = true
 tonic = { workspace = true, default-features = false, features = [
-    "prost",
     "codegen",
     "transport",
 ] }
+tonic-prost.workspace = true
 
 sp1-sdk = { workspace = true, optional = true }
 
 aggchain-proof-types.workspace = true
 agglayer-interop = { workspace = true, features = ["grpc-compat"] }
+agglayer-interop-grpc-types.workspace = true
 agglayer-primitives.workspace = true
 pbjson.workspace = true
 prover-elf-utils = { workspace = true, optional = true }
